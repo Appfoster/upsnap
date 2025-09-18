@@ -1,0 +1,130 @@
+#site-monitor-dashboard {
+    padding: 24px;
+}
+
+/* Stats Overview */
+.monitoring-overview {
+    margin-bottom: 24px;
+}
+
+.monitoring-stats {
+    display: flex;
+    gap: 24px;
+    padding: 16px;
+}
+
+.stat {
+    flex: 1;
+    text-align: center;
+}
+
+.stat-label {
+    font-size: 14px;
+    color: #677486;
+    margin-bottom: 8px;
+}
+
+.stat-value {
+    font-size: 24px;
+    font-weight: 600;
+}
+
+/* Status Colors */
+.status-healthy {
+    color: #27AB83;
+}
+
+.status-warning {
+    color: #F0B429;
+}
+
+.status-critical {
+    color: #E12D39;
+}
+
+/* Incidents */
+.incident-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.incident-item {
+    padding: 16px;
+    border-left: 4px solid;
+}
+
+.incident-item.status-warning {
+    border-color: #F0B429;
+}
+
+.incident-item.status-critical {
+    border-color: #E12D39;
+}
+
+.incident-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.incident-title {
+    font-weight: 600;
+    flex: 1;
+}
+
+.incident-time {
+    font-size: 13px;
+}
+
+/* Status Badges */
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 13px;
+    font-weight: 500;
+}
+
+.status-badge.status-healthy {
+    background: #D5F5E3;
+    color: #27AB83;
+}
+
+.status-badge.status-warning {
+    background: #FEF3C7;
+    color: #D97706;
+}
+
+/* Service Table */
+.monitoring-services table td {
+    vertical-align: middle;
+}
+
+/* Activity Indicators */
+.activity-icon {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+}
+
+.activity-recovery {
+    background: #27AB83;
+}
+
+.activity-alert {
+    background: #E12D39;
+}
+
+.activity-info {
+    background: #3B82F6;
+}
+
+/* Section Spacing */
+.monitoring-incidents,
+.monitoring-services,
+.monitoring-activity {
+    margin-top: 24px;
+}

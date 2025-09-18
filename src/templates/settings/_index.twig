@@ -1,0 +1,64 @@
+{% extends "_layouts/cp" %}
+{% import "_includes/forms" as forms %}
+
+{% block content %}
+    <form method="post" accept-charset="UTF-8" data-saveshortcut>
+        {{ csrfInput() }}
+        {{ actionInput('site-monitor/settings/save') }}
+        {{ redirectInput('site-monitor/settings') }}
+
+        {{ forms.lightswitchField({
+            label: "Enable Monitoring"|t('site-monitor'),
+            instructions: "Turn monitoring on or off"|t('site-monitor'),
+            id: 'enabled',
+            name: 'enabled',
+            on: settings.enabled,
+            errors: settings.getErrors('enabled')
+        }) }}
+
+        {{ forms.textField({
+            label: "Monitoring Interval"|t('site-monitor'),
+            instructions: "How often to check sites (in minutes)"|t('site-monitor'),
+            id: 'monitoringInterval',
+            name: 'monitoringInterval',
+            type: 'number',
+            value: settings.monitoringInterval,
+            min: 1,
+            errors: settings.getErrors('monitoringInterval')
+        }) }}
+
+        {{ forms.textField({
+            label: "Notification Email"|t('site-monitor'),
+            instructions: "Email address for monitoring alerts"|t('site-monitor'),
+            id: 'notificationEmail',
+            name: 'notificationEmail',
+            type: 'email',
+            value: settings.notificationEmail,
+            errors: settings.getErrors('notificationEmail')
+        }) }}
+
+        <div class="urls-field">
+            <h2>{{ "URLs to Monitor"|t('site-monitor') }}</h2>
+            {{ forms.editableTableField({
+                label: "URLs to Monitor"|t('site-monitor'),
+                instructions: "Add the URLs you want to monitor"|t('site-monitor'),
+                id: 'monitoringUrls',
+                name: 'monitoringUrls',
+                cols: [
+                    {
+                        type: 'url',
+                        heading: 'URL'|t('site-monitor'),
+                        code: true
+                    }
+                ],
+                rows: settings.monitoringUrls,
+                addRowLabel: "Add URL"|t('site-monitor'),
+                errors: settings.getErrors('monitoringUrls')
+            }) }}
+        </div>
+
+        <div class="buttons">
+            <button type="submit" class="btn submit">{{ "Save"|t('site-monitor') }}</button>
+        </div>
+    </form>
+{% endblock %}
