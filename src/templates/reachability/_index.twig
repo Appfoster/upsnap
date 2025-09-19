@@ -1,0 +1,22 @@
+{% extends '_layouts/cp' %}
+{% import '_includes/forms' as forms %}
+
+{% set tabs = {
+    status: { label: 'Current Status', url: url('site-monitor/reachability') },
+    history: { label: 'History', url: url('site-monitor/reachability/history') }
+} %}
+
+{% block actionButton %}
+    <div class="buttons">
+        <div class="btngroup">
+            <button type="button" class="btn submit" data-icon="refresh">
+                {{ 'Refresh'|t('site-monitor') }}
+            </button>
+        </div>
+    </div>
+{% endblock %}
+
+{% block content %}
+    <h2>Current Status (static)</h2>
+    <p>The site is up ✅</p>
+{% endblock %}

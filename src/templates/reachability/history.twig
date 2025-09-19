@@ -1,0 +1,26 @@
+{% extends '_layouts/cp' %}
+{% import '_includes/forms' as forms %}
+
+{% set title = "Uptime Monitoring"|t('site-monitor') %}
+
+{% set tabs = {
+    status: { label: 'Current Status', url: url('site-monitor/reachability') },
+    history: { label: 'History', url: url('site-monitor/reachability/history') }
+} %}
+
+{% set selectedTab = 'history' %}
+
+{% block actionButton %}
+    <div class="buttons">
+        <div class="btngroup">
+            <button type="button" class="btn submit" data-icon="refresh">
+                {{ 'Refresh'|t('site-monitor') }}
+            </button>
+        </div>
+    </div>
+{% endblock %}
+
+{% block content %}
+    <h2 class='mb-4 text-gray-600'>Uptime History (static)</h2>
+    <p>Showing past uptime data (dummy placeholder for now).</p>
+{% endblock %}
