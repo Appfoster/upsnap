@@ -11,6 +11,7 @@ use GuzzleHttp\Exception\RequestException;
 class ApiService extends Component
 {
     protected string $baseUrl;
+    protected string $apiVersion;
     protected string $authToken;
     protected Client $client;
 
@@ -19,11 +20,12 @@ class ApiService extends Component
         parent::__construct($config);
 
         // Ideally load from plugin settings
-        $this->baseUrl = 'https://api.appfoster.com';
+        $this->baseUrl = 'https://eagle-eye.appfoster.site';
+        $this->apiVersion = 'v1';
         $this->authToken ='test-token';
 
         $this->client = new Client([
-            'base_uri' => $this->baseUrl,
+            'base_uri' => $this->baseUrl . '/' . $this->apiVersion . '/',
             'timeout'  => 10.0,
         ]);
     }
@@ -41,7 +43,7 @@ class ApiService extends Component
             return json_decode((string) $response->getBody(), true);
         } catch (RequestException $e) {
             Craft::error("API GET failed: " . $e->getMessage(), __METHOD__);
-            return null;
+            throw $e;
         }
     }
 
@@ -58,7 +60,7 @@ class ApiService extends Component
             return json_decode((string) $response->getBody(), true);
         } catch (RequestException $e) {
             Craft::error("API POST failed: " . $e->getMessage(), __METHOD__);
-            return null;
+            throw $e;
         }
     }
 
