@@ -104,7 +104,7 @@
 
 				{% if data.details.httpStatus is defined %}
 					<tr>
-						<td class="details-label">{{ 'HTTP status code'|t('site-monitor') }}</td>
+						<td class="details-label">HTTP Response Code</td>
 						<td class="details-value">
 							{# {% set httpStatusClass = data.details.httpStatus >= 200 and data.details.httpStatus < 300 ? '' : (data.details.httpStatus >= 400 ? 'error' : 'warning') %} #}
 							{% set httpStatusClass = 
@@ -141,7 +141,7 @@
 						</td>
 					</tr>
 					<tr>
-						<td class="details-label">Redirects</td>
+						<td class="details-label">Redirect Paths</td>
 						<td class="details-value">
 							{% if data.details.redirects %}
 								{{ data.details.redirects|join(' → ') }}
@@ -158,11 +158,11 @@
 					</tr>
 
 					<tr>
-						<td class="details-label">Server</td>
+						<td class="details-label">Server Technology</td>
 						<td class="details-value">{{ data.details.server }}</td>
 					</tr>
 					<tr>
-						<td class="details-label">{{ "Content Type"|t('site-monitor') }}</td>
+						<td class="details-label">Content Type (MIME)}</td>
 						<td class="details-value">{{ data.details.contentType }}</td>
 					</tr>
 					<tr>
@@ -180,7 +180,6 @@
 					</tr>
 				</table>
 
-
 				{% if data.details.tls %}
 					<h2>{{ "TLS / Security"|t('site-monitor') }}</h2>
 					<table class="details-table">
@@ -189,15 +188,15 @@
 							<td class="details-value">{{ data.details.tls.version }}</td>
 						</tr>
 						<tr>
-							<td class="details-label">{{ "ALPN"|t('site-monitor') }}</td>
+							<td class="details-label">Protocol (ALPN)</td>
 							<td class="details-value">{{ data.details.tls.alpn }}</td>
 						</tr>
 						<tr>
-							<td class="details-label">{{ "Cipher Suite"|t('site-monitor') }}</td>
+							<td class="details-label">Encryption Method</td>
 							<td class="details-value">{{ data.details.tls.cipherSuite }}</td>
 						</tr>
 						<tr>
-							<td class="details-label">{{ "Server Name"|t('site-monitor') }}</td>
+							<td class="details-label">Certificate Host</td>
 							<td class="details-value">{{ data.details.tls.serverName }}</td>
 						</tr>
 					</table>
@@ -220,7 +219,7 @@
 			refreshBtn.addEventListener("click", function () {
 				window.location.reload(); // reloads the current page, calls actionIndex again
 			});
-			
+
 			if (showDetailsBtn && showLessBtn && moreDetails) {
 				showDetailsBtn.addEventListener('click', function (e) {
 					e.preventDefault();
