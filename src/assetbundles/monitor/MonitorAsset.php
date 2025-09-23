@@ -19,6 +19,11 @@ class MonitorAsset extends AssetBundle
             'css/monitor.css',
         ];
 
+        
+        $this->js = [
+            'js/main.js',
+        ];
+
         parent::init();
     }
 }
