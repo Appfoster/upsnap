@@ -21,12 +21,12 @@ class BrokenLinksController extends BaseController
         try {
             // TODO: replace this mock with the real API call once available.
             // Example real call (when ready):
-            // $response = SiteMonitor::$plugin->apiService->post('healthcheck', [
-            //     'url' => SiteMonitor::$healthCheckUrl,
-            //     'checks' => ['broken_links'],
-            // ]);
+            $response = SiteMonitor::$plugin->apiService->post('healthcheck', [
+                'url' => SiteMonitor::$healthCheckUrl,
+                'checks' => ['broken_links'],
+            ]);
 
-            $response = [
+            $mockData = [
                 "success" => true,
                 "data" => [
                     "update" => ["time" => 1758472884, "offset" => 160153],
@@ -79,9 +79,9 @@ class BrokenLinksController extends BaseController
                 "server" => "api02"
             ];
 
-            $serverStatus = $response['data']['server_status'] ?? 'ok';
-            $statusData = $response['data']['status'] ?? [];
-            $server = $response['data']['server'] ?? [];
+            $serverStatus = $mockData['data']['server_status'] ?? 'ok';
+            $statusData = $mockData['data']['status'] ?? [];
+            $server = $mockData['data']['server'] ?? [];
 
             // Build normalized broken links array safely
             $brokenLinks = [];
@@ -138,7 +138,7 @@ class BrokenLinksController extends BaseController
                     'totalPagesChecked' => $statusData['nr_pages_checked'] ?? 0,
                     'totalLinksScanned' => $server['total_detected_links'] ?? 0,
                     'errorsCount' => $server['number_of_errors'] ?? 0,
-                    'brokenLinks' => $brokenLinks,
+                    'brokenLinks' => $result['details']['broken_links'] ?? $brokenLinks,
                 ],
             ];
         } catch (\Throwable $e) {
