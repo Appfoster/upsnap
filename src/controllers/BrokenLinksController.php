@@ -59,7 +59,7 @@ class BrokenLinksController extends BaseController
                         "nr_pages_checked" => 8,
                         "resolved_results" => []
                     ],
-                    "server_status" => "warning",
+                    "server_status" => "error",
                     "serverid" => 18835,
                     "server" => [
                         "id" => 18835,

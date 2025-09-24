@@ -1,20 +1,13 @@
 document.addEventListener("DOMContentLoaded", function () {
-    const refreshBtn = document.getElementById("refresh-btn");
     const typeFilter = document.getElementById("type-filter");
     const statusFilter = document.getElementById("status-filter");
-
-    // Refresh functionality
-    if (refreshBtn) {
-        refreshBtn.addEventListener("click", function () {
-            window.location.reload();
-        });
-    }
 
     // Filter functionality
     function applyFilters() {
         const typeValue = typeFilter ? typeFilter.value : 'all';
         const statusValue = statusFilter ? statusFilter.value : 'all';
         const rows = document.querySelectorAll('.main-row');
+        let filteredRowsCount = 0;
 
         rows.forEach(row => {
             const rowType = row.dataset.type;
@@ -38,7 +31,25 @@ document.addEventListener("DOMContentLoaded", function () {
             if (expandableRow && expandableRow.classList.contains('expandable-row')) {
                 expandableRow.style.display = show ? (expandableRow.classList.contains('show') ? 'table-row' : 'none') : 'none';
             }
+
+            if (show) filteredRowsCount++;
         });
+         // Handle "No data" row
+        const tbody = document.querySelector('#broken-links-table tbody');
+        let noRow = tbody.querySelector('.no-results');
+
+        if (filteredRowsCount === 0) {
+            if (!noRow) {
+                noRow = document.createElement('tr');
+                noRow.classList.add('no-results');
+                noRow.innerHTML = `<td colspan="6">No data found for selected filters</td>`;
+                tbody.appendChild(noRow);
+            }
+        } else {
+            if (noRow) {
+                noRow.remove();
+            }
+        }
     }
 
     // Add filter event listeners

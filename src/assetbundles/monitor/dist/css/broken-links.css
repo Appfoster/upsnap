@@ -1,56 +1,4 @@
 /* Status Container Styles */
-.status-container {
-    background: #f8f9fa;
-    border: 1px solid #e9ecef;
-    border-radius: 8px;
-    padding: 24px;
-    margin-bottom: 24px;
-    transition: all 0.3s ease;
-}
-
-.status-container.warning {
-    background: #fff3cd;
-    border-color: #ffeaa7;
-}
-
-.status-container.error {
-    background: #f8d7da;
-    border-color: #f5c6cb;
-}
-
-.status-header {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-bottom: 8px;
-}
-
-.status-icon {
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: bold;
-    font-size: 16px;
-}
-
-.status-icon.success {
-    background: #d4edda;
-    color: #155724;
-}
-
-.status-icon.warning {
-    background: #fff3cd;
-    color: #856404;
-}
-
-.status-icon.error {
-    background: #f8d7da;
-    color: #721c24;
-}
-
 .status-title {
     margin: 0;
     font-size: 18px;
@@ -311,4 +259,10 @@
     .url-display {
         max-width: 200px;
     }
+}
+
+.no-results td {
+    text-align: center;
+    font-style: italic;
+    color: #666;
 }

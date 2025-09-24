@@ -25,18 +25,18 @@
 				{% if data.status == 'ok' %}
 					✓
 				{% elseif data.status == 'error' %}
-					✗
+					X
 				{% else %}
 					!
 				{% endif %}
 			</div>
 			<h3 class="status-title">
 				{% if data.status == 'ok' %}
-					{{ 'All links are up and running!'|t('site-monitor') }}
+					{{ 'All links are healthy and accessible!'|t('site-monitor') }}
 				{% elseif data.status == 'error' %}
-					{{ 'Broken Links Found!'|t('site-monitor') }}
+					{{ 'Attention: Broken links detected!'|t('site-monitor') }}
 				{% else %}
-					{{ 'Link Check Warning'|t('site-monitor') }}
+					{{ 'Some links may require your review'|t('site-monitor') }}
 				{% endif %}
 			</h3>
 		</div>
@@ -65,7 +65,7 @@
 					<div class="heading">{{ 'Broken Links'|t('site-monitor') }}</div>
 					<div>{{ data.details.errorsCount|default(0) }}</div>
 				</div>
-                <div class="field">
+				<div class="field">
 					<div class="heading">{{ 'Last Checked'|t('site-monitor') }}</div>
 					<div>{{ data.checkedAt|default('–') }}</div>
 				</div>
