@@ -114,6 +114,7 @@ class SiteMonitor extends Plugin
                     'site-monitor/security-certificates' => 'site-monitor/security-certificates/index',
                     'site-monitor/settings' => 'site-monitor/settings/index',
                     'site-monitor/broken-links' => 'site-monitor/broken-links/index',
+                    'site-monitor/lighthouse' => 'site-monitor/lighthouse/index',
                 ]);
             }
         );
@@ -127,10 +128,10 @@ class SiteMonitor extends Plugin
         $item = parent::getCpNavItem();
 
         $item['subnav'] = [
-            'dashboard' => [
-                'label' => Craft::t('site-monitor', 'Dashboard'),
-                'url' => 'site-monitor'
-            ],
+            // 'dashboard' => [
+            //     'label' => Craft::t('site-monitor', 'Dashboard'),
+            //     'url' => 'site-monitor'
+            // ],
             'reachability' => [
                 'label' => Craft::t('site-monitor', 'Reachability'),
                 'url' => 'site-monitor/reachability'
@@ -143,10 +144,14 @@ class SiteMonitor extends Plugin
                  'label' => Craft::t('site-monitor', 'Broken Links'),
                  'url' => 'site-monitor/broken-links'
             ],
-            'settings' => [
-                'label' => Craft::t('site-monitor', 'Settings'),
-                'url' => 'site-monitor/settings'
+            'lighthouse' => [
+                'label' => Craft::t('site-monitor', 'Lighthouse'),
+                'url' => 'site-monitor/lighthouse'
             ],
+            // 'settings' => [
+            //     'label' => Craft::t('site-monitor', 'Settings'),
+            //     'url' => 'site-monitor/settings'
+            // ],
         ];
 
         return $item;

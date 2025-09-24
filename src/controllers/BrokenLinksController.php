@@ -138,7 +138,7 @@ class BrokenLinksController extends BaseController
                     'totalPagesChecked' => $statusData['nr_pages_checked'] ?? 0,
                     'totalLinksScanned' => $server['total_detected_links'] ?? 0,
                     'errorsCount' => $server['number_of_errors'] ?? 0,
-                    'brokenLinks' => $result['details']['broken_links'] ?? $brokenLinks,
+                    'brokenLinks' => $response['details']['broken_links'] ?? $brokenLinks,
                 ],
             ];
         } catch (\Throwable $e) {
