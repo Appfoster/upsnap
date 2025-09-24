@@ -57,58 +57,7 @@ class SecurityCertificatesController extends BaseController
                             'san' => ['appfoster.com', 'www.appfoster.com'],
                             'wildcard' => false,
                         ],
-                        'chain' => [
-                            [
-                                'depth' => 0,
-                                'type' => 'leaf',
-                                'info' => [
-                                    'subject' => ['commonName' => 'appfoster.com'],
-                                    'issuer' => ['countryName' => 'US', 'organizationName' => "Let's Encrypt", 'commonName' => 'E8'],
-                                    'notBefore' => '2025-09-22T21:27:21.000Z',
-                                    'notAfter' => '2025-12-21T21:27:20.000Z',
-                                    'isExpired' => true,
-                                    'daysUntilExpiry' => 89,
-                                    'publicKey' => ['algorithm' => 'ECC', 'curve' => 'P-256'],
-                                    'serialNumber' => '06:C3:23:C8:00:CC:FC:60:EA:49:7A:C8:07:1A:8E:45:81:D9',
-                                    'signatureAlgorithm' => 'ecdsa-with-SHA384',
-                                    'extensions' => [
-                                        'keyUsage' => 'Present',
-                                        'extKeyUsage' => 'Present',
-                                        'basicConstraints' => ['isCA' => false],
-                                    ],
-                                ],
-                            ],
-                            [
-                                'depth' => 1,
-                                'type' => 'intermediate',
-                                'info' => [
-                                    'subject' => ['countryName' => 'US', 'organizationName' => "Let's Encrypt", 'commonName' => 'E8'],
-                                    'issuer' => ['countryName' => 'US', 'organizationName' => 'Internet Security Research Group', 'commonName' => 'ISRG Root X1'],
-                                    'notBefore' => '2024-03-13T00:00:00.000Z',
-                                    'notAfter' => '2027-03-12T23:59:59.000Z',
-                                    'isExpired' => false,
-                                    'daysUntilExpiry' => 12,
-                                    'publicKey' => ['algorithm' => 'ECC', 'curve' => 'P-384'],
-                                    'serialNumber' => '63:95:93:63:C2:4E:70:82:71:59:18:BF:C3:D7:ED:56',
-                                    'signatureAlgorithm' => 'sha256WithRSAEncryption',
-                                ],
-                            ],
-                            [
-                                'depth' => 2,
-                                'type' => 'root',
-                                'info' => [
-                                    'subject' => ['countryName' => 'US', 'organizationName' => 'Internet Security Research Group', 'commonName' => 'ISRG Root X1'],
-                                    'issuer' => ['countryName' => 'US', 'organizationName' => 'Internet Security Research Group', 'commonName' => 'ISRG Root X1'],
-                                    'notBefore' => '2015-06-04T11:04:38.000Z',
-                                    'notAfter' => '2035-06-04T11:04:38.000Z',
-                                    'isExpired' => false,
-                                    'daysUntilExpiry' => 3541,
-                                    'publicKey' => ['algorithm' => 'RSA', 'bits' => 4096],
-                                    'serialNumber' => '00:82:10:CF:B0:D2:40:E3:59:44:63:E0:BB:63:82:8B:00',
-                                    'signatureAlgorithm' => 'sha256WithRSAEncryption',
-                                ],
-                            ],
-                        ],
+                        'chain' => $meta['chain'] ?? [],
                     ]
                 ];
             }
