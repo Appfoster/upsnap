@@ -24,39 +24,47 @@ class SecurityCertificatesController extends BaseController
                 'checks' => ["ssl"],
             ]);
 
+            if (isset($response['result']['details']['ssl']['error'])) {
+                Craft::$app->getSession()->setError('Something went wrong: ' . $response['result']['details']['ssl']['error']);
+                return $this->renderTemplate('site-monitor/security-certificates/_index', [
+                    'data' => [
+                        'status' => 'error',
+                        'error' => $response['result']['details']['ssl']['error'] ?? 'Something went wrong',
+                        'url' => $response['url'] ?? '',
+                        'checkedAt' => $response['checkedAt'] ?? '',
+                        'duration' => isset($response['result']['durationMs']) ? $response['result']['durationMs'] . ' ms' : '-',
+                    ],
+                    'plugin' => SiteMonitor::$plugin,
+                    'title' => Craft::t('site-monitor', 'Security Certificates'),
+                    'selectedSubnavItem' => 'security-certificates',
+                ]);
+            }
+
             // Transform API response to our expected format for SSL certificate
             if (isset($response['result'])) {
                 $result = $response['result'];
                 $ssl = $result['details']['ssl'] ?? null;
                 $meta = $ssl['meta'] ?? [];
 
+                $leafCertificate = null;
+                if (isset($meta['chain']) && is_array($meta['chain'])) {
+                    foreach ($meta['chain'] as $cert) {
+                        if (($cert['depth'] ?? null) === 0 && ($cert['type'] ?? null) === 'leaf') {
+                            $leafCertificate = $cert['info'] ?? null;
+                            break;
+                        }
+                    }
+                }
+
                 $data = [
                     'status' => $ssl['ok'] ? 'ok' : 'error',
                     'message' => $result['summary']['message'] ?? 'SSL check completed',
                     'url' => $response['url'] ?? '',
                     'checkedAt' => $response['checkedAt'] ?? '',
+                    'duration' => isset($result['durationMs']) ? $result['durationMs'] . ' ms' : 'Unknown',
                     'details' => [
-                        'daysRemaining' => $meta['daysRemaining'] ?? null,
-                        'issuer' => $meta['issuer'] ?? '',
-                        'notAfter' => !empty($meta['notAfter'])
-                            ? (new DateTime($meta['notAfter']))->format('d M Y H:i:s')
-                            : '',
-                        'notBefore' => !empty($meta['notBefore'])
-                            ? (new DateTime($meta['notBefore']))->format('d M Y H:i:s')
-                            : '',
-                        'subject' => $meta['subject'] ?? '',
-                        'duration' => isset($result['durationMs']) ? $result['durationMs'] . ' ms' : 'Unknown',
-
-                        // --- Mocked Additional Data ---
-                        'certificateMetadata' => [
-                            'serialNumber' => '06:C3:23:C8:00:CC:FC:60:EA:49:7A:C8:07:1A:8E:45:81:D9',
-                            'signatureAlgorithm' => 'ecdsa-with-SHA384',
-                            'publicKeyAlgorithm' => 'ECC',
-                        ],
-                        'domainCoverage' => [
-                            'san' => ['appfoster.com', 'www.appfoster.com'],
-                            'wildcard' => false,
-                        ],
+                        'leafCertificate' => $leafCertificate,
+                        'domainCoverage' => $meta['domainCoverage'] ?? [],
                         'chain' => $meta['chain'] ?? [],
                     ]
                 ];
