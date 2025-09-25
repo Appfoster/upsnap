@@ -18,6 +18,35 @@
 
 
 {% block content %}
+	{% set statusClass = data.status == 'ok' ? 'success' : (data.status == 'error' ? 'error' : 'warning') %}
+	{% set containerClass = data.status == 'ok' ? '' : (data.status == 'error' ? 'error' : 'warning') %}
+
+	<div class="status-container {{ containerClass }}">
+		<div class="status-header">
+			<div class="status-icons {{ statusClass }}">
+				{% if data.status == 'ok' %}
+					✓
+				{% elseif data.status == 'error' %}
+					✗
+				{% else %}
+					!
+				{% endif %}
+			</div>
+			<h3 class="status-title">
+				{% if data.status == 'ok' %}
+					{{ 'Everything is running smoothly!'|t('site-monitor') }}
+				{% elseif data.status == 'error' %}
+					{{ 'Server is experiencing issues!'|t('site-monitor') }}
+				{% else %}
+					{{ 'There are some client-side issues!'|t('site-monitor') }}
+				{% endif %}
+			</h3>
+		</div>
+		{% if data.error is defined  %}
+			<p class="status-message">{{ data.error }}</p>
+		{% endif %}
+	</div>
+
 
 	<div class="pane">
 		<div class="meta read-only">
@@ -36,7 +65,7 @@
 
 				<div class="field">
 					<div class="heading">{{ "Response Time"|t('site-monitor') }}</div>
-					<div>{{ data.details.duration ?? '–' }}</div>
+					<div>{{ data.duration ?? '–' }}</div>
 				</div>
 			</div>
 		</div>
@@ -47,59 +76,74 @@
 			<h3 class="details-title">{{ 'Certificate details'|t('site-monitor') }}</h3>
 
 			<table class="details-table">
+				{% set leafCertificate = data.details.leafCertificate %}
 				<tr>
 					<td class="details-label">{{ 'Issuer'|t('site-monitor') }}</td>
 					<td class="details-value">
-						{{ data.details.issuer|default('Unknown'|t('site-monitor')) }}
+						{{ leafCertificate.issuer.commonName|default('Unknown'|t('site-monitor')) }}
 					</td>
 				</tr>
 				<tr>
 					<td class="details-label">{{ 'Not before'|t('site-monitor') }}</td>
 					<td class="details-value">
-						{{ data.details.notBefore|default('Unknown'|t('site-monitor')) }}
+						{{ leafCertificate.notBefore is defined ? leafCertificate.notBefore|date("M j, Y") : 'Unknown'|t('site-monitor') }}
 					</td>
 				</tr>
 				<tr>
 					<td class="details-label">{{ 'Not after'|t('site-monitor') }}</td>
 					<td class="details-value">
-						{{ data.details.notAfter|default('Unknown'|t('site-monitor')) }}
+						{{ leafCertificate.notAfter is defined ? leafCertificate.notAfter|date("M j, Y") : 'Unknown'|t('site-monitor') }}
 					</td>
 				</tr>
 				<tr>
 					<td class="details-label">{{ 'Expiry in days'|t('site-monitor') }}</td>
 					<td class="details-value">
-						{{ data.details.daysRemaining|default('Unknown'|t('site-monitor')) }}
+						{{ leafCertificate.daysUntilExpiry|default('Unknown'|t('site-monitor')) }}
 					</td>
 				</tr>
-
 				<tr>
 					<td class="details-label">{{ 'Serial number'|t('site-monitor') }}</td>
 					<td class="details-value">
-						{{ data.details.certificateMetadata['serialNumber']|default('Unknown'|t('site-monitor')) }}
+						{{ leafCertificate.serialNumber|default('Unknown'|t('site-monitor')) }}
 					</td>
 				</tr>
 				<tr>
 					<td class="details-label">{{ 'Signature alglorithm'|t('site-monitor') }}</td>
 					<td class="details-value">
-						{{ data.details.certificateMetadata['signatureAlgorithm']|default('Unknown'|t('site-monitor')) }}
+						{{ leafCertificate.signatureAlgorithm|default('Unknown'|t('site-monitor')) }}
 					</td>
 				</tr>
 				<tr>
 					<td class="details-label">{{ 'Public key alogorithm'|t('site-monitor') }}</td>
-					<td class="details-value">
-						{{ data.details.certificateMetadata['publicKeyAlgorithm']|default('Unknown'|t('site-monitor')) }}
-					</td>
+					{% if data.details.leafCertificate is defined and data.details.leafCertificate is not null %}
+						{% set publicKey = data.details.leafCertificate.publicKey %}
+						<td class="details-value">
+							{% if publicKey.algorithm == 'ECC' %}
+								{{ publicKey.algorithm }}
+								({{ publicKey.curve }})
+							{% elseif publicKey.algorithm == 'RSA' %}
+								{{ publicKey.algorithm }}
+								({{ publicKey.bits }}
+								bits)
+							{% else %}
+								{{ publicKey.algorithm|default('Unknown'|t('site-monitor')) }}
+							{% endif %}
+						</td>
+					{% else %}
+						<td class="details-value">
+							{{ 'Unknown'|t('site-monitor') }}
+						</td>
+					{% endif %}
 				</tr>
 			</table>
 			<br>
 			<div id='more-details'>
-
 				<h3 class="details-title">{{ 'Domain Coverage'|t('site-monitor') }}</h3>
 				<table class="details-table">
 					<tr>
 						<td class="details-label">{{ 'Domains Covered'|t('site-monitor') }}</td>
 						<td class="details-value">
-							{{ data.details.domainCoverage.san|join(', ') }}
+							{{ data.details.domainCoverage.sans|join(', ') }}
 						</td>
 					</tr>
 					<tr>

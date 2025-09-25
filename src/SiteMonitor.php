@@ -127,10 +127,10 @@ class SiteMonitor extends Plugin
         $item = parent::getCpNavItem();
 
         $item['subnav'] = [
-            'dashboard' => [
-                'label' => Craft::t('site-monitor', 'Dashboard'),
-                'url' => 'site-monitor'
-            ],
+            // 'dashboard' => [
+            //     'label' => Craft::t('site-monitor', 'Dashboard'),
+            //     'url' => 'site-monitor'
+            // ],
             'reachability' => [
                 'label' => Craft::t('site-monitor', 'Reachability'),
                 'url' => 'site-monitor/reachability'
@@ -143,10 +143,10 @@ class SiteMonitor extends Plugin
                  'label' => Craft::t('site-monitor', 'Broken Links'),
                  'url' => 'site-monitor/broken-links'
             ],
-            'settings' => [
-                'label' => Craft::t('site-monitor', 'Settings'),
-                'url' => 'site-monitor/settings'
-            ],
+            // 'settings' => [
+            //     'label' => Craft::t('site-monitor', 'Settings'),
+            //     'url' => 'site-monitor/settings'
+            // ],
         ];
 
         return $item;
