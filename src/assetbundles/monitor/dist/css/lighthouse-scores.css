@@ -153,7 +153,7 @@
     flex-shrink: 0;
 }
 
-.metric-status.success {
+.metric-status.good {
     background: #009967;
 }
 
@@ -182,7 +182,7 @@
     margin: 0;
 }
 
-.metric-value.success {
+.metric-value.good {
     color: #009967 !important;
 }
 

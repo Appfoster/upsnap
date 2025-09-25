@@ -34,13 +34,29 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     }
 
-    // Device tab switching
     deviceTabs.forEach(tab => {
         tab.addEventListener('click', function () {
             deviceTabs.forEach(t => t.classList.remove('active'));
             this.classList.add('active');
             currentDevice = this.dataset.device;
-            renderLighthouseData();
+
+            // ✅ Show loader
+            document.getElementById("loading-overlay").style.display = "flex";
+
+            // ✅ Call controller with device param
+            Craft.sendActionRequest('POST', 'site-monitor/lighthouse/index', {
+                data: { device: currentDevice }
+            })
+                .then(response => {
+                    lighthouseData = response.data; // Replace local data
+                    renderLighthouseData(); // Re-render
+                })
+                .catch(error => {
+                    console.error("Failed to fetch Lighthouse data:", error);
+                })
+                .finally(() => {
+                    document.getElementById("loading-overlay").style.display = "none";
+                });
         });
     });
 
@@ -96,50 +112,41 @@ document.addEventListener("DOMContentLoaded", function () {
 
     function createMetricItem(name, value, status) {
         return `
-                    <div class="metric-item">
-                        <div class="metric-status ${status}"></div>
-                        <div class="metric-content">
-                            <h4 class="metric-name">${name}</h4>
-                            <p class="metric-value ${status}">${value}</p>
-                        </div>
+                <div class="metric-item">
+                    <div class="metric-status ${status}"></div>
+                    <div class="metric-content">
+                        <h4 class="metric-name">${name}</h4>
+                        <p class="metric-value ${status}">${value}</p>
                     </div>
-                `;
+                </div>
+            `;
     }
 
     function renderLighthouseData() {
-        const pages = lighthouseData?.result?.details?.lighthouse?.pages || [];
+        const pages = lighthouseData?.result?.details.lighthouse?.meta || [];
         if (pages.length === 0) {
             scoresContainer.innerHTML = '<p>No lighthouse data available</p>';
             performanceContainer.innerHTML = '';
             return;
         }
 
-        const page = pages[0];
-        const strategy = page.strategies?.[currentDevice];
-
-        if (!strategy) {
-            scoresContainer.innerHTML = `<p>No ${currentDevice} data available</p>`;
-            performanceContainer.innerHTML = '';
-            return;
-        }
-
         // Render core scores
-        const meta = strategy.meta || {};
-        const performance = strategy.performance || {};
+        const meta = lighthouseData?.result?.details.lighthouse?.meta || {};
+        const performance = meta.performance || {};
 
-        const performanceScore = performance.score ? getPerformanceScoreFromDecimal(performance.score) : 0;
+        const performanceScore = performance.score ?? 0;
 
         let scoresHTML = '';
         scoresHTML += createScoreCircle(performanceScore, 'Performance');
 
         if (meta.accessibility) {
-            scoresHTML += createScoreCircle(meta.accessibility, 'Accessibility');
+            scoresHTML += createScoreCircle(meta.accessibility.score, 'Accessibility');
         }
         if (meta.bestPractices) {
-            scoresHTML += createScoreCircle(meta.bestPractices, 'Best Practices');
+            scoresHTML += createScoreCircle(meta.bestPractices.score, 'Best Practices');
         }
         if (meta.seo) {
-            scoresHTML += createScoreCircle(meta.seo, 'SEO');
+            scoresHTML += createScoreCircle(meta.seo.score, 'SEO');
         }
 
         scoresContainer.innerHTML = scoresHTML;
