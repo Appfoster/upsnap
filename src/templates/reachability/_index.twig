@@ -42,9 +42,9 @@
 				{% endif %}
 			</h3>
 		</div>
-		<p class="status-message">
-			{{ data.message|default('Status unknown'|t('site-monitor')) }}
-		</p>
+		{% if data.error is defined  %}
+			<p class="status-message">{{ data.error }}</p>
+		{% endif %}
 	</div>
 
 	<div class="pane">
@@ -64,7 +64,7 @@
 
 				<div class="field">
 					<div class="heading">{{ "Response Time"|t('site-monitor') }}</div>
-					<div>{{ data.details.duration ?? '–' }}</div>
+					<div>{{ data.duration ?? '–' }}</div>
 				</div>
 			</div>
 		</div>
@@ -106,7 +106,6 @@
 					<tr>
 						<td class="details-label">HTTP Response Code</td>
 						<td class="details-value">
-							{# {% set httpStatusClass = data.details.httpStatus >= 200 and data.details.httpStatus < 300 ? '' : (data.details.httpStatus >= 400 ? 'error' : 'warning') %} #}
 							{% set httpStatusClass = 
 								data.details.httpStatus >= 100 and data.details.httpStatus < 200 ? 'info' :
 								data.details.httpStatus >= 200 and data.details.httpStatus < 300 ? 'success' :

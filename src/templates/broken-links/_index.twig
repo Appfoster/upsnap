@@ -34,15 +34,15 @@
 				{% if data.status == 'ok' %}
 					{{ 'All links are healthy and accessible!'|t('site-monitor') }}
 				{% elseif data.status == 'error' %}
-					{{ 'Attention: Broken links detected!'|t('site-monitor') }}
+					{{ 'Server is experiencing issues!'|t('site-monitor') }}
 				{% else %}
-					{{ 'Some links may require your review'|t('site-monitor') }}
+					{{ 'There are some client-side issues!'|t('site-monitor') }}
 				{% endif %}
 			</h3>
 		</div>
-		<p class="status-message">
-			{{ data.message|default('Status unknown'|t('site-monitor')) }}
-		</p>
+		{% if data.error is defined  %}
+			<p class="status-message">{{ data.error }}</p>
+		{% endif %}
 	</div>
 
 

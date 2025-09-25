@@ -23,6 +23,23 @@ class ReachabilityController extends BaseController
                 'url' => SiteMonitor::$healthCheckUrl,
                 "checks" => ["uptime"],
             ]);
+            
+
+             if (isset($response['result']['details']['uptime']['error'])) {
+                Craft::$app->getSession()->setError('Something went wrong: ' . $response['result']['details']['uptime']['error']);
+                return $this->renderTemplate('site-monitor/reachability/_index', [
+                    'data' => [
+                        'status' => 'error',
+                        'error' => $response['result']['details']['uptime']['error'] ?? 'Something went wrong',
+                        'url' => $response['url'] ?? '',
+                        'checkedAt' => $response['checkedAt'] ?? '',
+                        'duration' => isset($response['result']['durationMs']) ? $response['result']['durationMs'] . ' ms' : '-',
+                    ],
+                    'plugin' => SiteMonitor::$plugin,
+                    'title' => Craft::t('site-monitor', 'Reachability'),
+                    'selectedSubnavItem' => 'reachability',
+                ]);
+            }
 
             // Transform API response to our expected format
             if (isset($response['result'])) {
@@ -35,8 +52,8 @@ class ReachabilityController extends BaseController
                     'message' => $result['summary']['message'] ?? 'Status check completed',
                     'url' => $response['url'] ?? '',
                     'checkedAt' => $response['checkedAt'] ?? '',
+                    'duration' => isset($result['durationMs']) ? $result['durationMs'] . ' ms' : 'Unknown',
                     'details' => [
-                        'duration' => isset($result['durationMs']) ? $result['durationMs'] . ' ms' : 'Unknown',
                         'httpStatus' => $meta['statusCode'] ?? 0,
                         'finalURL' => $meta['finalURL'] ?? '',
                         'redirects' => $meta['redirects'] ?? null,
@@ -46,10 +63,7 @@ class ReachabilityController extends BaseController
                         'contentLength' => $meta['contentLength'] ?? 0,
                         'pageTitle' => $meta['title'] ?? '',
                         'tls' => $meta['tls'] ?? null,
-                        'monitoredFrom' => [
-                            'location' => $meta['location'] ?? '',
-                            'ip' => $meta['ip'] ?? '',
-                        ],
+                        'monitoredFrom' => $meta['monitoredFrom'] ?? null,
                     ]
                 ];
             }
@@ -60,8 +74,8 @@ class ReachabilityController extends BaseController
         return $this->renderTemplate('site-monitor/reachability/_index', [
             'data' => $data,
             'plugin' => SiteMonitor::$plugin,
-            'title' => Craft::t('site-monitor', 'Uptime'),
-            'selectedSubnavItem' => 'uptime',
+            'title' => Craft::t('site-monitor', 'Reachability'),
+            'selectedSubnavItem' => 'reachability',
         ]);
     }
 
