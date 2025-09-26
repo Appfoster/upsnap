@@ -3,7 +3,7 @@
 namespace appfoster\upsnap;
 
 /**
- * Site Monitor Constants
+ * Upsnap Constants
  */
 class Constants
 {

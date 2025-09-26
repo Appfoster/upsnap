@@ -5,7 +5,6 @@ namespace appfoster\upsnap\controllers;
 use appfoster\upsnap\Upsnap;
 use Craft;
 use yii\web\Response;
-use DateTime;
 
 class BrokenLinksController extends BaseController
 {

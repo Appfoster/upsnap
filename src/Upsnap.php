@@ -31,10 +31,10 @@ class Upsnap extends Plugin
     /**
      * @inheritdoc
      */
-    protected function createSettingsModel(): ?Settings
-    {
-        return new Settings();
-    }
+    // protected function createSettingsModel(): Settings
+    // {
+    //     return new Settings();
+    // }
 
     /**
      * @inheritdoc
@@ -75,12 +75,12 @@ class Upsnap extends Plugin
             Plugins::class,
             Plugins::EVENT_AFTER_INSTALL_PLUGIN,
             function (PluginEvent $event) {
-                Craft::info('Website Monitor plugin installed', __METHOD__);
+                Craft::info('Upsnap plugin installed', __METHOD__);
 
                 if ($event->plugin === $this) {
                     $request = Craft::$app->getRequest();
                     if ($request->isCpRequest) {
-                        Craft::info('Website Monitor plugin redirect url will be set', __METHOD__);
+                        Craft::info('Upsnap plugin redirect url will be set', __METHOD__);
                     }
                 }
             }

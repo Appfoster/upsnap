@@ -1,25 +1,25 @@
 <?php
-namespace appfoster\upsnap\assetbundles\monitor;
+namespace appfoster\upsnap\assetbundles\upsnap;
 
 use craft\web\AssetBundle;
 use craft\web\assets\cp\CpAsset;
 
-class DomainCheckAsset extends AssetBundle
+class MixedContentAsset extends AssetBundle
 {
     public function init()
     {
-        $this->sourcePath = "@appfoster/upsnap/assetbundles/monitor/dist";
+        $this->sourcePath = "@appfoster/upsnap/assetbundles/upsnap/dist";
 
         $this->depends = [
             CommonAsset::class,
         ];
 
         $this->css = [
-            'css/domain-check.css',
+            'css/mixed-content.css',
         ];
 
         $this->js = [
-            'js/domainCheck.js',
+            'js/mixedContent.js',
         ];
 
         parent::init();

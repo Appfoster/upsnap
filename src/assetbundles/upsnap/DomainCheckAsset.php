@@ -1,25 +1,25 @@
 <?php
-namespace appfoster\upsnap\assetbundles\monitor;
+namespace appfoster\upsnap\assetbundles\upsnap;
 
 use craft\web\AssetBundle;
 use craft\web\assets\cp\CpAsset;
 
-class ReachabilityAsset extends AssetBundle
+class DomainCheckAsset extends AssetBundle
 {
     public function init()
     {
-        $this->sourcePath = "@appfoster/upsnap/assetbundles/monitor/dist";
+        $this->sourcePath = "@appfoster/upsnap/assetbundles/upsnap/dist";
 
         $this->depends = [
             CommonAsset::class,
         ];
 
         $this->css = [
-            'css/reachability.css',
+            'css/domain-check.css',
         ];
 
         $this->js = [
-            'js/reachability.js',
+            'js/domainCheck.js',
         ];
 
         parent::init();

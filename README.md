@@ -1,4 +1,4 @@
-# Site Monitor
+# Upsnap
 
 A comprehensive monitoring plugin for Craft CMS that provides real-time insights into your website's health, performance, and security.
 
@@ -6,7 +6,7 @@ A comprehensive monitoring plugin for Craft CMS that provides real-time insights
 
 ## Features
 
-Site Monitor provides a complete suite of monitoring tools to keep your Craft CMS site healthy and performing optimally:
+Upsnap provides a complete suite of monitoring tools to keep your Craft CMS site healthy and performing optimally:
 
 ### 🔍 **Reachability Monitoring**
 - Real-time uptime monitoring
@@ -67,14 +67,14 @@ composer require appfoster/upsnap
 ```
 
 3. In the Craft Control Panel, go to **Settings → Plugins**
-4. Find **Site Monitor** in the plugin list and click **Install**
+4. Find **Upsnap** in the plugin list and click **Install**
 
 ### Manual Installation
 
 1. Download the plugin files from the [GitHub repository](https://github.com/Appfoster/upsnap)
 2. Extract the archive and place the `upsnap` folder in your `craft/plugins/` directory
 3. In the Craft Control Panel, go to **Settings → Plugins**
-4. Find **Site Monitor** in the plugin list and click **Install**
+4. Find **Upsnap** in the plugin list and click **Install**
 
 ## Configuration
 
@@ -91,7 +91,7 @@ SITE_MONITOR_URL=https://your-site.com
 
 After installation, configure the plugin through the Craft Control Panel:
 
-1. Go to **Settings → Plugins → Site Monitor**
+1. Go to **Settings → Plugins → Upsnap**
 2. Configure the following options:
    - **Enable Monitoring**: Toggle monitoring on/off
    - **Monitoring Interval**: Set check frequency (minutes)
@@ -103,7 +103,7 @@ After installation, configure the plugin through the Craft Control Panel:
 ### Accessing the Plugin
 
 1. Log into your Craft Control Panel
-2. Navigate to **Site Monitor** in the main navigation
+2. Navigate to **Upsnap** in the main navigation
 3. Choose from the available monitoring sections
 
 ### Monitoring Sections
@@ -253,4 +253,4 @@ This plugin is proprietary software. See the LICENSE file for details.
 
 **Built with ❤️ by [Appfoster](http://www.appfoster.com/)**
 
-*Keep your Craft CMS sites healthy and performing at their best with Site Monitor.*
+*Keep your Craft CMS sites healthy and performing at their best with Upsnap.*

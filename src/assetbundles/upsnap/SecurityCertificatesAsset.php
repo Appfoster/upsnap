@@ -1,5 +1,5 @@
 <?php
-namespace appfoster\upsnap\assetbundles\monitor;
+namespace appfoster\upsnap\assetbundles\upsnap;
 
 use craft\web\AssetBundle;
 
@@ -7,7 +7,7 @@ class SecurityCertificatesAsset extends AssetBundle
 {
     public function init()
     {
-        $this->sourcePath = "@appfoster/upsnap/assetbundles/monitor/dist";
+        $this->sourcePath = "@appfoster/upsnap/assetbundles/upsnap/dist";
 
 
         $this->depends = [
