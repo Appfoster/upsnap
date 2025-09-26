@@ -1,0 +1,187 @@
+{% extends '_layouts/cp' %}
+{% import '_includes/forms' as forms %}
+
+{% set title = "Domain Check"|t('site-monitor') %}
+
+{% block actionButton %}
+	<div class="buttons">
+		<div class="btngroup">
+			<button type="button" class="btn submit" data-icon="refresh" id="refresh-btn">
+				{{ 'Refresh'|t('site-monitor') }}
+			</button>
+		</div>
+	</div>
+{% endblock %}
+
+{% block content %}
+
+	{% set statusClass = data.status == 'ok' ? 'success' : (data.status == 'error' ? 'error' : 'warning') %}
+	{% set containerClass = data.status == 'ok' ? '' : (data.status == 'error' ? 'error' : 'warning') %}
+
+	<div class="status-container {{ containerClass }}">
+		<div class="status-header">
+			<div class="status-icon {{ statusClass }}">
+				{% if data.status == 'ok' %}
+					✓
+				{% elseif data.status == 'error' %}
+					✗
+				{% else %}
+					!
+				{% endif %}
+			</div>
+			<h3 class="status-title">
+				{% if data.status == 'ok' %}
+					{{ 'Domain is active and valid!'|t('site-monitor') }}
+				{% elseif data.status == 'error' %}
+					{{ 'Domain check failed!'|t('site-monitor') }}
+				{% else %}
+					{{ 'Domain has some warnings!'|t('site-monitor') }}
+				{% endif %}
+			</h3>
+		</div>
+		{% if data.error is defined and data.error|length %}
+			<ul class="error-list">
+				{% for error in data.error %}
+					<li>{{ error }}</li>
+				{% endfor %}
+			</ul>
+		{% endif %}
+	</div>
+
+	<div class="pane">
+		<div class="meta read-only">
+			<div class="data fullwidth">
+				<div class="field">
+					<div class="heading">{{ "Monitored URL"|t('site-monitor') }}</div>
+					<div>
+						<a href="{{ data.url }}" target="_blank">{{ data.url }}</a>
+					</div>
+				</div>
+
+				<div class="field">
+					<div class="heading">{{ "Last Checked"|t('site-monitor') }}</div>
+					<div>{{ data.checkedAt|date("d M Y, H:i:s") }}</div>
+				</div>
+
+				<div class="field">
+					<div class="heading">{{ "Response Time"|t('site-monitor') }}</div>
+					<div>{{ data.duration ?? '–' }}</div>
+				</div>
+			</div>
+		</div>
+	</div>
+
+
+	{% if data.details is defined %}
+		<div class="details-section">
+			<h3 class="details-title">{{ 'General Info'|t('site-monitor') }}</h3>
+			<table class="details-table">
+				<tr>
+					<td class="details-label">{{ 'CNAME'|t('site-monitor') }}</td>
+					<td class="details-value">{{ data.details.cname ?? '–' }}</td>
+				</tr>
+				<tr>
+					<td class="details-label">{{ 'Host'|t('site-monitor') }}</td>
+					<td class="details-value">{{ data.details.host ?? '–' }}</td>
+				</tr>
+				<tr>
+					<td class="details-label">{{ 'Supported'|t('site-monitor') }}</td>
+					<td class="details-value">
+						{{ data.details.supported ? 'Yes'|t('site-monitor') : 'No'|t('site-monitor') }}
+					</td>
+				</tr>
+			</table>
+			<div id='more-details'>
+				<h3 class="details-title">{{ 'DNS Records'|t('site-monitor') }}</h3>
+				<table class="details-table">
+					<tr>
+						<td class="details-label">{{ 'IPv4'|t('site-monitor') }}</td>
+						<td class="details-value">
+							{% if data.details.ipv4 is not empty %}
+								{{ data.details.ipv4|join(', ') }}
+							{% else %}
+								–
+							{% endif %}
+						</td>
+					</tr>
+					<tr>
+						<td class="details-label">{{ 'IPv6'|t('site-monitor') }}</td>
+						<td class="details-value">{{ data.details.ipv6 ?? '–' }}</td>
+					</tr>
+					<tr>
+						<td class="details-label">{{ 'MX Records'|t('site-monitor') }}</td>
+						<td class="details-value">{{ data.details.mxCount }}</td>
+					</tr>
+					<tr>
+						<td class="details-label">{{ 'NS Records'|t('site-monitor') }}</td>
+						<td class="details-value">{{ data.details.nsCount }}</td>
+					</tr>
+					<tr>
+						<td class="details-label">{{ 'TXT Records'|t('site-monitor') }}</td>
+						<td class="details-value">{{ data.details.txtCount }}</td>
+					</tr>
+				</table>
+
+				<h3 class="details-title">{{ 'Domain Lifecycle'|t('site-monitor') }}</h3>
+				<table class="details-table">
+					<tr>
+						<td class="details-label">{{ 'Registered On'|t('site-monitor') }}</td>
+						<td class="details-value">
+							{{ data.details.domainRegistered ? data.details.domainRegistered|date("d M Y") : '–' }}
+						</td>
+					</tr>
+					<tr>
+						<td class="details-label">{{ 'Expiration Date'|t('site-monitor') }}</td>
+						<td class="details-value">
+							{{ data.details.domainExpirationDate ? data.details.domainExpirationDate|date("d M Y") : '–' }}
+						</td>
+					</tr>
+					<tr>
+						<td class="details-label">{{ 'Days Until Expiration'|t('site-monitor') }}</td>
+						<td class="details-value">{{ data.details.domainDays ?? '–' }}</td>
+					</tr>
+					<tr>
+						<td class="details-label">{{ 'Expired'|t('site-monitor') }}</td>
+						<td class="details-value">{{ data.details.domainExpired ? 'Yes' : 'No' }}</td>
+					</tr>
+					<tr>
+						<td class="details-label">{{ 'Expiring Soon'|t('site-monitor') }}</td>
+						<td class="details-value">{{ data.details.domainExpiring ? 'Yes' : 'No' }}</td>
+					</tr>
+					<tr>
+						<td class="details-label">{{ 'Last Changed'|t('site-monitor') }}</td>
+						<td class="details-value">
+							{{ data.details.lastChanged ? data.details.lastChanged|date("d M Y") : '–' }}
+						</td>
+					</tr>
+					<tr>
+						<td class="details-label">{{ 'Last Updated in RDAP DB'|t('site-monitor') }}</td>
+						<td class="details-value">
+							{{ data.details.lastUpdatedInRdapDb ? data.details.lastUpdatedInRdapDb|date("d M Y") : '–' }}
+						</td>
+					</tr>
+				</table>
+				<h3 class="details-title">{{ 'Domain Status Codes'|t('site-monitor') }}</h3>
+				<table class="details-table">
+					{% if data.details.domainStatusCodes is not empty %}
+						{% for status in data.details.domainStatusCodes %}
+							<tr>
+								<td class="details-label">{{ status.eppStatusCode }}</td>
+								<td class="details-value">{{ status.status }}</td>
+							</tr>
+						{% endfor %}
+					{% else %}
+						<tr>
+							<td colspan="2" class="details-value">–</td>
+						</tr>
+					{% endif %}
+				</table>
+			</div>
+		</div>
+
+		<a href="#" class="show-less">{{ 'Show less details'|t('site-monitor') }}</a>
+
+		<a href="#" class="show-details">{{ 'Show all details'|t('site-monitor') }}</a>
+	{% endif %}
+
+{% endblock %}

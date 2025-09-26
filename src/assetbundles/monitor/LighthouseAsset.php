@@ -4,7 +4,7 @@ namespace appfoster\sitemonitor\assetbundles\monitor;
 use craft\web\AssetBundle;
 use craft\web\assets\cp\CpAsset;
 
-class SecurityCertificates extends AssetBundle
+class LighthouseAsset extends AssetBundle
 {
     public function init()
     {
@@ -16,7 +16,11 @@ class SecurityCertificates extends AssetBundle
         ];
 
         $this->css = [
-            'css/security-certificates.css',
+            'css/lighthouse-scores.css',
+        ];
+
+        $this->js = [
+            'js/lighthouseScore.js',
         ];
 
         parent::init();

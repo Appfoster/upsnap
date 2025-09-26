@@ -77,7 +77,7 @@ class SecurityCertificatesController extends BaseController
             'data' => $data,
             'plugin' => SiteMonitor::$plugin,
             'title' => Craft::t('site-monitor', 'SSL Certificates'),
-            'selectedSubnavItem' => 'uptime',
+            'selectedSubnavItem' => 'security-certificates',
         ]);
     }
 }

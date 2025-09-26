@@ -114,6 +114,9 @@ class SiteMonitor extends Plugin
                     'site-monitor/security-certificates' => 'site-monitor/security-certificates/index',
                     'site-monitor/settings' => 'site-monitor/settings/index',
                     'site-monitor/broken-links' => 'site-monitor/broken-links/index',
+                    'site-monitor/lighthouse' => 'site-monitor/lighthouse/index',
+                    'site-monitor/domain-check' => 'site-monitor/domain-check/index',
+                    'site-monitor/mixed-content' => 'site-monitor/mixed-content/index',
                 ]);
             }
         );
@@ -142,6 +145,18 @@ class SiteMonitor extends Plugin
             'broken-links' => [
                  'label' => Craft::t('site-monitor', 'Broken Links'),
                  'url' => 'site-monitor/broken-links'
+            ],
+            'lighthouse' => [
+                'label' => Craft::t('site-monitor', 'Lighthouse'),
+                'url' => 'site-monitor/lighthouse'
+            ],
+            'domain-check' => [
+                'label' => Craft::t('site-monitor', 'Domain Check'),
+                'url' => 'site-monitor/domain-check'
+            ],
+            'mixed-content' => [
+                'label' => Craft::t('site-monitor', 'Mixed Content'),
+                'url' => 'site-monitor/mixed-content'
             ],
             // 'settings' => [
             //     'label' => Craft::t('site-monitor', 'Settings'),
