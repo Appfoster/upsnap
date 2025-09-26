@@ -111,7 +111,9 @@ class SiteMonitor extends Plugin
                     'site-monitor' => 'site-monitor/dashboard/index',
                     'site-monitor/reachability' => 'site-monitor/reachability/index',
                     'site-monitor/reachability/history' => 'site-monitor/reachability/history',
+                    'site-monitor/security-certificates' => 'site-monitor/security-certificates/index',
                     'site-monitor/settings' => 'site-monitor/settings/index',
+                    'site-monitor/broken-links' => 'site-monitor/broken-links/index',
                 ]);
             }
         );
@@ -133,10 +135,18 @@ class SiteMonitor extends Plugin
                 'label' => Craft::t('site-monitor', 'Reachability'),
                 'url' => 'site-monitor/reachability'
             ],
+            'security-certificates' => [
+                 'label' => Craft::t('site-monitor', 'Security Certificates'),
+                 'url' => 'site-monitor/security-certificates'
+            ],
+            'broken-links' => [
+                 'label' => Craft::t('site-monitor', 'Broken Links'),
+                 'url' => 'site-monitor/broken-links'
+            ],
             // 'settings' => [
             //     'label' => Craft::t('site-monitor', 'Settings'),
             //     'url' => 'site-monitor/settings'
-            // ]
+            // ],
         ];
 
         return $item;

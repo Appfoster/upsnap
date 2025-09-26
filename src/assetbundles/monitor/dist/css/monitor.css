@@ -218,7 +218,7 @@
 
 .status-icon.error {
     background-color: #dc3545;
-    color: #fff;
+    color: #fff !important;
 }
 
 .status-icon.unknown {
@@ -785,12 +785,19 @@
 }
 
 .details-section {
-    margin-top: 32px;
+    background: #fafbfc;
+    padding: 24px;
+    border-radius: 8px;
+    margin-top: 20px;
 }
 
 .details-title {
     font-size: 18px;
     font-weight: 600;
+    color: #1a1a1a;
+    margin: 10px 0 20px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #e3e5e8;
     color: #333;
     margin-bottom: 16px;
 }
