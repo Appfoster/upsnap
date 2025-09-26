@@ -1,0 +1,213 @@
+/* Certificate Chain Styles */
+.certificate-chain {
+    margin: 30px 0;
+}
+
+.certificate-card {
+    background: #ffffff;
+    border: 1px solid #e3e5e8;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    transition: all 0.2s ease;
+    position: relative;
+}
+
+.certificate-card:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.certificate-header {
+    padding: 20px 24px 16px;
+    border-bottom: 1px solid #f1f3f4;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+.certificate-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: #1a1a1a;
+    margin: 0 0 4px;
+}
+
+.certificate-type {
+    font-size: 13px;
+    color: #707070;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.certificate-status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.certificate-status .status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 500;
+}
+.status-valid {
+    background: #e8f5e8;
+    color: #2d5a2d;
+}
+
+.status-expired {
+    background: #fde8e8;
+    color: #c62828 !important;
+}
+
+.status-warning {
+    background: #fff3cd;
+    color: #856404;
+}
+
+
+.status-icon {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #4caf50;
+}
+
+.status-icon.expired {
+    background: #f44336;
+}
+
+.status-icon.warning {
+    background: #ff9800;
+}
+.validity-period {
+    font-size: 12px;
+    color: #666;
+    margin-top: 4px;
+}
+
+.certificate-body {
+    padding: 0 24px 24px;
+}
+
+.certificate-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+    margin-top: 16px;
+}
+
+.cert-field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.cert-field-label {
+    font-size: 11px;
+    color: #999;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 500;
+}
+
+.cert-field-value {
+    font-size: 13px;
+    color: #333;
+    word-break: break-all;
+    line-height: 1.4;
+}
+
+.cert-field-value.mono {
+    font-family: Monaco, Consolas, 'Courier New', monospace;
+    background: #f8f9fa;
+    padding: 4px 8px;
+    border-radius: 4px;
+    border: 1px solid #e9ecef;
+}
+
+.chain-connector {
+    display: flex;
+    justify-content: center;
+    margin: -10px 0;
+    position: relative;
+    z-index: 1;
+}
+
+.chain-arrow {
+    width: 32px;
+    height: 32px;
+    background: #f8f9fa;
+    border: 2px solid #e3e5e8;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #666;
+}
+
+.chain-arrow::after {
+    content: '↓';
+    font-size: 16px;
+    font-weight: bold;
+}
+
+/* Responsive adjustments */
+@media(max-width: 768px) {
+    .certificate-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .certificate-header {
+        flex-direction: column;
+        gap: 12px;
+        align-items: flex-start;
+    }
+}
+
+/* Override for existing styles */
+.details-section {
+    background: #fafbfc;
+    padding: 24px;
+    border-radius: 8px;
+    margin-top: 20px;
+}
+
+.details-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: #1a1a1a;
+    margin: 0 0 20px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #e3e5e8;
+}
+
+.status-icons {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    margin-right: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 12px;
+    color: white !important;
+}
+
+.status-icons.success {
+    background-color: #28a745;
+}
+
+.status-icons.error {
+    background-color: #dc3545;
+}
+
+.status-icons.warning {
+    background-color: #ffc107;
+    color: #333;
+}

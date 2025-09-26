@@ -1,0 +1,207 @@
+{% extends '_layouts/cp' %}
+{% import '_includes/forms' as forms %}
+
+{% set title = "Broken Links"|t('upsnap') %}
+{% do view.registerAssetBundle("appfoster\\upsnap\\assetbundles\\upsnap\\BrokenLinksAsset") %}
+
+{% block actionButton %}
+	<div class="buttons">
+		<div class="btngroup">
+			<button type="button" class="btn submit" data-icon="refresh" id="refresh-btn">
+				{{ 'Refresh'|t('upsnap') }}
+			</button>
+		</div>
+	</div>
+{% endblock %}
+
+
+{% block content %}
+	{% set statusClass = data.status == 'ok' ? 'success' : (data.status == 'error' ? 'error' : 'warning') %}
+	{% set containerClass = data.status == 'ok' ? '' : (data.status == 'error' ? 'error' : 'warning') %}
+
+	<div class="status-container {{ containerClass }}">
+		<div class="status-header">
+			<div class="status-icon {{ statusClass }}">
+				{% if data.status == 'ok' %}
+					✓
+				{% elseif data.status == 'error' %}
+					X
+				{% else %}
+					!
+				{% endif %}
+			</div>
+			<h3 class="status-title">
+				{% if data.status == 'ok' %}
+					{{ 'All links are healthy and accessible!'|t('upsnap') }}
+				{% elseif data.status == 'error' %}
+					{{ 'Server is experiencing issues!'|t('upsnap') }}
+				{% else %}
+					{{ 'There are some client-side issues!'|t('upsnap') }}
+				{% endif %}
+			</h3>
+		</div>
+		{% if data.error is defined  %}
+			<p class="status-message">{{ data.error }}</p>
+		{% endif %}
+	</div>
+
+
+	<div class="pane">
+		<div class="meta read-only">
+			<div class="data fullwidth">
+				<div class="field">
+					<div class="heading">{{ 'Pages Checked'|t('upsnap') }}</div>
+					<div>
+						{{ data.details.totalPagesChecked|default(0) }}
+					</div>
+				</div>
+
+				<div class="field">
+					<div class="heading">{{ 'Links Scanned'|t('upsnap') }}</div>
+					<div>{{ data.details.totalLinksScanned|default(0) }}</div>
+				</div>
+
+				<div class="field">
+					<div class="heading">{{ 'Broken Links'|t('upsnap') }}</div>
+					<div>{{ data.details.errorsCount|default(0) }}</div>
+				</div>
+				<div class="field">
+					<div class="heading">{{ 'Last Checked'|t('upsnap') }}</div>
+					<div>{{ data.checkedAt|default('–') }}</div>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	{% if data.brokenLinks|length > 0 %}
+		<!-- Filter Controls -->
+		<div class="filter-controls">
+			<div class="filter-row">
+				<div class="filter-group">
+					<label class="filter-label">{{ 'Filter by Type'|t('upsnap') }}</label>
+					<select class="filter-select" id="type-filter">
+						<option value="all">{{ 'All Types'|t('upsnap') }}</option>
+						<option value="internal">{{ 'Internal Links'|t('upsnap') }}</option>
+						<option value="external">{{ 'External Links'|t('upsnap') }}</option>
+					</select>
+				</div>
+				<div class="filter-group">
+					<label class="filter-label">{{ 'Filter by Status'|t('upsnap') }}</label>
+					<select class="filter-select" id="status-filter">
+						<option value="all">{{ 'All Status'|t('upsnap') }}</option>
+						<option value="404">{{ '404 Not Found'|t('upsnap') }}</option>
+						<option value="500">{{ '500 Server Error'|t('upsnap') }}</option>
+						<option value="timeout">{{ 'Timeout'|t('upsnap') }}</option>
+					</select>
+				</div>
+			</div>
+		</div>
+
+		<!-- Broken Links Table -->
+		<div class="broken-links-table">
+			<div class="table-header">
+				{{ 'Broken Links Details'|t('upsnap') }}
+				({{ data.brokenLinks|length }}
+				{{ 'items'|t('upsnap') }})
+			</div>
+
+			<table class="table" id="broken-links-table">
+				<thead>
+					<tr>
+						<th>{{ 'Broken URL'|t('upsnap') }}</th>
+						<th>{{ 'Found on Page'|t('upsnap') }}</th>
+						<th>{{ 'Type'|t('upsnap') }}</th>
+						<th>{{ 'Status'|t('upsnap') }}</th>
+						<th>{{ 'Detected'|t('upsnap') }}</th>
+						<th>{{ 'Action'|t('upsnap') }}</th>
+					</tr>
+				</thead>
+				<tbody>
+					{% for link in data.brokenLinks %}
+						<tr class="main-row" data-type="{{ link.type }}" data-status="{{ link.statusCode }}">
+							<td>
+								<div class="url-display" title="{{ link.brokenUrl }}">
+									{% if link.anchorText %}
+										<strong>{{ link.anchorText }}</strong><br>
+									{% endif %}
+									<a href="{{ link.brokenUrl }}" target="_blank" class="url-link">
+										{{ link.brokenUrl }}
+									</a>
+								</div>
+							</td>
+							<td>
+								<div class="url-display" title="{{ link.pageUrl }}">
+									<a href="{{ link.pageUrl }}" target="_blank" class="url-link">
+										{{ link.pageUrl }}
+									</a>
+								</div>
+							</td>
+							<td>
+								<span class="link-type {{ link.type }}">{{ link.type }}</span>
+							</td>
+							<td>
+								<span class="status-code {{ link.statusCode starts with '4' or link.statusCode starts with '5' ? 'error' : 'warning' }}">
+									{{ link.statusCode }}
+								</span>
+							</td>
+							<td>{{ link.detectedAt|default('–') }}</td>
+							<td>
+								<button class="expand-btn" onclick="toggleRow({{ loop.index0 }})">
+									<span class="btn-text">{{ 'View More'|t('upsnap') }}</span>
+								</button>
+							</td>
+						</tr>
+						<tr class="expandable-row" id="row-{{ loop.index0 }}">
+							<td colspan="6">
+								<div class="expandable-content">
+									<div class="detail-grid">
+										<div class="detail-item">
+											<span class="detail-label">{{ 'Title'|t('upsnap') }}</span>
+											<span class="detail-value">{{ link.title|default('–') }}</span>
+										</div>
+										<div class="detail-item">
+											<span class="detail-label">{{ 'Issue Description'|t('upsnap') }}</span>
+											<span class="detail-value">{{ link.culprit|default('–') }}</span>
+										</div>
+										<div class="detail-item">
+											<span class="detail-label">{{ 'Classification'|t('upsnap') }}</span>
+											<span class="detail-value">{{ link.classification|default('–')|title }}</span>
+										</div>
+										<div class="detail-item">
+											<span class="detail-label">{{ 'Resolved'|t('upsnap') }}</span>
+											<span class="detail-value">{{ link.resolved ? 'Yes'|t('upsnap') : 'No'|t('upsnap') }}</span>
+										</div>
+										{% if link.refUrl and link.refUrl != link.brokenUrl %}
+											<div class="detail-item">
+												<span class="detail-label">{{ 'Reference URL'|t('upsnap') }}</span>
+												<span class="detail-value">
+													<a href="{{ link.refUrl }}" target="_blank" class="url-link">{{ link.refUrl }}</a>
+												</span>
+											</div>
+										{% endif %}
+										{% if link.rid %}
+											<div class="detail-item">
+												<span class="detail-label">{{ 'Report ID'|t('upsnap') }}</span>
+												<span class="detail-value">{{ link.rid }}</span>
+											</div>
+										{% endif %}
+									</div>
+								</div>
+							</td>
+						</tr>
+					{% endfor %}
+				</tbody>
+			</table>
+		</div>
+	{% else %}
+		<div class="broken-links-table">
+			<table class="table">
+				<tbody>
+					<tr class="no-results">
+						<td>{{ 'No broken links found! 🎉'|t('upsnap') }}</td>
+					</tr>
+				</tbody>
+			</table>
+		</div>
+	{% endif %}
+{% endblock %}

@@ -4,12 +4,12 @@
 {% block content %}
     <form method="post" accept-charset="UTF-8" data-saveshortcut>
         {{ csrfInput() }}
-        {{ actionInput('site-monitor/settings/save') }}
-        {{ redirectInput('site-monitor/settings') }}
+        {{ actionInput('upsnap/settings/save') }}
+        {{ redirectInput('upsnap/settings') }}
 
         {{ forms.lightswitchField({
-            label: "Enable Monitoring"|t('site-monitor'),
-            instructions: "Turn monitoring on or off"|t('site-monitor'),
+            label: "Enable Monitoring"|t('upsnap'),
+            instructions: "Turn monitoring on or off"|t('upsnap'),
             id: 'enabled',
             name: 'enabled',
             on: settings.enabled,
@@ -17,8 +17,8 @@
         }) }}
 
         {{ forms.textField({
-            label: "Monitoring Interval"|t('site-monitor'),
-            instructions: "How often to check sites (in minutes)"|t('site-monitor'),
+            label: "Monitoring Interval"|t('upsnap'),
+            instructions: "How often to check sites (in minutes)"|t('upsnap'),
             id: 'monitoringInterval',
             name: 'monitoringInterval',
             type: 'number',
@@ -28,8 +28,8 @@
         }) }}
 
         {{ forms.textField({
-            label: "Notification Email"|t('site-monitor'),
-            instructions: "Email address for monitoring alerts"|t('site-monitor'),
+            label: "Notification Email"|t('upsnap'),
+            instructions: "Email address for monitoring alerts"|t('upsnap'),
             id: 'notificationEmail',
             name: 'notificationEmail',
             type: 'email',
@@ -38,27 +38,27 @@
         }) }}
 
         <div class="urls-field">
-            <h2>{{ "URLs to Monitor"|t('site-monitor') }}</h2>
+            <h2>{{ "URLs to Monitor"|t('upsnap') }}</h2>
             {{ forms.editableTableField({
-                label: "URLs to Monitor"|t('site-monitor'),
-                instructions: "Add the URLs you want to monitor"|t('site-monitor'),
+                label: "URLs to Monitor"|t('upsnap'),
+                instructions: "Add the URLs you want to monitor"|t('upsnap'),
                 id: 'monitoringUrls',
                 name: 'monitoringUrls',
                 cols: [
                     {
                         type: 'url',
-                        heading: 'URL'|t('site-monitor'),
+                        heading: 'URL'|t('upsnap'),
                         code: true
                     }
                 ],
                 rows: settings.monitoringUrls,
-                addRowLabel: "Add URL"|t('site-monitor'),
+                addRowLabel: "Add URL"|t('upsnap'),
                 errors: settings.getErrors('monitoringUrls')
             }) }}
         </div>
 
         <div class="buttons">
-            <button type="submit" class="btn submit">{{ "Save"|t('site-monitor') }}</button>
+            <button type="submit" class="btn submit">{{ "Save"|t('upsnap') }}</button>
         </div>
     </form>
 {% endblock %}

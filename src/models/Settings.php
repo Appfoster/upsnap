@@ -1,11 +1,11 @@
 <?php
 
-namespace appfoster\sitemonitor\models;
+namespace appfoster\upsnap\models;
 
 use craft\base\Model;
 
 /**
- * Site Monitor Settings Model
+ * Upsnap Settings Model
  */
 class Settings extends Model
 {

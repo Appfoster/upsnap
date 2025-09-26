@@ -1,6 +1,6 @@
 <?php
 
-namespace appfoster\sitemonitor\assetbundles\monitor;
+namespace appfoster\upsnap\assetbundles\upsnap;
 
 use craft\web\AssetBundle;
 use craft\web\assets\cp\CpAsset;
@@ -9,7 +9,7 @@ class MonitorAsset extends AssetBundle
 {
     public function init()
     {
-        $this->sourcePath = "@appfoster/sitemonitor/assetbundles/monitor/dist";
+        $this->sourcePath = "@appfoster/upsnap/assetbundles/upsnap/dist";
 
         $this->depends = [
             CpAsset::class,
@@ -17,6 +17,11 @@ class MonitorAsset extends AssetBundle
 
         $this->css = [
             'css/monitor.css',
+        ];
+
+        
+        $this->js = [
+            'js/main.js',
         ];
 
         parent::init();
