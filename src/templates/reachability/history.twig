@@ -1,0 +1,273 @@
+{% extends '_layouts/cp' %}
+{% import '_includes/forms' as forms %}
+
+{% set title = "Uptime Monitoring"|t('site-monitor') %}
+
+{% set tabs = {
+    status: { label: 'Current Status', url: url('site-monitor/reachability') },
+    history: { label: 'History', url: url('site-monitor/reachability/history') }
+} %}
+
+{% set selectedTab = 'history' %}
+
+{% block actionButton %}
+	<div class="buttons">
+		<div class="btngroup">
+			<button type="button" class="btn submit" data-icon="refresh" onclick="window.location.reload();">
+				{{ 'Refresh'|t('site-monitor') }}
+			</button>
+		</div>
+	</div>
+{% endblock %}
+
+{% block content %}
+	<!-- Summary Statistics -->
+	{% if stats.total > 0 %}
+		<div class="stats-container">
+			<div class="stats-grid">
+				<div class="stat-card">
+					<div class="stat-number">{{ stats.uptimePercentage }}%</div>
+					<div class="stat-label">{{ 'Uptime'|t('site-monitor') }}</div>
+				</div>
+				<div class="stat-card">
+					<div class="stat-number">{{ stats.total }}</div>
+					<div class="stat-label">{{ 'Total Checks'|t('site-monitor') }}</div>
+				</div>
+				<div class="stat-card success">
+					<div class="stat-number">{{ stats.succeeded }}</div>
+					<div class="stat-label">{{ 'Succeeded'|t('site-monitor') }}</div>
+				</div>
+				<div class="stat-card warning">
+					<div class="stat-number">{{ stats.warning }}</div>
+					<div class="stat-label">{{ 'Warnings'|t('site-monitor') }}</div>
+				</div>
+				<div class="stat-card error">
+					<div class="stat-number">{{ stats.failed }}</div>
+					<div class="stat-label">{{ 'Failed'|t('site-monitor') }}</div>
+				</div>
+			</div>
+		</div>
+	{% endif %}
+
+	<!-- Filters Form -->
+	<div class="filters-container">
+		<form method="get" action="{{ url('site-monitor/reachability/history') }}" class="filters-form">
+			<div class="filters-grid">
+				<div class="filter-group">
+					{{ forms.dateField({
+                        label: 'Start Date'|t('site-monitor'),
+                        name: 'startDate',
+                        value: filters.startDate,
+                        class: 'filter-input'
+                    }) }}
+				</div>
+
+				<div class="filter-group">
+					{{ forms.dateField({
+                        label: 'End Date'|t('site-monitor'),
+                        name: 'endDate',
+                        value: filters.endDate,
+                        class: 'filter-input'
+                    }) }}
+				</div>
+
+				<div class="filter-group">
+					{{ forms.selectField({
+                        label: 'Status'|t('site-monitor'),
+                        name: 'status',
+                        value: filters.status,
+                        options: {
+                            'all': 'All'|t('site-monitor'),
+                            'succeeded': 'Succeeded'|t('site-monitor'),
+                            'failed': 'Failed'|t('site-monitor'),
+                            'warning': 'Warning'|t('site-monitor')
+                        },
+                        class: 'filter-input'
+                    }) }}
+				</div>
+
+				<div class="filter-group">
+					{{ forms.selectField({
+                        label: 'Type'|t('site-monitor'),
+                        name: 'type',
+                        value: filters.type,
+                        options: {
+                            'all': 'All'|t('site-monitor'),
+                            'uptime': 'Uptime'|t('site-monitor'),
+                            'performance': 'Performance'|t('site-monitor'),
+                            'ssl': 'SSL'|t('site-monitor')
+                        },
+                        class: 'filter-input'
+                    }) }}
+				</div>
+
+				<div class="filter-actions">
+					<button type="submit" class="btn submit">
+						{{ 'Filter'|t('site-monitor') }}
+					</button>
+					<a href="{{ url('site-monitor/reachability/history') }}" class="btn">
+						{{ 'Reset'|t('site-monitor') }}
+					</a>
+				</div>
+			</div>
+		</form>
+	</div>
+
+	<!-- History Results -->
+	<div class="history-container">
+		{% if history|length > 0 %}
+			<div class="history-header">
+				<h3>{{ 'Check History'|t('site-monitor') }}</h3>
+				<span class="result-count">
+					{{ 'Showing {count} results'|t('site-monitor', { count: history|length }) }}
+				</span>
+			</div>
+
+			<div class="history-table-container">
+				<table class="history-table">
+					<thead>
+						<tr>
+							<th>{{ 'Type'|t('site-monitor') }}</th>
+							<th>{{ 'Result'|t('site-monitor') }}</th>
+							<th>{{ 'Timestamp'|t('site-monitor') }}</th>
+							<th>{{ 'Duration'|t('site-monitor') }}</th>
+							<th>{{ 'Details'|t('site-monitor') }}</th>
+						</tr>
+					</thead>
+					<tbody>
+						{% for record in history %}
+							<tr class="history-row" onclick="toggleDetails({{ record.id }})">
+								<td>
+									<div class="type-info">
+										<strong>{{ record.type }}</strong>
+										<div class="site-url">{{ record.site }}</div>
+									</div>
+								</td>
+								<td>
+									<span class="status-badge status-{{ record.status }}">
+										{% if record.status == 'succeeded' %}
+											{{ 'Succeeded'|t('site-monitor') }}
+										{% elseif record.status == 'failed' %}
+											{{ 'Failed'|t('site-monitor') }}
+										{% elseif record.status == 'warning' %}
+											{{ 'Warning'|t('site-monitor') }}
+										{% else %}
+											{{ record.status|title }}
+										{% endif %}
+									</span>
+								</td>
+								<td>
+									<div class="timestamp">
+										{{ record.timestamp|date('M d, Y') }}
+										<div class="time">{{ record.timestamp|date('H:i:s') }}</div>
+									</div>
+								</td>
+								<td>{{ record.duration }}</td>
+								<td>
+									<button class="details-toggle" type="button">
+										{{ 'View Details'|t('site-monitor') }}
+										<span class="toggle-icon">▼</span>
+									</button>
+								</td>
+							</tr>
+							<tr class="details-row" id="details-{{ record.id }}" style="display: none;">
+								<td colspan="5">
+									<div class="details-content">
+										<div class="details-grid">
+											<div class="detail-item">
+												<strong>{{ 'HTTP Status'|t('site-monitor') }}:</strong>
+												{% if record.httpCode %}
+													<span class="http-status-code {{ record.httpCode >= 400 ? 'error' : 'success' }}">
+														{{ record.httpCode }}
+													</span>
+												{% else %}
+													<span class="text-gray">{{ 'N/A'|t('site-monitor') }}</span>
+												{% endif %}
+											</div>
+
+											{% if record.responseTime %}
+												<div class="detail-item">
+													<strong>{{ 'Response Time'|t('site-monitor') }}:</strong>
+													<span>{{ record.responseTime }}ms</span>
+												</div>
+											{% endif %}
+
+											<div class="detail-item">
+												<strong>{{ 'Location'|t('site-monitor') }}:</strong>
+												<span>{{ record.location }}</span>
+											</div>
+
+											<div class="detail-item">
+												<strong>{{ 'IP Address'|t('site-monitor') }}:</strong>
+												<span>{{ record.ip }}</span>
+											</div>
+
+											{# {% if record.details.contentLength %}
+												<div class="detail-item">
+													<strong>{{ 'Content Length'|t('site-monitor') }}:</strong>
+													<span>{{ (record.details.contentLength / 1024)|round(1) }}
+														KB</span>
+												</div>
+											{% endif %} #}
+
+											{% if record.details.sslValid is defined %}
+												<div class="detail-item">
+													<strong>{{ 'SSL Status'|t('site-monitor') }}:</strong>
+													<span class="{{ record.details.sslValid ? 'success' : 'error' }}">
+														{{ record.details.sslValid ? 'Valid'|t('site-monitor') : 'Invalid'|t('site-monitor') }}
+													</span>
+												</div>
+											{% endif %}
+										</div>
+
+										{% if record.details.message %}
+											<div class="detail-message">
+												<strong>{{ 'Message'|t('site-monitor') }}:</strong>
+												<p>{{ record.details.message }}</p>
+											</div>
+										{% endif %}
+{# 
+										{% if record.details.error %}
+											<div class="detail-error">
+												<strong>{{ 'Error'|t('site-monitor') }}:</strong>
+												<p class="error-text">{{ record.details.error }}</p>
+											</div>
+										{% endif %} #}
+
+										{# {% if record.details.warning %}
+											<div class="detail-warning">
+												<strong>{{ 'Warning'|t('site-monitor') }}:</strong>
+												<p class="warning-text">{{ record.details.warning }}</p>
+											</div>
+										{% endif %} #}
+									</div>
+								</td>
+							</tr>
+						{% endfor %}
+					</tbody>
+				</table>
+			</div>
+		{% else %}
+			<div class="no-results">
+				<div class="no-results-icon">📊</div>
+				<h3>{{ 'No history found'|t('site-monitor') }}</h3>
+				<p>{{ 'Try adjusting your filters or check back later for monitoring data.'|t('site-monitor') }}</p>
+			</div>
+		{% endif %}
+	</div>
+
+	<script>
+		function toggleDetails(recordId) {
+const detailsRow = document.getElementById('details-' + recordId);
+const toggleIcon = event.currentTarget.querySelector('.toggle-icon');
+
+if (detailsRow.style.display === 'none' || ! detailsRow.style.display) {
+detailsRow.style.display = 'table-row';
+toggleIcon.textContent = '▲';
+} else {
+detailsRow.style.display = 'none';
+toggleIcon.textContent = '▼';
+}
+}
+	</script>
+{% endblock %}

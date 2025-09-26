@@ -2,6 +2,8 @@
 
 namespace appfoster\sitemonitor;
 
+use appfoster\sitemonitor\assetbundles\monitor\MonitorAsset;
+use appfoster\sitemonitor\services\ApiService;
 use Craft;
 use craft\base\Event;
 use craft\base\Plugin;
@@ -9,10 +11,15 @@ use craft\web\UrlManager;
 use craft\services\Plugins;
 use craft\events\PluginEvent;
 use craft\events\RegisterUrlRulesEvent;
-
 use appfoster\sitemonitor\base\PluginTrait;
 use appfoster\sitemonitor\models\Settings;
+use appfoster\sitemonitor\services\HistoryService;
+use craft\helpers\App;
 
+/**
+ * @property ApiService $apiService
+ * @property HistoryService $historyService
+ */
 class SiteMonitor extends Plugin
 {
     use PluginTrait;
@@ -23,6 +30,8 @@ class SiteMonitor extends Plugin
     public bool $hasCpSection = true;
     public bool $hasCpSettings = true;
     public string $schemaVersion = '1.0.0';
+    public static string $healthCheckUrl;
+
 
     /**
      * @inheritdoc
@@ -50,10 +59,20 @@ class SiteMonitor extends Plugin
     {
         parent::init();
 
+        self::$healthCheckUrl = App::env('SITE_MONITOR_URL');
+        if (Craft::$app->getRequest()->getIsCpRequest()) {
+            Craft::$app->getView()->registerAssetBundle(MonitorAsset::class);
+        }
+
+        $this->setComponents([
+            'apiService' => ApiService::class,
+            'historyService' => HistoryService::class
+        ]);
+
         Event::on(
             Plugins::class,
             Plugins::EVENT_AFTER_LOAD_PLUGINS,
-            function() { 
+            function () {
                 self::registerAfterLoadEvents();
             }
         );
@@ -63,7 +82,7 @@ class SiteMonitor extends Plugin
             Plugins::EVENT_AFTER_INSTALL_PLUGIN,
             function (PluginEvent $event) {
                 Craft::info('Website Monitor plugin installed', __METHOD__);
-                
+
                 if ($event->plugin === $this) {
                     $request = Craft::$app->getRequest();
                     if ($request->isCpRequest) {
@@ -85,9 +104,13 @@ class SiteMonitor extends Plugin
     private function _registerCpRoutes()
     {
         Event::on(
-            UrlManager::class, UrlManager::EVENT_REGISTER_CP_URL_RULES, function (RegisterUrlRulesEvent $event) {
+            UrlManager::class,
+            UrlManager::EVENT_REGISTER_CP_URL_RULES,
+            function (RegisterUrlRulesEvent $event) {
                 $event->rules = array_merge($event->rules, [
                     'site-monitor' => 'site-monitor/dashboard/index',
+                    'site-monitor/reachability' => 'site-monitor/reachability/index',
+                    'site-monitor/reachability/history' => 'site-monitor/reachability/history',
                     'site-monitor/settings' => 'site-monitor/settings/index',
                 ]);
             }
@@ -102,14 +125,18 @@ class SiteMonitor extends Plugin
         $item = parent::getCpNavItem();
 
         $item['subnav'] = [
-            'dashboard' => [
-                'label' => Craft::t('site-monitor', 'Dashboard'),
-                'url' => 'site-monitor'
+            // 'dashboard' => [
+            //     'label' => Craft::t('site-monitor', 'Dashboard'),
+            //     'url' => 'site-monitor'
+            // ],
+            'reachability' => [
+                'label' => Craft::t('site-monitor', 'Reachability'),
+                'url' => 'site-monitor/reachability'
             ],
-            'settings' => [
-                'label' => Craft::t('site-monitor', 'Settings'),
-                'url' => 'site-monitor/settings'
-            ]
+            // 'settings' => [
+            //     'label' => Craft::t('site-monitor', 'Settings'),
+            //     'url' => 'site-monitor/settings'
+            // ]
         ];
 
         return $item;
