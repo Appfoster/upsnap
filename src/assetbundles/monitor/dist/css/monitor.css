@@ -798,6 +798,8 @@
     margin: 10px 0 20px;
     padding-bottom: 10px;
     border-bottom: 2px solid #e3e5e8;
+    color: #333;
+    margin-bottom: 16px;
 }
 
 .details-table {
