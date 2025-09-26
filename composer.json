@@ -1,7 +1,29 @@
 {
 	"name": "appfoster/site-monitor",
-	"description": "Basic website monitoring plugin for Craft CMS.",
+	"description": "Monitoring plugin for Craft CMS sites.",
 	"type": "craft-plugin",
+	"keywords": [
+        "craft",
+        "cms",
+        "craftcms",
+        "craft-plugin",
+        "monitoring",
+        "monitor",
+        "watcher",
+        "sitemonitor",
+        "analytics plugin for craft"
+    ],
+    "support": {
+        "docs": "https://github.com/Appfoster/site-monitor/wiki",
+        "issues": "https://github.com/Appfoster/site-monitor/issues"
+    },
+    "license": "proprietary",
+    "authors": [
+        {
+            "name": "Appfoster",
+            "homepage": "http://www.appfoster.com/"
+        }
+    ],
 	"require": {
 		"craftcms/cms": "^5.0"
 	},
@@ -14,6 +36,14 @@
 		"name": "Site Monitor",
         "handle": "site-monitor",
         "hasCpSection": true,
+		"changelogUrl": "https://github.com/Appfoster/site-monitor/master/CHANGELOG.md",
+        "documentationUrl": "https://github.com/Appfoster/site-monitor/wiki",
 		"class": "appfoster\\sitemonitor\\SiteMonitor"
-	}
+	},
+	"config": {
+        "allow-plugins": {
+            "yiisoft/yii2-composer": true,
+            "craftcms/plugin-installer": true
+        }
+    }
 }

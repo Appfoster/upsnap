@@ -2,19 +2,18 @@
 
 namespace appfoster\sitemonitor;
 
-use appfoster\sitemonitor\assetbundles\monitor\MonitorAsset;
-use appfoster\sitemonitor\services\ApiService;
 use Craft;
 use craft\base\Event;
 use craft\base\Plugin;
+use craft\helpers\App;
 use craft\web\UrlManager;
 use craft\services\Plugins;
 use craft\events\PluginEvent;
 use craft\events\RegisterUrlRulesEvent;
-use appfoster\sitemonitor\base\PluginTrait;
+
 use appfoster\sitemonitor\models\Settings;
+use appfoster\sitemonitor\services\ApiService;
 use appfoster\sitemonitor\services\HistoryService;
-use craft\helpers\App;
 
 /**
  * @property ApiService $apiService
@@ -22,16 +21,12 @@ use craft\helpers\App;
  */
 class SiteMonitor extends Plugin
 {
-    use PluginTrait;
-
     public static $plugin;
-    public static $view;
 
     public bool $hasCpSection = true;
     public bool $hasCpSettings = true;
     public string $schemaVersion = '1.0.0';
     public static string $healthCheckUrl;
-
 
     /**
      * @inheritdoc
@@ -59,10 +54,9 @@ class SiteMonitor extends Plugin
     {
         parent::init();
 
-        self::$healthCheckUrl = App::env('SITE_MONITOR_URL');
-        if (Craft::$app->getRequest()->getIsCpRequest()) {
-            Craft::$app->getView()->registerAssetBundle(MonitorAsset::class);
-        }
+        self::$healthCheckUrl = App::env('SITE_MONITOR_URL') ?: '';
+
+        // Removed global asset bundle registration - each page registers its own now
 
         $this->setComponents([
             'apiService' => ApiService::class,
@@ -96,7 +90,6 @@ class SiteMonitor extends Plugin
     private function registerAfterLoadEvents()
     {
         self::$plugin = $this;
-        self::$view = Craft::$app->getView();
 
         $this->_registerCpRoutes();
     }
@@ -139,12 +132,12 @@ class SiteMonitor extends Plugin
                 'url' => 'site-monitor/reachability'
             ],
             'security-certificates' => [
-                 'label' => Craft::t('site-monitor', 'Security Certificates'),
-                 'url' => 'site-monitor/security-certificates'
+                'label' => Craft::t('site-monitor', 'Security Certificates'),
+                'url' => 'site-monitor/security-certificates'
             ],
             'broken-links' => [
-                 'label' => Craft::t('site-monitor', 'Broken Links'),
-                 'url' => 'site-monitor/broken-links'
+                'label' => Craft::t('site-monitor', 'Broken Links'),
+                'url' => 'site-monitor/broken-links'
             ],
             'lighthouse' => [
                 'label' => Craft::t('site-monitor', 'Lighthouse'),

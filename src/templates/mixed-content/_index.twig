@@ -2,6 +2,7 @@
 {% import '_includes/forms' as forms %}
 
 {% set title = "Mixed Content Check"|t('site-monitor') %}
+{% do view.registerAssetBundle("appfoster\\sitemonitor\\assetbundles\\monitor\\MixedContentAsset") %}
 
 {% block actionButton %}
 	<div class="buttons">

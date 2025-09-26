@@ -2,9 +2,8 @@
 namespace appfoster\sitemonitor\assetbundles\monitor;
 
 use craft\web\AssetBundle;
-use craft\web\assets\cp\CpAsset;
 
-class SecurityCertificates extends AssetBundle
+class SecurityCertificatesAsset extends AssetBundle
 {
     public function init()
     {
@@ -12,7 +11,7 @@ class SecurityCertificates extends AssetBundle
 
 
         $this->depends = [
-            CpAsset::class,
+            CommonAsset::class,
         ];
 
         $this->css = [

@@ -2,6 +2,7 @@
 {% import '_includes/forms' as forms %}
 
 {% set title = "Uptime Monitoring"|t('site-monitor') %}
+{% do view.registerAssetBundle("appfoster\\sitemonitor\\assetbundles\\monitor\\ReachabilityAsset") %}
 
 {% set tabs = {
     status: { label: 'Current Status', url: url('site-monitor/reachability') },
@@ -256,18 +257,4 @@
 		{% endif %}
 	</div>
 
-	<script>
-		function toggleDetails(recordId) {
-const detailsRow = document.getElementById('details-' + recordId);
-const toggleIcon = event.currentTarget.querySelector('.toggle-icon');
-
-if (detailsRow.style.display === 'none' || ! detailsRow.style.display) {
-detailsRow.style.display = 'table-row';
-toggleIcon.textContent = '▲';
-} else {
-detailsRow.style.display = 'none';
-toggleIcon.textContent = '▼';
-}
-}
-	</script>
 {% endblock %}

@@ -5,6 +5,7 @@
 {% set tabs = {
     status: { label: 'Current Status', url: url('site-monitor/reachability') },
 } %}
+{% do view.registerAssetBundle("appfoster\\sitemonitor\\assetbundles\\monitor\\ReachabilityAsset") %}
 
 {% block actionButton %}
 	<div class="buttons">

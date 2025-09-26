@@ -12,7 +12,7 @@ class LighthouseAsset extends AssetBundle
 
 
         $this->depends = [
-            CpAsset::class,
+            CommonAsset::class,
         ];
 
         $this->css = [

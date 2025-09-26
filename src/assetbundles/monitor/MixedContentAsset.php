@@ -1,0 +1,27 @@
+<?php
+namespace appfoster\sitemonitor\assetbundles\monitor;
+
+use craft\web\AssetBundle;
+use craft\web\assets\cp\CpAsset;
+
+class MixedContentAsset extends AssetBundle
+{
+    public function init()
+    {
+        $this->sourcePath = "@appfoster/sitemonitor/assetbundles/monitor/dist";
+
+        $this->depends = [
+            CommonAsset::class,
+        ];
+
+        $this->css = [
+            'css/mixed-content.css',
+        ];
+
+        $this->js = [
+            'js/mixedContent.js',
+        ];
+
+        parent::init();
+    }
+}

@@ -3,10 +3,11 @@
 namespace appfoster\sitemonitor\services;
 
 use Craft;
-use craft\helpers\App;
 use yii\base\Component;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\RequestException;
+
+use appfoster\sitemonitor\Constants;
 
 class ApiService extends Component
 {
@@ -19,14 +20,13 @@ class ApiService extends Component
     {
         parent::__construct($config);
 
-        // Ideally load from plugin settings
-        $this->baseUrl = 'https://eagle-eye.appfoster.site';
-        $this->apiVersion = 'v1';
-        $this->authToken ='test-token';
+        // Load from constants or environment
+        $this->baseUrl = Constants::API_BASE_URL;
+        $this->apiVersion = Constants::API_VERSION;
 
         $this->client = new Client([
             'base_uri' => $this->baseUrl . '/' . $this->apiVersion . '/',
-            'timeout'  => 120.0,
+            'timeout'  => Constants::API_TIMEOUT,
         ]);
     }
 

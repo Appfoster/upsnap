@@ -2,6 +2,7 @@
 {% import '_includes/forms' as forms %}
 
 {% set title = "Domain Check"|t('site-monitor') %}
+{% do view.registerAssetBundle("appfoster\\sitemonitor\\assetbundles\\monitor\\DomainCheckAsset") %}
 
 {% block actionButton %}
 	<div class="buttons">
