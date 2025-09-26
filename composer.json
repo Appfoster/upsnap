@@ -1,27 +1,29 @@
 {
-	"name": "appfoster/site-monitor",
-	"description": "Monitoring plugin for Craft CMS sites.",
+	"name": "appfoster/upsnap",
+	"description": "Monitoring & analytics plugin for Craft CMS sites.",
 	"type": "craft-plugin",
 	"keywords": [
         "craft",
         "cms",
         "craftcms",
         "craft-plugin",
+        "upsnap-plugin",
         "monitoring",
         "monitor",
         "watcher",
-        "sitemonitor",
-        "analytics plugin for craft"
+        "upsnap",
+        "analytics",
+        "upsnap plugin for craft"
     ],
     "support": {
-        "docs": "https://github.com/Appfoster/site-monitor/wiki",
-        "issues": "https://github.com/Appfoster/site-monitor/issues"
+        "docs": "https://github.com/Appfoster/upsnap/wiki",
+        "issues": "https://github.com/Appfoster/upsnap/issues"
     },
     "license": "proprietary",
     "authors": [
         {
             "name": "Appfoster",
-            "homepage": "http://www.appfoster.com/"
+            "homepage": "https://www.appfoster.com/"
         }
     ],
 	"require": {
@@ -29,16 +31,16 @@
 	},
 	"autoload": {
 		"psr-4": {
-			"appfoster\\sitemonitor\\": "src/"
+			"appfoster\\upsnap\\": "src/"
 		}
 	},
 	"extra": {
-		"name": "Site Monitor",
-        "handle": "site-monitor",
+		"name": "Upsnap",
+        "handle": "upsnap",
         "hasCpSection": true,
-		"changelogUrl": "https://github.com/Appfoster/site-monitor/master/CHANGELOG.md",
-        "documentationUrl": "https://github.com/Appfoster/site-monitor/wiki",
-		"class": "appfoster\\sitemonitor\\SiteMonitor"
+		"changelogUrl": "https://github.com/Appfoster/upsnap/master/CHANGELOG.md",
+        "documentationUrl": "https://github.com/Appfoster/upsnap/wiki",
+		"class": "appfoster\\upsnap\\Upsnap"
 	},
 	"config": {
         "allow-plugins": {

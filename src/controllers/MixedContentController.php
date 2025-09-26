@@ -1,8 +1,8 @@
 <?php
 
-namespace appfoster\sitemonitor\controllers;
+namespace appfoster\upsnap\controllers;
 
-use appfoster\sitemonitor\SiteMonitor;
+use appfoster\upsnap\Upsnap;
 use Craft;
 use yii\web\Response;
 use DateTime;
@@ -19,13 +19,13 @@ class MixedContentController extends BaseController
         $data = [];
 
         try {
-            $response = SiteMonitor::$plugin->apiService->post('healthcheck', [
-                'url' => SiteMonitor::$healthCheckUrl,
+            $response = Upsnap::$plugin->apiService->post('healthcheck', [
+                'url' => Upsnap::$healthCheckUrl,
                 'checks' => ['mixed_content'],
             ]);
             if (isset($response['result']['details']['mixed_content']['error'])) {
                 // Craft::$app->getSession()->setError('Something went wrong: ' . implode(', ', $response['result']['details']['mixed_content']['error']));
-                return $this->renderTemplate('site-monitor/mixed-content/_index', [
+                return $this->renderTemplate('upsnap/mixed-content/_index', [
                     'data' => [
                         'status' => 'error',
                         'error' => $response['result']['details']['mixed_content']['error'] ?? 'Unknown error',
@@ -33,8 +33,8 @@ class MixedContentController extends BaseController
                         'checkedAt' => $response['checkedAt'] ?? '',
                         'duration' => isset($response['result']['durationMs']) ? $response['result']['durationMs'] . ' ms' : '-',
                     ],
-                    'plugin' => SiteMonitor::$plugin,
-                    'title' => Craft::t('site-monitor', 'Mixed Content Check'),
+                    'plugin' => Upsnap::$plugin,
+                    'title' => Craft::t('upsnap', 'Mixed Content Check'),
                     'selectedSubnavItem' => 'mixed-content',
                 ]);
             }
@@ -61,10 +61,10 @@ class MixedContentController extends BaseController
             Craft::$app->getSession()->setError('Error fetching mixed content check data: ' . $e->getMessage());
         }
 
-        return $this->renderTemplate('site-monitor/mixed-content/_index', [
+        return $this->renderTemplate('upsnap/mixed-content/_index', [
             'data' => $data,
-            'plugin' => SiteMonitor::$plugin,
-            'title' => Craft::t('site-monitor', 'Mixed Content Check'),
+            'plugin' => Upsnap::$plugin,
+            'title' => Craft::t('upsnap', 'Mixed Content Check'),
             'selectedSubnavItem' => 'mixed-content',
         ]);
     }

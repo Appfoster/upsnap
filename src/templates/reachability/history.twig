@@ -1,12 +1,12 @@
 {% extends '_layouts/cp' %}
 {% import '_includes/forms' as forms %}
 
-{% set title = "Uptime Monitoring"|t('site-monitor') %}
-{% do view.registerAssetBundle("appfoster\\sitemonitor\\assetbundles\\monitor\\ReachabilityAsset") %}
+{% set title = "Uptime Monitoring"|t('upsnap') %}
+{% do view.registerAssetBundle("appfoster\\upsnap\\assetbundles\\monitor\\ReachabilityAsset") %}
 
 {% set tabs = {
-    status: { label: 'Current Status', url: url('site-monitor/reachability') },
-    history: { label: 'History', url: url('site-monitor/reachability/history') }
+    status: { label: 'Current Status', url: url('upsnap/reachability') },
+    history: { label: 'History', url: url('upsnap/reachability/history') }
 } %}
 
 {% set selectedTab = 'history' %}
@@ -15,7 +15,7 @@
 	<div class="buttons">
 		<div class="btngroup">
 			<button type="button" class="btn submit" data-icon="refresh" onclick="window.location.reload();">
-				{{ 'Refresh'|t('site-monitor') }}
+				{{ 'Refresh'|t('upsnap') }}
 			</button>
 		</div>
 	</div>
@@ -28,23 +28,23 @@
 			<div class="stats-grid">
 				<div class="stat-card">
 					<div class="stat-number">{{ stats.uptimePercentage }}%</div>
-					<div class="stat-label">{{ 'Uptime'|t('site-monitor') }}</div>
+					<div class="stat-label">{{ 'Uptime'|t('upsnap') }}</div>
 				</div>
 				<div class="stat-card">
 					<div class="stat-number">{{ stats.total }}</div>
-					<div class="stat-label">{{ 'Total Checks'|t('site-monitor') }}</div>
+					<div class="stat-label">{{ 'Total Checks'|t('upsnap') }}</div>
 				</div>
 				<div class="stat-card success">
 					<div class="stat-number">{{ stats.succeeded }}</div>
-					<div class="stat-label">{{ 'Succeeded'|t('site-monitor') }}</div>
+					<div class="stat-label">{{ 'Succeeded'|t('upsnap') }}</div>
 				</div>
 				<div class="stat-card warning">
 					<div class="stat-number">{{ stats.warning }}</div>
-					<div class="stat-label">{{ 'Warnings'|t('site-monitor') }}</div>
+					<div class="stat-label">{{ 'Warnings'|t('upsnap') }}</div>
 				</div>
 				<div class="stat-card error">
 					<div class="stat-number">{{ stats.failed }}</div>
-					<div class="stat-label">{{ 'Failed'|t('site-monitor') }}</div>
+					<div class="stat-label">{{ 'Failed'|t('upsnap') }}</div>
 				</div>
 			</div>
 		</div>
@@ -52,11 +52,11 @@
 
 	<!-- Filters Form -->
 	<div class="filters-container">
-		<form method="get" action="{{ url('site-monitor/reachability/history') }}" class="filters-form">
+		<form method="get" action="{{ url('upsnap/reachability/history') }}" class="filters-form">
 			<div class="filters-grid">
 				<div class="filter-group">
 					{{ forms.dateField({
-                        label: 'Start Date'|t('site-monitor'),
+                        label: 'Start Date'|t('upsnap'),
                         name: 'startDate',
                         value: filters.startDate,
                         class: 'filter-input'
@@ -65,7 +65,7 @@
 
 				<div class="filter-group">
 					{{ forms.dateField({
-                        label: 'End Date'|t('site-monitor'),
+                        label: 'End Date'|t('upsnap'),
                         name: 'endDate',
                         value: filters.endDate,
                         class: 'filter-input'
@@ -74,14 +74,14 @@
 
 				<div class="filter-group">
 					{{ forms.selectField({
-                        label: 'Status'|t('site-monitor'),
+                        label: 'Status'|t('upsnap'),
                         name: 'status',
                         value: filters.status,
                         options: {
-                            'all': 'All'|t('site-monitor'),
-                            'succeeded': 'Succeeded'|t('site-monitor'),
-                            'failed': 'Failed'|t('site-monitor'),
-                            'warning': 'Warning'|t('site-monitor')
+                            'all': 'All'|t('upsnap'),
+                            'succeeded': 'Succeeded'|t('upsnap'),
+                            'failed': 'Failed'|t('upsnap'),
+                            'warning': 'Warning'|t('upsnap')
                         },
                         class: 'filter-input'
                     }) }}
@@ -89,14 +89,14 @@
 
 				<div class="filter-group">
 					{{ forms.selectField({
-                        label: 'Type'|t('site-monitor'),
+                        label: 'Type'|t('upsnap'),
                         name: 'type',
                         value: filters.type,
                         options: {
-                            'all': 'All'|t('site-monitor'),
-                            'uptime': 'Uptime'|t('site-monitor'),
-                            'performance': 'Performance'|t('site-monitor'),
-                            'ssl': 'SSL'|t('site-monitor')
+                            'all': 'All'|t('upsnap'),
+                            'uptime': 'Uptime'|t('upsnap'),
+                            'performance': 'Performance'|t('upsnap'),
+                            'ssl': 'SSL'|t('upsnap')
                         },
                         class: 'filter-input'
                     }) }}
@@ -104,10 +104,10 @@
 
 				<div class="filter-actions">
 					<button type="submit" class="btn submit">
-						{{ 'Filter'|t('site-monitor') }}
+						{{ 'Filter'|t('upsnap') }}
 					</button>
-					<a href="{{ url('site-monitor/reachability/history') }}" class="btn">
-						{{ 'Reset'|t('site-monitor') }}
+					<a href="{{ url('upsnap/reachability/history') }}" class="btn">
+						{{ 'Reset'|t('upsnap') }}
 					</a>
 				</div>
 			</div>
@@ -118,9 +118,9 @@
 	<div class="history-container">
 		{% if history|length > 0 %}
 			<div class="history-header">
-				<h3>{{ 'Check History'|t('site-monitor') }}</h3>
+				<h3>{{ 'Check History'|t('upsnap') }}</h3>
 				<span class="result-count">
-					{{ 'Showing {count} results'|t('site-monitor', { count: history|length }) }}
+					{{ 'Showing {count} results'|t('upsnap', { count: history|length }) }}
 				</span>
 			</div>
 
@@ -128,11 +128,11 @@
 				<table class="history-table">
 					<thead>
 						<tr>
-							<th>{{ 'Type'|t('site-monitor') }}</th>
-							<th>{{ 'Result'|t('site-monitor') }}</th>
-							<th>{{ 'Timestamp'|t('site-monitor') }}</th>
-							<th>{{ 'Duration'|t('site-monitor') }}</th>
-							<th>{{ 'Details'|t('site-monitor') }}</th>
+							<th>{{ 'Type'|t('upsnap') }}</th>
+							<th>{{ 'Result'|t('upsnap') }}</th>
+							<th>{{ 'Timestamp'|t('upsnap') }}</th>
+							<th>{{ 'Duration'|t('upsnap') }}</th>
+							<th>{{ 'Details'|t('upsnap') }}</th>
 						</tr>
 					</thead>
 					<tbody>
@@ -147,11 +147,11 @@
 								<td>
 									<span class="status-badge status-{{ record.status }}">
 										{% if record.status == 'succeeded' %}
-											{{ 'Succeeded'|t('site-monitor') }}
+											{{ 'Succeeded'|t('upsnap') }}
 										{% elseif record.status == 'failed' %}
-											{{ 'Failed'|t('site-monitor') }}
+											{{ 'Failed'|t('upsnap') }}
 										{% elseif record.status == 'warning' %}
-											{{ 'Warning'|t('site-monitor') }}
+											{{ 'Warning'|t('upsnap') }}
 										{% else %}
 											{{ record.status|title }}
 										{% endif %}
@@ -166,7 +166,7 @@
 								<td>{{ record.duration }}</td>
 								<td>
 									<button class="details-toggle" type="button">
-										{{ 'View Details'|t('site-monitor') }}
+										{{ 'View Details'|t('upsnap') }}
 										<span class="toggle-icon">▼</span>
 									</button>
 								</td>
@@ -176,36 +176,36 @@
 									<div class="details-content">
 										<div class="details-grid">
 											<div class="detail-item">
-												<strong>{{ 'HTTP Status'|t('site-monitor') }}:</strong>
+												<strong>{{ 'HTTP Status'|t('upsnap') }}:</strong>
 												{% if record.httpCode %}
 													<span class="http-status-code {{ record.httpCode >= 400 ? 'error' : 'success' }}">
 														{{ record.httpCode }}
 													</span>
 												{% else %}
-													<span class="text-gray">{{ 'N/A'|t('site-monitor') }}</span>
+													<span class="text-gray">{{ 'N/A'|t('upsnap') }}</span>
 												{% endif %}
 											</div>
 
 											{% if record.responseTime %}
 												<div class="detail-item">
-													<strong>{{ 'Response Time'|t('site-monitor') }}:</strong>
+													<strong>{{ 'Response Time'|t('upsnap') }}:</strong>
 													<span>{{ record.responseTime }}ms</span>
 												</div>
 											{% endif %}
 
 											<div class="detail-item">
-												<strong>{{ 'Location'|t('site-monitor') }}:</strong>
+												<strong>{{ 'Location'|t('upsnap') }}:</strong>
 												<span>{{ record.location }}</span>
 											</div>
 
 											<div class="detail-item">
-												<strong>{{ 'IP Address'|t('site-monitor') }}:</strong>
+												<strong>{{ 'IP Address'|t('upsnap') }}:</strong>
 												<span>{{ record.ip }}</span>
 											</div>
 
 											{# {% if record.details.contentLength %}
 												<div class="detail-item">
-													<strong>{{ 'Content Length'|t('site-monitor') }}:</strong>
+													<strong>{{ 'Content Length'|t('upsnap') }}:</strong>
 													<span>{{ (record.details.contentLength / 1024)|round(1) }}
 														KB</span>
 												</div>
@@ -213,9 +213,9 @@
 
 											{% if record.details.sslValid is defined %}
 												<div class="detail-item">
-													<strong>{{ 'SSL Status'|t('site-monitor') }}:</strong>
+													<strong>{{ 'SSL Status'|t('upsnap') }}:</strong>
 													<span class="{{ record.details.sslValid ? 'success' : 'error' }}">
-														{{ record.details.sslValid ? 'Valid'|t('site-monitor') : 'Invalid'|t('site-monitor') }}
+														{{ record.details.sslValid ? 'Valid'|t('upsnap') : 'Invalid'|t('upsnap') }}
 													</span>
 												</div>
 											{% endif %}
@@ -223,21 +223,21 @@
 
 										{% if record.details.message %}
 											<div class="detail-message">
-												<strong>{{ 'Message'|t('site-monitor') }}:</strong>
+												<strong>{{ 'Message'|t('upsnap') }}:</strong>
 												<p>{{ record.details.message }}</p>
 											</div>
 										{% endif %}
 {# 
 										{% if record.details.error %}
 											<div class="detail-error">
-												<strong>{{ 'Error'|t('site-monitor') }}:</strong>
+												<strong>{{ 'Error'|t('upsnap') }}:</strong>
 												<p class="error-text">{{ record.details.error }}</p>
 											</div>
 										{% endif %} #}
 
 										{# {% if record.details.warning %}
 											<div class="detail-warning">
-												<strong>{{ 'Warning'|t('site-monitor') }}:</strong>
+												<strong>{{ 'Warning'|t('upsnap') }}:</strong>
 												<p class="warning-text">{{ record.details.warning }}</p>
 											</div>
 										{% endif %} #}
@@ -251,8 +251,8 @@
 		{% else %}
 			<div class="no-results">
 				<div class="no-results-icon">📊</div>
-				<h3>{{ 'No history found'|t('site-monitor') }}</h3>
-				<p>{{ 'Try adjusting your filters or check back later for monitoring data.'|t('site-monitor') }}</p>
+				<h3>{{ 'No history found'|t('upsnap') }}</h3>
+				<p>{{ 'Try adjusting your filters or check back later for monitoring data.'|t('upsnap') }}</p>
 			</div>
 		{% endif %}
 	</div>

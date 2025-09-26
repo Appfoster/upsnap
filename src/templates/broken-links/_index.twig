@@ -1,14 +1,14 @@
 {% extends '_layouts/cp' %}
 {% import '_includes/forms' as forms %}
 
-{% set title = "Broken Links"|t('site-monitor') %}
-{% do view.registerAssetBundle("appfoster\\sitemonitor\\assetbundles\\monitor\\BrokenLinksAsset") %}
+{% set title = "Broken Links"|t('upsnap') %}
+{% do view.registerAssetBundle("appfoster\\upsnap\\assetbundles\\monitor\\BrokenLinksAsset") %}
 
 {% block actionButton %}
 	<div class="buttons">
 		<div class="btngroup">
 			<button type="button" class="btn submit" data-icon="refresh" id="refresh-btn">
-				{{ 'Refresh'|t('site-monitor') }}
+				{{ 'Refresh'|t('upsnap') }}
 			</button>
 		</div>
 	</div>
@@ -32,11 +32,11 @@
 			</div>
 			<h3 class="status-title">
 				{% if data.status == 'ok' %}
-					{{ 'All links are healthy and accessible!'|t('site-monitor') }}
+					{{ 'All links are healthy and accessible!'|t('upsnap') }}
 				{% elseif data.status == 'error' %}
-					{{ 'Server is experiencing issues!'|t('site-monitor') }}
+					{{ 'Server is experiencing issues!'|t('upsnap') }}
 				{% else %}
-					{{ 'There are some client-side issues!'|t('site-monitor') }}
+					{{ 'There are some client-side issues!'|t('upsnap') }}
 				{% endif %}
 			</h3>
 		</div>
@@ -50,23 +50,23 @@
 		<div class="meta read-only">
 			<div class="data fullwidth">
 				<div class="field">
-					<div class="heading">{{ 'Pages Checked'|t('site-monitor') }}</div>
+					<div class="heading">{{ 'Pages Checked'|t('upsnap') }}</div>
 					<div>
 						{{ data.details.totalPagesChecked|default(0) }}
 					</div>
 				</div>
 
 				<div class="field">
-					<div class="heading">{{ 'Links Scanned'|t('site-monitor') }}</div>
+					<div class="heading">{{ 'Links Scanned'|t('upsnap') }}</div>
 					<div>{{ data.details.totalLinksScanned|default(0) }}</div>
 				</div>
 
 				<div class="field">
-					<div class="heading">{{ 'Broken Links'|t('site-monitor') }}</div>
+					<div class="heading">{{ 'Broken Links'|t('upsnap') }}</div>
 					<div>{{ data.details.errorsCount|default(0) }}</div>
 				</div>
 				<div class="field">
-					<div class="heading">{{ 'Last Checked'|t('site-monitor') }}</div>
+					<div class="heading">{{ 'Last Checked'|t('upsnap') }}</div>
 					<div>{{ data.checkedAt|default('–') }}</div>
 				</div>
 			</div>
@@ -78,20 +78,20 @@
 		<div class="filter-controls">
 			<div class="filter-row">
 				<div class="filter-group">
-					<label class="filter-label">{{ 'Filter by Type'|t('site-monitor') }}</label>
+					<label class="filter-label">{{ 'Filter by Type'|t('upsnap') }}</label>
 					<select class="filter-select" id="type-filter">
-						<option value="all">{{ 'All Types'|t('site-monitor') }}</option>
-						<option value="internal">{{ 'Internal Links'|t('site-monitor') }}</option>
-						<option value="external">{{ 'External Links'|t('site-monitor') }}</option>
+						<option value="all">{{ 'All Types'|t('upsnap') }}</option>
+						<option value="internal">{{ 'Internal Links'|t('upsnap') }}</option>
+						<option value="external">{{ 'External Links'|t('upsnap') }}</option>
 					</select>
 				</div>
 				<div class="filter-group">
-					<label class="filter-label">{{ 'Filter by Status'|t('site-monitor') }}</label>
+					<label class="filter-label">{{ 'Filter by Status'|t('upsnap') }}</label>
 					<select class="filter-select" id="status-filter">
-						<option value="all">{{ 'All Status'|t('site-monitor') }}</option>
-						<option value="404">{{ '404 Not Found'|t('site-monitor') }}</option>
-						<option value="500">{{ '500 Server Error'|t('site-monitor') }}</option>
-						<option value="timeout">{{ 'Timeout'|t('site-monitor') }}</option>
+						<option value="all">{{ 'All Status'|t('upsnap') }}</option>
+						<option value="404">{{ '404 Not Found'|t('upsnap') }}</option>
+						<option value="500">{{ '500 Server Error'|t('upsnap') }}</option>
+						<option value="timeout">{{ 'Timeout'|t('upsnap') }}</option>
 					</select>
 				</div>
 			</div>
@@ -100,20 +100,20 @@
 		<!-- Broken Links Table -->
 		<div class="broken-links-table">
 			<div class="table-header">
-				{{ 'Broken Links Details'|t('site-monitor') }}
+				{{ 'Broken Links Details'|t('upsnap') }}
 				({{ data.brokenLinks|length }}
-				{{ 'items'|t('site-monitor') }})
+				{{ 'items'|t('upsnap') }})
 			</div>
 
 			<table class="table" id="broken-links-table">
 				<thead>
 					<tr>
-						<th>{{ 'Broken URL'|t('site-monitor') }}</th>
-						<th>{{ 'Found on Page'|t('site-monitor') }}</th>
-						<th>{{ 'Type'|t('site-monitor') }}</th>
-						<th>{{ 'Status'|t('site-monitor') }}</th>
-						<th>{{ 'Detected'|t('site-monitor') }}</th>
-						<th>{{ 'Action'|t('site-monitor') }}</th>
+						<th>{{ 'Broken URL'|t('upsnap') }}</th>
+						<th>{{ 'Found on Page'|t('upsnap') }}</th>
+						<th>{{ 'Type'|t('upsnap') }}</th>
+						<th>{{ 'Status'|t('upsnap') }}</th>
+						<th>{{ 'Detected'|t('upsnap') }}</th>
+						<th>{{ 'Action'|t('upsnap') }}</th>
 					</tr>
 				</thead>
 				<tbody>
@@ -147,7 +147,7 @@
 							<td>{{ link.detectedAt|default('–') }}</td>
 							<td>
 								<button class="expand-btn" onclick="toggleRow({{ loop.index0 }})">
-									<span class="btn-text">{{ 'View More'|t('site-monitor') }}</span>
+									<span class="btn-text">{{ 'View More'|t('upsnap') }}</span>
 								</button>
 							</td>
 						</tr>
@@ -156,24 +156,24 @@
 								<div class="expandable-content">
 									<div class="detail-grid">
 										<div class="detail-item">
-											<span class="detail-label">{{ 'Title'|t('site-monitor') }}</span>
+											<span class="detail-label">{{ 'Title'|t('upsnap') }}</span>
 											<span class="detail-value">{{ link.title|default('–') }}</span>
 										</div>
 										<div class="detail-item">
-											<span class="detail-label">{{ 'Issue Description'|t('site-monitor') }}</span>
+											<span class="detail-label">{{ 'Issue Description'|t('upsnap') }}</span>
 											<span class="detail-value">{{ link.culprit|default('–') }}</span>
 										</div>
 										<div class="detail-item">
-											<span class="detail-label">{{ 'Classification'|t('site-monitor') }}</span>
+											<span class="detail-label">{{ 'Classification'|t('upsnap') }}</span>
 											<span class="detail-value">{{ link.classification|default('–')|title }}</span>
 										</div>
 										<div class="detail-item">
-											<span class="detail-label">{{ 'Resolved'|t('site-monitor') }}</span>
-											<span class="detail-value">{{ link.resolved ? 'Yes'|t('site-monitor') : 'No'|t('site-monitor') }}</span>
+											<span class="detail-label">{{ 'Resolved'|t('upsnap') }}</span>
+											<span class="detail-value">{{ link.resolved ? 'Yes'|t('upsnap') : 'No'|t('upsnap') }}</span>
 										</div>
 										{% if link.refUrl and link.refUrl != link.brokenUrl %}
 											<div class="detail-item">
-												<span class="detail-label">{{ 'Reference URL'|t('site-monitor') }}</span>
+												<span class="detail-label">{{ 'Reference URL'|t('upsnap') }}</span>
 												<span class="detail-value">
 													<a href="{{ link.refUrl }}" target="_blank" class="url-link">{{ link.refUrl }}</a>
 												</span>
@@ -181,7 +181,7 @@
 										{% endif %}
 										{% if link.rid %}
 											<div class="detail-item">
-												<span class="detail-label">{{ 'Report ID'|t('site-monitor') }}</span>
+												<span class="detail-label">{{ 'Report ID'|t('upsnap') }}</span>
 												<span class="detail-value">{{ link.rid }}</span>
 											</div>
 										{% endif %}
@@ -198,7 +198,7 @@
 			<table class="table">
 				<tbody>
 					<tr class="no-results">
-						<td>{{ 'No broken links found! 🎉'|t('site-monitor') }}</td>
+						<td>{{ 'No broken links found! 🎉'|t('upsnap') }}</td>
 					</tr>
 				</tbody>
 			</table>

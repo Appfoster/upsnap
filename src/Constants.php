@@ -1,6 +1,6 @@
 <?php
 
-namespace appfoster\sitemonitor;
+namespace appfoster\upsnap;
 
 /**
  * Site Monitor Constants

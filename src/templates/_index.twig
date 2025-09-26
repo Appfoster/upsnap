@@ -5,17 +5,17 @@
     <div class="buttons">
         <div class="btngroup">
             <button type="button" class="btn submit" data-icon="refresh">
-                {{ 'Check All Services'|t('site-monitor') }}
+                {{ 'Check All Services'|t('upsnap') }}
             </button>
         </div>
     </div>
 {% endblock %}
 
 {% block content %}
-    <div id="site-monitor-dashboard">
+    <div id="upsnap-dashboard">
         {% if not settings.enabled %}
             {% include "_includes/forms/warning" with {
-                message: "Monitoring is currently disabled. Enable it in plugin settings."|t('site-monitor')
+                message: "Monitoring is currently disabled. Enable it in plugin settings."|t('upsnap')
             } %}
         {% endif %}
 
@@ -24,19 +24,19 @@
             <div class="pane">
                 <div class="monitoring-stats">
                     <div class="stat">
-                        <div class="stat-label">{{ 'Overall Health'|t('site-monitor') }}</div>
+                        <div class="stat-label">{{ 'Overall Health'|t('upsnap') }}</div>
                         <div class="stat-value status-healthy">98.5%</div>
                     </div>
                     <div class="stat">
-                        <div class="stat-label">{{ 'Active Monitors'|t('site-monitor') }}</div>
+                        <div class="stat-label">{{ 'Active Monitors'|t('upsnap') }}</div>
                         <div class="stat-value">12</div>
                     </div>
                     <div class="stat">
-                        <div class="stat-label">{{ 'Incidents'|t('site-monitor') }}</div>
+                        <div class="stat-label">{{ 'Incidents'|t('upsnap') }}</div>
                         <div class="stat-value status-warning">2</div>
                     </div>
                     <div class="stat">
-                        <div class="stat-label">{{ 'Response Time'|t('site-monitor') }}</div>
+                        <div class="stat-label">{{ 'Response Time'|t('upsnap') }}</div>
                         <div class="stat-value">245ms</div>
                     </div>
                 </div>
@@ -45,7 +45,7 @@
 
         {# Active Incidents #}
         <div class="monitoring-incidents">
-            <h2>{{ 'Active Incidents'|t('site-monitor') }}</h2>
+            <h2>{{ 'Active Incidents'|t('upsnap') }}</h2>
             <div class="incident-list">
                 {% set incidents = [
                     {
@@ -79,15 +79,15 @@
 
         {# Service Status #}
         <div class="monitoring-services">
-            <h2>{{ 'Service Status'|t('site-monitor') }}</h2>
+            <h2>{{ 'Service Status'|t('upsnap') }}</h2>
             <table class="data fullwidth">
                 <thead>
                     <tr>
-                        <th>{{ 'Service'|t('site-monitor') }}</th>
-                        <th>{{ 'Status'|t('site-monitor') }}</th>
-                        <th>{{ 'Uptime'|t('site-monitor') }}</th>
-                        <th>{{ 'Response Time'|t('site-monitor') }}</th>
-                        <th>{{ 'Last Check'|t('site-monitor') }}</th>
+                        <th>{{ 'Service'|t('upsnap') }}</th>
+                        <th>{{ 'Status'|t('upsnap') }}</th>
+                        <th>{{ 'Uptime'|t('upsnap') }}</th>
+                        <th>{{ 'Response Time'|t('upsnap') }}</th>
+                        <th>{{ 'Last Check'|t('upsnap') }}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -143,7 +143,7 @@
 
         {# Recent Activity #}
         <div class="monitoring-activity">
-            <h2>{{ 'Recent Activity'|t('site-monitor') }}</h2>
+            <h2>{{ 'Recent Activity'|t('upsnap') }}</h2>
             <table class="data fullwidth">
                 <tbody>
                     {% set activities = [

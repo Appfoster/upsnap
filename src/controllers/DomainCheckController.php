@@ -1,8 +1,8 @@
 <?php
 
-namespace appfoster\sitemonitor\controllers;
+namespace appfoster\upsnap\controllers;
 
-use appfoster\sitemonitor\SiteMonitor;
+use appfoster\upsnap\Upsnap;
 use Craft;
 use yii\web\Response;
 use DateTime;
@@ -19,13 +19,13 @@ class DomainCheckController extends BaseController
         $data = [];
 
         try {
-            $response = SiteMonitor::$plugin->apiService->post('healthcheck', [
-                'url' => SiteMonitor::$healthCheckUrl,
+            $response = Upsnap::$plugin->apiService->post('healthcheck', [
+                'url' => Upsnap::$healthCheckUrl,
                 'checks' => ['domain'],
             ]);
             if (isset($response['result']['details']['domain']['meta']['errors'])) {
                 Craft::$app->getSession()->setError('Something went wrong: ' . implode(', ', $response['result']['details']['domain']['meta']['errors']));
-                return $this->renderTemplate('site-monitor/domain-check/_index', [
+                return $this->renderTemplate('upsnap/domain-check/_index', [
                     'data' => [
                         'status' => 'error',
                         'error' => $response['result']['details']['domain']['meta']['errors'] ?? [],
@@ -33,8 +33,8 @@ class DomainCheckController extends BaseController
                         'checkedAt' => $response['checkedAt'] ?? '',
                         'duration' => isset($response['result']['durationMs']) ? $response['result']['durationMs'] . ' ms' : '-',
                     ],
-                    'plugin' => SiteMonitor::$plugin,
-                    'title' => Craft::t('site-monitor', 'Domain Check'),
+                    'plugin' => Upsnap::$plugin,
+                    'title' => Craft::t('upsnap', 'Domain Check'),
                     'selectedSubnavItem' => 'domain-check',
                 ]);
             }
@@ -76,10 +76,10 @@ class DomainCheckController extends BaseController
             Craft::$app->getSession()->setError('Error fetching domain check data: ' . $e->getMessage());
         }
 
-        return $this->renderTemplate('site-monitor/domain-check/_index', [
+        return $this->renderTemplate('upsnap/domain-check/_index', [
             'data' => $data,
-            'plugin' => SiteMonitor::$plugin,
-            'title' => Craft::t('site-monitor', 'Domain Check'),
+            'plugin' => Upsnap::$plugin,
+            'title' => Craft::t('upsnap', 'Domain Check'),
             'selectedSubnavItem' => 'domain-check',
         ]);
     }

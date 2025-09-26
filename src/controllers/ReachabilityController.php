@@ -1,8 +1,8 @@
 <?php
 
-namespace appfoster\sitemonitor\controllers;
+namespace appfoster\upsnap\controllers;
 
-use appfoster\sitemonitor\SiteMonitor;
+use appfoster\upsnap\Upsnap;
 use Craft;
 use yii\web\Response;
 use DateTime;
@@ -19,15 +19,15 @@ class ReachabilityController extends BaseController
         $data = [];
 
         try {
-            $response = SiteMonitor::$plugin->apiService->post('healthcheck', [
-                'url' => SiteMonitor::$healthCheckUrl,
+            $response = Upsnap::$plugin->apiService->post('healthcheck', [
+                'url' => Upsnap::$healthCheckUrl,
                 "checks" => ["uptime"],
             ]);
             
 
              if (isset($response['result']['details']['uptime']['error'])) {
                 Craft::$app->getSession()->setError('Something went wrong: ' . $response['result']['details']['uptime']['error']);
-                return $this->renderTemplate('site-monitor/reachability/_index', [
+                return $this->renderTemplate('upsnap/reachability/_index', [
                     'data' => [
                         'status' => 'error',
                         'error' => $response['result']['details']['uptime']['error'] ?? 'Something went wrong',
@@ -35,8 +35,8 @@ class ReachabilityController extends BaseController
                         'checkedAt' => $response['checkedAt'] ?? '',
                         'duration' => isset($response['result']['durationMs']) ? $response['result']['durationMs'] . ' ms' : '-',
                     ],
-                    'plugin' => SiteMonitor::$plugin,
-                    'title' => Craft::t('site-monitor', 'Reachability'),
+                    'plugin' => Upsnap::$plugin,
+                    'title' => Craft::t('upsnap', 'Reachability'),
                     'selectedSubnavItem' => 'reachability',
                 ]);
             }
@@ -71,10 +71,10 @@ class ReachabilityController extends BaseController
             Craft::$app->getSession()->setError('Error fetching uptime status: ' . $e->getMessage());
         }
 
-        return $this->renderTemplate('site-monitor/reachability/_index', [
+        return $this->renderTemplate('upsnap/reachability/_index', [
             'data' => $data,
-            'plugin' => SiteMonitor::$plugin,
-            'title' => Craft::t('site-monitor', 'Reachability'),
+            'plugin' => Upsnap::$plugin,
+            'title' => Craft::t('upsnap', 'Reachability'),
             'selectedSubnavItem' => 'reachability',
         ]);
     }
@@ -100,7 +100,7 @@ class ReachabilityController extends BaseController
         $endDateTime = (new \DateTime($endDate . ' 23:59:59'))->format('Y-m-d H:i:s');
         $history = [];
         try {
-            $history = SiteMonitor::$plugin->historyService->getHistory(
+            $history = Upsnap::$plugin->historyService->getHistory(
                 'uptime',
                 $startDate,
                 $endDate
@@ -153,11 +153,11 @@ class ReachabilityController extends BaseController
                 'warning' => $warningChecks,
                 'uptimePercentage' => $uptimePercentage
             ],
-            'plugin' => SiteMonitor::$plugin,
-            'title' => Craft::t('site-monitor', 'Uptime History'),
+            'plugin' => Upsnap::$plugin,
+            'title' => Craft::t('upsnap', 'Uptime History'),
             'selectedSubnavItem' => 'uptime',
         ];
 
-        return $this->renderTemplate('site-monitor/reachability/history', $variables);
+        return $this->renderTemplate('upsnap/reachability/history', $variables);
     }
 }

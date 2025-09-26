@@ -1,8 +1,8 @@
 <?php
 
-namespace appfoster\sitemonitor\controllers;
+namespace appfoster\upsnap\controllers;
 
-use appfoster\sitemonitor\SiteMonitor;
+use appfoster\upsnap\Upsnap;
 use Craft;
 use yii\web\Response;
 use DateTime;
@@ -19,14 +19,14 @@ class SecurityCertificatesController extends BaseController
         $data = [];
 
         try {
-            $response = SiteMonitor::$plugin->apiService->post('healthcheck', [
-                'url' => SiteMonitor::$healthCheckUrl,
+            $response = Upsnap::$plugin->apiService->post('healthcheck', [
+                'url' => Upsnap::$healthCheckUrl,
                 'checks' => ["ssl"],
             ]);
 
             if (isset($response['result']['details']['ssl']['error'])) {
                 Craft::$app->getSession()->setError('Something went wrong: ' . $response['result']['details']['ssl']['error']);
-                return $this->renderTemplate('site-monitor/security-certificates/_index', [
+                return $this->renderTemplate('upsnap/security-certificates/_index', [
                     'data' => [
                         'status' => 'error',
                         'error' => $response['result']['details']['ssl']['error'] ?? 'Something went wrong',
@@ -34,8 +34,8 @@ class SecurityCertificatesController extends BaseController
                         'checkedAt' => $response['checkedAt'] ?? '',
                         'duration' => isset($response['result']['durationMs']) ? $response['result']['durationMs'] . ' ms' : '-',
                     ],
-                    'plugin' => SiteMonitor::$plugin,
-                    'title' => Craft::t('site-monitor', 'Security Certificates'),
+                    'plugin' => Upsnap::$plugin,
+                    'title' => Craft::t('upsnap', 'Security Certificates'),
                     'selectedSubnavItem' => 'security-certificates',
                 ]);
             }
@@ -73,10 +73,10 @@ class SecurityCertificatesController extends BaseController
             Craft::$app->getSession()->setError('Error fetching SSL certificate status: ' . $e->getMessage());
         }
 
-        return $this->renderTemplate('site-monitor/security-certificates/_index', [
+        return $this->renderTemplate('upsnap/security-certificates/_index', [
             'data' => $data,
-            'plugin' => SiteMonitor::$plugin,
-            'title' => Craft::t('site-monitor', 'SSL Certificates'),
+            'plugin' => Upsnap::$plugin,
+            'title' => Craft::t('upsnap', 'SSL Certificates'),
             'selectedSubnavItem' => 'security-certificates',
         ]);
     }

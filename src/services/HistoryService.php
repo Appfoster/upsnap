@@ -1,8 +1,8 @@
 <?php
-namespace appfoster\sitemonitor\services;
+namespace appfoster\upsnap\services;
 
 use yii\base\Component;
-use appfoster\sitemonitor\SiteMonitor;
+use appfoster\upsnap\Upsnap;
 
 class HistoryService extends Component
 {
@@ -105,7 +105,7 @@ class HistoryService extends Component
             ]
         ];
 
-        // return SiteMonitor::$plugin->apiService->get("/history?service=$service", [
+        // return Upsnap::$plugin->apiService->get("/history?service=$service", [
         //     'start'  => $startDate,
         //     'end'    => $endDate
         // ]);

@@ -1,8 +1,8 @@
 <?php
 
-namespace appfoster\sitemonitor\controllers;
+namespace appfoster\upsnap\controllers;
 
-use appfoster\sitemonitor\SiteMonitor;
+use appfoster\upsnap\Upsnap;
 use Craft;
 use yii\web\Response;
 
@@ -17,8 +17,8 @@ class LighthouseController extends BaseController
     {
         $data = [];
         try {
-            $response = SiteMonitor::$plugin->apiService->post('healthcheck', [
-                'url' => SiteMonitor::$healthCheckUrl,
+            $response = Upsnap::$plugin->apiService->post('healthcheck', [
+                'url' => Upsnap::$healthCheckUrl,
                 'checks' => ["lighthouse"],
                 'strategy' => Craft::$app->getRequest()->getParam('device', 'desktop')
             ]);
@@ -53,10 +53,10 @@ class LighthouseController extends BaseController
             return $this->asJson($data);
         }
 
-        return $this->renderTemplate('site-monitor/lighthouse/_index', [
+        return $this->renderTemplate('upsnap/lighthouse/_index', [
             'data' => $data,
-            'plugin' => SiteMonitor::$plugin,
-            'title' => Craft::t('site-monitor', 'Lighthouse'),
+            'plugin' => Upsnap::$plugin,
+            'title' => Craft::t('upsnap', 'Lighthouse'),
             'selectedSubnavItem' => 'lighthouse',
         ]);
     }

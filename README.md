@@ -63,7 +63,7 @@ Site Monitor provides a complete suite of monitoring tools to keep your Craft CM
 2. Run the following command:
 
 ```bash
-composer require appfoster/site-monitor
+composer require appfoster/upsnap
 ```
 
 3. In the Craft Control Panel, go to **Settings → Plugins**
@@ -71,8 +71,8 @@ composer require appfoster/site-monitor
 
 ### Manual Installation
 
-1. Download the plugin files from the [GitHub repository](https://github.com/Appfoster/site-monitor)
-2. Extract the archive and place the `site-monitor` folder in your `craft/plugins/` directory
+1. Download the plugin files from the [GitHub repository](https://github.com/Appfoster/upsnap)
+2. Extract the archive and place the `upsnap` folder in your `craft/plugins/` directory
 3. In the Craft Control Panel, go to **Settings → Plugins**
 4. Find **Site Monitor** in the plugin list and click **Install**
 
@@ -202,9 +202,9 @@ return [
 ### Project Structure
 
 ```
-site-monitor/
+upsnap/
 ├── src/
-│   ├── SiteMonitor.php          # Main plugin class
+│   ├── Upsnap.php          # Main plugin class
 │   ├── Constants.php            # Plugin constants
 │   ├── assetbundles/            # Frontend assets
 │   ├── controllers/             # Control Panel controllers
@@ -234,12 +234,12 @@ composer test
 ## Support
 
 ### Documentation
-- [Full Documentation](https://github.com/Appfoster/site-monitor/wiki)
-- [API Documentation](https://github.com/Appfoster/site-monitor/wiki/API)
+- [Full Documentation](https://github.com/Appfoster/upsnap/wiki)
+- [API Documentation](https://github.com/Appfoster/upsnap/wiki/API)
 
 ### Issue Tracking
-- [GitHub Issues](https://github.com/Appfoster/site-monitor/issues)
-- [Changelog](https://github.com/Appfoster/site-monitor/master/CHANGELOG.md)
+- [GitHub Issues](https://github.com/Appfoster/upsnap/issues)
+- [Changelog](https://github.com/Appfoster/upsnap/master/CHANGELOG.md)
 
 ### Contact
 - **Email**: support@appfoster.com

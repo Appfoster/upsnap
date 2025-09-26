@@ -1,14 +1,14 @@
 {% extends '_layouts/cp' %}
 {% import '_includes/forms' as forms %}
 
-{% set title = "Mixed Content Check"|t('site-monitor') %}
-{% do view.registerAssetBundle("appfoster\\sitemonitor\\assetbundles\\monitor\\MixedContentAsset") %}
+{% set title = "Mixed Content Check"|t('upsnap') %}
+{% do view.registerAssetBundle("appfoster\\upsnap\\assetbundles\\monitor\\MixedContentAsset") %}
 
 {% block actionButton %}
 	<div class="buttons">
 		<div class="btngroup">
 			<button type="button" class="btn submit" data-icon="refresh" id="refresh-btn">
-				{{ 'Refresh'|t('site-monitor') }}
+				{{ 'Refresh'|t('upsnap') }}
 			</button>
 		</div>
 	</div>
@@ -36,13 +36,13 @@
 			</div>
 			<h3 class="status-title">
 				{% if data.status == 'ok' and not hasMixed %}
-					{{ 'No mixed content found!'|t('site-monitor') }}
+					{{ 'No mixed content found!'|t('upsnap') }}
 				{% elseif data.status == 'error' %}
-					{{ 'Mixed content check failed!'|t('site-monitor') }}
+					{{ 'Mixed content check failed!'|t('upsnap') }}
 				{% elseif hasMixed %}
-					{{ 'Mixed content detected!'|t('site-monitor') }}
+					{{ 'Mixed content detected!'|t('upsnap') }}
 				{% else %}
-					{{ 'Mixed content check has some warnings!'|t('site-monitor') }}
+					{{ 'Mixed content check has some warnings!'|t('upsnap') }}
 				{% endif %}
 			</h3>
 		</div>
@@ -50,9 +50,9 @@
 		{% if data.details.mixedCount is defined %}
 			<p class="status-message">
 				{% if data.details.mixedCount == 0 %}
-					{{ 'Great! No mixed content was found on your site.'|t('site-monitor') }}
+					{{ 'Great! No mixed content was found on your site.'|t('upsnap') }}
 				{% else %}
-					{{ '{count} mixed content items were found on your site.'|t('site-monitor', { count: data.details.mixedCount }) }}
+					{{ '{count} mixed content items were found on your site.'|t('upsnap', { count: data.details.mixedCount }) }}
 				{% endif %}
 			</p>
 		{% endif %}
@@ -75,26 +75,26 @@
 		<div class="meta read-only">
 			<div class="data fullwidth">
 				<div class="field">
-					<div class="heading">{{ "Monitored URL"|t('site-monitor') }}</div>
+					<div class="heading">{{ "Monitored URL"|t('upsnap') }}</div>
 					<div>
 						<a href="{{ data.url }}" target="_blank">{{ data.url }}</a>
 					</div>
 				</div>
 
 				<div class="field">
-					<div class="heading">{{ "Last Checked"|t('site-monitor') }}</div>
+					<div class="heading">{{ "Last Checked"|t('upsnap') }}</div>
 					<div>{{ data.checkedAt|date("d M Y, H:i:s") }}</div>
 				</div>
 
 				<div class="field">
-					<div class="heading">{{ "Response Time"|t('site-monitor') }}</div>
+					<div class="heading">{{ "Response Time"|t('upsnap') }}</div>
 					<div>{{ data.duration ?? '–' }}</div>
 				</div>
 			</div>
 			{% if data.details.mixedContentItems is defined and data.details.mixedContentItems|length > 0 %}
 				<div class="data fullwidth">
 					<div class="field">
-							<div class="heading">{{ "Mixed Contents"|t('site-monitor') }}</div>
+							<div class="heading">{{ "Mixed Contents"|t('upsnap') }}</div>
 							<ul class="error-list margin-top">
 								{% for url in data.details.mixedContentItems %}
 									<li>

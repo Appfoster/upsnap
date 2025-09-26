@@ -1,8 +1,8 @@
 <?php
 
-namespace appfoster\sitemonitor\controllers;
+namespace appfoster\upsnap\controllers;
 
-use appfoster\sitemonitor\SiteMonitor;
+use appfoster\upsnap\Upsnap;
 use Craft;
 use yii\web\Response;
 use DateTime;
@@ -19,14 +19,14 @@ class BrokenLinksController extends BaseController
         $data = [];
 
         try {
-            $response = SiteMonitor::$plugin->apiService->post('healthcheck', [
-                'url' => SiteMonitor::$healthCheckUrl,
+            $response = Upsnap::$plugin->apiService->post('healthcheck', [
+                'url' => Upsnap::$healthCheckUrl,
                 'checks' => ['broken_links'],
             ]);
 
             if (isset($response['result']['details']['broken_links']['error'])) {
                 Craft::$app->getSession()->setError('Something went wrong: ' . $response['result']['details']['broken_links']['error']);
-                return $this->renderTemplate('site-monitor/broken-links/_index', [
+                return $this->renderTemplate('upsnap/broken-links/_index', [
                     'data' => [
                         'status' => 'error',
                         'error' => $response['result']['details']['broken_links']['error'] ?? 'Something went wrong',
@@ -35,8 +35,8 @@ class BrokenLinksController extends BaseController
                         'brokenLinks' => [],
                         'duration' => isset($response['result']['durationMs']) ? $response['result']['durationMs'] . ' ms' : '-',
                     ],
-                    'plugin' => SiteMonitor::$plugin,
-                    'title' => Craft::t('site-monitor', 'Broken Links'),
+                    'plugin' => Upsnap::$plugin,
+                    'title' => Craft::t('upsnap', 'Broken Links'),
                     'selectedSubnavItem' => 'broken-links',
                 ]);
             }
@@ -84,10 +84,10 @@ class BrokenLinksController extends BaseController
             Craft::$app->getSession()->setError('Error fetching broken links data: ' . $e->getMessage());
         }
 
-        return $this->renderTemplate('site-monitor/broken-links/_index', [
+        return $this->renderTemplate('upsnap/broken-links/_index', [
             'data' => $data,
-            'plugin' => SiteMonitor::$plugin,
-            'title' => Craft::t('site-monitor', 'Broken Links'),
+            'plugin' => Upsnap::$plugin,
+            'title' => Craft::t('upsnap', 'Broken Links'),
             'selectedSubnavItem' => 'broken-links',
         ]);
     }

@@ -1,13 +1,13 @@
 <?php
 
-namespace appfoster\sitemonitor\services;
+namespace appfoster\upsnap\services;
 
 use Craft;
 use yii\base\Component;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\RequestException;
 
-use appfoster\sitemonitor\Constants;
+use appfoster\upsnap\Constants;
 
 class ApiService extends Component
 {

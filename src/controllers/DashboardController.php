@@ -1,8 +1,8 @@
 <?php
 
-namespace appfoster\sitemonitor\controllers;
+namespace appfoster\upsnap\controllers;
 
-use appfoster\sitemonitor\assetbundles\monitor\MonitorAsset;
+use appfoster\upsnap\assetbundles\monitor\MonitorAsset;
 
 class DashboardController extends BaseController
 {
@@ -19,19 +19,19 @@ class DashboardController extends BaseController
      */
     public function actionIndex(): \yii\web\Response
     {
-        $plugin = \appfoster\sitemonitor\SiteMonitor::getInstance();
+        $plugin = \appfoster\upsnap\Upsnap::getInstance();
         $settings = $plugin->getSettings();
 
         $variables = [
             'settings' => $settings,
             'plugin' => $plugin,
-            'title' => \Craft::t('site-monitor', 'Dashboard'),
+            'title' => \Craft::t('upsnap', 'Dashboard'),
             'selectedSubnavItem' => 'dashboard',
         ];
 
         // Register asset bundle
         MonitorAsset::register($this->view);
 
-        return $this->renderTemplate('site-monitor/_index', $variables);
+        return $this->renderTemplate('upsnap/_index', $variables);
     }
 }

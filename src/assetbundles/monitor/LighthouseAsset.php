@@ -1,5 +1,5 @@
 <?php
-namespace appfoster\sitemonitor\assetbundles\monitor;
+namespace appfoster\upsnap\assetbundles\monitor;
 
 use craft\web\AssetBundle;
 use craft\web\assets\cp\CpAsset;
@@ -8,7 +8,7 @@ class LighthouseAsset extends AssetBundle
 {
     public function init()
     {
-        $this->sourcePath = "@appfoster/sitemonitor/assetbundles/monitor/dist";
+        $this->sourcePath = "@appfoster/upsnap/assetbundles/monitor/dist";
 
 
         $this->depends = [

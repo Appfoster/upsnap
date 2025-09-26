@@ -1,9 +1,9 @@
 <?php
 
-namespace appfoster\sitemonitor\controllers;
+namespace appfoster\upsnap\controllers;
 
 use Craft;
-use appfoster\sitemonitor\SiteMonitor;
+use appfoster\upsnap\Upsnap;
 
 class SettingsController extends BaseController
 {
@@ -12,17 +12,17 @@ class SettingsController extends BaseController
      */
     public function actionIndex(): \yii\web\Response
     {        
-        $plugin = SiteMonitor::getInstance();
+        $plugin = Upsnap::getInstance();
         $settings = $plugin->getSettings();
 
         $variables = [
             'settings' => $settings,
             'plugin' => $plugin,
-            'title' => \Craft::t('site-monitor', 'Settings'),
+            'title' => \Craft::t('upsnap', 'Settings'),
             'selectedSubnavItem' => 'settings',
         ];
 
-        return $this->renderTemplate('site-monitor/settings/_index', $variables);
+        return $this->renderTemplate('upsnap/settings/_index', $variables);
     }
 
     /**
@@ -33,10 +33,10 @@ class SettingsController extends BaseController
         $this->requirePostRequest();
 
         $settings = Craft::$app->getRequest()->getBodyParams();
-        $plugin = SiteMonitor::getInstance();
+        $plugin = Upsnap::getInstance();
 
         if (!$plugin->setSettings($settings)) {
-            Craft::$app->getSession()->setError(Craft::t('site-monitor', 'Could not save settings.'));
+            Craft::$app->getSession()->setError(Craft::t('upsnap', 'Could not save settings.'));
 
             // Send the settings back to the template
             Craft::$app->getUrlManager()->setRouteParams([
@@ -46,7 +46,7 @@ class SettingsController extends BaseController
             return null;
         }
 
-        Craft::$app->getSession()->setNotice(Craft::t('site-monitor', 'Settings saved.'));
+        Craft::$app->getSession()->setNotice(Craft::t('upsnap', 'Settings saved.'));
 
         return $this->redirectToPostedUrl();
     }

@@ -1,5 +1,5 @@
 <?php
-namespace appfoster\sitemonitor\base;
+namespace appfoster\upsnap\base;
 
 use Craft;
 use craft\log\MonologTarget;
@@ -8,7 +8,7 @@ trait PluginTrait
 {
     public static function t($message, array $params = [])
     {
-		return Craft::t('site-monitor', $message, $params);
+		return Craft::t('upsnap', $message, $params);
     }
 
     public static function log($message, $type = 'info')
@@ -29,7 +29,7 @@ trait PluginTrait
 	private function _setLogging()
     {
 		Craft::getLogger()->dispatcher->targets[] = new MonologTarget([
-			'name' => 'site-monitor',
+			'name' => 'upsnap',
 			'allowLineBreaks' => true
 		]);
     }

@@ -44,7 +44,7 @@ document.addEventListener("DOMContentLoaded", function () {
             document.getElementById("loading-overlay").style.display = "flex";
 
             // ✅ Call controller with device param
-            Craft.sendActionRequest('POST', 'site-monitor/lighthouse/index', {
+            Craft.sendActionRequest('POST', 'upsnap/lighthouse/index', {
                 data: { device: currentDevice }
             })
                 .then(response => {

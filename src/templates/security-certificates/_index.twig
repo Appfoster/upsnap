@@ -1,16 +1,16 @@
 {% extends '_layouts/cp' %}
 {% import '_includes/forms' as forms %}
 
-{% do view.registerAssetBundle("appfoster\\sitemonitor\\assetbundles\\monitor\\SecurityCertificatesAsset") %}
+{% do view.registerAssetBundle("appfoster\\upsnap\\assetbundles\\monitor\\SecurityCertificatesAsset") %}
 
 
-{% set title = "Security Certificates"|t('site-monitor') %}
+{% set title = "Security Certificates"|t('upsnap') %}
 
 {% block actionButton %}
 	<div class="buttons">
 		<div class="btngroup">
 			<button type="button" class="btn submit" data-icon="refresh" id="refresh-btn">
-				{{ 'Refresh'|t('site-monitor') }}
+				{{ 'Refresh'|t('upsnap') }}
 			</button>
 		</div>
 	</div>
@@ -34,11 +34,11 @@
 			</div>
 			<h3 class="status-title">
 				{% if data.status == 'ok' %}
-					{{ 'Everything is running smoothly!'|t('site-monitor') }}
+					{{ 'Everything is running smoothly!'|t('upsnap') }}
 				{% elseif data.status == 'error' %}
-					{{ 'Server is experiencing issues!'|t('site-monitor') }}
+					{{ 'Server is experiencing issues!'|t('upsnap') }}
 				{% else %}
-					{{ 'There are some client-side issues!'|t('site-monitor') }}
+					{{ 'There are some client-side issues!'|t('upsnap') }}
 				{% endif %}
 			</h3>
 		</div>
@@ -52,19 +52,19 @@
 		<div class="meta read-only">
 			<div class="data fullwidth">
 				<div class="field">
-					<div class="heading">{{ "Monitored URL"|t('site-monitor') }}</div>
+					<div class="heading">{{ "Monitored URL"|t('upsnap') }}</div>
 					<div>
 						<a href="{{ data.url }}" target="_blank">{{ data.url }}</a>
 					</div>
 				</div>
 
 				<div class="field">
-					<div class="heading">{{ "Last Checked"|t('site-monitor') }}</div>
+					<div class="heading">{{ "Last Checked"|t('upsnap') }}</div>
 					<div>{{ data.checkedAt|date("d M Y, H:i:s") }}</div>
 				</div>
 
 				<div class="field">
-					<div class="heading">{{ "Response Time"|t('site-monitor') }}</div>
+					<div class="heading">{{ "Response Time"|t('upsnap') }}</div>
 					<div>{{ data.duration ?? '–' }}</div>
 				</div>
 			</div>
@@ -73,48 +73,48 @@
 
 	{% if data.details is defined %}
 		<div class="details-section">
-			<h3 class="details-title">{{ 'Certificate details'|t('site-monitor') }}</h3>
+			<h3 class="details-title">{{ 'Certificate details'|t('upsnap') }}</h3>
 
 			<table class="details-table">
 				{% set leafCertificate = data.details.leafCertificate %}
 				<tr>
-					<td class="details-label">{{ 'Issuer'|t('site-monitor') }}</td>
+					<td class="details-label">{{ 'Issuer'|t('upsnap') }}</td>
 					<td class="details-value">
-						{{ leafCertificate.issuer.commonName|default('Unknown'|t('site-monitor')) }}
+						{{ leafCertificate.issuer.commonName|default('Unknown'|t('upsnap')) }}
 					</td>
 				</tr>
 				<tr>
-					<td class="details-label">{{ 'Not before'|t('site-monitor') }}</td>
+					<td class="details-label">{{ 'Not before'|t('upsnap') }}</td>
 					<td class="details-value">
-						{{ leafCertificate.notBefore is defined ? leafCertificate.notBefore|date("M j, Y") : 'Unknown'|t('site-monitor') }}
+						{{ leafCertificate.notBefore is defined ? leafCertificate.notBefore|date("M j, Y") : 'Unknown'|t('upsnap') }}
 					</td>
 				</tr>
 				<tr>
-					<td class="details-label">{{ 'Not after'|t('site-monitor') }}</td>
+					<td class="details-label">{{ 'Not after'|t('upsnap') }}</td>
 					<td class="details-value">
-						{{ leafCertificate.notAfter is defined ? leafCertificate.notAfter|date("M j, Y") : 'Unknown'|t('site-monitor') }}
+						{{ leafCertificate.notAfter is defined ? leafCertificate.notAfter|date("M j, Y") : 'Unknown'|t('upsnap') }}
 					</td>
 				</tr>
 				<tr>
-					<td class="details-label">{{ 'Expiry in days'|t('site-monitor') }}</td>
+					<td class="details-label">{{ 'Expiry in days'|t('upsnap') }}</td>
 					<td class="details-value">
-						{{ leafCertificate.daysUntilExpiry|default('Unknown'|t('site-monitor')) }}
+						{{ leafCertificate.daysUntilExpiry|default('Unknown'|t('upsnap')) }}
 					</td>
 				</tr>
 				<tr>
-					<td class="details-label">{{ 'Serial number'|t('site-monitor') }}</td>
+					<td class="details-label">{{ 'Serial number'|t('upsnap') }}</td>
 					<td class="details-value">
-						{{ leafCertificate.serialNumber|default('Unknown'|t('site-monitor')) }}
+						{{ leafCertificate.serialNumber|default('Unknown'|t('upsnap')) }}
 					</td>
 				</tr>
 				<tr>
-					<td class="details-label">{{ 'Signature alglorithm'|t('site-monitor') }}</td>
+					<td class="details-label">{{ 'Signature alglorithm'|t('upsnap') }}</td>
 					<td class="details-value">
-						{{ leafCertificate.signatureAlgorithm|default('Unknown'|t('site-monitor')) }}
+						{{ leafCertificate.signatureAlgorithm|default('Unknown'|t('upsnap')) }}
 					</td>
 				</tr>
 				<tr>
-					<td class="details-label">{{ 'Public key alogorithm'|t('site-monitor') }}</td>
+					<td class="details-label">{{ 'Public key alogorithm'|t('upsnap') }}</td>
 					{% if data.details.leafCertificate is defined and data.details.leafCertificate is not null %}
 						{% set publicKey = data.details.leafCertificate.publicKey %}
 						<td class="details-value">
@@ -126,28 +126,28 @@
 								({{ publicKey.bits }}
 								bits)
 							{% else %}
-								{{ publicKey.algorithm|default('Unknown'|t('site-monitor')) }}
+								{{ publicKey.algorithm|default('Unknown'|t('upsnap')) }}
 							{% endif %}
 						</td>
 					{% else %}
 						<td class="details-value">
-							{{ 'Unknown'|t('site-monitor') }}
+							{{ 'Unknown'|t('upsnap') }}
 						</td>
 					{% endif %}
 				</tr>
 			</table>
 			<br>
 			<div id='more-details'>
-				<h3 class="details-title">{{ 'Domain Coverage'|t('site-monitor') }}</h3>
+				<h3 class="details-title">{{ 'Domain Coverage'|t('upsnap') }}</h3>
 				<table class="details-table">
 					<tr>
-						<td class="details-label">{{ 'Domains Covered'|t('site-monitor') }}</td>
+						<td class="details-label">{{ 'Domains Covered'|t('upsnap') }}</td>
 						<td class="details-value">
 							{{ data.details.domainCoverage.sans|join(', ') }}
 						</td>
 					</tr>
 					<tr>
-						<td class="details-label">{{ 'Wildcard'|t('site-monitor') }}</td>
+						<td class="details-label">{{ 'Wildcard'|t('upsnap') }}</td>
 						<td class="details-value">
 							{{ data.details.domainCoverage.wildcard ? 'Yes' : 'No' }}
 						</td>
@@ -156,7 +156,7 @@
 
 				{% if data.details.chain is defined %}
 					<br>
-					<h3 class="details-title">{{ 'Certificate Chain'|t('site-monitor') }}</h3>
+					<h3 class="details-title">{{ 'Certificate Chain'|t('upsnap') }}</h3>
 					<div class="certificate-chain">
 						{% for cert in data.details.chain %}
 							<div class="certificate-card">
@@ -171,11 +171,11 @@
 										</h4>
 										<div class="certificate-type">
 											{% if cert.type == 'leaf' %}
-												{{ 'End Entity Certificate'|t('site-monitor') }}
+												{{ 'End Entity Certificate'|t('upsnap') }}
 											{% elseif cert.type == 'intermediate' %}
-												{{ 'Intermediate Certificate'|t('site-monitor') }}
+												{{ 'Intermediate Certificate'|t('upsnap') }}
 											{% else %}
-												{{ 'Root Certificate'|t('site-monitor') }}
+												{{ 'Root Certificate'|t('upsnap') }}
 											{% endif %}
 										</div>
 									</div>
@@ -183,21 +183,21 @@
 										{% if cert.info.isExpired %}
 											<div class="status-pill status-expired">
 												<span class="status-icon expired"></span>
-												{{ 'Expired'|t('site-monitor') }}
+												{{ 'Expired'|t('upsnap') }}
 											</div>
 										{% elseif cert.info.daysUntilExpiry <= 30 %}
 											<div class="status-pill status-warning">
 												<span class="status-icon warning"></span>
-												{{ 'Expires in'|t('site-monitor') }}
+												{{ 'Expires in'|t('upsnap') }}
 												{{ cert.info.daysUntilExpiry }}
-												{{ 'days'|t('site-monitor') }}
+												{{ 'days'|t('upsnap') }}
 											</div>
 										{% else %}
 											<div class="status-pill status-valid">
 												<span class="status-icon"></span>
-												{{ 'Valid for'|t('site-monitor') }}
+												{{ 'Valid for'|t('upsnap') }}
 												{{ cert.info.daysUntilExpiry }}
-												{{ 'days'|t('site-monitor') }}
+												{{ 'days'|t('upsnap') }}
 											</div>
 										{% endif %}
 									</div>
@@ -206,12 +206,12 @@
 								<div class="certificate-body">
 									<div class="certificate-grid">
 										<div class="cert-field">
-											<div class="cert-field-label">{{ 'Signature Algorithm'|t('site-monitor') }}</div>
+											<div class="cert-field-label">{{ 'Signature Algorithm'|t('upsnap') }}</div>
 											<div class="cert-field-value">{{ cert.info.signatureAlgorithm }}</div>
 										</div>
 
 										<div class="cert-field">
-											<div class="cert-field-label">{{ 'Key Algorithm'|t('site-monitor') }}</div>
+											<div class="cert-field-label">{{ 'Key Algorithm'|t('upsnap') }}</div>
 											<div class="cert-field-value">
 												{% if cert.info.publicKey.algorithm == 'ECC' %}
 													{{ cert.info.publicKey.algorithm }}
@@ -227,31 +227,31 @@
 										</div>
 
 										<div class="cert-field">
-											<div class="cert-field-label">{{ 'Not Before'|t('site-monitor') }}</div>
+											<div class="cert-field-label">{{ 'Not Before'|t('upsnap') }}</div>
 											<div class="cert-field-value">{{ cert.info.notBefore|date("M j, Y") }}</div>
 										</div>
 
 										<div class="cert-field">
-											<div class="cert-field-label">{{ 'Not After'|t('site-monitor') }}</div>
+											<div class="cert-field-label">{{ 'Not After'|t('upsnap') }}</div>
 											<div class="cert-field-value">{{ cert.info.notAfter|date("M j, Y") }}</div>
 										</div>
 
 										{% if cert.info.issuer.organizationName is defined %}
 											<div class="cert-field">
-												<div class="cert-field-label">{{ 'Organization'|t('site-monitor') }}</div>
+												<div class="cert-field-label">{{ 'Organization'|t('upsnap') }}</div>
 												<div class="cert-field-value">{{ cert.info.issuer.organizationName }}</div>
 											</div>
 										{% endif %}
 
 										{% if cert.info.issuer.commonName is defined %}
 											<div class="cert-field">
-												<div class="cert-field-label">{{ 'Issued By'|t('site-monitor') }}</div>
+												<div class="cert-field-label">{{ 'Issued By'|t('upsnap') }}</div>
 												<div class="cert-field-value">{{ cert.info.issuer.commonName }}</div>
 											</div>
 										{% endif %}
 
 										<div class="cert-field">
-											<div class="cert-field-label">{{ 'Serial Number'|t('site-monitor') }}</div>
+											<div class="cert-field-label">{{ 'Serial Number'|t('upsnap') }}</div>
 											<div class="cert-field-value mono">{{ cert.info.serialNumber }}</div>
 										</div>
 									</div>
@@ -268,9 +268,9 @@
 				{% endif %}
 			</div>
 
-			<a href="#" class="show-less">{{ 'Show less details'|t('site-monitor') }}</a>
+			<a href="#" class="show-less">{{ 'Show less details'|t('upsnap') }}</a>
 
-			<a href="#" class="show-details">{{ 'Show all details'|t('site-monitor') }}</a>
+			<a href="#" class="show-details">{{ 'Show all details'|t('upsnap') }}</a>
 		</div>
 	{% endif %}
 

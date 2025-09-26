@@ -1,6 +1,6 @@
 <?php
 
-namespace appfoster\sitemonitor;
+namespace appfoster\upsnap;
 
 use Craft;
 use craft\base\Event;
@@ -11,15 +11,15 @@ use craft\services\Plugins;
 use craft\events\PluginEvent;
 use craft\events\RegisterUrlRulesEvent;
 
-use appfoster\sitemonitor\models\Settings;
-use appfoster\sitemonitor\services\ApiService;
-use appfoster\sitemonitor\services\HistoryService;
+use appfoster\upsnap\models\Settings;
+use appfoster\upsnap\services\ApiService;
+use appfoster\upsnap\services\HistoryService;
 
 /**
  * @property ApiService $apiService
  * @property HistoryService $historyService
  */
-class SiteMonitor extends Plugin
+class Upsnap extends Plugin
 {
     public static $plugin;
 
@@ -42,7 +42,7 @@ class SiteMonitor extends Plugin
     protected function settingsHtml(): ?string
     {
         return Craft::$app->view->renderTemplate(
-            'site-monitor/_settings',
+            'upsnap/_settings',
             [
                 'settings' => $this->getSettings(),
                 'plugin' => $this,
@@ -101,15 +101,15 @@ class SiteMonitor extends Plugin
             UrlManager::EVENT_REGISTER_CP_URL_RULES,
             function (RegisterUrlRulesEvent $event) {
                 $event->rules = array_merge($event->rules, [
-                    'site-monitor' => 'site-monitor/dashboard/index',
-                    'site-monitor/reachability' => 'site-monitor/reachability/index',
-                    'site-monitor/reachability/history' => 'site-monitor/reachability/history',
-                    'site-monitor/security-certificates' => 'site-monitor/security-certificates/index',
-                    'site-monitor/settings' => 'site-monitor/settings/index',
-                    'site-monitor/broken-links' => 'site-monitor/broken-links/index',
-                    'site-monitor/lighthouse' => 'site-monitor/lighthouse/index',
-                    'site-monitor/domain-check' => 'site-monitor/domain-check/index',
-                    'site-monitor/mixed-content' => 'site-monitor/mixed-content/index',
+                    'upsnap' => 'upsnap/dashboard/index',
+                    'upsnap/reachability' => 'upsnap/reachability/index',
+                    'upsnap/reachability/history' => 'upsnap/reachability/history',
+                    'upsnap/security-certificates' => 'upsnap/security-certificates/index',
+                    'upsnap/settings' => 'upsnap/settings/index',
+                    'upsnap/broken-links' => 'upsnap/broken-links/index',
+                    'upsnap/lighthouse' => 'upsnap/lighthouse/index',
+                    'upsnap/domain-check' => 'upsnap/domain-check/index',
+                    'upsnap/mixed-content' => 'upsnap/mixed-content/index',
                 ]);
             }
         );
@@ -124,36 +124,36 @@ class SiteMonitor extends Plugin
 
         $item['subnav'] = [
             // 'dashboard' => [
-            //     'label' => Craft::t('site-monitor', 'Dashboard'),
-            //     'url' => 'site-monitor'
+            //     'label' => Craft::t('upsnap', 'Dashboard'),
+            //     'url' => 'upsnap'
             // ],
             'reachability' => [
-                'label' => Craft::t('site-monitor', 'Reachability'),
-                'url' => 'site-monitor/reachability'
+                'label' => Craft::t('upsnap', 'Reachability'),
+                'url' => 'upsnap/reachability'
             ],
             'security-certificates' => [
-                'label' => Craft::t('site-monitor', 'Security Certificates'),
-                'url' => 'site-monitor/security-certificates'
+                'label' => Craft::t('upsnap', 'Security Certificates'),
+                'url' => 'upsnap/security-certificates'
             ],
             'broken-links' => [
-                'label' => Craft::t('site-monitor', 'Broken Links'),
-                'url' => 'site-monitor/broken-links'
+                'label' => Craft::t('upsnap', 'Broken Links'),
+                'url' => 'upsnap/broken-links'
             ],
             'lighthouse' => [
-                'label' => Craft::t('site-monitor', 'Lighthouse'),
-                'url' => 'site-monitor/lighthouse'
+                'label' => Craft::t('upsnap', 'Lighthouse'),
+                'url' => 'upsnap/lighthouse'
             ],
             'domain-check' => [
-                'label' => Craft::t('site-monitor', 'Domain Check'),
-                'url' => 'site-monitor/domain-check'
+                'label' => Craft::t('upsnap', 'Domain Check'),
+                'url' => 'upsnap/domain-check'
             ],
             'mixed-content' => [
-                'label' => Craft::t('site-monitor', 'Mixed Content'),
-                'url' => 'site-monitor/mixed-content'
+                'label' => Craft::t('upsnap', 'Mixed Content'),
+                'url' => 'upsnap/mixed-content'
             ],
             // 'settings' => [
-            //     'label' => Craft::t('site-monitor', 'Settings'),
-            //     'url' => 'site-monitor/settings'
+            //     'label' => Craft::t('upsnap', 'Settings'),
+            //     'url' => 'upsnap/settings'
             // ],
         ];
 

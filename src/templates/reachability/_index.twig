@@ -1,17 +1,17 @@
 {% extends '_layouts/cp' %}
 {% import '_includes/forms' as forms %}
 
-{% set title = "Site Monitor"|t('site-monitor') %}
+{% set title = "Site Monitor"|t('upsnap') %}
 {% set tabs = {
-    status: { label: 'Current Status', url: url('site-monitor/reachability') },
+    status: { label: 'Current Status', url: url('upsnap/reachability') },
 } %}
-{% do view.registerAssetBundle("appfoster\\sitemonitor\\assetbundles\\monitor\\ReachabilityAsset") %}
+{% do view.registerAssetBundle("appfoster\\upsnap\\assetbundles\\monitor\\ReachabilityAsset") %}
 
 {% block actionButton %}
 	<div class="buttons">
 		<div class="btngroup">
 			<button type="button" class="btn submit" data-icon="refresh" id="refresh-btn">
-				{{ 'Refresh'|t('site-monitor') }}
+				{{ 'Refresh'|t('upsnap') }}
 			</button>
 		</div>
 	</div>
@@ -35,11 +35,11 @@
 			</div>
 			<h3 class="status-title">
 				{% if data.status == 'ok' %}
-					{{ 'Everything is running smoothly!'|t('site-monitor') }}
+					{{ 'Everything is running smoothly!'|t('upsnap') }}
 				{% elseif data.status == 'error' %}
-					{{ 'Server is experiencing issues!'|t('site-monitor') }}
+					{{ 'Server is experiencing issues!'|t('upsnap') }}
 				{% else %}
-					{{ 'There are some client-side issues!'|t('site-monitor') }}
+					{{ 'There are some client-side issues!'|t('upsnap') }}
 				{% endif %}
 			</h3>
 		</div>
@@ -52,19 +52,19 @@
 		<div class="meta read-only">
 			<div class="data fullwidth">
 				<div class="field">
-					<div class="heading">{{ "Monitored URL"|t('site-monitor') }}</div>
+					<div class="heading">{{ "Monitored URL"|t('upsnap') }}</div>
 					<div>
 						<a href="{{ data.url }}" target="_blank">{{ data.url }}</a>
 					</div>
 				</div>
 
 				<div class="field">
-					<div class="heading">{{ "Last Checked"|t('site-monitor') }}</div>
+					<div class="heading">{{ "Last Checked"|t('upsnap') }}</div>
 					<div>{{ data.checkedAt|date("d M Y, H:i:s") }}</div>
 				</div>
 
 				<div class="field">
-					<div class="heading">{{ "Response Time"|t('site-monitor') }}</div>
+					<div class="heading">{{ "Response Time"|t('upsnap') }}</div>
 					<div>{{ data.duration ?? '–' }}</div>
 				</div>
 			</div>
@@ -73,16 +73,16 @@
 
 	{% if data.details is defined %}
 		<div class="details-section">
-			<h3 class="details-title">{{ 'Check details'|t('site-monitor') }}</h3>
+			<h3 class="details-title">{{ 'Check details'|t('upsnap') }}</h3>
 
 			<table class="details-table">
 				<tr>
-					<td class="details-label">{{ 'Duration'|t('site-monitor') }}</td>
+					<td class="details-label">{{ 'Duration'|t('upsnap') }}</td>
 					<td class="details-value">
-						{{ data.details.duration|default('Unknown'|t('site-monitor')) }}
+						{{ data.details.duration|default('Unknown'|t('upsnap')) }}
 						{% if data.details.startedAt is defined %}
 							<span style="color: #999; margin-left: 16px;">
-								{{ 'Started at'|t('site-monitor') }}
+								{{ 'Started at'|t('upsnap') }}
 								{{ data.details.startedAt }}
 							</span>
 						{% endif %}
@@ -91,9 +91,9 @@
 
 				{% if data.details.monitoredFrom is defined %}
 					<tr>
-						<td class="details-label">{{ 'Monitored from'|t('site-monitor') }}</td>
+						<td class="details-label">{{ 'Monitored from'|t('upsnap') }}</td>
 						<td class="details-value">
-							{{ data.details.monitoredFrom.location|default('Unknown'|t('site-monitor')) }}
+							{{ data.details.monitoredFrom.location|default('Unknown'|t('upsnap')) }}
 							{% if data.details.monitoredFrom.ip is defined %}
 								<span style="color: #999; margin-left: 16px;">
 									{{ data.details.monitoredFrom.ip }}
@@ -166,7 +166,7 @@
 						<td class="details-value">{{ data.details.contentType }}</td>
 					</tr>
 					<tr>
-						<td class="details-label">{{ "Content Length"|t('site-monitor') }}</td>
+						<td class="details-label">{{ "Content Length"|t('upsnap') }}</td>
 						<td class="details-value">{{ data.details.contentLength }}
 							bytes</td>
 					</tr>
@@ -181,10 +181,10 @@
 				</table>
 
 				{% if data.details.tls %}
-					<h2>{{ "TLS / Security"|t('site-monitor') }}</h2>
+					<h2>{{ "TLS / Security"|t('upsnap') }}</h2>
 					<table class="details-table">
 						<tr>
-							<td class="details-label">{{ "TLS Version"|t('site-monitor') }}</td>
+							<td class="details-label">{{ "TLS Version"|t('upsnap') }}</td>
 							<td class="details-value">{{ data.details.tls.version }}</td>
 						</tr>
 						<tr>
@@ -202,9 +202,9 @@
 					</table>
 				{% endif %}
 			</div>
-			<a href="#" class="show-less">{{ 'Show less details'|t('site-monitor') }}</a>
+			<a href="#" class="show-less">{{ 'Show less details'|t('upsnap') }}</a>
 
-			<a href="#" class="show-details">{{ 'Show all details'|t('site-monitor') }}</a>
+			<a href="#" class="show-details">{{ 'Show all details'|t('upsnap') }}</a>
 		</div>
 	{% endif %}
 {% endblock %}
