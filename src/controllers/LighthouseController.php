@@ -20,7 +20,7 @@ class LighthouseController extends BaseController
             $response = SiteMonitor::$plugin->apiService->post('healthcheck', [
                 'url' => SiteMonitor::$healthCheckUrl,
                 'checks' => ["lighthouse"],
-                'device' => Craft::$app->getRequest()->getParam('device', 'desktop')
+                'strategy' => Craft::$app->getRequest()->getParam('device', 'desktop')
             ]);
 
             if (isset($response['result'])) {
