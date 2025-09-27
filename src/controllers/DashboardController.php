@@ -2,13 +2,14 @@
 
 namespace appfoster\upsnap\controllers;
 
-use appfoster\upsnap\assetbundles\monitor\MonitorAsset;
+use appfoster\upsnap\assetbundles\DashboardAsset;
 
 class DashboardController extends BaseController
 {
     public function __construct($id, $module = null)
     {
         parent::__construct($id, $module);
+        DashboardAsset::register($this->view);
     }
 
     // Action Methods
@@ -24,13 +25,9 @@ class DashboardController extends BaseController
 
         $variables = [
             'settings' => $settings,
-            'plugin' => $plugin,
             'title' => \Craft::t('upsnap', 'Dashboard'),
             'selectedSubnavItem' => 'dashboard',
         ];
-
-        // Register asset bundle
-        MonitorAsset::register($this->view);
 
         return $this->renderTemplate('upsnap/_index', $variables);
     }

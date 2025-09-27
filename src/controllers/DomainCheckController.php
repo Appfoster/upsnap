@@ -2,16 +2,18 @@
 
 namespace appfoster\upsnap\controllers;
 
-use appfoster\upsnap\Upsnap;
 use Craft;
 use yii\web\Response;
-use DateTime;
+
+use appfoster\upsnap\Upsnap;
+use appfoster\upsnap\assetbundles\DomainCheckAsset;
 
 class DomainCheckController extends BaseController
 {
     public function __construct($id, $module = null)
     {
         parent::__construct($id, $module);
+        DomainCheckAsset::register($this->view);
     }
 
     public function actionIndex(): Response

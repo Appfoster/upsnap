@@ -17,7 +17,6 @@ class SettingsController extends BaseController
 
         $variables = [
             'settings' => $settings,
-            'plugin' => $plugin,
             'title' => \Craft::t('upsnap', 'Settings'),
             'selectedSubnavItem' => 'settings',
         ];

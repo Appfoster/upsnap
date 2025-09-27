@@ -2,15 +2,18 @@
 
 namespace appfoster\upsnap\controllers;
 
-use appfoster\upsnap\Upsnap;
 use Craft;
 use yii\web\Response;
+
+use appfoster\upsnap\Upsnap;
+use appfoster\upsnap\assetbundles\BrokenLinksAsset;
 
 class BrokenLinksController extends BaseController
 {
     public function __construct($id, $module = null)
     {
         parent::__construct($id, $module);
+        BrokenLinksAsset::register($this->view);
     }
 
     public function actionIndex(): Response
@@ -34,7 +37,6 @@ class BrokenLinksController extends BaseController
                         'brokenLinks' => [],
                         'duration' => isset($response['result']['durationMs']) ? $response['result']['durationMs'] . ' ms' : '-',
                     ],
-                    'plugin' => Upsnap::$plugin,
                     'title' => Craft::t('upsnap', 'Broken Links'),
                     'selectedSubnavItem' => 'broken-links',
                 ]);
@@ -85,7 +87,6 @@ class BrokenLinksController extends BaseController
 
         return $this->renderTemplate('upsnap/broken-links/_index', [
             'data' => $data,
-            'plugin' => Upsnap::$plugin,
             'title' => Craft::t('upsnap', 'Broken Links'),
             'selectedSubnavItem' => 'broken-links',
         ]);

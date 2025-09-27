@@ -1,11 +1,9 @@
 {% extends '_layouts/cp' %}
 {% import '_includes/forms' as forms %}
 
-{% set title = "Reachability"|t('upsnap') %}
 {% set tabs = {
     status: { label: 'Current Status', url: url('upsnap/reachability') },
 } %}
-{% do view.registerAssetBundle("appfoster\\upsnap\\assetbundles\\upsnap\\ReachabilityAsset") %}
 
 {% block actionButton %}
 	<div class="buttons">

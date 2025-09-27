@@ -1,17 +1,17 @@
 <?php
-namespace appfoster\upsnap\assetbundles\upsnap;
+namespace appfoster\upsnap\assetbundles;
 
 use craft\web\AssetBundle;
+use appfoster\upsnap\Constants;
 
 class SecurityCertificatesAsset extends AssetBundle
 {
     public function init()
     {
-        $this->sourcePath = "@appfoster/upsnap/assetbundles/upsnap/dist";
-
+        $this->sourcePath = Constants::ASSET_SOURCE_PATH;
 
         $this->depends = [
-            CommonAsset::class,
+            BaseAsset::class,
         ];
 
         $this->css = [

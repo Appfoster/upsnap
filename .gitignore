@@ -1,0 +1,81 @@
+# Craft CMS Plugin .gitignore
+# Based on https://docs.craftcms.com/v4/plugin-development.html
+
+# Dependencies
+/vendor/
+/node_modules/
+
+# Craft CMS
+/storage/
+/web/cpresources/
+/web/imager/
+/web/uploads/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# IDE and Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Logs
+*.log
+/logs/
+
+# Runtime data
+/runtime/
+
+# Temporary files
+/tmp/
+/temp/
+
+# Cache files
+/cache/
+/web/assets/
+/web/resources/
+
+# Composer
+/composer.lock
+
+# Node.js / Frontend build
+/dist/
+/build/
+/public/build/
+
+# Testing
+/coverage/
+/.phpunit.result.cache
+
+# Local development
+/.ddev/
+/.vagrant/
+
+# Backup files
+*.bak
+*.backup
+*.old
+*.orig
+
+# Plugin-specific
+# Add any plugin-specific files or directories to ignore here
+# For example:
+# /config/plugin-settings.php
+# /migrations/pending/
+
+# Development artifacts
+/.phpstorm.meta.php
+/_ide_helper.php

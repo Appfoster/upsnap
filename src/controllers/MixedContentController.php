@@ -2,16 +2,18 @@
 
 namespace appfoster\upsnap\controllers;
 
-use appfoster\upsnap\Upsnap;
 use Craft;
 use yii\web\Response;
-use DateTime;
+
+use appfoster\upsnap\Upsnap;
+use appfoster\upsnap\assetbundles\MixedContentAsset;
 
 class MixedContentController extends BaseController
 {
     public function __construct($id, $module = null)
     {
         parent::__construct($id, $module);
+        MixedContentAsset::register($this->view);
     }
 
     public function actionIndex(): Response
@@ -52,8 +54,8 @@ class MixedContentController extends BaseController
                     'checkedAt' => $response['checkedAt'] ?? '',
                     'duration' => isset($result['durationMs']) ? $result['durationMs'] . ' ms' : 'Unknown',
                     'details' => [
-                       'mixedCount' => $meta['mixedCount'] ?? 0,
-                       'mixedContentItems' => $meta['mixedContentItems'] ?? [],
+                        'mixedCount' => $meta['mixedCount'] ?? 0,
+                        'mixedContentItems' => $meta['mixedContentItems'] ?? [],
                     ]
                 ];
             }
@@ -63,7 +65,6 @@ class MixedContentController extends BaseController
 
         return $this->renderTemplate('upsnap/mixed-content/_index', [
             'data' => $data,
-            'plugin' => Upsnap::$plugin,
             'title' => Craft::t('upsnap', 'Mixed Content Check'),
             'selectedSubnavItem' => 'mixed-content',
         ]);

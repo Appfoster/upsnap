@@ -1,9 +1,6 @@
 {% extends '_layouts/cp' %}
 {% import '_includes/forms' as forms %}
 
-{% set title = "Uptime Monitoring"|t('upsnap') %}
-{% do view.registerAssetBundle("appfoster\\upsnap\\assetbundles\\upsnap\\ReachabilityAsset") %}
-
 {% set tabs = {
     status: { label: 'Current Status', url: url('upsnap/reachability') },
     history: { label: 'History', url: url('upsnap/reachability/history') }

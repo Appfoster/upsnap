@@ -2,15 +2,18 @@
 
 namespace appfoster\upsnap\controllers;
 
-use appfoster\upsnap\Upsnap;
 use Craft;
 use yii\web\Response;
+
+use appfoster\upsnap\Upsnap;
+use appfoster\upsnap\assetbundles\LighthouseAsset;
 
 class LighthouseController extends BaseController
 {
     public function __construct($id, $module = null)
     {
         parent::__construct($id, $module);
+        LighthouseAsset::register($this->view);
     }
 
     public function actionIndex(): Response
@@ -55,7 +58,6 @@ class LighthouseController extends BaseController
 
         return $this->renderTemplate('upsnap/lighthouse/_index', [
             'data' => $data,
-            'plugin' => Upsnap::$plugin,
             'title' => Craft::t('upsnap', 'Lighthouse'),
             'selectedSubnavItem' => 'lighthouse',
         ]);

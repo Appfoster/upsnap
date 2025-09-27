@@ -7,6 +7,7 @@ namespace appfoster\upsnap;
  */
 class Constants
 {
+    public const ASSET_SOURCE_PATH = '@appfoster/upsnap/assetbundles/dist';
     // API Configuration
     public const API_BASE_URL = 'https://eagle-eye.appfoster.site';
     public const API_VERSION = 'v1';

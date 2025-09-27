@@ -2,16 +2,19 @@
 
 namespace appfoster\upsnap\controllers;
 
-use appfoster\upsnap\Upsnap;
+use appfoster\upsnap\assetbundles\ReachabilityAsset;
 use Craft;
-use yii\web\Response;
 use DateTime;
+use yii\web\Response;
+
+use appfoster\upsnap\Upsnap;
 
 class ReachabilityController extends BaseController
 {
     public function __construct($id, $module = null)
     {
         parent::__construct($id, $module);
+        ReachabilityAsset::register($this->view);
     }
 
     public function actionIndex(): Response
@@ -25,7 +28,7 @@ class ReachabilityController extends BaseController
             ]);
             
 
-             if (isset($response['result']['details']['uptime']['error'])) {
+            if (isset($response['result']['details']['uptime']['error'])) {
                 Craft::$app->getSession()->setError('Something went wrong: ' . $response['result']['details']['uptime']['error']);
                 return $this->renderTemplate('upsnap/reachability/_index', [
                     'data' => [
@@ -35,7 +38,6 @@ class ReachabilityController extends BaseController
                         'checkedAt' => $response['checkedAt'] ?? '',
                         'duration' => isset($response['result']['durationMs']) ? $response['result']['durationMs'] . ' ms' : '-',
                     ],
-                    'plugin' => Upsnap::$plugin,
                     'title' => Craft::t('upsnap', 'Reachability'),
                     'selectedSubnavItem' => 'reachability',
                 ]);
@@ -73,7 +75,6 @@ class ReachabilityController extends BaseController
 
         return $this->renderTemplate('upsnap/reachability/_index', [
             'data' => $data,
-            'plugin' => Upsnap::$plugin,
             'title' => Craft::t('upsnap', 'Reachability'),
             'selectedSubnavItem' => 'reachability',
         ]);
@@ -85,8 +86,6 @@ class ReachabilityController extends BaseController
      */
     public function actionHistory(): \yii\web\Response
     {
-        Craft::error("HEIuhskjdjlaksda", __METHOD__);
-        $siteUrl = Craft::$app->getSites()->getCurrentSite()->baseUrl;
         $request = Craft::$app->getRequest();
 
         // Get filter parameters from request
@@ -153,9 +152,8 @@ class ReachabilityController extends BaseController
                 'warning' => $warningChecks,
                 'uptimePercentage' => $uptimePercentage
             ],
-            'plugin' => Upsnap::$plugin,
-            'title' => Craft::t('upsnap', 'Uptime History'),
-            'selectedSubnavItem' => 'uptime',
+            'title' => Craft::t('upsnap', 'Reachability History'),
+            'selectedSubnavItem' => 'reachability',
         ];
 
         return $this->renderTemplate('upsnap/reachability/history', $variables);

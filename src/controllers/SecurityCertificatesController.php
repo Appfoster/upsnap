@@ -2,16 +2,18 @@
 
 namespace appfoster\upsnap\controllers;
 
-use appfoster\upsnap\Upsnap;
 use Craft;
 use yii\web\Response;
-use DateTime;
+
+use appfoster\upsnap\Upsnap;
+use appfoster\upsnap\assetbundles\SecurityCertificatesAsset;
 
 class SecurityCertificatesController extends BaseController
 {
     public function __construct($id, $module = null)
     {
         parent::__construct($id, $module);
+        SecurityCertificatesAsset::register($this->view);
     }
 
     public function actionIndex(): Response
@@ -34,7 +36,6 @@ class SecurityCertificatesController extends BaseController
                         'checkedAt' => $response['checkedAt'] ?? '',
                         'duration' => isset($response['result']['durationMs']) ? $response['result']['durationMs'] . ' ms' : '-',
                     ],
-                    'plugin' => Upsnap::$plugin,
                     'title' => Craft::t('upsnap', 'Security Certificates'),
                     'selectedSubnavItem' => 'security-certificates',
                 ]);
@@ -75,7 +76,6 @@ class SecurityCertificatesController extends BaseController
 
         return $this->renderTemplate('upsnap/security-certificates/_index', [
             'data' => $data,
-            'plugin' => Upsnap::$plugin,
             'title' => Craft::t('upsnap', 'SSL Certificates'),
             'selectedSubnavItem' => 'security-certificates',
         ]);
