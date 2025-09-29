@@ -12,8 +12,8 @@
             instructions: "Turn monitoring on or off"|t('upsnap'),
             id: 'enabled',
             name: 'enabled',
-            on: settings.enabled,
-            errors: settings.getErrors('enabled')
+            on: settings.enabled ?? false,
+            errors: settings.getErrors('enabled') ?? false
         }) }}
 
         {{ forms.textField({
@@ -22,9 +22,9 @@
             id: 'monitoringInterval',
             name: 'monitoringInterval',
             type: 'number',
-            value: settings.monitoringInterval,
+            value: settings.monitoringInterval ?? false,
             min: 1,
-            errors: settings.getErrors('monitoringInterval')
+            errors: settings.getErrors('monitoringInterval') ?? false
         }) }}
 
         {{ forms.textField({
@@ -33,8 +33,8 @@
             id: 'notificationEmail',
             name: 'notificationEmail',
             type: 'email',
-            value: settings.notificationEmail,
-            errors: settings.getErrors('notificationEmail')
+            value: settings.notificationEmail ?? false,
+            errors: settings.getErrors('notificationEmail') ?? false
         }) }}
 
         <div class="urls-field">
@@ -51,9 +51,9 @@
                         code: true
                     }
                 ],
-                rows: settings.monitoringUrls,
+                rows: settings.monitoringUrls ?? ["test", "test1"],
                 addRowLabel: "Add URL"|t('upsnap'),
-                errors: settings.getErrors('monitoringUrls')
+                errors: settings.getErrors('monitoringUrls') ?? false
             }) }}
         </div>
 

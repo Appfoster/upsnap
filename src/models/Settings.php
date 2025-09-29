@@ -12,7 +12,7 @@ class Settings extends Model
     /**
      * @var bool Whether the monitoring is enabled
      */
-    public bool $enabled = true;
+    public bool $enabled = false;
 
     /**
      * @var int Monitoring interval in minutes

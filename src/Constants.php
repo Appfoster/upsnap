@@ -38,4 +38,71 @@ class Constants
 
     // Default monitoring interval (minutes)
     public const DEFAULT_MONITORING_INTERVAL = 5;
+
+    const SUBNAV_ITEM_REACHABILITY = [
+        'label' => 'Reachability',
+        'key' => 'reachability',
+        'url' => 'upsnap/reachability'
+    ];
+    const SUBNAV_ITEM_SECURITY_CERTIFICATES = [
+        'label' => 'Security Certificates',
+        'key' => 'security-certificates',
+        'url' => 'upsnap/security-certificates'
+    ];
+    const SUBNAV_ITEM_BROKEN_LINKS = [
+        'label' => 'Broken Links',
+        'key' => 'broken-links',
+        'url' => 'upsnap/broken-links'
+    ];
+    const SUBNAV_ITEM_LIGHTHOUSE = [
+        'label' => 'Lighthouse',
+        'key' => 'lighthouse',
+        'url' => 'upsnap/lighthouse'
+    ];
+    const SUBNAV_ITEM_DOMAIN_CHECK = [
+        'label' => 'Domain Check',
+        'key' => 'domain-check',
+        'url' => 'upsnap/domain-check'
+    ];
+    const SUBNAV_ITEM_MIXED_CONTENT = [
+        'label' => 'Mixed Content',
+        'key' => 'mixed-content',
+        'url' => 'upsnap/mixed-content'
+    ];
+    const SUBNAV_ITEM_SETTINGS = [
+        'label' => 'Settings',
+        'key' => 'settings',
+        'url' => 'upsnap/settings'
+    ];
+
+    const SUBNAV_ITEM_LIST = [
+        self::SUBNAV_ITEM_REACHABILITY['key'] => [
+            'label' => self::SUBNAV_ITEM_REACHABILITY['label'],
+            'url' => self::SUBNAV_ITEM_REACHABILITY['url']
+        ],
+        self::SUBNAV_ITEM_SECURITY_CERTIFICATES['key'] => [
+            'label' => self::SUBNAV_ITEM_SECURITY_CERTIFICATES['label'],
+            'url' => self::SUBNAV_ITEM_SECURITY_CERTIFICATES['url']
+        ],
+        self::SUBNAV_ITEM_BROKEN_LINKS['key'] => [
+            'label' => self::SUBNAV_ITEM_BROKEN_LINKS['label'],
+            'url' => self::SUBNAV_ITEM_BROKEN_LINKS['url']
+        ],
+        self::SUBNAV_ITEM_LIGHTHOUSE['key'] => [
+            'label' => self::SUBNAV_ITEM_LIGHTHOUSE['label'],
+            'url' => self::SUBNAV_ITEM_LIGHTHOUSE['url']
+        ],
+        self::SUBNAV_ITEM_DOMAIN_CHECK['key'] => [
+            'label' => self::SUBNAV_ITEM_DOMAIN_CHECK['label'],
+            'url' => self::SUBNAV_ITEM_DOMAIN_CHECK['url']
+        ],
+        self::SUBNAV_ITEM_MIXED_CONTENT['key'] => [
+            'label' => self::SUBNAV_ITEM_MIXED_CONTENT['label'],
+            'url' => self::SUBNAV_ITEM_MIXED_CONTENT['url']
+        ],
+        self::SUBNAV_ITEM_SETTINGS['key'] => [
+            'label' => self::SUBNAV_ITEM_SETTINGS['label'],
+            'url' => self::SUBNAV_ITEM_SETTINGS['url']
+        ],
+    ];
 }

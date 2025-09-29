@@ -1,15 +1,12 @@
-// Mixed Content page JavaScript
 document.addEventListener("DOMContentLoaded", function () {
-    const refreshBtn = document.getElementById("refresh-btn");
-
-    refreshBtn.addEventListener("click", function () {
-        window.location.reload(); // reloads the current page
-    });
-
-    // Include show-details functionality if needed
     const moreDetails = document.getElementById('more-details');
     const showDetailsBtn = document.querySelector('.show-details');
     const showLessBtn = document.querySelector('.show-less');
+    const refreshBtn = document.getElementById("refresh-btn");
+
+    refreshBtn.addEventListener("click", function () {
+        window.location.reload(); // reloads the current page, calls actionIndex again
+    });
 
     if (showDetailsBtn && showLessBtn && moreDetails) {
         showDetailsBtn.addEventListener('click', function (e) {

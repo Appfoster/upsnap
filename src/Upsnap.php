@@ -5,13 +5,11 @@ namespace appfoster\upsnap;
 use Craft;
 use craft\base\Event;
 use craft\base\Plugin;
-use craft\helpers\App;
 use craft\web\UrlManager;
 use craft\services\Plugins;
 use craft\events\PluginEvent;
 use craft\events\RegisterUrlRulesEvent;
 
-use appfoster\upsnap\models\Settings;
 use appfoster\upsnap\services\ApiService;
 use appfoster\upsnap\services\HistoryService;
 
@@ -26,15 +24,7 @@ class Upsnap extends Plugin
     public bool $hasCpSection = true;
     public bool $hasCpSettings = true;
     public string $schemaVersion = '1.0.0';
-    public static string $healthCheckUrl;
-
-    /**
-     * @inheritdoc
-     */
-    // protected function createSettingsModel(): Settings
-    // {
-    //     return new Settings();
-    // }
+    public static string $healthCheckUrl = 'https://appfoster.com';
 
     /**
      * @inheritdoc
@@ -53,10 +43,6 @@ class Upsnap extends Plugin
     public function init()
     {
         parent::init();
-
-        self::$healthCheckUrl = App::env('SITE_MONITOR_URL') ?: '';
-
-        // Removed global asset bundle registration - each page registers its own now
 
         $this->setComponents([
             'apiService' => ApiService::class,
@@ -102,14 +88,18 @@ class Upsnap extends Plugin
             function (RegisterUrlRulesEvent $event) {
                 $event->rules = array_merge($event->rules, [
                     'upsnap' => 'upsnap/dashboard/index',
-                    'upsnap/reachability' => 'upsnap/reachability/index',
-                    'upsnap/reachability/history' => 'upsnap/reachability/history',
-                    'upsnap/security-certificates' => 'upsnap/security-certificates/index',
-                    'upsnap/settings' => 'upsnap/settings/index',
-                    'upsnap/broken-links' => 'upsnap/broken-links/index',
-                    'upsnap/lighthouse' => 'upsnap/lighthouse/index',
-                    'upsnap/domain-check' => 'upsnap/domain-check/index',
-                    'upsnap/mixed-content' => 'upsnap/mixed-content/index',
+
+                    // Health Check Routes
+                    Constants::SUBNAV_ITEM_REACHABILITY['url'] => 'upsnap/health-check/reachability',
+                    // 'upsnap/reachability/history' => 'upsnap/health-check/reachability-history',
+                    Constants::SUBNAV_ITEM_SECURITY_CERTIFICATES['url'] => 'upsnap/health-check/security-certificates',
+                    Constants::SUBNAV_ITEM_BROKEN_LINKS['url'] => 'upsnap/health-check/broken-links',
+                    Constants::SUBNAV_ITEM_LIGHTHOUSE['url'] => 'upsnap/health-check/lighthouse',
+                    Constants::SUBNAV_ITEM_DOMAIN_CHECK['url'] => 'upsnap/health-check/domain-check',
+                    Constants::SUBNAV_ITEM_MIXED_CONTENT['url'] => 'upsnap/health-check/mixed-content',
+
+                    // Setting Route
+                    Constants::SUBNAV_ITEM_SETTINGS['url'] => 'upsnap/settings/index',
                 ]);
             }
         );
@@ -122,40 +112,7 @@ class Upsnap extends Plugin
     {
         $item = parent::getCpNavItem();
 
-        $item['subnav'] = [
-            // 'dashboard' => [
-            //     'label' => Craft::t('upsnap', 'Dashboard'),
-            //     'url' => 'upsnap'
-            // ],
-            'reachability' => [
-                'label' => Craft::t('upsnap', 'Reachability'),
-                'url' => 'upsnap/reachability'
-            ],
-            'security-certificates' => [
-                'label' => Craft::t('upsnap', 'Security Certificates'),
-                'url' => 'upsnap/security-certificates'
-            ],
-            'broken-links' => [
-                'label' => Craft::t('upsnap', 'Broken Links'),
-                'url' => 'upsnap/broken-links'
-            ],
-            'lighthouse' => [
-                'label' => Craft::t('upsnap', 'Lighthouse'),
-                'url' => 'upsnap/lighthouse'
-            ],
-            'domain-check' => [
-                'label' => Craft::t('upsnap', 'Domain Check'),
-                'url' => 'upsnap/domain-check'
-            ],
-            'mixed-content' => [
-                'label' => Craft::t('upsnap', 'Mixed Content'),
-                'url' => 'upsnap/mixed-content'
-            ],
-            // 'settings' => [
-            //     'label' => Craft::t('upsnap', 'Settings'),
-            //     'url' => 'upsnap/settings'
-            // ],
-        ];
+        $item['subnav'] = Constants::SUBNAV_ITEM_LIST;
 
         return $item;
     }
