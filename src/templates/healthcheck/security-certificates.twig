@@ -18,7 +18,7 @@
 
 	<div class="status-container {{ containerClass }}">
 		<div class="status-header">
-			<div class="status-icons {{ statusClass }}">
+			<div class="status-icon {{ statusClass }}">
 				{% if data.status == 'ok' %}
 					✓
 				{% elseif data.status == 'error' %}
@@ -132,7 +132,7 @@
 				</tr>
 			</table>
 			<br>
-			<div id='more-details'>
+			<div id="more-details" class="hidden">
 				<h3 class="details-title">{{ 'Domain Coverage'|t('upsnap') }}</h3>
 				<table class="details-table">
 					<tr>
@@ -151,7 +151,7 @@
 
 				{% if data.details.chain is defined %}
 					<br>
-					<h3 class="details-title">{{ 'Certificate Chain'|t('upsnap') }}</h3>
+					<h3 class="pt-2rem details-title">{{ 'Certificate Chain'|t('upsnap') }}</h3>
 					<div class="certificate-chain">
 						{% for cert in data.details.chain %}
 							<div class="certificate-card">
@@ -263,9 +263,8 @@
 				{% endif %}
 			</div>
 
-			<a href="#" class="show-less">{{ 'Show less details'|t('upsnap') }}</a>
-
-			<a href="#" class="show-details">{{ 'Show all details'|t('upsnap') }}</a>
+			<a href="#" class="show-less hidden">{{ 'Show less'|t('upsnap') }}</a>
+			<a href="#" class="show-details">{{ 'Show more'|t('upsnap') }}</a>
 		</div>
 	{% endif %}
 

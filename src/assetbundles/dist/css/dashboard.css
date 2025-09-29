@@ -1,0 +1,79 @@
+/* Dashboard-specific styles */
+
+#upsnap-dashboard {
+    padding: 24px;
+}
+
+/* Stats Overview */
+.monitoring-overview {
+    margin-bottom: 24px;
+}
+
+.monitoring-stats {
+    display: flex;
+    gap: 24px;
+    padding: 16px;
+}
+
+.stat {
+    flex: 1;
+    text-align: center;
+}
+
+.stat-label {
+    font-size: 14px;
+    color: #677486;
+    margin-bottom: 8px;
+}
+
+.stat-value {
+    font-size: 24px;
+    font-weight: 600;
+}
+
+/* Incidents */
+.incident-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.incident-item {
+    padding: 16px;
+    border-left: 4px solid;
+}
+
+.incident-item.status-warning {
+    border-color: #F0B429;
+}
+
+.incident-item.status-critical {
+    border-color: #E12D39;
+}
+
+.incident-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.incident-title {
+    font-weight: 600;
+    flex: 1;
+}
+
+.incident-time {
+    font-size: 13px;
+}
+
+/* Service Table */
+.monitoring-services table td {
+    vertical-align: middle;
+}
+
+/* Section Spacing */
+.monitoring-incidents,
+.monitoring-services,
+.monitoring-activity {
+    margin-top: 24px;
+}

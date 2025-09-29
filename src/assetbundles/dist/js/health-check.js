@@ -1,3 +1,5 @@
+// Health Check specific JavaScript functionality
+
 document.addEventListener("DOMContentLoaded", function () {
     registerBrokenLinksJs();
     registerDomainCheckJs();
@@ -70,36 +72,11 @@ function registerBrokenLinksJs() {
 }
 
 function registerDomainCheckJs() {
-    const refreshBtn = document.getElementById("refresh-btn");
-
-    refreshBtn.addEventListener("click", function () {
-        window.location.reload(); // reloads the current page
-    });
-
-    // Include show-details functionality if needed
-    const moreDetails = document.getElementById('more-details');
-    const showDetailsBtn = document.querySelector('.show-details');
-    const showLessBtn = document.querySelector('.show-less');
-
-    if (showDetailsBtn && showLessBtn && moreDetails) {
-        showDetailsBtn.addEventListener('click', function (e) {
-            e.preventDefault();
-            moreDetails.style.display = 'block';
-            showDetailsBtn.style.display = 'none';
-            showLessBtn.style.display = 'inline-block';
-        });
-
-        showLessBtn.addEventListener('click', function (e) {
-            e.preventDefault();
-            moreDetails.style.display = 'none';
-            showDetailsBtn.style.display = 'inline-block';
-            showLessBtn.style.display = 'none';
-        });
-    }
+    // Domain check specific functionality (refresh button handled globally)
+    // Add any domain check specific JS here
 }
 
 function registerLighthouseJs() {
-    const refreshBtn = document.getElementById("refresh-btn");
     const deviceTabs = document.querySelectorAll(".device-tab");
     const scoresContainer = document.getElementById("scores-container");
     const performanceContainer = document.getElementById("performance-container");
@@ -124,26 +101,17 @@ function registerLighthouseJs() {
         };
     }
 
-    // Refresh functionality
-    if (refreshBtn) {
-        refreshBtn.addEventListener("click", function () {
-            document.getElementById("loading-overlay").style.display = "flex";
-            setTimeout(() => {
-                window.location.reload();
-            }, 500);
-        });
-    }
-
+    // Device tab switching
     deviceTabs.forEach(tab => {
         tab.addEventListener('click', function () {
             deviceTabs.forEach(t => t.classList.remove('active'));
             this.classList.add('active');
             currentDevice = this.dataset.device;
 
-            // ✅ Show loader
+            // Show loader
             document.getElementById("loading-overlay").style.display = "flex";
 
-            // ✅ Call controller with device param
+            // Call controller with device param
             Craft.sendActionRequest('POST', 'upsnap/lighthouse/index', {
                 data: { device: currentDevice }
             })
@@ -198,7 +166,7 @@ function registerLighthouseJs() {
                 <div class="score-circle">
                     <svg viewBox="0 0 80 80">
                         <circle class="background" cx="40" cy="40" r="37"></circle>
-                        <circle class="progress" cx="40" cy="40" r="37" 
+                        <circle class="progress" cx="40" cy="40" r="37"
                                 stroke="${color}"
                                 stroke-dasharray="${progress} ${circumference}">
                         </circle>
@@ -295,63 +263,13 @@ function registerLighthouseJs() {
 }
 
 function registerMixedContentJs() {
-    const refreshBtn = document.getElementById("refresh-btn");
-
-    refreshBtn.addEventListener("click", function () {
-        window.location.reload(); // reloads the current page
-    });
-
-    // Include show-details functionality if needed
-    const moreDetails = document.getElementById('more-details');
-    const showDetailsBtn = document.querySelector('.show-details');
-    const showLessBtn = document.querySelector('.show-less');
-
-    if (showDetailsBtn && showLessBtn && moreDetails) {
-        showDetailsBtn.addEventListener('click', function (e) {
-            e.preventDefault();
-            moreDetails.style.display = 'block';
-            showDetailsBtn.style.display = 'none';
-            showLessBtn.style.display = 'inline-block';
-        });
-
-        showLessBtn.addEventListener('click', function (e) {
-            e.preventDefault();
-            moreDetails.style.display = 'none';
-            showDetailsBtn.style.display = 'inline-block';
-            showLessBtn.style.display = 'none';
-        });
-    }
+    // Mixed content specific functionality (refresh button handled globally)
+    // Add any mixed content specific JS here
 }
 
 function registerReachabilityJs() {
-    const refreshBtn = document.getElementById("refresh-btn");
-
-    if (refreshBtn) {
-        refreshBtn.addEventListener("click", function () {
-            window.location.reload(); // reloads the current page
-        });
-    }
-
-    // Include show-details functionality if needed
-    const moreDetails = document.getElementById('more-details');
-    const showDetailsBtn = document.querySelector('.show-details');
-    const showLessBtn = document.querySelector('.show-less');
-
-    if (showDetailsBtn && showLessBtn && moreDetails) {
-        showDetailsBtn.addEventListener('click', function (e) {
-            e.preventDefault();
-            moreDetails.style.display = 'block';
-            showDetailsBtn.style.display = 'none';
-            showLessBtn.style.display = 'inline-block';
-        });
-
-        showLessBtn.addEventListener('click', function (e) {
-            e.preventDefault();
-            moreDetails.style.display = 'none';
-            showDetailsBtn.style.display = 'inline-block';
-            showLessBtn.style.display = 'none';
-        });
-    }
+    // Reachability specific functionality (refresh button handled globally)
+    // Add any reachability specific JS here
 }
 
 // Toggle row expansion

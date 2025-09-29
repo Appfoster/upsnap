@@ -121,9 +121,9 @@
 				{% endif %}
 			</table>
 
-			<div id='more-details'>
+			<div id="more-details" class="hidden">
 
-				<h3 class="details-title">HTTP Details</h3>
+				<h3 class="pt-2rem details-title">HTTP Details</h3>
 				<table class="details-table">
 					<tr>
 						<td class="details-label">HTTP Status</td>
@@ -170,7 +170,7 @@
 					</tr>
 				</table>
 
-				<h2 class="details-title">Page Info</h2>
+				<h2 class="pt-2rem details-title">Page Info</h2>
 				<table class="details-table">
 					<tr>
 						<td class="details-label">Page Title</td>
@@ -179,7 +179,7 @@
 				</table>
 
 				{% if data.details.tls %}
-					<h2>{{ "TLS / Security"|t('upsnap') }}</h2>
+					<h2 class="pt-2rem">{{ "TLS / Security"|t('upsnap') }}</h2>
 					<table class="details-table">
 						<tr>
 							<td class="details-label">{{ "TLS Version"|t('upsnap') }}</td>
@@ -200,9 +200,9 @@
 					</table>
 				{% endif %}
 			</div>
-			<a href="#" class="show-less">{{ 'Show less details'|t('upsnap') }}</a>
 
-			<a href="#" class="show-details">{{ 'Show all details'|t('upsnap') }}</a>
+			<a href="#" class="show-less hidden">{{ 'Show less'|t('upsnap') }}</a>
+			<a href="#" class="show-details">{{ 'Show more'|t('upsnap') }}</a>
 		</div>
 	{% endif %}
 {% endblock %}

@@ -7,7 +7,7 @@ use craft\base\Model;
 /**
  * Upsnap Settings Model
  */
-class Settings extends Model
+class SettingsModel extends Model
 {
     /**
      * @var bool Whether the monitoring is enabled
@@ -25,9 +25,9 @@ class Settings extends Model
     public ?string $notificationEmail = null;
 
     /**
-     * @var array URLs to monitor
+     * @var string|null URL to monitor
      */
-    public array $monitoringUrls = [];
+    public ?string $monitoringUrl = null;
 
     /**
      * @inheritdoc
@@ -38,8 +38,11 @@ class Settings extends Model
             ['enabled', 'boolean'],
             ['monitoringInterval', 'integer', 'min' => 1],
             ['notificationEmail', 'email'],
-            ['monitoringInterval', 'required'],
-            ['monitoringUrls', 'each', 'rule' => ['url']],
+            ['monitoringUrl', 'required'],
+            ['monitoringUrl', 'match', 'pattern' => '/^https:\/\/[^\s\/$.?#].[^\s]*$/i', 'message' => 'Monitoring URL must be a valid HTTPS URL.'],
+            ['monitoringInterval', 'required', 'when' => function($model) {
+                return $model->enabled === true;
+            }],
         ];
     }
 }

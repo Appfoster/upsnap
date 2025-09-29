@@ -2,59 +2,55 @@
 {% import "_includes/forms" as forms %}
 
 {% block content %}
-    <form method="post" accept-charset="UTF-8" data-saveshortcut>
+    <form id="settings-form" method="post" enctype="multipart/form-data">
+        <!-- CSRF token and other hidden inputs -->
         {{ csrfInput() }}
         {{ actionInput('upsnap/settings/save') }}
         {{ redirectInput('upsnap/settings') }}
 
-        {{ forms.lightswitchField({
-            label: "Enable Monitoring"|t('upsnap'),
-            instructions: "Turn monitoring on or off"|t('upsnap'),
-            id: 'enabled',
-            name: 'enabled',
-            on: settings.enabled ?? false,
-            errors: settings.getErrors('enabled') ?? false
-        }) }}
-
         {{ forms.textField({
-            label: "Monitoring Interval"|t('upsnap'),
-            instructions: "How often to check sites (in minutes)"|t('upsnap'),
-            id: 'monitoringInterval',
-            name: 'monitoringInterval',
-            type: 'number',
-            value: settings.monitoringInterval ?? false,
-            min: 1,
-            errors: settings.getErrors('monitoringInterval') ?? false
+            label: "URL to Monitor"|t('upsnap'),
+            instructions: "Enter the URL you want to monitor"|t('upsnap'),
+            id: 'monitoringUrl',
+            name: 'monitoringUrl',
+            type: 'url',
+            value: settings.monitoringUrl ?? '',
+            placeholder: 'https://example.com',
+            errors: settings.getErrors('monitoringUrl') ?? false
         }) }}
 
-        {{ forms.textField({
-            label: "Notification Email"|t('upsnap'),
-            instructions: "Email address for monitoring alerts"|t('upsnap'),
-            id: 'notificationEmail',
-            name: 'notificationEmail',
-            type: 'email',
-            value: settings.notificationEmail ?? false,
-            errors: settings.getErrors('notificationEmail') ?? false
-        }) }}
-
-        <div class="urls-field">
-            <h2>{{ "URLs to Monitor"|t('upsnap') }}</h2>
-            {{ forms.editableTableField({
-                label: "URLs to Monitor"|t('upsnap'),
-                instructions: "Add the URLs you want to monitor"|t('upsnap'),
-                id: 'monitoringUrls',
-                name: 'monitoringUrls',
-                cols: [
-                    {
-                        type: 'url',
-                        heading: 'URL'|t('upsnap'),
-                        code: true
-                    }
-                ],
-                rows: settings.monitoringUrls ?? ["test", "test1"],
-                addRowLabel: "Add URL"|t('upsnap'),
-                errors: settings.getErrors('monitoringUrls') ?? false
+        <div id="enable-monitoring" style="{% if not (settings.enabled ?? false) %}display: none;{% endif %}">
+            {{ forms.lightswitchField({
+                label: "Enable Monitoring"|t('upsnap'),
+                instructions: "Turn monitoring on or off"|t('upsnap'),
+                id: 'enabled',
+                name: 'enabled',
+                on: settings.enabled ?? false,
+                errors: settings.getErrors('enabled') ?? false
             }) }}
+
+            <div id="advanced-settings" style="{% if not (settings.enabled ?? false) %}display: none;{% endif %}">
+                {{ forms.textField({
+                    label: "Monitoring Interval"|t('upsnap'),
+                    instructions: "How often to check sites (in minutes)"|t('upsnap'),
+                    id: 'monitoringInterval',
+                    name: 'monitoringInterval',
+                    type: 'number',
+                    value: settings.monitoringInterval ?? 5,
+                    min: 1,
+                    errors: settings.getErrors('monitoringInterval') ?? false
+                }) }}
+
+                {{ forms.textField({
+                    label: "Notification Email"|t('upsnap'),
+                    instructions: "Email address for monitoring alerts"|t('upsnap'),
+                    id: 'notificationEmail',
+                    name: 'notificationEmail',
+                    type: 'email',
+                    value: settings.notificationEmail ?? '',
+                    errors: settings.getErrors('notificationEmail') ?? false
+                }) }}
+            </div>
         </div>
 
         <div class="buttons">

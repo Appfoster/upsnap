@@ -89,8 +89,9 @@
 					</td>
 				</tr>
 			</table>
-			<div id='more-details'>
-				<h3 class="details-title">{{ 'DNS Records'|t('upsnap') }}</h3>
+
+			<div id="more-details" class="hidden">
+				<h3 class="pt-2rem details-title">{{ 'DNS Records'|t('upsnap') }}</h3>
 				<table class="details-table">
 					<tr>
 						<td class="details-label">{{ 'IPv4'|t('upsnap') }}</td>
@@ -120,7 +121,7 @@
 					</tr>
 				</table>
 
-				<h3 class="details-title">{{ 'Domain Lifecycle'|t('upsnap') }}</h3>
+				<h3 class="pt-2rem details-title">{{ 'Domain Lifecycle'|t('upsnap') }}</h3>
 				<table class="details-table">
 					<tr>
 						<td class="details-label">{{ 'Registered On'|t('upsnap') }}</td>
@@ -159,7 +160,7 @@
 						</td>
 					</tr>
 				</table>
-				<h3 class="details-title">{{ 'Domain Status Codes'|t('upsnap') }}</h3>
+				<h3 class="pt-2rem details-title">{{ 'Domain Status Codes'|t('upsnap') }}</h3>
 				<table class="details-table">
 					{% if data.details.domainStatusCodes is not empty %}
 						{% for status in data.details.domainStatusCodes %}
@@ -175,11 +176,10 @@
 					{% endif %}
 				</table>
 			</div>
+
+			<a href="#" class="show-less hidden">{{ 'Show less'|t('upsnap') }}</a>
+			<a href="#" class="show-details">{{ 'Show more'|t('upsnap') }}</a>
 		</div>
-
-		<a href="#" class="show-less">{{ 'Show less details'|t('upsnap') }}</a>
-
-		<a href="#" class="show-details">{{ 'Show all details'|t('upsnap') }}</a>
 	{% endif %}
 
 {% endblock %}

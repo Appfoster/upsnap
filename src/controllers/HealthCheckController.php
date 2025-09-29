@@ -22,7 +22,7 @@ class HealthCheckController extends BaseController
 
         try {
             $response = Upsnap::$plugin->apiService->post('healthcheck', [
-                'url' => Upsnap::$healthCheckUrl,
+                'url' => Upsnap::getMonitoringUrl(),
                 'checks' => ['broken_links'],
             ]);
 
@@ -98,7 +98,7 @@ class HealthCheckController extends BaseController
 
         try {
             $response = Upsnap::$plugin->apiService->post('healthcheck', [
-                'url' => Upsnap::$healthCheckUrl,
+                'url' => Upsnap::getMonitoringUrl(),
                 'checks' => ['domain'],
             ]);
             if (isset($response['result']['details']['domain']['meta']['errors'])) {
@@ -167,7 +167,7 @@ class HealthCheckController extends BaseController
         $data = [];
         try {
             $response = Upsnap::$plugin->apiService->post('healthcheck', [
-                'url' => Upsnap::$healthCheckUrl,
+                'url' => Upsnap::getMonitoringUrl(),
                 'checks' => ["lighthouse"],
                 'strategy' => Craft::$app->getRequest()->getParam('device', 'desktop')
             ]);
@@ -215,7 +215,7 @@ class HealthCheckController extends BaseController
 
         try {
             $response = Upsnap::$plugin->apiService->post('healthcheck', [
-                'url' => Upsnap::$healthCheckUrl,
+                'url' => Upsnap::getMonitoringUrl(),
                 'checks' => ['mixed_content'],
             ]);
             if (isset($response['result']['details']['mixed_content']['error'])) {
@@ -269,7 +269,7 @@ class HealthCheckController extends BaseController
 
         try {
             $response = Upsnap::$plugin->apiService->post('healthcheck', [
-                'url' => Upsnap::$healthCheckUrl,
+                'url' => Upsnap::getMonitoringUrl(),
                 "checks" => ["uptime"],
             ]);
             
@@ -332,7 +332,7 @@ class HealthCheckController extends BaseController
 
         try {
             $response = Upsnap::$plugin->apiService->post('healthcheck', [
-                'url' => Upsnap::$healthCheckUrl,
+                'url' => Upsnap::getMonitoringUrl(),
                 'checks' => ["ssl"],
             ]);
 

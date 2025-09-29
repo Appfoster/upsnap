@@ -12,10 +12,12 @@ use craft\events\RegisterUrlRulesEvent;
 
 use appfoster\upsnap\services\ApiService;
 use appfoster\upsnap\services\HistoryService;
+use appfoster\upsnap\services\SettingsService;
 
 /**
  * @property ApiService $apiService
  * @property HistoryService $historyService
+ * @property SettingsService $settingsService
  */
 class Upsnap extends Plugin
 {
@@ -24,29 +26,28 @@ class Upsnap extends Plugin
     public bool $hasCpSection = true;
     public bool $hasCpSettings = true;
     public string $schemaVersion = '1.0.0';
-    public static string $healthCheckUrl = 'https://appfoster.com';
 
     /**
-     * @inheritdoc
+     * Get the monitoring URL from settings
      */
-    protected function settingsHtml(): ?string
+    public static function getMonitoringUrl(): string
     {
-        return Craft::$app->view->renderTemplate(
-            'upsnap/_settings',
-            [
-                'settings' => $this->getSettings(),
-                'plugin' => $this,
-            ]
-        );
+        $plugin = self::getInstance();
+        $settingsService = $plugin->settingsService;
+        return $settingsService->getMonitoringUrl();
     }
 
     public function init()
     {
         parent::init();
 
+        // Set alias for assets
+        \Craft::setAlias('@upsnap', dirname(__DIR__)."/src");
+
         $this->setComponents([
             'apiService' => ApiService::class,
-            'historyService' => HistoryService::class
+            'historyService' => HistoryService::class,
+            'settingsService' => SettingsService::class
         ]);
 
         Event::on(
