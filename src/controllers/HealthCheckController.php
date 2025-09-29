@@ -6,14 +6,19 @@ use Craft;
 use yii\web\Response;
 
 use appfoster\upsnap\Upsnap;
+use appfoster\upsnap\Constants;
 use appfoster\upsnap\assetbundles\HealthCheckAsset;
+use appfoster\upsnap\services\HealthCheckService;
 
 class HealthCheckController extends BaseController
 {
+    public $service;
+    
     public function __construct($id, $module = null)
     {
         parent::__construct($id, $module);
         HealthCheckAsset::register($this->view);
+        $this->service = new HealthCheckService();
     }
 
     public function actionBrokenLinks(): Response
@@ -266,13 +271,26 @@ class HealthCheckController extends BaseController
     public function actionReachability(): Response
     {
         $data = [];
+        $template = Constants::SUBNAV_ITEM_REACHABILITY['template'];
+        $response = [
+            'data'  => [],
+            'title' => Constants::SUBNAV_ITEM_REACHABILITY['label'],
+            'selectedSubnavItem' => Constants::SUBNAV_ITEM_REACHABILITY['key']
+        ];
+
+        if (!Upsnap::getMonitoringUrl()) {
+            $response['data']['status'] = 'warning';
+            $response['data']['message'] = 'Monitoring URL is not set. Please configure it in the settings.';
+            $response = $this->service->prepareData($response);
+            $data = $response;
+            return $this->renderTemplate($template, $data);
+        }
 
         try {
             $response = Upsnap::$plugin->apiService->post('healthcheck', [
                 'url' => Upsnap::getMonitoringUrl(),
                 "checks" => ["uptime"],
             ]);
-            
 
             if (isset($response['result']['details']['uptime']['error'])) {
                 Craft::$app->getSession()->setError('Something went wrong: ' . $response['result']['details']['uptime']['error']);

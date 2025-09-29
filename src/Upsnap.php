@@ -30,7 +30,7 @@ class Upsnap extends Plugin
     /**
      * Get the monitoring URL from settings
      */
-    public static function getMonitoringUrl(): string
+    public static function getMonitoringUrl(): string|null
     {
         $plugin = self::getInstance();
         $settingsService = $plugin->settingsService;

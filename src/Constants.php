@@ -42,37 +42,44 @@ class Constants
     const SUBNAV_ITEM_REACHABILITY = [
         'label' => 'Reachability',
         'key' => 'reachability',
-        'url' => 'upsnap/reachability'
+        'url' => 'upsnap/reachability',
+        'template' => 'upsnap/healthcheck/reachability'
     ];
     const SUBNAV_ITEM_SECURITY_CERTIFICATES = [
         'label' => 'Security Certificates',
         'key' => 'security-certificates',
-        'url' => 'upsnap/security-certificates'
+        'url' => 'upsnap/security-certificates',
+        'template' => 'upsnap/healthcheck/security-certificates'
     ];
     const SUBNAV_ITEM_BROKEN_LINKS = [
         'label' => 'Broken Links',
         'key' => 'broken-links',
-        'url' => 'upsnap/broken-links'
+        'url' => 'upsnap/broken-links',
+        'template' => 'upsnap/healthcheck/broken-links'
     ];
     const SUBNAV_ITEM_LIGHTHOUSE = [
         'label' => 'Lighthouse',
         'key' => 'lighthouse',
-        'url' => 'upsnap/lighthouse'
+        'url' => 'upsnap/lighthouse',
+        'template' => 'upsnap/healthcheck/lighthouse'
     ];
     const SUBNAV_ITEM_DOMAIN_CHECK = [
         'label' => 'Domain Check',
         'key' => 'domain-check',
-        'url' => 'upsnap/domain-check'
+        'url' => 'upsnap/domain-check',
+        'template' => 'upsnap/healthcheck/domain-check'
     ];
     const SUBNAV_ITEM_MIXED_CONTENT = [
         'label' => 'Mixed Content',
         'key' => 'mixed-content',
-        'url' => 'upsnap/mixed-content'
+        'url' => 'upsnap/mixed-content',
+        'template' => 'upsnap/healthcheck/mixed-content'
     ];
     const SUBNAV_ITEM_SETTINGS = [
         'label' => 'Settings',
         'key' => 'settings',
-        'url' => 'upsnap/settings'
+        'url' => 'upsnap/settings',
+        'template' => 'upsnap/healthcheck/settings'
     ];
 
     const SUBNAV_ITEM_LIST = [

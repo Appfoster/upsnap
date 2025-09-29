@@ -37,7 +37,7 @@
 				{% elseif data.status == 'error' %}
 					{{ 'Server is experiencing issues!'|t('upsnap') }}
 				{% else %}
-					{{ 'There are some client-side issues!'|t('upsnap') }}
+					{{ data.message|default('There are some client-side issues!'|t('upsnap')) }}
 				{% endif %}
 			</h3>
 		</div>
@@ -46,28 +46,30 @@
 		{% endif %}
 	</div>
 
-	<div class="pane">
-		<div class="meta read-only">
-			<div class="data fullwidth">
-				<div class="field">
-					<div class="heading">{{ "Monitored URL"|t('upsnap') }}</div>
-					<div>
-						<a href="{{ data.url }}" target="_blank">{{ data.url }}</a>
+	{% if data.status == 'ok' %}
+		<div class="pane">
+			<div class="meta read-only">
+				<div class="data fullwidth">
+					<div class="field">
+						<div class="heading">{{ "Monitored URL"|t('upsnap') }}</div>
+						<div>
+							<a href="{{ data.url }}" target="_blank">{{ data.url }}</a>
+						</div>
 					</div>
-				</div>
 
-				<div class="field">
-					<div class="heading">{{ "Last Checked"|t('upsnap') }}</div>
-					<div>{{ data.checkedAt|date("d M Y, H:i:s") }}</div>
-				</div>
+					<div class="field">
+						<div class="heading">{{ "Last Checked"|t('upsnap') }}</div>
+						<div>{{ data.checkedAt|date("d M Y, H:i:s") }}</div>
+					</div>
 
-				<div class="field">
-					<div class="heading">{{ "Response Time"|t('upsnap') }}</div>
-					<div>{{ data.duration ?? '–' }}</div>
+					<div class="field">
+						<div class="heading">{{ "Response Time"|t('upsnap') }}</div>
+						<div>{{ data.duration ?? '–' }}</div>
+					</div>
 				</div>
 			</div>
 		</div>
-	</div>
+	{% endif %}
 
 	{% if data.details is defined %}
 		<div class="details-section">
