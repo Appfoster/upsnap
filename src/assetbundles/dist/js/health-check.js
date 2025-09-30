@@ -82,6 +82,10 @@ function registerLighthouseJs() {
     const performanceContainer = document.getElementById("performance-container");
     const lighthouseDataElement = document.getElementById("lighthouse-data");
 
+    if (!lighthouseDataElement || !scoresContainer || !performanceContainer) {
+        return;
+    }
+
     let currentDevice = 'desktop';
     let lighthouseData = {};
 
