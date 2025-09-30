@@ -113,21 +113,22 @@ class HealthCheckController extends BaseController
         try {
             $paramName = Constants::SUBNAV_ITEM_DOMAIN_CHECK['apiLabel'];
             $response = $this->service->getHealthcheck($url, [$paramName]);
-            if (isset($response['result']['details']['domain']['meta']['errors'])) {
-                $errors = $response['result']['details']['domain']['meta']['errors'][0];
+            if (isset($response['result']['details'][$paramName]['meta']['errors'])) {
+                $errors = $response['result']['details'][$paramName]['meta']['errors'][0];
                 throw new \Exception($errors);
             }
 
             // Transform API response to our expected format
             if (isset($response['result'])) {
                 $result = $response['result'];
-                $domain = $result['details']['domain'] ?? null;
+                $domain = $result['details'][$paramName] ?? null;
                 $meta = $domain['meta'] ?? [];
+                $isOk = $response['result']['details'][$paramName]['ok'] ?? true;
 
                 $data = [
                     'data' => [
-                        'status' => $result['summary']['ok'] ? 'ok' : 'error',
-                        'message' => $result['summary']['message'] ?? 'Domain check completed',
+                        'status' => $isOk ? 'ok' : 'error',
+                        'message' => $isOk ? 'Domain is active!' : 'Domain issues detected!',
                         'url' => $response['url'] ?? '',
                         'checkedAt' => $response['checkedAt'] ?? '',
                         'duration' => isset($result['durationMs']) ? $result['durationMs'] . ' ms' : 'Unknown',
@@ -236,56 +237,59 @@ class HealthCheckController extends BaseController
 
     public function actionMixedContent(): Response
     {
+        $url = Upsnap::getMonitoringUrl();
+
+        if (!$url) {
+            return $this->service->handleMissingMonitoringUrl(Constants::SUBNAV_ITEM_LIGHTHOUSE);
+        }
+
         $data = [];
 
         try {
-            $response = Upsnap::$plugin->apiService->post('healthcheck', [
-                'url' => Upsnap::getMonitoringUrl(),
-                'checks' => ['mixed_content'],
-            ]);
-            if (isset($response['result']['details']['mixed_content']['error'])) {
-                // Craft::$app->getSession()->setError('Something went wrong: ' . implode(', ', $response['result']['details']['mixed_content']['error']));
-                return $this->renderTemplate('upsnap/healthcheck/mixed-content', [
-                    'data' => [
-                        'status' => 'error',
-                        'error' => $response['result']['details']['mixed_content']['error'] ?? 'Unknown error',
-                        'url' => $response['url'] ?? '',
-                        'checkedAt' => $response['checkedAt'] ?? '',
-                        'duration' => isset($response['result']['durationMs']) ? $response['result']['durationMs'] . ' ms' : '-',
-                    ],
-                    'plugin' => Upsnap::$plugin,
-                    'title' => Craft::t('upsnap', 'Mixed Content Check'),
-                    'selectedSubnavItem' => 'mixed-content',
-                ]);
+            $paramName = Constants::SUBNAV_ITEM_MIXED_CONTENT['apiLabel'];
+            $response = $this->service->getHealthcheck($url, [$paramName]);
+
+            if (isset($response['result']['details'][$paramName]['error'])) {
+                $errorMsg = $response['result']['details'][$paramName]['error'];
+                Craft::$app->getSession()->setError('Something went wrong: ' . $errorMsg);
+                throw new \Exception($errorMsg);
             }
 
             // Transform API response to our expected format
             if (isset($response['result'])) {
                 $result = $response['result'];
-                $mixedContent = $result['details']['mixed_content'] ?? null;
+                $mixedContent = $result['details'][$paramName] ?? null;
                 $meta = $mixedContent['meta'] ?? [];
+                $isOk = $response['result']['details'][$paramName]['ok'] ?? true;
 
                 $data = [
-                    'status' => $result['summary']['ok'] ? 'ok' : 'error',
-                    'message' => $result['summary']['message'] ?? 'Mixed Content check completed',
-                    'url' => $response['url'] ?? '',
-                    'checkedAt' => $response['checkedAt'] ?? '',
-                    'duration' => isset($result['durationMs']) ? $result['durationMs'] . ' ms' : 'Unknown',
-                    'details' => [
-                        'mixedCount' => $meta['mixedCount'] ?? 0,
-                        'mixedContentItems' => $meta['mixedContentItems'] ?? [],
+                    'data' => [
+                        'status' => $isOk ? 'ok' : 'error',
+                        'message' => $isOk ? 'No mixed content found!' : 'Mixed content detected!',
+                        'url' => $response['url'] ?? '',
+                        'checkedAt' => $response['checkedAt'] ?? '',
+                        'duration' => isset($result['durationMs']) ? $result['durationMs'] . ' ms' : 'Unknown',
+                        'details' => [
+                            'mixedCount' => $meta['mixedCount'] ?? 0,
+                            'mixedContentItems' => $meta['mixedContentItems'] ?? [],
+                        ]
                     ]
                 ];
             }
         } catch (\Throwable $e) {
             Craft::$app->getSession()->setError('Error fetching mixed content check data: ' . $e->getMessage());
+            $data = [
+                'data' => [
+                    'status' => 'error',
+                    'error' => $e->getMessage(),
+                    'url' => $url,
+                ]
+            ];
         }
 
-        return $this->renderTemplate('upsnap/healthcheck/mixed-content', [
-            'data' => $data,
-            'title' => Craft::t('upsnap', 'Mixed Content Check'),
-            'selectedSubnavItem' => 'mixed-content',
-        ]);
+        
+        $data = $this->service->prepareData($data, Constants::SUBNAV_ITEM_MIXED_CONTENT);
+        return $this->service->sendResponse($data, Constants::SUBNAV_ITEM_MIXED_CONTENT['template']);
     }
 
     public function actionReachability(): Response
@@ -311,11 +315,12 @@ class HealthCheckController extends BaseController
                 $result = $response['result'];
                 $uptime = $result['details'][$paramName] ?? null;
                 $meta = $uptime['meta'] ?? [];
+                $isOk = $response['result']['details'][$paramName]['ok'] ?? true;
 
                 $data = [
                     'data' => [
-                        'status' => $result['summary']['ok'] ? 'ok' : 'error',
-                        'message' => $result['summary']['message'] ?? 'Status check completed',
+                        'status' => $isOk ? 'ok' : 'error',
+                        'message' => $isOk ? 'Website is reachable' : 'Website reachability issues detected!',
                         'url' => $response['url'] ?? '',
                         'checkedAt' => $response['checkedAt'] ?? '',
                         'duration' => isset($result['durationMs']) ? $result['durationMs'] . ' ms' : 'Unknown',
@@ -372,6 +377,7 @@ class HealthCheckController extends BaseController
                 $result = $response['result'];
                 $ssl = $result['details'][$paramName] ?? null;
                 $meta = $ssl['meta'] ?? [];
+                $isOk = $response['result']['details'][$paramName]['ok'] ?? true;
 
                 $leafCertificate = null;
                 if (isset($meta['chain']) && is_array($meta['chain'])) {
@@ -385,8 +391,8 @@ class HealthCheckController extends BaseController
 
                 $data = [
                    'data' => [
-                     'status' => $ssl['ok'] ? 'ok' : 'error',
-                        'message' => $result['summary']['message'] ?? 'SSL check completed',
+                        'status' => $isOk ? 'ok' : 'error',
+                        'message' => $isOk ? 'Website SSL checks are valid' : 'Website SSL issues detected!',
                         'url' => $response['url'] ?? '',
                         'checkedAt' => $response['checkedAt'] ?? '',
                         'duration' => isset($result['durationMs']) ? $result['durationMs'] . ' ms' : 'Unknown',
