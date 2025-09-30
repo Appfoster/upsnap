@@ -331,26 +331,18 @@ class HealthCheckController extends BaseController
     public function actionSecurityCertificates(): Response
     {
         $data = [];
+        $url = Upsnap::getMonitoringUrl();
+
+        if (!$url) {
+            return $this->service->handleMissingMonitoringUrl(Constants::SUBNAV_ITEM_REACHABILITY);
+        }
 
         try {
-            $response = Upsnap::$plugin->apiService->post('healthcheck', [
-                'url' => Upsnap::getMonitoringUrl(),
-                'checks' => ["ssl"],
-            ]);
+            $response = $this->service->getHealthcheck($url, ['ssl']);
 
             if (isset($response['result']['details']['ssl']['error'])) {
                 Craft::$app->getSession()->setError('Something went wrong: ' . $response['result']['details']['ssl']['error']);
-                return $this->renderTemplate('upsnap/healthcheck/security-certificates', [
-                    'data' => [
-                        'status' => 'error',
-                        'error' => $response['result']['details']['ssl']['error'] ?? 'Something went wrong',
-                        'url' => $response['url'] ?? '',
-                        'checkedAt' => $response['checkedAt'] ?? '',
-                        'duration' => isset($response['result']['durationMs']) ? $response['result']['durationMs'] . ' ms' : '-',
-                    ],
-                    'title' => Craft::t('upsnap', 'Security Certificates'),
-                    'selectedSubnavItem' => 'security-certificates',
-                ]);
+                throw new \Exception($response['result']['details']['ssl']['error']);
             }
 
             // Transform API response to our expected format for SSL certificate
@@ -370,27 +362,33 @@ class HealthCheckController extends BaseController
                 }
 
                 $data = [
-                    'status' => $ssl['ok'] ? 'ok' : 'error',
-                    'message' => $result['summary']['message'] ?? 'SSL check completed',
-                    'url' => $response['url'] ?? '',
-                    'checkedAt' => $response['checkedAt'] ?? '',
-                    'duration' => isset($result['durationMs']) ? $result['durationMs'] . ' ms' : 'Unknown',
-                    'details' => [
-                        'leafCertificate' => $leafCertificate,
-                        'domainCoverage' => $meta['domainCoverage'] ?? [],
-                        'chain' => $meta['chain'] ?? [],
-                    ]
+                   'data' => [
+                     'status' => $ssl['ok'] ? 'ok' : 'error',
+                        'message' => $result['summary']['message'] ?? 'SSL check completed',
+                        'url' => $response['url'] ?? '',
+                        'checkedAt' => $response['checkedAt'] ?? '',
+                        'duration' => isset($result['durationMs']) ? $result['durationMs'] . ' ms' : 'Unknown',
+                        'details' => [
+                            'leafCertificate' => $leafCertificate,
+                            'domainCoverage' => $meta['domainCoverage'] ?? [],
+                            'chain' => $meta['chain'] ?? [],
+                        ]
+                   ]
                 ];
             }
         } catch (\Throwable $e) {
             Craft::$app->getSession()->setError('Error fetching SSL certificate status: ' . $e->getMessage());
+            $data = [
+                'data' => [
+                    'status' => 'error',
+                    'error' => $e->getMessage(),
+                    'url' => $url,
+                ]
+            ];
         }
 
-        return $this->renderTemplate('upsnap/healthcheck/security-certificates', [
-            'data' => $data,
-            'title' => Craft::t('upsnap', 'SSL Certificates'),
-            'selectedSubnavItem' => 'security-certificates',
-        ]);
+        $data = $this->service->prepareData($data, Constants::SUBNAV_ITEM_SECURITY_CERTIFICATES);
+        return $this->service->sendResponse($data, Constants::SUBNAV_ITEM_SECURITY_CERTIFICATES['template']);
     }
 
     public function actionHistory(): Response
