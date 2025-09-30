@@ -112,4 +112,9 @@ class Constants
             'url' => self::SUBNAV_ITEM_SETTINGS['url']
         ],
     ];
+
+    const BROKEN_LINKS_TYPE = [
+        'internal' => 'internal',
+        'external' => 'external',
+    ];
 }

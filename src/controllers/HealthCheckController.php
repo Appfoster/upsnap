@@ -23,28 +23,21 @@ class HealthCheckController extends BaseController
 
     public function actionBrokenLinks(): Response
     {
+        $url = Upsnap::getMonitoringUrl();
+
+        if (!$url) {
+            return $this->service->handleMissingMonitoringUrl(Constants::SUBNAV_ITEM_REACHABILITY);
+        }
+ 
         $data = [];
 
         try {
-            $response = Upsnap::$plugin->apiService->post('healthcheck', [
-                'url' => Upsnap::getMonitoringUrl(),
-                'checks' => ['broken_links'],
-            ]);
+
+            $response = $this->service->getHealthcheck($url, ['broken_links']);
 
             if (isset($response['result']['details']['broken_links']['error'])) {
                 Craft::$app->getSession()->setError('Something went wrong: ' . $response['result']['details']['broken_links']['error']);
-                return $this->renderTemplate('upsnap/broken-links/_index', [
-                    'data' => [
-                        'status' => 'error',
-                        'error' => $response['result']['details']['broken_links']['error'] ?? 'Something went wrong',
-                        'url' => $response['url'] ?? '',
-                        'checkedAt' => $response['checkedAt'] ?? '',
-                        'brokenLinks' => [],
-                        'duration' => isset($response['result']['durationMs']) ? $response['result']['durationMs'] . ' ms' : '-',
-                    ],
-                    'title' => Craft::t('upsnap', 'Broken Links'),
-                    'selectedSubnavItem' => 'broken-links',
-                ]);
+                throw new \Exception($response['result']['details']['broken_links']['error']);
             }
 
             $brokenLinksMeta = $response['result']['details']['broken_links']['meta'] ?? [];
@@ -61,7 +54,7 @@ class HealthCheckController extends BaseController
                             'url' => $item['url'] ?? '',
                             'pageUrl' => $item['page'] ?? '',
                             'statusCode' => $item['result'] ?? '',
-                            'type' => !empty($item['external']) ? 'external' : 'internal',
+                            'type' => !empty($item['external']) ? Constants::BROKEN_LINKS_TYPE['external'] : Constants::BROKEN_LINKS_TYPE['internal'],
                             'anchorText' => $item['name'] ?? $item['title'] ?? '',
                             'title' => $item['title'] ?? '',
                             'culprit' => $item['culprit'] ?? '',
@@ -69,32 +62,42 @@ class HealthCheckController extends BaseController
                             'classification' => $item['classification'] ?? '',
                             'refUrl' => $item['ref_url'] ?? '',
                             'rid' => $item['rid'] ?? null,
+                            'external' => $item['external'] ?? false,
+                            'result' => $item['result'] ?? '',
                         ];
                     }
                 }
             }
 
             $data = [
-                'status' => $isOk ? 'ok' : 'error',
-                'message' => $isOk ? 'All links are working fine' : 'Some broken links detected',
-                'url' => $response['url'] ?? '',
-                'checkedAt' => $response['checkedAt'] ?? '',
-                'brokenLinks' => $brokenLinks,
-                'details' => [
-                    'totalPagesChecked' => $brokenLinksMeta['pagesChecked'] ?? 0,
-                    'totalLinksScanned' => $brokenLinksMeta['checked'] ?? 0,
-                    'errorsCount' => $brokenLinksMeta['broken'] ?? 0,
-                ],
+                'data' => [
+                    'status' => $isOk ? 'ok' : 'error',
+                    'message' => $isOk ? 'All links are working fine' : 'Some broken links detected',
+                    'url' => $response['url'] ?? '',
+                    'checkedAt' => $response['checkedAt'] ?? '',
+                    'brokenLinks' => $brokenLinks,
+                    'details' => [
+                        'totalPagesChecked' => $brokenLinksMeta['pagesChecked'] ?? 0,
+                        'totalLinksScanned' => $brokenLinksMeta['checked'] ?? 0,
+                        'errorsCount' => $brokenLinksMeta['broken'] ?? 0,
+                    ],
+                ]
             ];
+
         } catch (\Throwable $e) {
             Craft::$app->getSession()->setError('Error fetching broken links data: ' . $e->getMessage());
+            $data = [
+                'data' => [
+                    'status' => 'error',
+                    'error' => $e->getMessage(),
+                    'url' => $url,
+                ]
+            ];
         }
 
-        return $this->renderTemplate('upsnap/healthcheck/broken-links', [
-            'data' => $data,
-            'title' => Craft::t('upsnap', 'Broken Links'),
-            'selectedSubnavItem' => 'broken-links',
-        ]);
+
+        $data = $this->service->prepareData($data, Constants::SUBNAV_ITEM_BROKEN_LINKS);
+        return $this->service->sendResponse($data, Constants::SUBNAV_ITEM_BROKEN_LINKS['template']);
     }
 
     public function actionDomainCheck(): Response
