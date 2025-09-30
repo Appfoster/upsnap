@@ -7,7 +7,14 @@ namespace appfoster\upsnap;
  */
 class Constants
 {
+    public const PLUGIN_SCHEMA_VERSION = '1.0.0';
+
+    // Plugin Table Names
+    public const TABLE_SETTINGS = '{{%upsnap_settings}}';
+
+    // Asset bundle path
     public const ASSET_SOURCE_PATH = '@upsnap/assetbundles/dist';
+
     // API Configuration
     public const API_BASE_URL = 'https://eagle-eye.appfoster.site';
     public const API_VERSION = 'v1';

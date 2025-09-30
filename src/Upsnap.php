@@ -7,6 +7,7 @@ use craft\base\Event;
 use craft\base\Plugin;
 use craft\web\UrlManager;
 use craft\services\Plugins;
+use craft\helpers\UrlHelper;
 use craft\events\PluginEvent;
 use craft\events\RegisterUrlRulesEvent;
 
@@ -23,9 +24,18 @@ class Upsnap extends Plugin
 {
     public static $plugin;
 
-    public bool $hasCpSection = true;
-    public bool $hasCpSettings = true;
-    public string $schemaVersion = '1.0.0';
+    public bool $hasCpSection;
+    public bool $hasCpSettings;
+    public string $schemaVersion;
+
+    public function __construct($id, $parent = null, array $config = [])
+    {
+        $this->schemaVersion = Constants::PLUGIN_SCHEMA_VERSION;
+        $this->hasCpSettings = true;
+        $this->hasCpSection = true;
+
+        parent::__construct($id, $parent, $config);
+    }
 
     /**
      * Get the monitoring URL from settings
@@ -67,7 +77,7 @@ class Upsnap extends Plugin
                 if ($event->plugin === $this) {
                     $request = Craft::$app->getRequest();
                     if ($request->isCpRequest) {
-                        Craft::info('Upsnap plugin redirect url will be set', __METHOD__);
+                        return $this->redirectToSettings()->send();
                     }
                 }
             }
@@ -116,5 +126,22 @@ class Upsnap extends Plugin
         $item['subnav'] = Constants::SUBNAV_ITEM_LIST;
 
         return $item;
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function getSettingsResponse(): mixed
+    {
+        // Just redirect to the plugin settings page
+        return $this->redirectToSettings();
+    }
+
+    /**
+     * @inheritdoc
+     */
+    private function redirectToSettings()
+    {
+        return Craft::$app->getResponse()->redirect(UrlHelper::cpUrl(Constants::SUBNAV_ITEM_SETTINGS['url']));
     }
 }

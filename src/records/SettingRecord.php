@@ -3,6 +3,7 @@
 namespace appfoster\upsnap\records;
 
 use craft\db\ActiveRecord;
+use appfoster\upsnap\Constants;
 
 /**
  * Upsnap Setting Record
@@ -21,7 +22,7 @@ class SettingRecord extends ActiveRecord
      */
     public static function tableName(): string
     {
-        return '{{%upsnap_settings}}';
+        return Constants::TABLE_SETTINGS;
     }
 
     /**
