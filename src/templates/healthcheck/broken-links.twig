@@ -120,12 +120,12 @@
 								<td>
 									<span class="link-type {{ link.type|default('N/A') }}">{{ link.type|default('N/A') }}</span>
 								</td>
-								<td>
+								<td class="broken-links-col">
 									<span class="status-code {{ (link.statusCode is defined and (link.statusCode starts with '4' or link.statusCode starts with '5')) ? 'error' : 'warning' }}">
 										{{ link.statusCode|default('N/A') }}
 									</span>
 								</td>
-								<td>
+								<td class="broken-links-col">
 									<button class="expand-btn" onclick="toggleRow({{ loop.index0 }})">
 										<span class="btn-text">{{ 'View More'|t('upsnap') }}</span>
 									</button>
