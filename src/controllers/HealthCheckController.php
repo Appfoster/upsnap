@@ -18,7 +18,7 @@ class HealthCheckController extends BaseController
     {
         parent::__construct($id, $module);
         HealthCheckAsset::register($this->view);
-        $this->service = new HealthCheckService();
+        $this->service = new HealthCheckService($this);
     }
 
     public function actionBrokenLinks(): Response
@@ -271,40 +271,18 @@ class HealthCheckController extends BaseController
     public function actionReachability(): Response
     {
         $data = [];
-        $template = Constants::SUBNAV_ITEM_REACHABILITY['template'];
-        $response = [
-            'data'  => [],
-            'title' => Constants::SUBNAV_ITEM_REACHABILITY['label'],
-            'selectedSubnavItem' => Constants::SUBNAV_ITEM_REACHABILITY['key']
-        ];
+        $url = Upsnap::getMonitoringUrl();
 
-        if (!Upsnap::getMonitoringUrl()) {
-            $response['data']['status'] = 'warning';
-            $response['data']['message'] = 'Monitoring URL is not set. Please configure it in the settings.';
-            $response = $this->service->prepareData($response);
-            $data = $response;
-            return $this->renderTemplate($template, $data);
+        if (!$url) {
+            return $this->service->handleMissingMonitoringUrl(Constants::SUBNAV_ITEM_REACHABILITY);
         }
 
         try {
-            $response = Upsnap::$plugin->apiService->post('healthcheck', [
-                'url' => Upsnap::getMonitoringUrl(),
-                "checks" => ["uptime"],
-            ]);
+            $response = $this->service->getHealthcheck($url, ['uptime']);
 
             if (isset($response['result']['details']['uptime']['error'])) {
                 Craft::$app->getSession()->setError('Something went wrong: ' . $response['result']['details']['uptime']['error']);
-                return $this->renderTemplate('upsnap/healthcheck/reachability', [
-                    'data' => [
-                        'status' => 'error',
-                        'error' => $response['result']['details']['uptime']['error'] ?? 'Something went wrong',
-                        'url' => $response['url'] ?? '',
-                        'checkedAt' => $response['checkedAt'] ?? '',
-                        'duration' => isset($response['result']['durationMs']) ? $response['result']['durationMs'] . ' ms' : '-',
-                    ],
-                    'title' => Craft::t('upsnap', 'Reachability'),
-                    'selectedSubnavItem' => 'reachability',
-                ]);
+                throw new \Exception($response['result']['details']['uptime']['error']);
             }
 
             // Transform API response to our expected format
@@ -314,34 +292,40 @@ class HealthCheckController extends BaseController
                 $meta = $uptime['meta'] ?? [];
 
                 $data = [
-                    'status' => $result['summary']['ok'] ? 'ok' : 'error',
-                    'message' => $result['summary']['message'] ?? 'Status check completed',
-                    'url' => $response['url'] ?? '',
-                    'checkedAt' => $response['checkedAt'] ?? '',
-                    'duration' => isset($result['durationMs']) ? $result['durationMs'] . ' ms' : 'Unknown',
-                    'details' => [
-                        'httpStatus' => $meta['statusCode'] ?? 0,
-                        'finalURL' => $meta['finalURL'] ?? '',
-                        'redirects' => $meta['redirects'] ?? null,
-                        'resolvedIPs' => $meta['resolvedIPs'] ?? [],
-                        'server' => $meta['server'] ?? '',
-                        'contentType' => $meta['contentType'] ?? '',
-                        'contentLength' => $meta['contentLength'] ?? 0,
-                        'pageTitle' => $meta['title'] ?? '',
-                        'tls' => $meta['tls'] ?? null,
-                        'monitoredFrom' => $meta['monitoredFrom'] ?? null,
+                    'data' => [
+                        'status' => $result['summary']['ok'] ? 'ok' : 'error',
+                        'message' => $result['summary']['message'] ?? 'Status check completed',
+                        'url' => $response['url'] ?? '',
+                        'checkedAt' => $response['checkedAt'] ?? '',
+                        'duration' => isset($result['durationMs']) ? $result['durationMs'] . ' ms' : 'Unknown',
+                        'details' => [
+                            'httpStatus' => $meta['statusCode'] ?? 0,
+                            'finalURL' => $meta['finalURL'] ?? '',
+                            'redirects' => $meta['redirects'] ?? null,
+                            'resolvedIPs' => $meta['resolvedIPs'] ?? [],
+                            'server' => $meta['server'] ?? '',
+                            'contentType' => $meta['contentType'] ?? '',
+                            'contentLength' => $meta['contentLength'] ?? 0,
+                            'pageTitle' => $meta['title'] ?? '',
+                            'tls' => $meta['tls'] ?? null,
+                            'monitoredFrom' => $meta['monitoredFrom'] ?? null,
+                        ]
                     ]
                 ];
             }
         } catch (\Throwable $e) {
             Craft::$app->getSession()->setError('Error fetching uptime status: ' . $e->getMessage());
+            $data = [
+                'data' => [
+                    'status' => 'error',
+                    'error' => $e->getMessage(),
+                    'url' => $url,
+                ]
+            ];
         }
 
-        return $this->renderTemplate('upsnap/healthcheck/reachability', [
-            'data' => $data,
-            'title' => Craft::t('upsnap', 'Reachability'),
-            'selectedSubnavItem' => 'reachability',
-        ]);
+        $data = $this->service->prepareData($data, Constants::SUBNAV_ITEM_REACHABILITY);
+        return $this->service->sendResponse($data, Constants::SUBNAV_ITEM_REACHABILITY['template']);
     }
 
     public function actionSecurityCertificates(): Response
