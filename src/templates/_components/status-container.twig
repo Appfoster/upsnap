@@ -1,0 +1,25 @@
+<div class="status-container {{ containerClass }}">
+	<div class="status-header">
+		<div class="status-icon {{ statusClass }}">
+			{% if success == 'ok' %}
+				✓
+			{% elseif success == 'error' %}
+				✗
+			{% else %}
+				!
+			{% endif %}
+		</div>
+		<h3 class="status-title">
+			{% if success == 'ok' %}
+				{{ message|default('Everything is running smoothly!'|t('upsnap')) }}
+			{% elseif success == 'error' %}
+				{{ message|default('Server is experiencing issues!'|t('upsnap')) }}
+			{% else %}
+				{{ message|default('There are some client-side issues!'|t('upsnap')) }}
+			{% endif %}
+		</h3>
+	</div>
+	{% if error is defined  %}
+		<p class="status-message">{{ error }}</p>
+	{% endif %}
+</div>

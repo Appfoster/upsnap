@@ -1,0 +1,224 @@
+{% extends '_layouts/cp' %}
+{% import '_includes/forms' as forms %}
+
+{% block actionButton %}
+	<div class="buttons">
+		<div class="btngroup">
+			<button type="button" class="btn submit" data-icon="refresh" id="refresh-btn">
+				{{ 'Refresh'|t('upsnap') }}
+			</button>
+		</div>
+	</div>
+{% endblock %}
+
+
+{% block content %}
+	{% set statusClass = data.status == 'ok' ? 'success' : (data.status == 'error' ? 'error' : 'warning') %}
+	{% set containerClass = data.status == 'ok' ? '' : (data.status == 'error' ? 'error' : 'warning') %}
+
+	{% include 'upsnap/_components/status-container.twig' %}
+	{% include 'upsnap/_components/details-container.twig' %}
+
+	{% if data.details is defined %}
+		<div class="details-section">
+			<h3 class="details-title">{{ 'Certificate details'|t('upsnap') }}</h3>
+
+			<table class="details-table">
+				{% set leafCertificate = data.details.leafCertificate %}
+				<tr>
+					<td class="details-label">{{ 'Issuer'|t('upsnap') }}</td>
+					<td class="details-value">
+						{{ leafCertificate.issuer.commonName|default('Unknown'|t('upsnap')) }}
+					</td>
+				</tr>
+				<tr>
+					<td class="details-label">{{ 'Not before'|t('upsnap') }}</td>
+					<td class="details-value">
+						{{ leafCertificate.notBefore is defined ? leafCertificate.notBefore|date("M j, Y") : 'Unknown'|t('upsnap') }}
+					</td>
+				</tr>
+				<tr>
+					<td class="details-label">{{ 'Not after'|t('upsnap') }}</td>
+					<td class="details-value">
+						{{ leafCertificate.notAfter is defined ? leafCertificate.notAfter|date("M j, Y") : 'Unknown'|t('upsnap') }}
+					</td>
+				</tr>
+				<tr>
+					<td class="details-label">{{ 'Expiry in days'|t('upsnap') }}</td>
+					<td class="details-value">
+						{{ leafCertificate.daysUntilExpiry|default('Unknown'|t('upsnap')) }}
+					</td>
+				</tr>
+				<tr>
+					<td class="details-label">{{ 'Serial number'|t('upsnap') }}</td>
+					<td class="details-value">
+						{{ leafCertificate.serialNumber|default('Unknown'|t('upsnap')) }}
+					</td>
+				</tr>
+				<tr>
+					<td class="details-label">{{ 'Signature alglorithm'|t('upsnap') }}</td>
+					<td class="details-value">
+						{{ leafCertificate.signatureAlgorithm|default('Unknown'|t('upsnap')) }}
+					</td>
+				</tr>
+				<tr>
+					<td class="details-label">{{ 'Public key alogorithm'|t('upsnap') }}</td>
+					{% if data.details.leafCertificate is defined and data.details.leafCertificate is not null %}
+						{% set publicKey = data.details.leafCertificate.publicKey %}
+						<td class="details-value">
+							{% if publicKey.algorithm == 'ECC' %}
+								{{ publicKey.algorithm }}
+								({{ publicKey.curve }})
+							{% elseif publicKey.algorithm == 'RSA' %}
+								{{ publicKey.algorithm }}
+								({{ publicKey.bits }}
+								bits)
+							{% else %}
+								{{ publicKey.algorithm|default('Unknown'|t('upsnap')) }}
+							{% endif %}
+						</td>
+					{% else %}
+						<td class="details-value">
+							{{ 'Unknown'|t('upsnap') }}
+						</td>
+					{% endif %}
+				</tr>
+			</table>
+			<br>
+			<div id="more-details" class="hidden">
+				<h3 class="details-title">{{ 'Domain Coverage'|t('upsnap') }}</h3>
+				<table class="details-table">
+					<tr>
+						<td class="details-label">{{ 'Domains Covered'|t('upsnap') }}</td>
+						<td class="details-value">
+							{{ data.details.domainCoverage.sans|join(', ') }}
+						</td>
+					</tr>
+					<tr>
+						<td class="details-label">{{ 'Wildcard'|t('upsnap') }}</td>
+						<td class="details-value">
+							{{ data.details.domainCoverage.wildcard ? 'Yes' : 'No' }}
+						</td>
+					</tr>
+				</table>
+
+				{% if data.details.chain is defined %}
+					<br>
+					<h3 class="pt-2rem details-title">{{ 'Certificate Chain'|t('upsnap') }}</h3>
+					<div class="certificate-chain">
+						{% for cert in data.details.chain %}
+							<div class="certificate-card">
+								<div class="certificate-header">
+									<div>
+										<h4 class="certificate-title">
+											{% if cert.info.subject.commonName is defined %}
+												{{ cert.info.subject.commonName }}
+											{% else %}
+												{{ cert.info.subject.organizationName ?? 'Unknown Certificate' }}
+											{% endif %}
+										</h4>
+										<div class="certificate-type">
+											{% if cert.type == 'leaf' %}
+												{{ 'End Entity Certificate'|t('upsnap') }}
+											{% elseif cert.type == 'intermediate' %}
+												{{ 'Intermediate Certificate'|t('upsnap') }}
+											{% else %}
+												{{ 'Root Certificate'|t('upsnap') }}
+											{% endif %}
+										</div>
+									</div>
+									<div class="certificate-status">
+										{% if cert.info.isExpired %}
+											<div class="status-pill status-expired">
+												<span class="status-icon expired"></span>
+												{{ 'Expired'|t('upsnap') }}
+											</div>
+										{% elseif cert.info.daysUntilExpiry <= 30 %}
+											<div class="status-pill status-warning">
+												<span class="status-icon warning"></span>
+												{{ 'Expires in'|t('upsnap') }}
+												{{ cert.info.daysUntilExpiry }}
+												{{ 'days'|t('upsnap') }}
+											</div>
+										{% else %}
+											<div class="status-pill status-valid">
+												<span class="status-icon"></span>
+												{{ 'Valid for'|t('upsnap') }}
+												{{ cert.info.daysUntilExpiry }}
+												{{ 'days'|t('upsnap') }}
+											</div>
+										{% endif %}
+									</div>
+								</div>
+
+								<div class="certificate-body">
+									<div class="certificate-grid">
+										<div class="cert-field">
+											<div class="cert-field-label">{{ 'Signature Algorithm'|t('upsnap') }}</div>
+											<div class="cert-field-value">{{ cert.info.signatureAlgorithm }}</div>
+										</div>
+
+										<div class="cert-field">
+											<div class="cert-field-label">{{ 'Key Algorithm'|t('upsnap') }}</div>
+											<div class="cert-field-value">
+												{% if cert.info.publicKey.algorithm == 'ECC' %}
+													{{ cert.info.publicKey.algorithm }}
+													({{ cert.info.publicKey.curve }})
+												{% elseif cert.info.publicKey.algorithm == 'RSA' %}
+													{{ cert.info.publicKey.algorithm }}
+													({{ cert.info.publicKey.bits }}
+													bits)
+												{% else %}
+													{{ cert.info.publicKey.algorithm }}
+												{% endif %}
+											</div>
+										</div>
+
+										<div class="cert-field">
+											<div class="cert-field-label">{{ 'Not Before'|t('upsnap') }}</div>
+											<div class="cert-field-value">{{ cert.info.notBefore|date("M j, Y") }}</div>
+										</div>
+
+										<div class="cert-field">
+											<div class="cert-field-label">{{ 'Not After'|t('upsnap') }}</div>
+											<div class="cert-field-value">{{ cert.info.notAfter|date("M j, Y") }}</div>
+										</div>
+
+										{% if cert.info.issuer.organizationName is defined %}
+											<div class="cert-field">
+												<div class="cert-field-label">{{ 'Organization'|t('upsnap') }}</div>
+												<div class="cert-field-value">{{ cert.info.issuer.organizationName }}</div>
+											</div>
+										{% endif %}
+
+										{% if cert.info.issuer.commonName is defined %}
+											<div class="cert-field">
+												<div class="cert-field-label">{{ 'Issued By'|t('upsnap') }}</div>
+												<div class="cert-field-value">{{ cert.info.issuer.commonName }}</div>
+											</div>
+										{% endif %}
+
+										<div class="cert-field">
+											<div class="cert-field-label">{{ 'Serial Number'|t('upsnap') }}</div>
+											<div class="cert-field-value mono">{{ cert.info.serialNumber }}</div>
+										</div>
+									</div>
+								</div>
+							</div>
+
+							{% if not loop.last %}
+								<div class="chain-connector">
+									<div class="chain-arrow"></div>
+								</div>
+							{% endif %}
+						{% endfor %}
+					</div>
+				{% endif %}
+			</div>
+
+			<a href="#" class="show-less hidden">{{ 'Show less'|t('upsnap') }}</a>
+			<a href="#" class="show-details">{{ 'Show more'|t('upsnap') }}</a>
+		</div>
+	{% endif %}
+
+{% endblock %}

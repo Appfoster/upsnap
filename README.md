@@ -160,7 +160,7 @@ The plugin integrates with external monitoring services. Configure your API cred
 | `enabled` | boolean | `true` | Enable/disable monitoring |
 | `monitoringInterval` | integer | `5` | Check interval in minutes |
 | `notificationEmail` | string | `null` | Alert notification email |
-| `monitoringUrls` | array | `[]` | Additional URLs to monitor |
+| `monitoringUrl` | string | `null` | URL to monitor |
 
 ## Troubleshooting
 

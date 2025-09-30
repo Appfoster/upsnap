@@ -1,0 +1,161 @@
+{% extends '_layouts/cp' %}
+{% import '_includes/forms' as forms %}
+
+{% set tabs = {
+    status: { label: 'Current Status', url: url('upsnap/reachability') },
+} %}
+
+{% block actionButton %}
+	<div class="buttons">
+		<div class="btngroup">
+			<button type="button" class="btn submit" data-icon="refresh" id="refresh-btn">
+				{{ 'Refresh'|t('upsnap') }}
+			</button>
+		</div>
+	</div>
+{% endblock %}
+
+{% block content %}
+
+	{% set statusClass = data.status == 'ok' ? 'success' : (data.status == 'error' ? 'error' : 'warning') %}
+	{% set containerClass = data.status == 'ok' ? '' : (data.status == 'error' ? 'error' : 'warning') %}
+
+	{% include 'upsnap/_components/status-container.twig' %}
+	{% include 'upsnap/_components/details-container.twig' %}
+
+	{% if data.details is defined %}
+		<div class="details-section">
+			<h3 class="details-title">{{ 'Check details'|t('upsnap') }}</h3>
+
+			<table class="details-table">
+				<tr>
+					<td class="details-label">{{ 'Duration'|t('upsnap') }}</td>
+					<td class="details-value">
+						{{ data.details.duration|default('Unknown'|t('upsnap')) }}
+						{% if data.details.startedAt is defined %}
+							<span style="color: #999; margin-left: 16px;">
+								{{ 'Started at'|t('upsnap') }}
+								{{ data.details.startedAt }}
+							</span>
+						{% endif %}
+					</td>
+				</tr>
+
+				{% if data.details.monitoredFrom is defined %}
+					<tr>
+						<td class="details-label">{{ 'Monitored from'|t('upsnap') }}</td>
+						<td class="details-value">
+							{{ data.details.monitoredFrom.location|default('Unknown'|t('upsnap')) }}
+							{% if data.details.monitoredFrom.ip is defined %}
+								<span style="color: #999; margin-left: 16px;">
+									{{ data.details.monitoredFrom.ip }}
+								</span>
+							{% endif %}
+						</td>
+					</tr>
+				{% endif %}
+
+				{% if data.details.httpStatus is defined %}
+					<tr>
+						<td class="details-label">HTTP Response Code</td>
+						<td class="details-value">
+							{% set httpStatusClass = 
+								data.details.httpStatus >= 100 and data.details.httpStatus < 200 ? 'info' :
+								data.details.httpStatus >= 200 and data.details.httpStatus < 300 ? 'success' :
+								data.details.httpStatus >= 300 and data.details.httpStatus < 400 ? 'redirect' :
+								data.details.httpStatus >= 400 and data.details.httpStatus < 500 ? 'warning' :
+								data.details.httpStatus >= 500 ? 'error' :
+								'unknown'
+							%}
+							<span class="http-status {{ httpStatusClass }}">
+								{{ data.details.httpStatus|default(data.details.httpStatus) }}
+							</span>
+						</td>
+					</tr>
+				{% endif %}
+			</table>
+
+			<div id="more-details" class="hidden">
+
+				<h3 class="pt-2rem details-title">HTTP Details</h3>
+				<table class="details-table">
+					<tr>
+						<td class="details-label">HTTP Status</td>
+						<td class="details-value">
+							{{ data.details.httpStatus }}
+						</td>
+					</tr>
+
+					<tr>
+						<td class="details-label">Final URL</td>
+						<td class="details-value">
+							{{ data.details.finalURL }}
+						</td>
+					</tr>
+					<tr>
+						<td class="details-label">Redirect Paths</td>
+						<td class="details-value">
+							{% if data.details.redirects %}
+								{{ data.details.redirects|join(' → ') }}
+							{% else %}
+								–
+							{% endif %}
+						</td>
+					</tr>
+					<tr>
+						<td class="details-label">Resolved IPs</td>
+						<td class="details-value">
+							{{ data.details.resolvedIPs|join(', ') }}
+						</td>
+					</tr>
+
+					<tr>
+						<td class="details-label">Server Technology</td>
+						<td class="details-value">{{ data.details.server }}</td>
+					</tr>
+					<tr>
+						<td class="details-label">Content Type (MIME)}</td>
+						<td class="details-value">{{ data.details.contentType }}</td>
+					</tr>
+					<tr>
+						<td class="details-label">{{ "Content Length"|t('upsnap') }}</td>
+						<td class="details-value">{{ data.details.contentLength }}
+							bytes</td>
+					</tr>
+				</table>
+
+				<h2 class="pt-2rem details-title">Page Info</h2>
+				<table class="details-table">
+					<tr>
+						<td class="details-label">Page Title</td>
+						<td class="details-value">{{ data.details.pageTitle }}</td>
+					</tr>
+				</table>
+
+				{% if data.details.tls %}
+					<h2 class="pt-2rem">{{ "TLS / Security"|t('upsnap') }}</h2>
+					<table class="details-table">
+						<tr>
+							<td class="details-label">{{ "TLS Version"|t('upsnap') }}</td>
+							<td class="details-value">{{ data.details.tls.version }}</td>
+						</tr>
+						<tr>
+							<td class="details-label">Protocol (ALPN)</td>
+							<td class="details-value">{{ data.details.tls.alpn }}</td>
+						</tr>
+						<tr>
+							<td class="details-label">Encryption Method</td>
+							<td class="details-value">{{ data.details.tls.cipherSuite }}</td>
+						</tr>
+						<tr>
+							<td class="details-label">Certificate Host</td>
+							<td class="details-value">{{ data.details.tls.serverName }}</td>
+						</tr>
+					</table>
+				{% endif %}
+			</div>
+
+			{% include 'upsnap/_components/show-more.twig' %}
+		</div>
+	{% endif %}
+{% endblock %}

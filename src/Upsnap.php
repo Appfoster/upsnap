@@ -5,62 +5,59 @@ namespace appfoster\upsnap;
 use Craft;
 use craft\base\Event;
 use craft\base\Plugin;
-use craft\helpers\App;
 use craft\web\UrlManager;
 use craft\services\Plugins;
+use craft\helpers\UrlHelper;
 use craft\events\PluginEvent;
 use craft\events\RegisterUrlRulesEvent;
 
-use appfoster\upsnap\models\Settings;
 use appfoster\upsnap\services\ApiService;
 use appfoster\upsnap\services\HistoryService;
+use appfoster\upsnap\services\SettingsService;
 
 /**
  * @property ApiService $apiService
  * @property HistoryService $historyService
+ * @property SettingsService $settingsService
  */
 class Upsnap extends Plugin
 {
     public static $plugin;
 
-    public bool $hasCpSection = true;
-    public bool $hasCpSettings = true;
-    public string $schemaVersion = '1.0.0';
-    public static string $healthCheckUrl;
+    public bool $hasCpSection;
+    public bool $hasCpSettings;
+    public string $schemaVersion;
 
-    /**
-     * @inheritdoc
-     */
-    // protected function createSettingsModel(): Settings
-    // {
-    //     return new Settings();
-    // }
-
-    /**
-     * @inheritdoc
-     */
-    protected function settingsHtml(): ?string
+    public function __construct($id, $parent = null, array $config = [])
     {
-        return Craft::$app->view->renderTemplate(
-            'upsnap/_settings',
-            [
-                'settings' => $this->getSettings(),
-                'plugin' => $this,
-            ]
-        );
+        $this->schemaVersion = Constants::PLUGIN_SCHEMA_VERSION;
+        $this->hasCpSettings = true;
+        $this->hasCpSection = true;
+
+        parent::__construct($id, $parent, $config);
+    }
+
+    /**
+     * Get the monitoring URL from settings
+     */
+    public static function getMonitoringUrl(): string|null
+    {
+        $plugin = self::getInstance();
+        $settingsService = $plugin->settingsService;
+        return $settingsService->getMonitoringUrl();
     }
 
     public function init()
     {
         parent::init();
 
-        self::$healthCheckUrl = App::env('SITE_MONITOR_URL') ?: '';
-
-        // Removed global asset bundle registration - each page registers its own now
+        // Set alias for assets
+        \Craft::setAlias('@upsnap', dirname(__DIR__)."/src");
 
         $this->setComponents([
             'apiService' => ApiService::class,
-            'historyService' => HistoryService::class
+            'historyService' => HistoryService::class,
+            'settingsService' => SettingsService::class
         ]);
 
         Event::on(
@@ -80,7 +77,7 @@ class Upsnap extends Plugin
                 if ($event->plugin === $this) {
                     $request = Craft::$app->getRequest();
                     if ($request->isCpRequest) {
-                        Craft::info('Upsnap plugin redirect url will be set', __METHOD__);
+                        return $this->redirectToSettings()->send();
                     }
                 }
             }
@@ -102,14 +99,18 @@ class Upsnap extends Plugin
             function (RegisterUrlRulesEvent $event) {
                 $event->rules = array_merge($event->rules, [
                     'upsnap' => 'upsnap/dashboard/index',
-                    'upsnap/reachability' => 'upsnap/reachability/index',
-                    'upsnap/reachability/history' => 'upsnap/reachability/history',
-                    'upsnap/security-certificates' => 'upsnap/security-certificates/index',
-                    'upsnap/settings' => 'upsnap/settings/index',
-                    'upsnap/broken-links' => 'upsnap/broken-links/index',
-                    'upsnap/lighthouse' => 'upsnap/lighthouse/index',
-                    'upsnap/domain-check' => 'upsnap/domain-check/index',
-                    'upsnap/mixed-content' => 'upsnap/mixed-content/index',
+
+                    // Health Check Routes
+                    Constants::SUBNAV_ITEM_REACHABILITY['url'] => 'upsnap/health-check/reachability',
+                    // 'upsnap/reachability/history' => 'upsnap/health-check/reachability-history',
+                    Constants::SUBNAV_ITEM_SECURITY_CERTIFICATES['url'] => 'upsnap/health-check/security-certificates',
+                    Constants::SUBNAV_ITEM_BROKEN_LINKS['url'] => 'upsnap/health-check/broken-links',
+                    Constants::SUBNAV_ITEM_LIGHTHOUSE['url'] => 'upsnap/health-check/lighthouse',
+                    Constants::SUBNAV_ITEM_DOMAIN_CHECK['url'] => 'upsnap/health-check/domain-check',
+                    Constants::SUBNAV_ITEM_MIXED_CONTENT['url'] => 'upsnap/health-check/mixed-content',
+
+                    // Setting Route
+                    Constants::SUBNAV_ITEM_SETTINGS['url'] => 'upsnap/settings/index',
                 ]);
             }
         );
@@ -122,41 +123,25 @@ class Upsnap extends Plugin
     {
         $item = parent::getCpNavItem();
 
-        $item['subnav'] = [
-            // 'dashboard' => [
-            //     'label' => Craft::t('upsnap', 'Dashboard'),
-            //     'url' => 'upsnap'
-            // ],
-            'reachability' => [
-                'label' => Craft::t('upsnap', 'Reachability'),
-                'url' => 'upsnap/reachability'
-            ],
-            'security-certificates' => [
-                'label' => Craft::t('upsnap', 'Security Certificates'),
-                'url' => 'upsnap/security-certificates'
-            ],
-            'broken-links' => [
-                'label' => Craft::t('upsnap', 'Broken Links'),
-                'url' => 'upsnap/broken-links'
-            ],
-            'lighthouse' => [
-                'label' => Craft::t('upsnap', 'Lighthouse'),
-                'url' => 'upsnap/lighthouse'
-            ],
-            'domain-check' => [
-                'label' => Craft::t('upsnap', 'Domain Check'),
-                'url' => 'upsnap/domain-check'
-            ],
-            'mixed-content' => [
-                'label' => Craft::t('upsnap', 'Mixed Content'),
-                'url' => 'upsnap/mixed-content'
-            ],
-            // 'settings' => [
-            //     'label' => Craft::t('upsnap', 'Settings'),
-            //     'url' => 'upsnap/settings'
-            // ],
-        ];
+        $item['subnav'] = Constants::SUBNAV_ITEM_LIST;
 
         return $item;
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function getSettingsResponse(): mixed
+    {
+        // Just redirect to the plugin settings page
+        return $this->redirectToSettings();
+    }
+
+    /**
+     * @inheritdoc
+     */
+    private function redirectToSettings()
+    {
+        return Craft::$app->getResponse()->redirect(UrlHelper::cpUrl(Constants::SUBNAV_ITEM_SETTINGS['url']));
     }
 }
