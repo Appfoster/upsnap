@@ -116,7 +116,7 @@ function registerLighthouseJs() {
                 data: { device: currentDevice }
             })
                 .then(response => {
-                    lighthouseData = response.data; // Replace local data
+                    lighthouseData = response?.data?.data; // Replace local data
                     renderLighthouseData(); // Re-render
                 })
                 .catch(error => {
@@ -140,23 +140,7 @@ function registerLighthouseJs() {
         return '#fb2c36'; // error red
     }
 
-    function getScoreStatus(score) {
-        if (score >= 90)
-            return 'success';
-
-
-        if (score >= 50)
-            return 'warning';
-
-
-        return 'error';
-    }
-
-    function getPerformanceScoreFromDecimal(decimalScore) {
-        return Math.round(decimalScore * 100);
-    }
-
-    function createScoreCircle(score, title) {
+    function createScoreCircle(score = 0, title) {
         const color = getScoreColor(score);
         const circumference = 2 * Math.PI * 37; // radius = 37
         const progress = (score / 100) * circumference;
@@ -184,7 +168,7 @@ function registerLighthouseJs() {
                     <div class="metric-status ${status}"></div>
                     <div class="metric-content">
                         <h4 class="metric-name">${name}</h4>
-                        <p class="metric-value ${status}">${value}</p>
+                        <p class="metric-value ${status}">${value ?? 'N/A'}</p>
                     </div>
                 </div>
             `;
