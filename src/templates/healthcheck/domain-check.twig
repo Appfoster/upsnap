@@ -16,58 +16,9 @@
 	{% set statusClass = data.status == 'ok' ? 'success' : (data.status == 'error' ? 'error' : 'warning') %}
 	{% set containerClass = data.status == 'ok' ? '' : (data.status == 'error' ? 'error' : 'warning') %}
 
-	<div class="status-container {{ containerClass }}">
-		<div class="status-header">
-			<div class="status-icon {{ statusClass }}">
-				{% if data.status == 'ok' %}
-					✓
-				{% elseif data.status == 'error' %}
-					✗
-				{% else %}
-					!
-				{% endif %}
-			</div>
-			<h3 class="status-title">
-				{% if data.status == 'ok' %}
-					{{ 'Domain is active and valid!'|t('upsnap') }}
-				{% elseif data.status == 'error' %}
-					{{ 'Domain check failed!'|t('upsnap') }}
-				{% else %}
-					{{ 'Domain has some warnings!'|t('upsnap') }}
-				{% endif %}
-			</h3>
-		</div>
-		{% if data.error is defined and data.error|length %}
-			<ul class="error-list">
-				{% for error in data.error %}
-					<li>{{ error }}</li>
-				{% endfor %}
-			</ul>
-		{% endif %}
-	</div>
-
-	<div class="pane">
-		<div class="meta read-only">
-			<div class="data fullwidth">
-				<div class="field">
-					<div class="heading">{{ "Monitored URL"|t('upsnap') }}</div>
-					<div>
-						<a href="{{ data.url }}" target="_blank">{{ data.url }}</a>
-					</div>
-				</div>
-
-				<div class="field">
-					<div class="heading">{{ "Last Checked"|t('upsnap') }}</div>
-					<div>{{ data.checkedAt|date("d M Y, H:i:s") }}</div>
-				</div>
-
-				<div class="field">
-					<div class="heading">{{ "Response Time"|t('upsnap') }}</div>
-					<div>{{ data.duration ?? '–' }}</div>
-				</div>
-			</div>
-		</div>
-	</div>
+	
+	{% include 'upsnap/_components/status-container.twig' %}
+	{% include 'upsnap/_components/details-container.twig' %}
 
 
 	{% if data.details is defined %}

@@ -103,27 +103,19 @@ class HealthCheckController extends BaseController
 
     public function actionDomainCheck(): Response
     {
+        $url = Upsnap::getMonitoringUrl();
+
+        if (!$url) {
+            return $this->service->handleMissingMonitoringUrl(Constants::SUBNAV_ITEM_DOMAIN_CHECK);
+        }
         $data = [];
 
         try {
-            $response = Upsnap::$plugin->apiService->post('healthcheck', [
-                'url' => Upsnap::getMonitoringUrl(),
-                'checks' => ['domain'],
-            ]);
+            $paramName = Constants::SUBNAV_ITEM_DOMAIN_CHECK['apiLabel'];
+            $response = $this->service->getHealthcheck($url, [$paramName]);
             if (isset($response['result']['details']['domain']['meta']['errors'])) {
-                Craft::$app->getSession()->setError('Something went wrong: ' . implode(', ', $response['result']['details']['domain']['meta']['errors']));
-                return $this->renderTemplate('upsnap/healthcheck/domain-check', [
-                    'data' => [
-                        'status' => 'error',
-                        'error' => $response['result']['details']['domain']['meta']['errors'] ?? [],
-                        'url' => $response['url'] ?? '',
-                        'checkedAt' => $response['checkedAt'] ?? '',
-                        'duration' => isset($response['result']['durationMs']) ? $response['result']['durationMs'] . ' ms' : '-',
-                    ],
-                    'plugin' => Upsnap::$plugin,
-                    'title' => Craft::t('upsnap', 'Domain Check'),
-                    'selectedSubnavItem' => 'domain-check',
-                ]);
+                $errors = $response['result']['details']['domain']['meta']['errors'][0];
+                throw new \Exception($errors);
             }
 
             // Transform API response to our expected format
@@ -133,42 +125,48 @@ class HealthCheckController extends BaseController
                 $meta = $domain['meta'] ?? [];
 
                 $data = [
-                    'status' => $result['summary']['ok'] ? 'ok' : 'error',
-                    'message' => $result['summary']['message'] ?? 'Domain check completed',
-                    'url' => $response['url'] ?? '',
-                    'checkedAt' => $response['checkedAt'] ?? '',
-                    'duration' => isset($result['durationMs']) ? $result['durationMs'] . ' ms' : 'Unknown',
-                    'details' => [
-                        'cname' => $meta['cname'] ?? '',
-                        'host' => $meta['host'] ?? '',
-                        'ipv4' => $meta['ipv4'] ?? [],
-                        'ipv6' => $meta['ipv6'] ?? null,
-                        'mxCount' => $meta['mxCount'] ?? 0,
-                        'nsCount' => $meta['nsCount'] ?? 0,
-                        'txtCount' => $meta['txtCount'] ?? 0,
-                        'supported' => $meta['supported'] ?? false,
-                        'domainExpirationDate' => $meta['domainExpirationDate'] ?? '',
-                        'domainDays' => $meta['domainDays'] ?? 0,
-                        'domainExpired' => $meta['domainExpired'] ?? 0,
-                        'domainExpiring' => $meta['domainExpiring'] ?? 0,
-                        'domainChanged' => $meta['domainChanged'] ?? 0,
-                        'lastUpdatedInRdapDb' => $meta['lastUpdatedInRdapDb'] ?? '',
-                        'domainRegistered' => $meta['domainRegistered'] ?? '',
-                        'lastChanged' => $meta['lastChanged'] ?? '',
-                        'domainStatusCodes' => $meta['domainStatusCodes'] ?? [],
+                    'data' => [
+                        'status' => $result['summary']['ok'] ? 'ok' : 'error',
+                        'message' => $result['summary']['message'] ?? 'Domain check completed',
+                        'url' => $response['url'] ?? '',
+                        'checkedAt' => $response['checkedAt'] ?? '',
+                        'duration' => isset($result['durationMs']) ? $result['durationMs'] . ' ms' : 'Unknown',
+                        'details' => [
+                            'cname' => $meta['cname'] ?? '',
+                            'host' => $meta['host'] ?? '',
+                            'ipv4' => $meta['ipv4'] ?? [],
+                            'ipv6' => $meta['ipv6'] ?? null,
+                            'mxCount' => $meta['mxCount'] ?? 0,
+                            'nsCount' => $meta['nsCount'] ?? 0,
+                            'txtCount' => $meta['txtCount'] ?? 0,
+                            'supported' => $meta['supported'] ?? false,
+                            'domainExpirationDate' => $meta['domainExpirationDate'] ?? '',
+                            'domainDays' => $meta['domainDays'] ?? 0,
+                            'domainExpired' => $meta['domainExpired'] ?? 0,
+                            'domainExpiring' => $meta['domainExpiring'] ?? 0,
+                            'domainChanged' => $meta['domainChanged'] ?? 0,
+                            'lastUpdatedInRdapDb' => $meta['lastUpdatedInRdapDb'] ?? '',
+                            'domainRegistered' => $meta['domainRegistered'] ?? '',
+                            'lastChanged' => $meta['lastChanged'] ?? '',
+                            'domainStatusCodes' => $meta['domainStatusCodes'] ?? [],
+                        ]
                     ]
                 ];
             }
         } catch (\Throwable $e) {
             Craft::$app->getSession()->setError('Error fetching domain check data: ' . $e->getMessage());
+            $data = [
+                'data' => [
+                    'status' => 'error',
+                    'error' => $e->getMessage(),
+                    'url' => $url,
+                ]
+            ];
         }
 
-        return $this->renderTemplate('upsnap/healthcheck/domain-check', [
-            'data' => $data,
-            'plugin' => Upsnap::$plugin,
-            'title' => Craft::t('upsnap', 'Domain Check'),
-            'selectedSubnavItem' => 'domain-check',
-        ]);
+        $data = $this->service->prepareData($data, Constants::SUBNAV_ITEM_DOMAIN_CHECK);
+
+        return $this->service->sendResponse($data, Constants::SUBNAV_ITEM_DOMAIN_CHECK['template']);
     }
 
     public function actionLighthouse(): Response
@@ -176,7 +174,7 @@ class HealthCheckController extends BaseController
         $url = Upsnap::getMonitoringUrl();
 
         if (!$url) {
-            return $this->service->handleMissingMonitoringUrl(Constants::SUBNAV_ITEM_REACHABILITY);
+            return $this->service->handleMissingMonitoringUrl(Constants::SUBNAV_ITEM_LIGHTHOUSE);
         }
 
         $data = [];
