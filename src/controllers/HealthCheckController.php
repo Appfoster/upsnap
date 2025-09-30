@@ -32,16 +32,17 @@ class HealthCheckController extends BaseController
         $data = [];
 
         try {
+            $paramName = Constants::SUBNAV_ITEM_BROKEN_LINKS['apiLabel'];
+            $response = $this->service->getHealthcheck($url, [$paramName]);
 
-            $response = $this->service->getHealthcheck($url, ['broken_links']);
-
-            if (isset($response['result']['details']['broken_links']['error'])) {
-                Craft::$app->getSession()->setError('Something went wrong: ' . $response['result']['details']['broken_links']['error']);
-                throw new \Exception($response['result']['details']['broken_links']['error']);
+            if (isset($response['result']['details'][$paramName]['error'])) {
+                $errorMsg = $response['result']['details'][$paramName]['error'];
+                Craft::$app->getSession()->setError('Something went wrong: ' . $errorMsg);
+                throw new \Exception($errorMsg);
             }
 
-            $brokenLinksMeta = $response['result']['details']['broken_links']['meta'] ?? [];
-            $isOk = $response['result']['details']['broken_links']['ok'] ?? true;
+            $brokenLinksMeta = $response['result']['details'][$paramName]['meta'] ?? [];
+            $isOk = $response['result']['details'][$paramName]['ok'] ?? true;
 
             $brokenLinks = [];
 
@@ -172,49 +173,67 @@ class HealthCheckController extends BaseController
 
     public function actionLighthouse(): Response
     {
+        $url = Upsnap::getMonitoringUrl();
+
+        if (!$url) {
+            return $this->service->handleMissingMonitoringUrl(Constants::SUBNAV_ITEM_REACHABILITY);
+        }
+
         $data = [];
         try {
-            $response = Upsnap::$plugin->apiService->post('healthcheck', [
-                'url' => Upsnap::getMonitoringUrl(),
-                'checks' => ["lighthouse"],
-                'strategy' => Craft::$app->getRequest()->getParam('device', 'desktop')
-            ]);
+            $paramName = Constants::SUBNAV_ITEM_LIGHTHOUSE['apiLabel'];
+
+            $response = $this->service->getHealthcheck($url, [$paramName], Craft::$app->getRequest()->getParam('device', 'desktop'));
+
+            if (isset($response['result']['details'][$paramName]['error'])) {
+                Craft::$app->getSession()->setError('Something went wrong: ' . $response['result']['details'][$paramName]['error']);
+                throw new \Exception($response['result']['details'][$paramName]['error']);
+            }
+
+            $isOk = $response['result']['details'][$paramName]['ok'] ?? true;
 
             if (isset($response['result'])) {
                 $result = $response['result'];
                 $lh = $result['details']['lighthouse'] ?? [];
 
                 $data = [
-                    "url" => $response['url'] ?? '',
-                    "checkedAt" => $response['checkedAt'] ?? '',
-                    "result" => [
-                        "summary" => [
-                            "ok" => $result['summary']['ok'] ?? true,
-                            "score" => $result['summary']['score'] ?? 100,
-                            "message" => $result['summary']['message'] ?? 'checks completed',
+                    'data' => [
+                        'status' => $isOk ? 'ok' : 'error',
+                        'message' => $isOk ? 'All checks completed' : 'Some issues detected',
+                        'url' => $response['url'] ?? '',
+                        'checkedAt' => $response['checkedAt'] ?? '',
+                        "result" => [
+                            "summary" => [
+                                "ok" => $result['summary']['ok'] ?? true,
+                                "score" => $result['summary']['score'] ?? 100,
+                                "message" => $result['summary']['message'] ?? 'checks completed',
+                            ],
+                            "details" => [
+                                "lighthouse" => $lh,
+                            ],
+                            "durationMs" => $result['durationMs'] ?? 0,
                         ],
-                        "details" => [
-                            "lighthouse" => $lh,
-                        ],
-                        "durationMs" => $result['durationMs'] ?? 0,
-                    ],
+                    ]
                 ];
             }
         } catch (\Throwable $e) {
-            Craft::error('Error fetching lighthouse scores: ' . $e->getMessage(), __METHOD__);
             Craft::$app->getSession()->setError('Error fetching lighthouse scores: ' . $e->getMessage());
+            $data = [
+                'data' => [
+                    'status' => 'error',
+                    'error' => $e->getMessage(),
+                    'url' => $url,
+                ]
+            ];
         }
+
+        $data = $this->service->prepareData($data, Constants::SUBNAV_ITEM_LIGHTHOUSE);
 
         // ✅ Return JSON if it’s an Ajax request
         if (Craft::$app->getRequest()->getIsAjax()) {
             return $this->asJson($data);
         }
-
-        return $this->renderTemplate('upsnap/healthcheck/lighthouse', [
-            'data' => $data,
-            'title' => Craft::t('upsnap', 'Lighthouse'),
-            'selectedSubnavItem' => 'lighthouse',
-        ]);
+        return $this->service->sendResponse($data, Constants::SUBNAV_ITEM_LIGHTHOUSE['template']);
     }
 
     public function actionMixedContent(): Response
@@ -281,17 +300,18 @@ class HealthCheckController extends BaseController
         }
 
         try {
-            $response = $this->service->getHealthcheck($url, ['uptime']);
+            $paramName = Constants::SUBNAV_ITEM_REACHABILITY['apiLabel'];
+            $response = $this->service->getHealthcheck($url, [$paramName]);
 
-            if (isset($response['result']['details']['uptime']['error'])) {
-                Craft::$app->getSession()->setError('Something went wrong: ' . $response['result']['details']['uptime']['error']);
-                throw new \Exception($response['result']['details']['uptime']['error']);
+            if (isset($response['result']['details'][$paramName]['error'])) {
+                Craft::$app->getSession()->setError('Something went wrong: ' . $response['result']['details'][$paramName]['error']);
+                throw new \Exception($response['result']['details'][$paramName]['error']);
             }
 
             // Transform API response to our expected format
             if (isset($response['result'])) {
                 $result = $response['result'];
-                $uptime = $result['details']['uptime'] ?? null;
+                $uptime = $result['details'][$paramName] ?? null;
                 $meta = $uptime['meta'] ?? [];
 
                 $data = [
@@ -341,17 +361,18 @@ class HealthCheckController extends BaseController
         }
 
         try {
-            $response = $this->service->getHealthcheck($url, ['ssl']);
+            $paramName = Constants::SUBNAV_ITEM_SECURITY_CERTIFICATES['apiLabel'];
+            $response = $this->service->getHealthcheck($url, [$paramName]);
 
-            if (isset($response['result']['details']['ssl']['error'])) {
-                Craft::$app->getSession()->setError('Something went wrong: ' . $response['result']['details']['ssl']['error']);
-                throw new \Exception($response['result']['details']['ssl']['error']);
+            if (isset($response['result']['details'][$paramName]['error'])) {
+                Craft::$app->getSession()->setError('Something went wrong: ' . $response['result']['details'][$paramName]['error']);
+                throw new \Exception($response['result']['details'][$paramName]['error']);
             }
 
             // Transform API response to our expected format for SSL certificate
             if (isset($response['result'])) {
                 $result = $response['result'];
-                $ssl = $result['details']['ssl'] ?? null;
+                $ssl = $result['details'][$paramName] ?? null;
                 $meta = $ssl['meta'] ?? [];
 
                 $leafCertificate = null;

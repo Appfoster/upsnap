@@ -112,7 +112,7 @@ function registerLighthouseJs() {
             document.getElementById("loading-overlay").style.display = "flex";
 
             // Call controller with device param
-            Craft.sendActionRequest('POST', 'upsnap/lighthouse/index', {
+            Craft.sendActionRequest('POST', 'upsnap/health-check/lighthouse', {
                 data: { device: currentDevice }
             })
                 .then(response => {
@@ -195,6 +195,7 @@ function registerLighthouseJs() {
         if (pages.length === 0) {
             scoresContainer.innerHTML = '<p>No lighthouse data available</p>';
             performanceContainer.innerHTML = '';
+            performanceContainer.style.display = 'none';
             return;
         }
 

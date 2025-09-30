@@ -44,11 +44,12 @@ class HealthCheckService
 	 * @param array $params possible values one of: ["uptime", "broken-links", "domain-check"]
 	 * @return array|mixed
 	 */
-	public function getHealthcheck($url, $params)
+	public function getHealthcheck($url, $params, $seoStretegy = null)
 	{
 		return Upsnap::$plugin->apiService->post('healthcheck', [
 			'url' => $url,
 			"checks" => $params,
+			'strategy' => $seoStretegy
 		]);
 	}
 }

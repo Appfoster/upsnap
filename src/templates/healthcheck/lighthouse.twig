@@ -30,28 +30,13 @@
 			</button>
 		</div>
 	</div>
+	{% set statusClass = data.status == 'ok' ? 'success' : (data.status == 'error' ? 'error' : 'warning') %}
+	{% set containerClass = data.status == 'ok' ? '' : (data.status == 'error' ? 'error' : 'warning') %}
 
-	<!-- Info Panel -->
-	<div class="info-panel">
-		<div class="info-grid">
-			<div class="info-item">
-				<span class="info-label">{{ 'Tested URL'|t('upsnap') }}</span>
-				<span class="info-value">{{ data.url|default('–') }}</span>
-			</div>
-			<div class="info-item">
-				<span class="info-label">{{ 'Last Checked'|t('upsnap') }}</span>
-				<span class="info-value">{{ data.checkedAt|date("M j, Y H:i")|default('–') }}</span>
-			</div>
-			<div class="info-item">
-				<span class="info-label">{{ 'Test Duration'|t('upsnap') }}</span>
-				<span class="info-value">{{ data.result.durationMs ? (data.result.durationMs ~ ' ms') : '–' }}</span>
-			</div>
-			<div class="info-item">
-				<span class="info-label">{{ 'Overall Status'|t('upsnap') }}</span>
-				<span class="info-value">{{ data.result.summary.ok ? 'Passed'|t('upsnap') : 'Issues Found'|t('upsnap') }}</span>
-			</div>
-		</div>
-	</div>
+
+	{% include 'upsnap/_components/status-container.twig' %}
+	{% include 'upsnap/_components/details-container.twig' %}
+
 
 	<div id="lighthouse-data" style="display: none;">
 		{{ data|json_encode|raw }}
