@@ -5,6 +5,13 @@
     gap: 24px;
 }
 
+/* Responsive: 1 card per row on smaller screens */
+@media (max-width: 768px) {
+    .dashboard-grid {
+        grid-template-columns: 1fr; 
+    }
+}
+
 /* Card base */
 .stat-card {
     background: #fff;
