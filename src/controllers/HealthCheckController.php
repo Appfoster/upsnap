@@ -96,6 +96,9 @@ class HealthCheckController extends BaseController
             ];
         }
 
+        if (Craft::$app->getRequest()->getIsAjax()) {
+            return $this->asJson($data);
+        }
 
         $data = $this->service->prepareData($data, Constants::SUBNAV_ITEM_BROKEN_LINKS);
         return $this->service->sendResponse($data, Constants::SUBNAV_ITEM_BROKEN_LINKS['template']);
@@ -165,6 +168,10 @@ class HealthCheckController extends BaseController
             ];
         }
 
+        if (Craft::$app->getRequest()->getIsAjax()) {
+            return $this->asJson($data);
+        }
+
         $data = $this->service->prepareData($data, Constants::SUBNAV_ITEM_DOMAIN_CHECK);
 
         return $this->service->sendResponse($data, Constants::SUBNAV_ITEM_DOMAIN_CHECK['template']);
@@ -226,12 +233,17 @@ class HealthCheckController extends BaseController
             ];
         }
 
+        if (Craft::$app->getRequest()->getIsAjax()) {
+            return $this->asJson($data);
+        }
+
         $data = $this->service->prepareData($data, Constants::SUBNAV_ITEM_LIGHTHOUSE);
 
         // ✅ Return JSON if it’s an Ajax request
         if (Craft::$app->getRequest()->getIsAjax()) {
             return $this->asJson($data);
         }
+
         return $this->service->sendResponse($data, Constants::SUBNAV_ITEM_LIGHTHOUSE['template']);
     }
 
@@ -287,7 +299,10 @@ class HealthCheckController extends BaseController
             ];
         }
 
-        
+        if (Craft::$app->getRequest()->getIsAjax()) {
+            return $this->asJson($data);
+        }
+
         $data = $this->service->prepareData($data, Constants::SUBNAV_ITEM_MIXED_CONTENT);
         return $this->service->sendResponse($data, Constants::SUBNAV_ITEM_MIXED_CONTENT['template']);
     }
@@ -350,6 +365,9 @@ class HealthCheckController extends BaseController
             ];
         }
 
+        if (Craft::$app->getRequest()->getIsAjax()) {
+            return $this->asJson($data);
+        }
         $data = $this->service->prepareData($data, Constants::SUBNAV_ITEM_REACHABILITY);
         return $this->service->sendResponse($data, Constants::SUBNAV_ITEM_REACHABILITY['template']);
     }
@@ -413,6 +431,10 @@ class HealthCheckController extends BaseController
                     'url' => $url,
                 ]
             ];
+        }
+
+        if (Craft::$app->getRequest()->getIsAjax()) {
+            return $this->asJson($data);
         }
 
         $data = $this->service->prepareData($data, Constants::SUBNAV_ITEM_SECURITY_CERTIFICATES);
