@@ -50,17 +50,19 @@ function renderErrorCard({ cardId, title, errorMsg }) {
     `;
 }
 
-function fetchAndRenderCard({ action, cardId, title, detailUrl, getMessage, getStatus }) {
+function fetchAndRenderCard({ action, cardId, getMessage, getStatus }) {
     Craft.sendActionRequest('POST', action)
         .then((response) => {
-            const data = response?.data?.data;
+            response = response?.data;
+            const data = response?.data;
+
             renderCard({
                 cardId,
-                title,
+                title : response?.title,
                 status: getStatus ? getStatus(data) : data.status,
                 message: getMessage ? getMessage(data) : (data.status === 'ok' ? data.message : data.error),
                 checkedAt: data.checkedAt,
-                detailUrl
+                detailUrl : response?.url
             });
         })
         .catch((error) => {
@@ -75,43 +77,31 @@ function initializeDashboard() {
     fetchAndRenderCard({
         action: 'upsnap/health-check/reachability',
         cardId: 'reachability-card',
-        title: 'Reachability',
-        detailUrl: Craft.getCpUrl('upsnap/reachability')
     });
 
     fetchAndRenderCard({
         action: 'upsnap/health-check/security-certificates',
         cardId: 'ssl-card',
-        title: 'Security Certificates',
-        detailUrl: Craft.getCpUrl('upsnap/security-certificates')
     });
 
     fetchAndRenderCard({
         action: 'upsnap/health-check/broken-links',
         cardId: 'broken-links-card',
-        title: 'Broken Links',
-        detailUrl: Craft.getCpUrl('upsnap/broken-links'),
         getMessage: (data) => data.status === 'false' ? data.error : data.message
     });
 
     fetchAndRenderCard({
         action: 'upsnap/health-check/domain-check',
         cardId: 'domain-check-card',
-        title: 'Domain Check',
-        detailUrl: Craft.getCpUrl('upsnap/domain-check'),
     });
 
     fetchAndRenderCard({
         action: 'upsnap/health-check/mixed-content',
         cardId: 'mixed-content-card',
-        title: 'Mixed Content Check',
-        detailUrl: Craft.getCpUrl('upsnap/mixed-content'),
     });
 
     fetchAndRenderCard({
         action: 'upsnap/health-check/lighthouse',
         cardId: 'lighthouse-card',
-        title: 'Lighthouse Scores',
-        detailUrl: Craft.getCpUrl('upsnap/lighthouse'),
     });
 }

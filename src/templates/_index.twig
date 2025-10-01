@@ -1,11 +1,21 @@
 {% extends '_layouts/cp' %}
 {% import '_includes/forms' as forms %}
 
-{% block content %}
-	{% if data.status is defined and data.status == 'ok'%}
+{% block actionButton %}
+	<div class="buttons">
+		<div class="btngroup">
+			<button type="button" class="btn submit" data-icon="refresh" id="refresh-btn">
+				{{ 'Refresh'|t('upsnap') }}
+			</button>
+		</div>
+	</div>
+{% endblock %}
 
-		{% set statusClass = data.status == 'ok' ? 'success' : (data.status == 'error' ? 'error' : 'warning') %}
-		{% set containerClass = data.status == 'ok' ? '' : (data.status == 'error' ? 'error' : 'warning') %}
+{% block content %}
+	{% if success == false %}
+
+		{% set statusClass = 'warning' %}
+		{% set containerClass = 'warning' %}
 
 		{% include 'upsnap/_components/status-container.twig' %}
 	{% else %}

@@ -77,7 +77,9 @@ function registerDomainCheckJs() {
 }
 
 function registerLighthouseJs() {
-    const deviceTabs = document.querySelectorAll(".device-tab");
+    const deviceSelector = document.getElementById("device-selector");
+    let currentDevice = deviceSelector?.value || 'desktop';
+
     const scoresContainer = document.getElementById("scores-container");
     const performanceContainer = document.getElementById("performance-container");
     const lighthouseDataElement = document.getElementById("lighthouse-data");
@@ -86,7 +88,6 @@ function registerLighthouseJs() {
         return;
     }
 
-    let currentDevice = 'desktop';
     let lighthouseData = {};
 
     // Parse lighthouse data
@@ -106,32 +107,27 @@ function registerLighthouseJs() {
     }
 
     // Device tab switching
-    deviceTabs.forEach(tab => {
-        tab.addEventListener('click', function () {
-            deviceTabs.forEach(t => t.classList.remove('active'));
-            this.classList.add('active');
-            currentDevice = this.dataset.device;
+    if (deviceSelector) {
+        deviceSelector.addEventListener('change', function () {
+            currentDevice = this.value;
 
-            // Show loader
             document.getElementById("loading-overlay").style.display = "flex";
 
-            // Call controller with device param
             Craft.sendActionRequest('POST', 'upsnap/health-check/lighthouse', {
                 data: { device: currentDevice }
             })
-                .then(response => {
-                    lighthouseData = response?.data?.data; // Replace local data
-                    renderLighthouseData(); // Re-render
-                })
-                .catch(error => {
-                    console.error("Failed to fetch Lighthouse data:", error);
-                })
-                .finally(() => {
-                    document.getElementById("loading-overlay").style.display = "none";
-                });
+            .then(response => {
+                lighthouseData = response?.data?.data;
+                renderLighthouseData();
+            })
+            .catch(error => {
+                console.error("Failed to fetch Lighthouse data:", error);
+            })
+            .finally(() => {
+                document.getElementById("loading-overlay").style.display = "none";
+            });
         });
-    });
-
+    }
     function getScoreColor(score) {
         if (score >= 90)
             return '#009967';

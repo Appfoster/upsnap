@@ -2,34 +2,23 @@
 {% import '_includes/forms' as forms %}
 
 {% block actionButton %}
-	<div class="buttons">
-		<div class="btngroup">
-			<button type="button" class="btn submit" data-icon="refresh" id="refresh-btn">
-				{{ 'Refresh'|t('upsnap') }}
-			</button>
+	<div
+		class="buttons">
+		<!-- Device Selector -->
+		<div class="select">
+			<select id="device-selector">
+				<option value="desktop">{{ 'Desktop'|t('upsnap') }}</option>
+				<option value="mobile">{{ 'Mobile'|t('upsnap') }}</option>
+			</select>
 		</div>
+		<button type="button" class="btn submit" data-icon="refresh" id="refresh-btn">
+			{{ 'Refresh'|t('upsnap') }}
+		</button>
 	</div>
 {% endblock %}
 
 
 {% block content %}
-	<!-- Device Selector -->
-	<div class="device-selector">
-		<div class="device-tabs">
-			<button class="device-tab active" data-device="desktop">
-				<svg class="device-icon" viewbox="0 0 24 24" fill="currentColor">
-					<path d="M21,16H3V4H21M21,2H3C1.89,2 1,2.89 1,4V16A2,2 0 0,0 3,18H10V20H8V22H16V20H14V18H21A2,2 0 0,0 23,16V4C23,2.89 22.1,2 21,2Z"/>
-				</svg>
-				{{ 'Desktop'|t('upsnap') }}
-			</button>
-			<button class="device-tab" data-device="mobile">
-				<svg class="device-icon" viewbox="0 0 24 24" fill="currentColor">
-					<path d="M17,19H7V5H17M17,1H7C5.89,1 5,1.89 5,3V21A2,2 0 0,0 7,23H17A2,2 0 0,0 19,21V3C19,1.89 18.1,1 17,1Z"/>
-				</svg>
-				{{ 'Mobile'|t('upsnap') }}
-			</button>
-		</div>
-	</div>
 	{% set statusClass = data.status == 'ok' ? 'success' : (data.status == 'error' ? 'error' : 'warning') %}
 	{% set containerClass = data.status == 'ok' ? '' : (data.status == 'error' ? 'error' : 'warning') %}
 

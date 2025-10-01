@@ -26,19 +26,16 @@ class DashboardController extends BaseController
     public function actionIndex(): \yii\web\Response
     {
         $url = Upsnap::getMonitoringUrl();
-
-        if (!$url) {
-            return $this->service->handleMissingMonitoringUrl(Constants::SUBNAV_ITEM_DASHBOARD);
-        }
-
-        $plugin = \appfoster\upsnap\Upsnap::getInstance();
-        $settings = $plugin->getSettings();
-
         $variables = [
-            'settings' => $settings,
-            'title' => \Craft::t('upsnap', 'Dashboard'),
-            'selectedSubnavItem' => 'dashboard',
+            'success' => true,
+            'title' => Constants::SUBNAV_ITEM_DASHBOARD['label'],
+            'selectedSubnavItem' => Constants::SUBNAV_ITEM_DASHBOARD['key'],
         ];
+        
+        if (!$url) {
+            $variables['success'] = false;
+            $variables['message'] = 'Monitoring URL is not set. Please configure it in the settings.';
+        }
 
         return $this->renderTemplate('upsnap/_index', $variables);
     }
