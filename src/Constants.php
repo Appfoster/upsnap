@@ -95,7 +95,18 @@ class Constants
         'template' => 'upsnap/healthcheck/settings'
     ];
 
+    const SUBNAV_ITEM_DASHBOARD = [
+        'label' => 'Dashboard',
+        'key' => 'dashboard',
+        'url' => 'upsnap',
+        'template' => 'upsnap/_index'
+    ];
+
     const SUBNAV_ITEM_LIST = [
+        self::SUBNAV_ITEM_DASHBOARD['key'] => [
+            'label' => self::SUBNAV_ITEM_DASHBOARD['label'],
+            'url' => self::SUBNAV_ITEM_DASHBOARD['url']
+        ],
         self::SUBNAV_ITEM_REACHABILITY['key'] => [
             'label' => self::SUBNAV_ITEM_REACHABILITY['label'],
             'url' => self::SUBNAV_ITEM_REACHABILITY['url']
