@@ -90,6 +90,7 @@
     border-radius: 8px;
     overflow: hidden;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    overflow-x: auto;
 }
 
 .table-header {
@@ -713,4 +714,8 @@
     margin: 0 0 20px;
     padding-bottom: 10px;
     border-bottom: 2px solid #e3e5e8;
+}
+
+.broken-links-col {
+    min-width: 8rem;
 }
