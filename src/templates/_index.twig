@@ -1,9 +1,58 @@
 {% extends '_layouts/cp' %}
 {% import '_includes/forms' as forms %}
 
-{% block content %}
-    <div id="upsnap-dashboard">
-        <h2>UpSnap Dashboard Coming Soon.</h2>
-    </div>
+{% block actionButton %}
+	<div class="buttons">
+		<div class="btngroup">
+			<button type="button" class="btn submit" data-icon="refresh" id="refresh-btn">
+				{{ 'Refresh'|t('upsnap') }}
+			</button>
+		</div>
+	</div>
+{% endblock %}
 
+{% block content %}
+	{% if success == false %}
+
+		{% set statusClass = 'warning' %}
+		{% set containerClass = 'warning' %}
+
+		{% include 'upsnap/_components/status-container.twig' %}
+	{% else %}
+		<div
+			id="upsnap-dashboard" class="dashboard-grid">
+			<div id="reachability-card" class="stat-card skeleton">
+				<div class="skeleton-header"></div>
+				<div class="skeleton-line"></div>
+				<div class="skeleton-line"></div>
+			</div>
+			<div id="ssl-card" class="stat-card skeleton">
+				<div class="skeleton-header"></div>
+				<div class="skeleton-line"></div>
+				<div class="skeleton-line"></div>
+			</div>
+
+			<div id="broken-links-card" class="stat-card skeleton">
+				<div class="skeleton-header"></div>
+				<div class="skeleton-line"></div>
+				<div class="skeleton-line"></div>
+			</div>
+
+			<div id="domain-check-card" class="stat-card skeleton">
+				<div class="skeleton-header"></div>
+				<div class="skeleton-line"></div>
+				<div class="skeleton-line"></div>
+			</div>
+			<div id="mixed-content-card" class="stat-card skeleton">
+				<div class="skeleton-header"></div>
+				<div class="skeleton-line"></div>
+				<div class="skeleton-line"></div>
+			</div>
+			<div id="lighthouse-card" class="stat-card skeleton">
+				<div class="skeleton-header"></div>
+				<div class="skeleton-line"></div>
+				<div class="skeleton-line"></div>
+			</div>
+		</div>
+	{% endif %}
 {% endblock %}

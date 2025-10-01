@@ -14,7 +14,7 @@ class HealthCheckService
 		$this->controller = $controller;
 	}
 
-	public function prepareData(array $response, array $subnavItem): array
+	public function prepareData(array $response, array $subnavItem, bool $isAjax = false): array
 	{
 		$data = [
 			'success' => $response['data']['status'] ?? 'error',
@@ -24,6 +24,9 @@ class HealthCheckService
 			'title' => $subnavItem['label'],
             'selectedSubnavItem' => $subnavItem['key']
 		];
+		if($isAjax) {
+			$data['url'] = $subnavItem['url'];
+		}
 		return $data;
 	}
 
