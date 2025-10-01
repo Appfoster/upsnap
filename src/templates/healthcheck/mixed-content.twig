@@ -1,0 +1,60 @@
+{% extends '_layouts/cp' %}
+{% import '_includes/forms' as forms %}
+
+{% block actionButton %}
+	<div class="buttons">
+		<div class="btngroup">
+			<button type="button" class="btn submit" data-icon="refresh" id="refresh-btn">
+				{{ 'Refresh'|t('upsnap') }}
+			</button>
+		</div>
+	</div>
+{% endblock %}
+
+{% block content %}
+
+	{% set hasMixed = data.details.mixedCount is defined and data.details.mixedCount > 0 %}
+
+	{% set statusClass = data.status == 'ok' and not hasMixed ? 'success' : (data.status == 'error' ? 'error' : (hasMixed ? 'warning' : 'warning')) %}
+	{% set containerClass = data.status == 'ok' and not hasMixed ? '' : (data.status == 'error' ? 'error' : (hasMixed ? 'warning' : 'warning')) %}
+	{% include 'upsnap/_components/status-container.twig' %}
+
+	{% if data.error is not defined %}
+		<div class="pane">
+			<div class="meta read-only">
+				<div class="data fullwidth">
+					<div class="field">
+						<div class="heading">{{ "Monitored URL"|t('upsnap') }}</div>
+						<div>
+							<a href="{{ data.url }}" target="_blank">{{ data.url }}</a>
+						</div>
+					</div>
+
+					<div class="field">
+						<div class="heading">{{ "Last Checked"|t('upsnap') }}</div>
+						<div>{{ data.checkedAt|date("d M Y, H:i:s") }}</div>
+					</div>
+
+					<div class="field">
+						<div class="heading">{{ "Response Time"|t('upsnap') }}</div>
+						<div>{{ data.duration ?? '–' }}</div>
+					</div>
+				</div>
+				{% if data.details.mixedContentItems is defined and data.details.mixedContentItems|length > 0 %}
+					<div class="data fullwidth">
+						<div class="field">
+							<div class="heading">{{ "Mixed Contents"|t('upsnap') }}</div>
+							<ul class="error-list margin-top">
+								{% for url in data.details.mixedContentItems %}
+									<li>
+										<a href={{ url }}>{{ url }}</a>
+									</li>
+								{% endfor %}
+							</ul>
+						</div>
+					</div>
+				</div>
+			{% endif %}
+		</div>
+	{% endif %}
+{% endblock %}

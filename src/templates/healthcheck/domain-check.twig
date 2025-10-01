@@ -1,0 +1,136 @@
+{% extends '_layouts/cp' %}
+{% import '_includes/forms' as forms %}
+
+{% block actionButton %}
+	<div class="buttons">
+		<div class="btngroup">
+			<button type="button" class="btn submit" data-icon="refresh" id="refresh-btn">
+				{{ 'Refresh'|t('upsnap') }}
+			</button>
+		</div>
+	</div>
+{% endblock %}
+
+{% block content %}
+
+	{% set statusClass = data.status == 'ok' ? 'success' : (data.status == 'error' ? 'error' : 'warning') %}
+	{% set containerClass = data.status == 'ok' ? '' : (data.status == 'error' ? 'error' : 'warning') %}
+
+	
+	{% include 'upsnap/_components/status-container.twig' %}
+	{% include 'upsnap/_components/details-container.twig' %}
+
+
+	{% if data.details is defined %}
+		<div class="details-section">
+			<h3 class="details-title">{{ 'General Info'|t('upsnap') }}</h3>
+			<table class="details-table">
+				<tr>
+					<td class="details-label">{{ 'CNAME'|t('upsnap') }}</td>
+					<td class="details-value">{{ data.details.cname ?? '–' }}</td>
+				</tr>
+				<tr>
+					<td class="details-label">{{ 'Host'|t('upsnap') }}</td>
+					<td class="details-value">{{ data.details.host ?? '–' }}</td>
+				</tr>
+				<tr>
+					<td class="details-label">{{ 'Supported'|t('upsnap') }}</td>
+					<td class="details-value">
+						{{ data.details.supported ? 'Yes'|t('upsnap') : 'No'|t('upsnap') }}
+					</td>
+				</tr>
+			</table>
+
+			<div id="more-details" class="hidden">
+				<h3 class="pt-2rem details-title">{{ 'DNS Records'|t('upsnap') }}</h3>
+				<table class="details-table">
+					<tr>
+						<td class="details-label">{{ 'IPv4'|t('upsnap') }}</td>
+						<td class="details-value">
+							{% if data.details.ipv4 is not empty %}
+								{{ data.details.ipv4|join(', ') }}
+							{% else %}
+								–
+							{% endif %}
+						</td>
+					</tr>
+					<tr>
+						<td class="details-label">{{ 'IPv6'|t('upsnap') }}</td>
+						<td class="details-value">{{ data.details.ipv6 ?? '–' }}</td>
+					</tr>
+					<tr>
+						<td class="details-label">{{ 'MX Records'|t('upsnap') }}</td>
+						<td class="details-value">{{ data.details.mxCount }}</td>
+					</tr>
+					<tr>
+						<td class="details-label">{{ 'NS Records'|t('upsnap') }}</td>
+						<td class="details-value">{{ data.details.nsCount }}</td>
+					</tr>
+					<tr>
+						<td class="details-label">{{ 'TXT Records'|t('upsnap') }}</td>
+						<td class="details-value">{{ data.details.txtCount }}</td>
+					</tr>
+				</table>
+
+				<h3 class="pt-2rem details-title">{{ 'Domain Lifecycle'|t('upsnap') }}</h3>
+				<table class="details-table">
+					<tr>
+						<td class="details-label">{{ 'Registered On'|t('upsnap') }}</td>
+						<td class="details-value">
+							{{ data.details.domainRegistered ? data.details.domainRegistered|date("d M Y") : '–' }}
+						</td>
+					</tr>
+					<tr>
+						<td class="details-label">{{ 'Expiration Date'|t('upsnap') }}</td>
+						<td class="details-value">
+							{{ data.details.domainExpirationDate ? data.details.domainExpirationDate|date("d M Y") : '–' }}
+						</td>
+					</tr>
+					<tr>
+						<td class="details-label">{{ 'Days Until Expiration'|t('upsnap') }}</td>
+						<td class="details-value">{{ data.details.domainDays ?? '–' }}</td>
+					</tr>
+					<tr>
+						<td class="details-label">{{ 'Expired'|t('upsnap') }}</td>
+						<td class="details-value">{{ data.details.domainExpired ? 'Yes' : 'No' }}</td>
+					</tr>
+					<tr>
+						<td class="details-label">{{ 'Expiring Soon'|t('upsnap') }}</td>
+						<td class="details-value">{{ data.details.domainExpiring ? 'Yes' : 'No' }}</td>
+					</tr>
+					<tr>
+						<td class="details-label">{{ 'Last Changed'|t('upsnap') }}</td>
+						<td class="details-value">
+							{{ data.details.lastChanged ? data.details.lastChanged|date("d M Y") : '–' }}
+						</td>
+					</tr>
+					<tr>
+						<td class="details-label">{{ 'Last Updated in RDAP DB'|t('upsnap') }}</td>
+						<td class="details-value">
+							{{ data.details.lastUpdatedInRdapDb ? data.details.lastUpdatedInRdapDb|date("d M Y") : '–' }}
+						</td>
+					</tr>
+				</table>
+				<h3 class="pt-2rem details-title">{{ 'Domain Status Codes'|t('upsnap') }}</h3>
+				<table class="details-table">
+					{% if data.details.domainStatusCodes is not empty %}
+						{% for status in data.details.domainStatusCodes %}
+							<tr>
+								<td class="details-label">{{ status.eppStatusCode }}</td>
+								<td class="details-value">{{ status.status }}</td>
+							</tr>
+						{% endfor %}
+					{% else %}
+						<tr>
+							<td colspan="2" class="details-value">–</td>
+						</tr>
+					{% endif %}
+				</table>
+			</div>
+
+			<a href="#" class="show-less hidden">{{ 'Show less'|t('upsnap') }}</a>
+			<a href="#" class="show-details">{{ 'Show more'|t('upsnap') }}</a>
+		</div>
+	{% endif %}
+
+{% endblock %}
