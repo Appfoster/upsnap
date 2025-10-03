@@ -25,16 +25,45 @@
 		{% include 'upsnap/_components/status-container.twig' %}
 	{% else %}
 		{# Status container will be updated via AJAX #}
-		<div id="status-container-wrapper"></div>
-		<div id="details-container-wrapper"></div>
+		<div id="status-container-wrapper" data-page="lighthouse">
+			<div class="skeleton-card">
+				<div class="skeleton-card-header">
+					<div class="skeleton-line skeleton-line-medium"></div>
+				</div>
+				<div class="skeleton-card-body">
+					<div class="skeleton-line skeleton-line-long"></div>
+					<div class="skeleton-line skeleton-line-short"></div>
+				</div>
+			</div>
+		</div>
+		<div id="details-container-wrapper">
+			<div class="skeleton-card">
+				<div class="skeleton-card-header">
+					<div class="skeleton-line skeleton-line-short"></div>
+				</div>
+				<div class="skeleton-card-body">
+					<div class="skeleton-field">
+						<div class="skeleton-line skeleton-line-short"></div>
+						<div class="skeleton-line skeleton-line-medium"></div>
+					</div>
+					<div class="skeleton-field">
+						<div class="skeleton-line skeleton-line-short"></div>
+						<div class="skeleton-line skeleton-line-long"></div>
+					</div>
+					<div class="skeleton-field">
+						<div class="skeleton-line skeleton-line-short"></div>
+						<div class="skeleton-line skeleton-line-medium"></div>
+					</div>
+					<div class="skeleton-field">
+						<div class="skeleton-line skeleton-line-short"></div>
+						<div class="skeleton-line skeleton-line-long"></div>
+					</div>
+				</div>
+			</div>
+		</div>
 
 		{# Hidden container for lighthouse data #}
 		<div id="lighthouse-data" style="display: none;"></div>
-
-		{# Initial loading state #}
-		<div class='loading-container' id="loading-container" style="display: none;">
-			<div class="loading-spinner"></div>
-		</div>
 
 		{# Scores Overview (hidden initially) #}
 		<div

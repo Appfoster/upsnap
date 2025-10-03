@@ -6,6 +6,7 @@ document.addEventListener("DOMContentLoaded", function () {
     registerLighthouseJs();
     registerMixedContentJs();
     registerReachabilityJs();
+    registerSecurityCertificatesJs();
 });
 
 function registerBrokenLinksJs() {
@@ -76,23 +77,16 @@ function registerDomainCheckJs() {
     const statusContainerWrapper = document.getElementById("status-container-wrapper");
     const detailsContainerWrapper = document.getElementById("details-container-wrapper");
     const domainDetailsSection = document.getElementById("domain-details-section");
-    const loadingOverlay = document.getElementById("loading-container");
 
-    if (!statusContainerWrapper || !detailsContainerWrapper || !domainDetailsSection) {
+    // Only run on domain check page - check for unique element
+    if (!statusContainerWrapper || !detailsContainerWrapper || !domainDetailsSection || !document.querySelector('[data-page="domain-check"]')) {
         return;
     }
 
     let domainData = {};
 
     // Function to fetch domain check data
-    function fetchDomainData(showLoader = true) {
-        if (showLoader) {
-            loadingOverlay.style.display = "flex";
-            loadingOverlay.classList.add("active");
-            statusContainerWrapper.style.display = "none";
-            detailsContainerWrapper.style.display = "none";
-            domainDetailsSection.style.display = "none";
-        }
+    function fetchDomainData() {
 
         return Craft.sendActionRequest('POST', 'upsnap/health-check/domain-check', {})
             .then(response => {
@@ -117,25 +111,35 @@ function registerDomainCheckJs() {
             .catch(error => {
                 console.error("Failed to fetch domain data:", error);
 
-                // Display error message
-                domainDetailsSection.innerHTML = `
-                    <div style="padding: 2rem; text-align: center; color: #cf1124;">
-                        <p><strong>Error loading domain data</strong></p>
-                        <p style="margin-top: 0.5rem;">${error.message || 'Unknown error occurred'}</p>
-                    </div>
-                `;
-                domainDetailsSection.style.display = "block";
-            })
-            .finally(() => {
-                loadingOverlay.style.display = "none";
-                loadingOverlay.classList.remove("active");
+                // Render error in status container
+                const errorData = {
+                    status: 'error',
+                    message: 'Error loading domain data',
+                    error: error.message || 'Unknown error occurred'
+                };
+                renderStatusContainer(errorData);
+                renderDetailsContainer(errorData); // This will hide details since status !== 'ok'
+
+                // Hide domain details section
+                if (domainDetailsSection) {
+                    domainDetailsSection.style.display = 'none';
+                }
             });
     }
 
     // Refresh button
     if (refreshBtn) {
+        const originalText = refreshBtn.innerHTML;
         refreshBtn.addEventListener('click', function () {
-            fetchDomainData(true);
+            // Add loading state to button
+            refreshBtn.disabled = true;
+            refreshBtn.innerHTML = '<span class="spinner"></span> Refreshing...';
+
+            fetchDomainData().finally(() => {
+                // Reset button state
+                refreshBtn.disabled = false;
+                refreshBtn.innerHTML = originalText;
+            });
         });
     }
 
@@ -195,10 +199,9 @@ function registerDomainCheckJs() {
         toggleShowDetails(domainDetailsSection);
     }
 
-    // Initial fetch on page load
-    fetchDomainData(true);
+    // Initial fetch on page load (progressive loading with skeletons)
+    fetchDomainData();
 }
-
 
 function toggleShowDetails(domainDetailsSection) {
     const showBtn = domainDetailsSection.querySelector(".show-details");
@@ -230,28 +233,16 @@ function registerLighthouseJs() {
     const scoresContainer = document.getElementById("scores-container");
     const performanceContainer = document.getElementById("performance-container");
     const lighthouseDataElement = document.getElementById("lighthouse-data");
-    const loadingOverlay = document.getElementById("loading-container");
 
-    const statusContainerWrapper = document.getElementById("status-container-wrapper");
-    const detailsContainerWrapper = document.getElementById("details-container-wrapper");
-
-    if (!lighthouseDataElement || !scoresContainer || !performanceContainer) {
+    // Only run on lighthouse page - check for unique element
+    if (!lighthouseDataElement || !scoresContainer || !performanceContainer || !document.querySelector('[data-page="lighthouse"]')) {
         return;
     }
 
     let lighthouseData = {};
 
     // Function to fetch lighthouse data
-    function fetchLighthouseData(device = 'desktop', showLoader = true) {
-        if (showLoader) {
-            loadingOverlay.style.display = "flex";
-            loadingOverlay.classList.add("active");
-            scoresContainer.style.display = "none";
-            performanceContainer.style.display = "none";
-            statusContainerWrapper.style.display = "none";
-            detailsContainerWrapper.style.display = "none";
-        }
-
+    function fetchLighthouseData(device = 'desktop') {
         return Craft.sendActionRequest('POST', 'upsnap/health-check/lighthouse', {
             data: { device: device }
         })
@@ -276,21 +267,18 @@ function registerLighthouseJs() {
             .catch(error => {
                 console.error("Failed to fetch Lighthouse data:", error);
 
-                // Show error message
-                scoresContainer.innerHTML = `
-                <div style="padding: 2rem; text-align: center; color: #cf1124;">
-                    <p><strong>Error loading Lighthouse data</strong></p>
-                    <p style="margin-top: 0.5rem;">${error.message || 'Unknown error occurred'}</p>
-                </div>
-            `;
-                scoresContainer.style.display = "block";
-                performanceContainer.style.display = "none";
-            })
-            .finally(() => {
-                loadingOverlay.style.display = "none";
-                loadingOverlay.classList.remove("active");
-                statusContainerWrapper.style.display = "block";
-                detailsContainerWrapper.style.display = "block";
+                // Render error in status container
+                const errorData = {
+                    status: 'error',
+                    message: 'Error loading Lighthouse data',
+                    error: error.message || 'Unknown error occurred'
+                };
+                renderStatusContainer(errorData);
+                renderDetailsContainer(errorData); // This will hide details since status !== 'ok'
+
+                // Hide scores and performance containers
+                scoresContainer.style.display = 'none';
+                performanceContainer.style.display = 'none';
             });
     }
 
@@ -304,8 +292,17 @@ function registerLighthouseJs() {
 
     // Refresh button
     if (refreshBtn) {
+        const originalText = refreshBtn.innerHTML;
         refreshBtn.addEventListener('click', function () {
-            fetchLighthouseData(currentDevice);
+            // Add loading state to button
+            refreshBtn.disabled = true;
+            refreshBtn.innerHTML = '<span class="spinner"></span> Refreshing...';
+
+            fetchLighthouseData(currentDevice).finally(() => {
+                // Reset button state
+                refreshBtn.disabled = false;
+                refreshBtn.innerHTML = originalText;
+            });
         });
     }
 
@@ -407,8 +404,8 @@ function registerLighthouseJs() {
         performanceContainer.innerHTML = metricsHTML;
     }
 
-    // Initial fetch on page load
-    fetchLighthouseData(currentDevice, true);
+    // Initial fetch on page load (progressive loading with skeletons)
+    fetchLighthouseData(currentDevice);
 }
 
 function registerMixedContentJs() {
@@ -416,26 +413,16 @@ function registerMixedContentJs() {
     const statusContainerWrapper = document.getElementById("status-container-wrapper");
     const detailsContainerWrapper = document.getElementById("details-container-wrapper");
     const mixedContentSection = document.getElementById("mixed-content-section");
-    const loadingOverlay = document.getElementById("loading-container");
 
-    if (!statusContainerWrapper || !detailsContainerWrapper || !mixedContentSection) {
+    // Only run on mixed content page - check for unique element
+    if (!statusContainerWrapper || !detailsContainerWrapper || !mixedContentSection || !document.querySelector('[data-page="mixed-content"]')) {
         return;
     }
 
     let mixedContentData = {};
 
     // Function to fetch mixed content data
-    function fetchMixedContentData(showLoader = true) {
-        if (showLoader) {
-            loadingOverlay.style.display = "flex";
-            loadingOverlay.classList.add("active");
-            statusContainerWrapper.innerHTML = '';
-            detailsContainerWrapper.innerHTML = '';
-            statusContainerWrapper.style.display = "none";
-            detailsContainerWrapper.style.display = "none";
-            if (mixedContentSection) mixedContentSection.style.display = "none";
-        }
-
+    function fetchMixedContentData() {
         return Craft.sendActionRequest('POST', 'upsnap/health-check/mixed-content', {})
             .then(response => {
                 if (response?.data?.success) {
@@ -449,11 +436,6 @@ function registerMixedContentJs() {
 
                     // Render mixed content list
                     renderMixedContentItems(mixedContentData.details || {});
-
-                    // Show containers
-                    statusContainerWrapper.style.display = "block";
-                    detailsContainerWrapper.style.display = "block";
-                    if (mixedContentSection) mixedContentSection.style.display = "block";
                 } else {
                     throw new Error(response?.data?.error || 'Failed to fetch mixed content data');
                 }
@@ -461,33 +443,45 @@ function registerMixedContentJs() {
             .catch(error => {
                 console.error("Failed to fetch mixed content data:", error);
 
+                // Render error in status container
+                const errorData = {
+                    status: 'error',
+                    message: 'Error loading Mixed Content data',
+                    error: error.message || 'Unknown error occurred'
+                };
+                renderStatusContainer(errorData);
+                renderDetailsContainer(errorData); // This will hide details since status !== 'ok'
+
+                // Hide mixed content section
                 if (mixedContentSection) {
-                    mixedContentSection.innerHTML = `
-                        <div style="padding: 2rem; text-align: center; color: #cf1124;">
-                            <p><strong>Error loading Mixed Content data</strong></p>
-                            <p style="margin-top: 0.5rem;">${error.message || 'Unknown error occurred'}</p>
-                        </div>
-                    `;
-                    mixedContentSection.style.display = "block";
+                    mixedContentSection.style.display = 'none';
                 }
-            })
-            .finally(() => {
-                loadingOverlay.style.display = "none";
-                loadingOverlay.classList.remove("active");
             });
     }
 
     // Refresh button
     if (refreshBtn) {
+        const originalText = refreshBtn.innerHTML;
         refreshBtn.addEventListener('click', function () {
-            fetchMixedContentData(true);
+            // Add loading state to button
+            refreshBtn.disabled = true;
+            refreshBtn.innerHTML = '<span class="spinner"></span> Refreshing...';
+
+            fetchMixedContentData().finally(() => {
+                // Reset button state
+                refreshBtn.disabled = false;
+                refreshBtn.innerHTML = originalText;
+            });
         });
     }
 
     // Render Mixed Content items
     function renderMixedContentItems(details) {
         if (!details || !details.mixedContentItems || details.mixedContentItems.length === 0) {
-            if (mixedContentSection) mixedContentSection.innerHTML = '';
+            if (mixedContentSection) {
+                mixedContentSection.innerHTML = '';
+                mixedContentSection.style.display = 'none';
+            }
             return;
         }
 
@@ -504,17 +498,489 @@ function registerMixedContentJs() {
             </div>
         `;
 
-        if (mixedContentSection) mixedContentSection.innerHTML = html;
+        if (mixedContentSection) {
+            mixedContentSection.innerHTML = html;
+            mixedContentSection.style.display = 'block';
+        }
     }
 
-    // Initial fetch on page load
-    fetchMixedContentData(true);
+    // Initial fetch on page load (no loader, skeleton is already visible)
+    fetchMixedContentData();
 }
 
 
 function registerReachabilityJs() {
-    // Reachability specific functionality (refresh button handled globally)
-    // Add any reachability specific JS here
+    const refreshBtn = document.getElementById("refresh-btn");
+    const statusContainerWrapper = document.getElementById("status-container-wrapper");
+    const detailsContainerWrapper = document.getElementById("details-container-wrapper");
+    const reachabilitySection = document.getElementById("reachability-section");
+
+    // Only run on reachability page - check for unique element
+    if (!statusContainerWrapper || !detailsContainerWrapper || !reachabilitySection || !document.querySelector('[data-page="reachability"]')) {
+        return;
+    }
+
+    let reachabilityData = {};
+
+    // Function to fetch reachability data
+    function fetchReachabilityData() {
+        return Craft.sendActionRequest('POST', 'upsnap/health-check/reachability', {})
+            .then(response => {
+                if (response?.data?.success) {
+                    reachabilityData = response.data.data;
+
+                    // Render status
+                    renderStatusContainer(reachabilityData);
+
+                    // Render details
+                    renderDetailsContainer(reachabilityData);
+
+                    // Render reachability details
+                    renderReachabilityDetails(reachabilityData.details || {});
+                } else {
+                    throw new Error(response?.data?.error || 'Failed to fetch reachability data');
+                }
+            })
+            .catch(error => {
+                console.error("Failed to fetch reachability data:", error);
+
+                // Render error in status container
+                const errorData = {
+                    status: 'error',
+                    message: 'Error loading Reachability data',
+                    error: error.message || 'Unknown error occurred'
+                };
+                renderStatusContainer(errorData);
+                renderDetailsContainer(errorData); // This will hide details since status !== 'ok'
+
+                // Hide reachability section
+                if (reachabilitySection) {
+                    reachabilitySection.style.display = 'none';
+                }
+            });
+    }
+
+    // Add event listener for refresh button
+    if (refreshBtn) {
+        refreshBtn.addEventListener('click', function() {
+            fetchReachabilityData();
+        });
+    }
+
+    // Render Reachability details
+    function renderReachabilityDetails(details) {
+        if (!details) {
+            if (reachabilitySection) {
+                reachabilitySection.innerHTML = '';
+                reachabilitySection.style.display = 'none';
+            }
+            return;
+        }
+
+        let html = `
+            <div class="details-section">
+                <h3 class="details-title">Check details</h3>
+
+                <table class="details-table">
+                    <tr>
+                        <td class="details-label">Duration</td>
+                        <td class="details-value">
+                            ${details.duration || 'Unknown'}
+                            ${details.startedAt ? `<span style="color: #999; margin-left: 16px;">Started at ${details.startedAt}</span>` : ''}
+                        </td>
+                    </tr>
+
+                    ${details.monitoredFrom ? `
+                    <tr>
+                        <td class="details-label">Monitored from</td>
+                        <td class="details-value">
+                            ${details.monitoredFrom.location || 'Unknown'}
+                            ${details.monitoredFrom.ip ? `<span style="color: #999; margin-left: 16px;">${details.monitoredFrom.ip}</span>` : ''}
+                        </td>
+                    </tr>
+                    ` : ''}
+
+                    ${details.httpStatus ? `
+                    <tr>
+                        <td class="details-label">HTTP Response Code</td>
+                        <td class="details-value">
+                            <span class="http-status ${getHttpStatusClass(details.httpStatus)}">
+                                ${details.httpStatus}
+                            </span>
+                        </td>
+                    </tr>
+                    ` : ''}
+                </table>
+
+                <div id="more-details" class="hidden">
+                    <h3 class="pt-2rem details-title">HTTP Details</h3>
+                    <table class="details-table">
+                        <tr>
+                            <td class="details-label">HTTP Status</td>
+                            <td class="details-value">${details.httpStatus}</td>
+                        </tr>
+                        <tr>
+                            <td class="details-label">Final URL</td>
+                            <td class="details-value">${details.finalURL}</td>
+                        </tr>
+                        <tr>
+                            <td class="details-label">Redirect Paths</td>
+                            <td class="details-value">${details.redirects ? details.redirects.join(' → ') : '–'}</td>
+                        </tr>
+                        <tr>
+                            <td class="details-label">Resolved IPs</td>
+                            <td class="details-value">${details.resolvedIPs ? details.resolvedIPs.join(', ') : '–'}</td>
+                        </tr>
+                        <tr>
+                            <td class="details-label">Server Technology</td>
+                            <td class="details-value">${details.server}</td>
+                        </tr>
+                        <tr>
+                            <td class="details-label">Content Type</td>
+                            <td class="details-value">${details.contentType}</td>
+                        </tr>
+                        <tr>
+                            <td class="details-label">Content Length</td>
+                            <td class="details-value">${details.contentLength} bytes</td>
+                        </tr>
+                    </table>
+
+                    <h2 class="pt-2rem details-title">Page Info</h2>
+                    <table class="details-table">
+                        <tr>
+                            <td class="details-label">Page Title</td>
+                            <td class="details-value">${details.pageTitle}</td>
+                        </tr>
+                    </table>
+
+                    ${details.tls ? `
+                    <h2 class="pt-2rem">TLS / Security</h2>
+                    <table class="details-table">
+                        <tr>
+                            <td class="details-label">TLS Version</td>
+                            <td class="details-value">${details.tls.version}</td>
+                        </tr>
+                        <tr>
+                            <td class="details-label">Protocol (ALPN)</td>
+                            <td class="details-value">${details.tls.alpn}</td>
+                        </tr>
+                        <tr>
+                            <td class="details-label">Encryption Method</td>
+                            <td class="details-value">${details.tls.cipherSuite}</td>
+                        </tr>
+                        <tr>
+                            <td class="details-label">Certificate Host</td>
+                            <td class="details-value">${details.tls.serverName}</td>
+                        </tr>
+                    </table>
+                    ` : ''}
+                </div>
+
+                <a href="#" class="show-less hidden">Show less</a>
+                <a href="#" class="show-details">Show more</a>
+            </div>
+        `;
+
+        if (reachabilitySection) {
+            reachabilitySection.innerHTML = html;
+            reachabilitySection.style.display = 'block';
+
+            // Bind show more / less
+            toggleShowDetails(reachabilitySection);
+        }
+    }
+
+    // Helper function for HTTP status class
+    function getHttpStatusClass(status) {
+        if (status >= 100 && status < 200) return 'info';
+        if (status >= 200 && status < 300) return 'success';
+        if (status >= 300 && status < 400) return 'redirect';
+        if (status >= 400 && status < 500) return 'warning';
+        if (status >= 500) return 'error';
+        return 'unknown';
+    }
+
+    // Initial fetch on page load (no loader, skeleton is already visible)
+    fetchReachabilityData();
+
+    // Add event listener for refresh button
+    if (refreshBtn) {
+        refreshBtn.addEventListener('click', function() {
+            fetchReachabilityData();
+        });
+    }
+}
+
+function registerSecurityCertificatesJs() {
+    const refreshBtn = document.getElementById("refresh-btn");
+    const statusContainerWrapper = document.getElementById("status-container-wrapper");
+    const detailsContainerWrapper = document.getElementById("details-container-wrapper");
+
+    // Only run on security certificates page - check for unique element
+    if (!statusContainerWrapper || !detailsContainerWrapper || !document.querySelector('[data-page="security-certificates"]')) {
+        return;
+    }
+
+    let securityCertificatesData = {};
+
+    // Function to fetch security certificates data
+    function fetchSecurityCertificatesData() {
+        return Craft.sendActionRequest('POST', 'upsnap/health-check/security-certificates', {})
+            .then(response => {
+                if (response?.data?.success) {
+                    securityCertificatesData = response.data.data;
+
+                    // Render status
+                    renderStatusContainer(securityCertificatesData);
+
+                    // Render details
+                    renderDetailsContainer(securityCertificatesData);
+
+                    // Render security certificates details
+                    renderSecurityCertificatesDetails(securityCertificatesData.details || {});
+                } else {
+                    throw new Error(response?.data?.error || 'Failed to fetch security certificates data');
+                }
+            })
+            .catch(error => {
+                console.error("Failed to fetch security certificates data:", error);
+
+                // Render error in status container
+                const errorData = {
+                    status: 'error',
+                    message: 'Error loading Security Certificates data',
+                    error: error.message || 'Unknown error occurred'
+                };
+                renderStatusContainer(errorData);
+                renderDetailsContainer(errorData); // This will hide details since status !== 'ok'
+            });
+    }
+
+    // Add event listener for refresh button
+    if (refreshBtn) {
+        refreshBtn.addEventListener('click', function() {
+            fetchSecurityCertificatesData();
+        });
+    }
+
+    // Render Security Certificates details
+    function renderSecurityCertificatesDetails(details) {
+        if (!details) {
+            return;
+        }
+
+        let html = `
+            <div class="details-section">
+                <h3 class="details-title">Certificate details</h3>
+
+                <table class="details-table">
+                    <tr>
+                        <td class="details-label">Issuer</td>
+                        <td class="details-value">
+                            ${details.leafCertificate?.issuer?.commonName || 'Unknown'}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="details-label">Not before</td>
+                        <td class="details-value">
+                            ${details.leafCertificate?.notBefore ? formatDate(details.leafCertificate.notBefore) : 'Unknown'}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="details-label">Not after</td>
+                        <td class="details-value">
+                            ${details.leafCertificate?.notAfter ? formatDate(details.leafCertificate.notAfter) : 'Unknown'}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="details-label">Expiry in days</td>
+                        <td class="details-value">
+                            ${details.leafCertificate?.daysUntilExpiry || 'Unknown'}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="details-label">Serial number</td>
+                        <td class="details-value">
+                            ${details.leafCertificate?.serialNumber || 'Unknown'}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="details-label">Signature algorithm</td>
+                        <td class="details-value">
+                            ${details.leafCertificate?.signatureAlgorithm || 'Unknown'}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="details-label">Public key algorithm</td>
+                        <td class="details-value">
+                            ${renderPublicKeyInfo(details.leafCertificate?.publicKey)}
+                        </td>
+                    </tr>
+                </table>
+
+                <div id="more-details" class="hidden">
+                    <h3 class="pt-2rem details-title">Domain Coverage</h3>
+                    <table class="details-table">
+                        <tr>
+                            <td class="details-label">Domains Covered</td>
+                            <td class="details-value">
+                                ${details.domainCoverage?.sans?.join(', ') || '–'}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="details-label">Wildcard</td>
+                            <td class="details-value">
+                                ${details.domainCoverage?.wildcard ? 'Yes' : 'No'}
+                            </td>
+                        </tr>
+                    </table>
+
+                    ${details.chain ? `
+                    <h3 class="pt-2rem details-title">Certificate Chain</h3>
+                    <div class="certificate-chain">
+                        ${details.chain.map((cert, index) => `
+                            <div class="certificate-card">
+                                <div class="certificate-header">
+                                    <div>
+                                        <h4 class="certificate-title">
+                                            ${cert.info?.subject?.commonName || cert.info?.subject?.organizationName || 'Unknown Certificate'}
+                                        </h4>
+                                        <div class="certificate-type">
+                                            ${cert.type === 'leaf' ? 'End Entity Certificate' :
+                                              cert.type === 'intermediate' ? 'Intermediate Certificate' : 'Root Certificate'}
+                                        </div>
+                                    </div>
+                                    <div class="certificate-status">
+                                        ${renderCertificateStatus(cert.info)}
+                                    </div>
+                                </div>
+
+                                <div class="certificate-body">
+                                    <div class="certificate-grid">
+                                        <div class="cert-field">
+                                            <div class="cert-field-label">Signature Algorithm</div>
+                                            <div class="cert-field-value">${cert.info?.signatureAlgorithm || 'Unknown'}</div>
+                                        </div>
+
+                                        <div class="cert-field">
+                                            <div class="cert-field-label">Key Algorithm</div>
+                                            <div class="cert-field-value">
+                                                ${renderPublicKeyInfo(cert.info?.publicKey)}
+                                            </div>
+                                        </div>
+
+                                        <div class="cert-field">
+                                            <div class="cert-field-label">Not Before</div>
+                                            <div class="cert-field-value">${cert.info?.notBefore ? formatDate(cert.info.notBefore) : 'Unknown'}</div>
+                                        </div>
+
+                                        <div class="cert-field">
+                                            <div class="cert-field-label">Not After</div>
+                                            <div class="cert-field-value">${cert.info?.notAfter ? formatDate(cert.info.notAfter) : 'Unknown'}</div>
+                                        </div>
+
+                                        ${cert.info?.issuer?.organizationName ? `
+                                        <div class="cert-field">
+                                            <div class="cert-field-label">Organization</div>
+                                            <div class="cert-field-value">${cert.info.issuer.organizationName}</div>
+                                        </div>
+                                        ` : ''}
+
+                                        ${cert.info?.issuer?.commonName ? `
+                                        <div class="cert-field">
+                                            <div class="cert-field-label">Issued By</div>
+                                            <div class="cert-field-value">${cert.info.issuer.commonName}</div>
+                                        </div>
+                                        ` : ''}
+
+                                        <div class="cert-field">
+                                            <div class="cert-field-label">Serial Number</div>
+                                            <div class="cert-field-value mono">${cert.info?.serialNumber || 'Unknown'}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            ${index < details.chain.length - 1 ? '<div class="chain-connector"><div class="chain-arrow"></div></div>' : ''}
+                        `).join('')}
+                    </div>
+                    ` : ''}
+                </div>
+
+                <a href="#" class="show-less hidden">Show less</a>
+                <a href="#" class="show-details">Show more</a>
+            </div>
+        `;
+
+        // Insert after details container
+        const detailsContainer = document.getElementById("details-container-wrapper");
+        if (detailsContainer && detailsContainer.nextSibling) {
+            const existingSection = detailsContainer.nextSibling;
+            if (existingSection.id === 'security-certificates-section') {
+                existingSection.innerHTML = html;
+                existingSection.style.display = 'block';
+                // Bind show more / less
+                toggleShowDetails(existingSection);
+            } else {
+                const section = document.createElement('div');
+                section.id = 'security-certificates-section';
+                section.innerHTML = html;
+                detailsContainer.parentNode.insertBefore(section, existingSection);
+                // Bind show more / less
+                toggleShowDetails(section);
+            }
+        } else if (detailsContainer) {
+            const section = document.createElement('div');
+            section.id = 'security-certificates-section';
+            section.innerHTML = html;
+            detailsContainer.parentNode.appendChild(section);
+            // Bind show more / less
+            toggleShowDetails(section);
+        }
+    }
+
+    // Helper function to render public key info
+    function renderPublicKeyInfo(publicKey) {
+        if (!publicKey) return 'Unknown';
+        if (publicKey.algorithm === 'ECC') {
+            return `${publicKey.algorithm} (${publicKey.curve})`;
+        } else if (publicKey.algorithm === 'RSA') {
+            return `${publicKey.algorithm} (${publicKey.bits} bits)`;
+        } else {
+            return publicKey.algorithm;
+        }
+    }
+
+    // Helper function to render certificate status
+    function renderCertificateStatus(certInfo) {
+        if (!certInfo) return '';
+
+        if (certInfo.isExpired) {
+            return `<div class="status-pill status-expired">
+                <span class="status-icon expired"></span>
+                Expired
+            </div>`;
+        } else if (certInfo.daysUntilExpiry <= 30) {
+            return `<div class="status-pill status-warning">
+                <span class="status-icon warning"></span>
+                Expires in ${certInfo.daysUntilExpiry} days
+            </div>`;
+        } else {
+            return `<div class="status-pill status-valid">
+                <span class="status-icon"></span>
+                Valid for ${certInfo.daysUntilExpiry} days
+            </div>`;
+        }
+    }
+
+    // Initial fetch on page load (no loader, skeleton is already visible)
+    fetchSecurityCertificatesData();
+
+    // Add event listener for refresh button
+    if (refreshBtn) {
+        refreshBtn.addEventListener('click', function() {
+            fetchSecurityCertificatesData();
+        });
+    }
 }
 
 
