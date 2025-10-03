@@ -265,10 +265,12 @@ function toggleRow(index) {
 
     if (expandableRow.classList.contains('show')) {
         expandableRow.classList.remove('show');
+        expandableRow.style.display = 'none';
         btn.classList.remove('expanded');
         btnText.textContent = 'View More';
     } else {
         expandableRow.classList.add('show');
+        expandableRow.style.display = 'table-row';
         btn.classList.add('expanded');
         btnText.textContent = 'View Less';
     }
