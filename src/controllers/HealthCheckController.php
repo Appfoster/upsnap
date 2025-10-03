@@ -109,69 +109,72 @@ class HealthCheckController extends BaseController
     public function actionDomainCheck(): Response
     {
         $url = Upsnap::getMonitoringUrl();
+        $isAjax = Craft::$app->getRequest()->getIsAjax();
 
         if (!$url) {
             return $this->service->handleMissingMonitoringUrl(Constants::SUBNAV_ITEM_DOMAIN_CHECK);
         }
         $data = [];
 
-        try {
-            $paramName = Constants::SUBNAV_ITEM_DOMAIN_CHECK['apiLabel'];
-            $response = $this->service->getHealthcheck($url, [$paramName]);
-            if (isset($response['result']['details'][$paramName]['meta']['errors'])) {
-                $errors = $response['result']['details'][$paramName]['meta']['errors'][0];
-                throw new \Exception($errors);
-            }
-
-            // Transform API response to our expected format
-            if (isset($response['result'])) {
-                $result = $response['result'];
-                $domain = $result['details'][$paramName] ?? null;
-                $meta = $domain['meta'] ?? [];
-                $isOk = $response['result']['details'][$paramName]['ok'] ?? true;
-
+        if ($isAjax) {
+            try {
+                $paramName = Constants::SUBNAV_ITEM_DOMAIN_CHECK['apiLabel'];
+                $response = $this->service->getHealthcheck($url, [$paramName]);
+                if (isset($response['result']['details'][$paramName]['meta']['errors'])) {
+                    $errors = $response['result']['details'][$paramName]['meta']['errors'][0];
+                    throw new \Exception($errors);
+                }
+    
+                // Transform API response to our expected format
+                if (isset($response['result'])) {
+                    $result = $response['result'];
+                    $domain = $result['details'][$paramName] ?? null;
+                    $meta = $domain['meta'] ?? [];
+                    $isOk = $response['result']['details'][$paramName]['ok'] ?? true;
+    
+                    $data = [
+                        'data' => [
+                            'status' => $isOk ? 'ok' : 'error',
+                            'message' => $isOk ? 'Domain is active!' : 'Domain issues detected!',
+                            'url' => $response['url'] ?? '',
+                            'checkedAt' => $response['checkedAt'] ?? '',
+                            'duration' => isset($result['durationMs']) ? $result['durationMs'] . ' ms' : 'Unknown',
+                            'details' => [
+                                'cname' => $meta['cname'] ?? '',
+                                'host' => $meta['host'] ?? '',
+                                'ipv4' => $meta['ipv4'] ?? [],
+                                'ipv6' => $meta['ipv6'] ?? null,
+                                'mxCount' => $meta['mxCount'] ?? 0,
+                                'nsCount' => $meta['nsCount'] ?? 0,
+                                'txtCount' => $meta['txtCount'] ?? 0,
+                                'supported' => $meta['supported'] ?? false,
+                                'domainExpirationDate' => $meta['domainExpirationDate'] ?? '',
+                                'domainDays' => $meta['domainDays'] ?? 0,
+                                'domainExpired' => $meta['domainExpired'] ?? 0,
+                                'domainExpiring' => $meta['domainExpiring'] ?? 0,
+                                'domainChanged' => $meta['domainChanged'] ?? 0,
+                                'lastUpdatedInRdapDb' => $meta['lastUpdatedInRdapDb'] ?? '',
+                                'domainRegistered' => $meta['domainRegistered'] ?? '',
+                                'lastChanged' => $meta['lastChanged'] ?? '',
+                                'domainStatusCodes' => $meta['domainStatusCodes'] ?? [],
+                            ]
+                        ]
+                    ];
+                }
+            } catch (\Throwable $e) {
+                Craft::$app->getSession()->setError('Error fetching domain check data: ' . $e->getMessage());
                 $data = [
                     'data' => [
-                        'status' => $isOk ? 'ok' : 'error',
-                        'message' => $isOk ? 'Domain is active!' : 'Domain issues detected!',
-                        'url' => $response['url'] ?? '',
-                        'checkedAt' => $response['checkedAt'] ?? '',
-                        'duration' => isset($result['durationMs']) ? $result['durationMs'] . ' ms' : 'Unknown',
-                        'details' => [
-                            'cname' => $meta['cname'] ?? '',
-                            'host' => $meta['host'] ?? '',
-                            'ipv4' => $meta['ipv4'] ?? [],
-                            'ipv6' => $meta['ipv6'] ?? null,
-                            'mxCount' => $meta['mxCount'] ?? 0,
-                            'nsCount' => $meta['nsCount'] ?? 0,
-                            'txtCount' => $meta['txtCount'] ?? 0,
-                            'supported' => $meta['supported'] ?? false,
-                            'domainExpirationDate' => $meta['domainExpirationDate'] ?? '',
-                            'domainDays' => $meta['domainDays'] ?? 0,
-                            'domainExpired' => $meta['domainExpired'] ?? 0,
-                            'domainExpiring' => $meta['domainExpiring'] ?? 0,
-                            'domainChanged' => $meta['domainChanged'] ?? 0,
-                            'lastUpdatedInRdapDb' => $meta['lastUpdatedInRdapDb'] ?? '',
-                            'domainRegistered' => $meta['domainRegistered'] ?? '',
-                            'lastChanged' => $meta['lastChanged'] ?? '',
-                            'domainStatusCodes' => $meta['domainStatusCodes'] ?? [],
-                        ]
+                        'status' => 'error',
+                        'error' => $e->getMessage(),
+                        'url' => $url,
                     ]
                 ];
             }
-        } catch (\Throwable $e) {
-            Craft::$app->getSession()->setError('Error fetching domain check data: ' . $e->getMessage());
-            $data = [
-                'data' => [
-                    'status' => 'error',
-                    'error' => $e->getMessage(),
-                    'url' => $url,
-                ]
-            ];
         }
 
-        $isAjax = Craft::$app->getRequest()->getIsAjax();
         $data = $this->service->prepareData($data, Constants::SUBNAV_ITEM_DOMAIN_CHECK, $isAjax);
+
         if ($isAjax) {
             return $this->asJson($data);
         }

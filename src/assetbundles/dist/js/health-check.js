@@ -72,8 +72,154 @@ function registerBrokenLinksJs() {
 }
 
 function registerDomainCheckJs() {
-    // Domain check specific functionality (refresh button handled globally)
-    // Add any domain check specific JS here
+    const refreshBtn = document.getElementById("refresh-btn");
+    const statusContainerWrapper = document.getElementById("status-container-wrapper");
+    const detailsContainerWrapper = document.getElementById("details-container-wrapper");
+    const domainDetailsSection = document.getElementById("domain-details-section");
+    const loadingOverlay = document.getElementById("loading-container");
+
+    if (!statusContainerWrapper || !detailsContainerWrapper || !domainDetailsSection) {
+        return;
+    }
+
+    let domainData = {};
+
+    // Function to fetch domain check data
+    function fetchDomainData(showLoader = true) {
+        if (showLoader) {
+            loadingOverlay.style.display = "flex";
+            loadingOverlay.classList.add("active");
+            statusContainerWrapper.style.display = "none";
+            detailsContainerWrapper.style.display = "none";
+            domainDetailsSection.style.display = "none";
+        }
+
+        return Craft.sendActionRequest('POST', 'upsnap/health-check/domain-check', {})
+            .then(response => {
+                if (response?.data?.success) {
+                    domainData = response.data.data;
+
+                    // Render status and details containers
+                    renderStatusContainer(domainData);
+                    renderDetailsContainer(domainData);
+
+                    // Render general info / more details
+                    renderDomainDetails(domainData.details || {});
+
+                    // Show containers
+                    statusContainerWrapper.style.display = "block";
+                    detailsContainerWrapper.style.display = "block";
+                    domainDetailsSection.style.display = "block";
+                } else {
+                    throw new Error(response?.data?.error || 'Failed to fetch domain data');
+                }
+            })
+            .catch(error => {
+                console.error("Failed to fetch domain data:", error);
+
+                // Display error message
+                domainDetailsSection.innerHTML = `
+                    <div style="padding: 2rem; text-align: center; color: #cf1124;">
+                        <p><strong>Error loading domain data</strong></p>
+                        <p style="margin-top: 0.5rem;">${error.message || 'Unknown error occurred'}</p>
+                    </div>
+                `;
+                domainDetailsSection.style.display = "block";
+            })
+            .finally(() => {
+                loadingOverlay.style.display = "none";
+                loadingOverlay.classList.remove("active");
+            });
+    }
+
+    // Refresh button
+    if (refreshBtn) {
+        refreshBtn.addEventListener('click', function () {
+            fetchDomainData(true);
+        });
+    }
+
+    // Function to render the general info / more details section
+    function renderDomainDetails(details) {
+        if (!details || Object.keys(details).length === 0) {
+            domainDetailsSection.innerHTML = '';
+            return;
+        }
+
+        let html = `
+            <div class="details-section">
+                <h3 class="details-title">General Info</h3>
+                <table class="details-table">
+                    <tr><td class="details-label">CNAME</td><td class="details-value">${details.cname ?? '–'}</td></tr>
+                    <tr><td class="details-label">Host</td><td class="details-value">${details.host ?? '–'}</td></tr>
+                    <tr><td class="details-label">Supported</td><td class="details-value">${details.supported ? 'Yes' : 'No'}</td></tr>
+                </table>
+
+                <div id="more-details" class="hidden">
+                    <h3 class="pt-2rem details-title">DNS Records</h3>
+                    <table class="details-table">
+                        <tr><td class="details-label">IPv4</td><td class="details-value">${details.ipv4?.length ? details.ipv4.join(", ") : '–'}</td></tr>
+                        <tr><td class="details-label">IPv6</td><td class="details-value">${details.ipv6 ?? '–'}</td></tr>
+                        <tr><td class="details-label">MX Records</td><td class="details-value">${details.mxCount ?? '–'}</td></tr>
+                        <tr><td class="details-label">NS Records</td><td class="details-value">${details.nsCount ?? '–'}</td></tr>
+                        <tr><td class="details-label">TXT Records</td><td class="details-value">${details.txtCount ?? '–'}</td></tr>
+                    </table>
+
+                    <h3 class="pt-2rem details-title">Domain Lifecycle</h3>
+                    <table class="details-table">
+                        <tr><td class="details-label">Registered On</td><td class="details-value">${formatDate(details.domainRegistered)}</td></tr>
+                        <tr><td class="details-label">Expiration Date</td><td class="details-value">${formatDate(details.domainExpirationDate)}</td></tr>
+                        <tr><td class="details-label">Days Until Expiration</td><td class="details-value">${details.domainDays ?? '–'}</td></tr>
+                        <tr><td class="details-label">Expired</td><td class="details-value">${details.domainExpired ? 'Yes' : 'No'}</td></tr>
+                        <tr><td class="details-label">Expiring Soon</td><td class="details-value">${details.domainExpiring ? 'Yes' : 'No'}</td></tr>
+                        <tr><td class="details-label">Last Changed</td><td class="details-value">${formatDate(details.lastChanged)}</td></tr>
+                        <tr><td class="details-label">Last Updated in RDAP DB</td><td class="details-value">${formatDate(details.lastUpdatedInRdapDb)}</td></tr>
+                    </table>
+
+                    <h3 class="pt-2rem details-title">Domain Status Codes</h3>
+                    <table class="details-table">
+                        ${details.domainStatusCodes?.length
+                            ? details.domainStatusCodes.map(s => `<tr><td class="details-label">${s.eppStatusCode}</td><td class="details-value">${s.status}</td></tr>`).join('')
+                            : `<tr><td colspan="2" class="details-value">–</td></tr>`}
+                    </table>
+                </div>
+
+                <a href="#" class="show-less hidden">Show less</a>
+                <a href="#" class="show-details">Show more</a>
+            </div>
+        `;
+
+        domainDetailsSection.innerHTML = html;
+
+        // Bind show more / less
+        toggleShowDetails(domainDetailsSection);
+    }
+
+    // Initial fetch on page load
+    fetchDomainData(true);
+}
+
+
+function toggleShowDetails(domainDetailsSection) {
+    const showBtn = domainDetailsSection.querySelector(".show-details");
+    const lessBtn = domainDetailsSection.querySelector(".show-less");
+    const moreDetails = domainDetailsSection.querySelector("#more-details");
+
+    if (showBtn && lessBtn && moreDetails) {
+        showBtn.addEventListener("click", (e) => {
+            e.preventDefault();
+            moreDetails.classList.remove("hidden");
+            showBtn.classList.add("hidden");
+            lessBtn.classList.remove("hidden");
+        });
+
+        lessBtn.addEventListener("click", (e) => {
+            e.preventDefault();
+            moreDetails.classList.add("hidden");
+            lessBtn.classList.add("hidden");
+            showBtn.classList.remove("hidden");
+        });
+    }
 }
 
 function registerLighthouseJs() {
@@ -403,5 +549,20 @@ function toggleDetails(recordId) {
     } else {
         detailsRow.style.display = 'none';
         toggleIcon.textContent = '▼';
+    }
+}
+
+
+function formatDate(dateStr) {
+    if (!dateStr) return '–';
+    try {
+        const date = new Date(dateStr);
+        const day = String(date.getDate()).padStart(2, '0');
+        const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        const month = monthNames[date.getMonth()];
+        const year = date.getFullYear();
+        return `${day} ${month} ${year}`;
+    } catch {
+        return dateStr;
     }
 }
