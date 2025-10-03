@@ -252,56 +252,58 @@ class HealthCheckController extends BaseController
     public function actionMixedContent(): Response
     {
         $url = Upsnap::getMonitoringUrl();
+        $isAjax = Craft::$app->getRequest()->getIsAjax();
 
         if (!$url) {
-            return $this->service->handleMissingMonitoringUrl(Constants::SUBNAV_ITEM_LIGHTHOUSE);
+            return $this->service->handleMissingMonitoringUrl(Constants::SUBNAV_ITEM_MIXED_CONTENT);
         }
 
         $data = [];
 
-        try {
-            $paramName = Constants::SUBNAV_ITEM_MIXED_CONTENT['apiLabel'];
-            $response = $this->service->getHealthcheck($url, [$paramName]);
-
-            if (isset($response['result']['details'][$paramName]['error'])) {
-                $errorMsg = $response['result']['details'][$paramName]['error'];
-                Craft::$app->getSession()->setError('Something went wrong: ' . $errorMsg);
-                throw new \Exception($errorMsg);
-            }
-
-            // Transform API response to our expected format
-            if (isset($response['result'])) {
-                $result = $response['result'];
-                $mixedContent = $result['details'][$paramName] ?? null;
-                $meta = $mixedContent['meta'] ?? [];
-                $isOk = $response['result']['details'][$paramName]['ok'] ?? true;
-
+        if ($isAjax) {
+            try {
+                $paramName = Constants::SUBNAV_ITEM_MIXED_CONTENT['apiLabel'];
+                $response = $this->service->getHealthcheck($url, [$paramName]);
+    
+                if (isset($response['result']['details'][$paramName]['error'])) {
+                    $errorMsg = $response['result']['details'][$paramName]['error'];
+                    Craft::$app->getSession()->setError('Something went wrong: ' . $errorMsg);
+                    throw new \Exception($errorMsg);
+                }
+    
+                // Transform API response to our expected format
+                if (isset($response['result'])) {
+                    $result = $response['result'];
+                    $mixedContent = $result['details'][$paramName] ?? null;
+                    $meta = $mixedContent['meta'] ?? [];
+                    $isOk = $response['result']['details'][$paramName]['ok'] ?? true;
+    
+                    $data = [
+                        'data' => [
+                            'status' => $isOk ? 'ok' : 'error',
+                            'message' => $isOk ? 'No mixed content found!' : 'Mixed content detected!',
+                            'url' => $response['url'] ?? '',
+                            'checkedAt' => $response['checkedAt'] ?? '',
+                            'duration' => isset($result['durationMs']) ? $result['durationMs'] . ' ms' : 'Unknown',
+                            'details' => [
+                                'mixedCount' => $meta['mixedCount'] ?? 0,
+                                'mixedContentItems' => $meta['mixedContentItems'] ?? [],
+                            ]
+                        ]
+                    ];
+                }
+            } catch (\Throwable $e) {
+                Craft::$app->getSession()->setError('Error fetching mixed content check data: ' . $e->getMessage());
                 $data = [
                     'data' => [
-                        'status' => $isOk ? 'ok' : 'error',
-                        'message' => $isOk ? 'No mixed content found!' : 'Mixed content detected!',
-                        'url' => $response['url'] ?? '',
-                        'checkedAt' => $response['checkedAt'] ?? '',
-                        'duration' => isset($result['durationMs']) ? $result['durationMs'] . ' ms' : 'Unknown',
-                        'details' => [
-                            'mixedCount' => $meta['mixedCount'] ?? 0,
-                            'mixedContentItems' => $meta['mixedContentItems'] ?? [],
-                        ]
+                        'status' => 'error',
+                        'error' => $e->getMessage(),
+                        'url' => $url,
                     ]
                 ];
             }
-        } catch (\Throwable $e) {
-            Craft::$app->getSession()->setError('Error fetching mixed content check data: ' . $e->getMessage());
-            $data = [
-                'data' => [
-                    'status' => 'error',
-                    'error' => $e->getMessage(),
-                    'url' => $url,
-                ]
-            ];
         }
 
-        $isAjax = Craft::$app->getRequest()->getIsAjax();
         $data = $this->service->prepareData($data, Constants::SUBNAV_ITEM_MIXED_CONTENT, $isAjax);
         if ($isAjax) {
             return $this->asJson($data);

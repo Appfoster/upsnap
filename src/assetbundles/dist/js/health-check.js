@@ -179,8 +179,8 @@ function registerDomainCheckJs() {
                     <h3 class="pt-2rem details-title">Domain Status Codes</h3>
                     <table class="details-table">
                         ${details.domainStatusCodes?.length
-                            ? details.domainStatusCodes.map(s => `<tr><td class="details-label">${s.eppStatusCode}</td><td class="details-value">${s.status}</td></tr>`).join('')
-                            : `<tr><td colspan="2" class="details-value">–</td></tr>`}
+                ? details.domainStatusCodes.map(s => `<tr><td class="details-label">${s.eppStatusCode}</td><td class="details-value">${s.status}</td></tr>`).join('')
+                : `<tr><td colspan="2" class="details-value">–</td></tr>`}
                     </table>
                 </div>
 
@@ -412,9 +412,105 @@ function registerLighthouseJs() {
 }
 
 function registerMixedContentJs() {
-    // Mixed content specific functionality (refresh button handled globally)
-    // Add any mixed content specific JS here
+    const refreshBtn = document.getElementById("refresh-btn");
+    const statusContainerWrapper = document.getElementById("status-container-wrapper");
+    const detailsContainerWrapper = document.getElementById("details-container-wrapper");
+    const mixedContentSection = document.getElementById("mixed-content-section");
+    const loadingOverlay = document.getElementById("loading-container");
+
+    if (!statusContainerWrapper || !detailsContainerWrapper || !mixedContentSection) {
+        return;
+    }
+
+    let mixedContentData = {};
+
+    // Function to fetch mixed content data
+    function fetchMixedContentData(showLoader = true) {
+        if (showLoader) {
+            loadingOverlay.style.display = "flex";
+            loadingOverlay.classList.add("active");
+            statusContainerWrapper.innerHTML = '';
+            detailsContainerWrapper.innerHTML = '';
+            statusContainerWrapper.style.display = "none";
+            detailsContainerWrapper.style.display = "none";
+            if (mixedContentSection) mixedContentSection.style.display = "none";
+        }
+
+        return Craft.sendActionRequest('POST', 'upsnap/health-check/mixed-content', {})
+            .then(response => {
+                if (response?.data?.success) {
+                    mixedContentData = response.data.data;
+
+                    // Render status
+                    renderStatusContainer(mixedContentData);
+
+                    // Render details
+                    renderDetailsContainer(mixedContentData);
+
+                    // Render mixed content list
+                    renderMixedContentItems(mixedContentData.details || {});
+
+                    // Show containers
+                    statusContainerWrapper.style.display = "block";
+                    detailsContainerWrapper.style.display = "block";
+                    if (mixedContentSection) mixedContentSection.style.display = "block";
+                } else {
+                    throw new Error(response?.data?.error || 'Failed to fetch mixed content data');
+                }
+            })
+            .catch(error => {
+                console.error("Failed to fetch mixed content data:", error);
+
+                if (mixedContentSection) {
+                    mixedContentSection.innerHTML = `
+                        <div style="padding: 2rem; text-align: center; color: #cf1124;">
+                            <p><strong>Error loading Mixed Content data</strong></p>
+                            <p style="margin-top: 0.5rem;">${error.message || 'Unknown error occurred'}</p>
+                        </div>
+                    `;
+                    mixedContentSection.style.display = "block";
+                }
+            })
+            .finally(() => {
+                loadingOverlay.style.display = "none";
+                loadingOverlay.classList.remove("active");
+            });
+    }
+
+    // Refresh button
+    if (refreshBtn) {
+        refreshBtn.addEventListener('click', function () {
+            fetchMixedContentData(true);
+        });
+    }
+
+    // Render Mixed Content items
+    function renderMixedContentItems(details) {
+        if (!details || !details.mixedContentItems || details.mixedContentItems.length === 0) {
+            if (mixedContentSection) mixedContentSection.innerHTML = '';
+            return;
+        }
+
+        let html = `
+            <div class="pane" id="mixed-content-section">
+                <div class="data fullwidth">
+                    <div class="field">
+                        <div class="heading">Mixed Contents</div>
+                        <ul class="error-list margin-top">
+                            ${details.mixedContentItems.map(url => `<li><a href="${url}" target="_blank">${url}</a></li>`).join('')}
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        if (mixedContentSection) mixedContentSection.innerHTML = html;
+    }
+
+    // Initial fetch on page load
+    fetchMixedContentData(true);
 }
+
 
 function registerReachabilityJs() {
     // Reachability specific functionality (refresh button handled globally)
