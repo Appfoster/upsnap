@@ -176,74 +176,70 @@ class HealthCheckController extends BaseController
             return $this->asJson($data);
         }
 
-
         return $this->service->sendResponse($data, Constants::SUBNAV_ITEM_DOMAIN_CHECK['template']);
     }
-
+    
     public function actionLighthouse(): Response
     {
         $url = Upsnap::getMonitoringUrl();
-
+        
         if (!$url) {
             return $this->service->handleMissingMonitoringUrl(Constants::SUBNAV_ITEM_LIGHTHOUSE);
         }
+        $isAjax = Craft::$app->getRequest()->getIsAjax();
 
         $data = [];
-        try {
-            $paramName = Constants::SUBNAV_ITEM_LIGHTHOUSE['apiLabel'];
-
-            $response = $this->service->getHealthcheck($url, [$paramName], Craft::$app->getRequest()->getParam('device', 'desktop'));
-
-            if (isset($response['result']['details'][$paramName]['error'])) {
-                Craft::$app->getSession()->setError('Something went wrong: ' . $response['result']['details'][$paramName]['error']);
-                throw new \Exception($response['result']['details'][$paramName]['error']);
-            }
-
-            $isOk = $response['result']['details'][$paramName]['ok'] ?? true;
-
-            if (isset($response['result'])) {
-                $result = $response['result'];
-                $lh = $result['details']['lighthouse'] ?? [];
-
+        if ($isAjax) {
+            try {
+                $paramName = Constants::SUBNAV_ITEM_LIGHTHOUSE['apiLabel'];
+    
+                $response = $this->service->getHealthcheck($url, [$paramName], Craft::$app->getRequest()->getParam('device', 'desktop'));
+    
+                if (isset($response['result']['details'][$paramName]['error'])) {
+                    Craft::$app->getSession()->setError('Something went wrong: ' . $response['result']['details'][$paramName]['error']);
+                    throw new \Exception($response['result']['details'][$paramName]['error']);
+                }
+    
+                $isOk = $response['result']['details'][$paramName]['ok'] ?? true;
+    
+                if (isset($response['result'])) {
+                    $result = $response['result'];
+                    $lh = $result['details']['lighthouse'] ?? [];
+    
+                    $data = [
+                        'data' => [
+                            'status' => $isOk ? 'ok' : 'error',
+                            'message' => $isOk ? 'All checks completed' : 'Some issues detected',
+                            'url' => $response['url'] ?? '',
+                            'checkedAt' => $response['checkedAt'] ?? '',
+                            "result" => [
+                                "summary" => [
+                                    "ok" => $result['summary']['ok'] ?? true,
+                                    "score" => $result['summary']['score'] ?? 100,
+                                    "message" => $result['summary']['message'] ?? 'checks completed',
+                                ],
+                                "details" => [
+                                    "lighthouse" => $lh,
+                                ],
+                                "durationMs" => $result['durationMs'] ?? 0,
+                            ],
+                        ]
+                    ];
+                }
+            } catch (\Throwable $e) {
+                Craft::$app->getSession()->setError('Error fetching lighthouse scores: ' . $e->getMessage());
                 $data = [
                     'data' => [
-                        'status' => $isOk ? 'ok' : 'error',
-                        'message' => $isOk ? 'All checks completed' : 'Some issues detected',
-                        'url' => $response['url'] ?? '',
-                        'checkedAt' => $response['checkedAt'] ?? '',
-                        "result" => [
-                            "summary" => [
-                                "ok" => $result['summary']['ok'] ?? true,
-                                "score" => $result['summary']['score'] ?? 100,
-                                "message" => $result['summary']['message'] ?? 'checks completed',
-                            ],
-                            "details" => [
-                                "lighthouse" => $lh,
-                            ],
-                            "durationMs" => $result['durationMs'] ?? 0,
-                        ],
+                        'status' => 'error',
+                        'error' => $e->getMessage(),
+                        'url' => $url,
                     ]
                 ];
             }
-        } catch (\Throwable $e) {
-            Craft::$app->getSession()->setError('Error fetching lighthouse scores: ' . $e->getMessage());
-            $data = [
-                'data' => [
-                    'status' => 'error',
-                    'error' => $e->getMessage(),
-                    'url' => $url,
-                ]
-            ];
         }
-        $isAjax = Craft::$app->getRequest()->getIsAjax();
+
         $data = $this->service->prepareData($data, Constants::SUBNAV_ITEM_LIGHTHOUSE, $isAjax);
         if ($isAjax) {
-            return $this->asJson($data);
-        }
-
-
-        // ✅ Return JSON if it’s an Ajax request
-        if (Craft::$app->getRequest()->getIsAjax()) {
             return $this->asJson($data);
         }
 
