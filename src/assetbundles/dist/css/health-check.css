@@ -523,19 +523,11 @@
     }
 }
 
-/* Loading State */
-.loading-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(255, 255, 255, 0.8);
+.loading-container {
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 1000;
-    display: none;
+    margin: 40px 0;
 }
 
 .loading-spinner {
@@ -718,4 +710,8 @@
 
 .broken-links-col {
     min-width: 8rem;
+}
+
+#details-container-wrapper {
+    margin-bottom: 14px;
 }
