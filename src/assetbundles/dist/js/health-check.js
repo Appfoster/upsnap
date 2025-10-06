@@ -1299,25 +1299,6 @@ function renderDetailsContainer(data) {
     detailsContainerWrapper.innerHTML = html;
 }
 
-// Toggle row expansion
-function toggleRow(index) {
-    const expandableRow = document.getElementById('row-' + index);
-    const btn = document.querySelector('[onclick="toggleRow(' + index + ')"]');
-    const btnText = btn.querySelector('.btn-text');
-
-    if (expandableRow.classList.contains('show')) {
-        expandableRow.classList.remove('show');
-        expandableRow.style.display = 'none';
-        btn.classList.remove('expanded');
-        btnText.textContent = 'View More';
-    } else {
-        expandableRow.classList.add('show');
-        expandableRow.style.display = 'table-row';
-        btn.classList.add('expanded');
-        btnText.textContent = 'View Less';
-    }
-}
-
 // Function for history page details toggle
 function toggleDetails(recordId) {
     const detailsRow = document.getElementById('details-' + recordId);

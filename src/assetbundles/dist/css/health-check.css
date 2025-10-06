@@ -215,7 +215,7 @@
 }
 
 .expandable-row.show {
-    display: table-row;
+    display: table-row !important;
 }
 
 .expandable-content {
