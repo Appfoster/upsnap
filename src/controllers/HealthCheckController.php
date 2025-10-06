@@ -23,6 +23,7 @@ class HealthCheckController extends BaseController
 
     public function actionBrokenLinks(): Response
     {
+        $isAjax = Craft::$app->getRequest()->getIsAjax();
         $url = Upsnap::getMonitoringUrl();
 
         if (!$url) {
@@ -31,72 +32,73 @@ class HealthCheckController extends BaseController
  
         $data = [];
 
-        try {
-            $paramName = Constants::SUBNAV_ITEM_BROKEN_LINKS['apiLabel'];
-            $response = $this->service->getHealthcheck($url, [$paramName]);
-
-            if (isset($response['result']['details'][$paramName]['error'])) {
-                $errorMsg = $response['result']['details'][$paramName]['error'];
-                Craft::$app->getSession()->setError('Something went wrong: ' . $errorMsg);
-                throw new \Exception($errorMsg);
-            }
-
-            $brokenLinksMeta = $response['result']['details'][$paramName]['meta'] ?? [];
-            $isOk = $response['result']['details'][$paramName]['ok'] ?? true;
-
-            $brokenLinks = [];
-
-            // Extract broken links if present
-            if (!empty($brokenLinksMeta['brokenLinks'])) {
-                foreach ($brokenLinksMeta['brokenLinks'] as $page) {
-                    $items = $page['items'] ?? [];
-                    foreach ($items as $item) {
-                        $brokenLinks[] = [
-                            'url' => $item['url'] ?? '',
-                            'pageUrl' => $item['page'] ?? '',
-                            'statusCode' => $item['result'] ?? '',
-                            'type' => !empty($item['external']) ? Constants::BROKEN_LINKS_TYPE['external'] : Constants::BROKEN_LINKS_TYPE['internal'],
-                            'anchorText' => $item['name'] ?? $item['title'] ?? '',
-                            'title' => $item['title'] ?? '',
-                            'culprit' => $item['culprit'] ?? '',
-                            'resolved' => !empty($item['resolved']),
-                            'classification' => $item['classification'] ?? '',
-                            'refUrl' => $item['ref_url'] ?? '',
-                            'rid' => $item['rid'] ?? null,
-                            'external' => $item['external'] ?? false,
-                            'result' => $item['result'] ?? '',
-                        ];
+        if( $isAjax ) {
+            try {
+                $paramName = Constants::SUBNAV_ITEM_BROKEN_LINKS['apiLabel'];
+                $response = $this->service->getHealthcheck($url, [$paramName]);
+    
+                if (isset($response['result']['details'][$paramName]['error'])) {
+                    $errorMsg = $response['result']['details'][$paramName]['error'];
+                    Craft::$app->getSession()->setError('Something went wrong: ' . $errorMsg);
+                    throw new \Exception($errorMsg);
+                }
+    
+                $brokenLinksMeta = $response['result']['details'][$paramName]['meta'] ?? [];
+                $isOk = $response['result']['details'][$paramName]['ok'] ?? true;
+    
+                $brokenLinks = [];
+    
+                // Extract broken links if present
+                if (!empty($brokenLinksMeta['brokenLinks'])) {
+                    foreach ($brokenLinksMeta['brokenLinks'] as $page) {
+                        $items = $page['items'] ?? [];
+                        foreach ($items as $item) {
+                            $brokenLinks[] = [
+                                'url' => $item['url'] ?? '',
+                                'pageUrl' => $item['page'] ?? '',
+                                'statusCode' => $item['result'] ?? '',
+                                'type' => !empty($item['external']) ? Constants::BROKEN_LINKS_TYPE['external'] : Constants::BROKEN_LINKS_TYPE['internal'],
+                                'anchorText' => $item['name'] ?? $item['title'] ?? '',
+                                'title' => $item['title'] ?? '',
+                                'culprit' => $item['culprit'] ?? '',
+                                'resolved' => !empty($item['resolved']),
+                                'classification' => $item['classification'] ?? '',
+                                'refUrl' => $item['ref_url'] ?? '',
+                                'rid' => $item['rid'] ?? null,
+                                'external' => $item['external'] ?? false,
+                                'result' => $item['result'] ?? '',
+                            ];
+                        }
                     }
                 }
+    
+                $data = [
+                    'data' => [
+                        'status' => $isOk ? 'ok' : 'error',
+                        'message' => $isOk ? 'All links are working fine' : 'Some broken links detected',
+                        'url' => $response['url'] ?? '',
+                        'checkedAt' => $response['checkedAt'] ?? '',
+                        'brokenLinks' => $brokenLinks,
+                        'details' => [
+                            'totalPagesChecked' => $brokenLinksMeta['pagesChecked'] ?? 0,
+                            'totalLinksScanned' => $brokenLinksMeta['checked'] ?? 0,
+                            'errorsCount' => $brokenLinksMeta['broken'] ?? 0,
+                        ],
+                    ]
+                ];
+    
+            } catch (\Throwable $e) {
+                Craft::$app->getSession()->setError('Error fetching broken links data: ' . $e->getMessage());
+                $data = [
+                    'data' => [
+                        'status' => 'error',
+                        'error' => $e->getMessage(),
+                        'url' => $url,
+                    ]
+                ];
             }
-
-            $data = [
-                'data' => [
-                    'status' => $isOk ? 'ok' : 'error',
-                    'message' => $isOk ? 'All links are working fine' : 'Some broken links detected',
-                    'url' => $response['url'] ?? '',
-                    'checkedAt' => $response['checkedAt'] ?? '',
-                    'brokenLinks' => $brokenLinks,
-                    'details' => [
-                        'totalPagesChecked' => $brokenLinksMeta['pagesChecked'] ?? 0,
-                        'totalLinksScanned' => $brokenLinksMeta['checked'] ?? 0,
-                        'errorsCount' => $brokenLinksMeta['broken'] ?? 0,
-                    ],
-                ]
-            ];
-
-        } catch (\Throwable $e) {
-            Craft::$app->getSession()->setError('Error fetching broken links data: ' . $e->getMessage());
-            $data = [
-                'data' => [
-                    'status' => 'error',
-                    'error' => $e->getMessage(),
-                    'url' => $url,
-                ]
-            ];
         }
 
-        $isAjax = Craft::$app->getRequest()->getIsAjax();
         $data = $this->service->prepareData($data, Constants::SUBNAV_ITEM_BROKEN_LINKS, $isAjax);
 
         if ($isAjax) {
