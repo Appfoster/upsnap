@@ -453,7 +453,9 @@ function registerLighthouseJs() {
     if (deviceSelector) {
         deviceSelector.addEventListener('change', function () {
             currentDevice = this.value;
-            document.getElementsByName("skeleton-card").style.display = "block";
+
+             // Show skeletons while fetching
+            showLoaderSkeleton();
             fetchLighthouseData(currentDevice);
         });
     }
@@ -472,6 +474,54 @@ function registerLighthouseJs() {
                 refreshBtn.innerHTML = originalText;
             });
         });
+    }
+
+    function showLoaderSkeleton() {
+        const statusWrapper = document.getElementById("status-container-wrapper");
+        const detailsWrapper = document.getElementById("details-container-wrapper");
+
+        if (statusWrapper && detailsWrapper) {
+            statusWrapper.innerHTML = `
+            <div class="skeleton-card">
+                <div class="skeleton-card-header">
+                    <div class="skeleton-line skeleton-line-medium"></div>
+                </div>
+                <div class="skeleton-card-body">
+                    <div class="skeleton-line skeleton-line-long"></div>
+                    <div class="skeleton-line skeleton-line-short"></div>
+                </div>
+            </div>
+        `;
+            detailsWrapper.innerHTML = `
+            <div class="skeleton-card">
+                <div class="skeleton-card-header">
+                    <div class="skeleton-line skeleton-line-short"></div>
+                </div>
+                <div class="skeleton-card-body">
+                    <div class="skeleton-field">
+                        <div class="skeleton-line skeleton-line-short"></div>
+                        <div class="skeleton-line skeleton-line-medium"></div>
+                    </div>
+                    <div class="skeleton-field">
+                        <div class="skeleton-line skeleton-line-short"></div>
+                        <div class="skeleton-line skeleton-line-long"></div>
+                    </div>
+                    <div class="skeleton-field">
+                        <div class="skeleton-line skeleton-line-short"></div>
+                        <div class="skeleton-line skeleton-line-medium"></div>
+                    </div>
+                    <div class="skeleton-field">
+                        <div class="skeleton-line skeleton-line-short"></div>
+                        <div class="skeleton-line skeleton-line-long"></div>
+                    </div>
+                </div>
+            </div>
+        `;
+        }
+
+        // Hide previous results
+        scoresContainer.style.display = 'none';
+        performanceContainer.style.display = 'none';
     }
 
     function getScoreColor(score) {
