@@ -8,6 +8,7 @@ use GuzzleHttp\Client;
 use GuzzleHttp\Exception\RequestException;
 
 use appfoster\upsnap\Constants;
+use appfoster\upsnap\Upsnap;
 
 class ApiService extends Component
 {
@@ -23,7 +24,12 @@ class ApiService extends Component
         // Load from constants or environment
         $this->baseUrl = Constants::API_BASE_URL;
         $this->apiVersion = Constants::API_VERSION;
-        $this->authToken = Constants::API_AUTH_TOKEN;
+
+        if (!Upsnap::$plugin->settingsService->getApiKey()) {
+            throw new \Exception('API Key not set');
+        }
+        $this->authToken = Upsnap::$plugin->settingsService->getApiKey();
+
 
         $this->client = new Client([
             'base_uri' => $this->baseUrl . '/' . $this->apiVersion . '/',

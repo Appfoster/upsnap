@@ -2,8 +2,11 @@
 
 namespace appfoster\upsnap\services;
 
+use appfoster\upsnap\Constants;
 use craft\base\Component;
 use appfoster\upsnap\records\SettingRecord;
+use appfoster\upsnap\Upsnap;
+use Craft;
 
 /**
  * Settings service for managing plugin settings using Record models
@@ -136,5 +139,39 @@ class SettingsService extends Component
             return $this->deleteSetting('notificationEmail');
         }
         return $this->setSetting('notificationEmail', $email);
+    }
+    
+    /**
+     * Returns the API key set in the plugin settings.
+     *
+     */
+    public function getApiKey(): ?string
+    {
+        return $this->getSetting('apiKey');
+    }
+
+
+    /**
+     * Set the API key in the plugin settings.
+     */
+    public function setApiKey(?string $apiKey): bool
+    {
+        if ($apiKey === null || $apiKey === '') {
+            return $this->deleteSetting('apiKey');
+        }
+        return $this->setSetting('apiKey', $apiKey);
+    }
+
+    public function verifyApiKey(string $apiKey): bool
+    {
+        try {
+            $response = Upsnap::$plugin->apiService->post(Constants::VERIFY_API_KEY_URL, [
+                'apikey' => $apiKey
+            ]);
+        } catch (\Exception $e) {
+            Craft::error("Error verifying API key: " . $e->getMessage(), __METHOD__);
+            return true;
+        }
+        return $response['success'] ?? true; // change it later to return false when success is not present
     }
 }

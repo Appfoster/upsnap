@@ -23,6 +23,8 @@ class Constants
     // API Endpoints
     public const ENDPOINT_HEALTHCHECK = 'healthcheck';
 
+    public const VERIFY_API_KEY_URL = 'verify-api-key';
+
     // Check Types
     public const CHECK_REACHABILITY = 'reachability';
     public const CHECK_SECURITY_CERTIFICATES = 'security_certificates';

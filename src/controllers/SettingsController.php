@@ -26,6 +26,17 @@ class SettingsController extends BaseController
         $settings = $service->getNewModel();
         $settings->monitoringUrl = $service->getMonitoringUrl();
         $settings->enabled = $service->getMonitoringEnabled();
+        $apiKey = $service->getApiKey();
+
+        if ($apiKey && strlen($apiKey) >= 8) {
+            $start = substr($apiKey, 0, 4);
+            $end = substr($apiKey, -4);
+            $maskedKey = $start . str_repeat('X', strlen($apiKey) - 8) . $end;
+            $settings->apiKey = $maskedKey;
+        } else {
+            $settings->apiKey = $apiKey ?: '';
+        }
+
         $settings->monitoringInterval = $service->getMonitoringInterval();
         $settings->notificationEmail = $service->getNotificationEmail();
 
@@ -56,6 +67,8 @@ class SettingsController extends BaseController
         $settings->monitoringInterval = (int)$request->getBodyParam('monitoringInterval');
         $settings->notificationEmail = $request->getBodyParam('notificationEmail');
 
+        $settings->apiKey = trim($request->getBodyParam('apikey'));
+
         // Validate the settings
         if (!$settings->validate()) {
             Craft::$app->getSession()->setError($settings->getErrors());
@@ -68,8 +81,17 @@ class SettingsController extends BaseController
             return null;
         }
 
+        $apiKey = $settings->apiKey;
+        $validationSuccess = $service->verifyApiKey($apiKey);
+        if (!$validationSuccess) {
+            Craft::$app->getSession()->setError(Craft::t('upsnap', 'Invalid API Key.'));
+            Craft::$app->getUrlManager()->setRouteParams(['settings' => $settings]);
+            return null;
+        }
+
         // Save settings to database
         $service->setMonitoringUrl($settings->monitoringUrl);
+        $service->setApiKey($apiKey); // save the API key
         $service->setMonitoringEnabled($settings->enabled);
         $service->setMonitoringInterval($settings->monitoringInterval);
         $service->setNotificationEmail($settings->notificationEmail);

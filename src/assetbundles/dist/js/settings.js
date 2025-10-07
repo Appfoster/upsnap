@@ -14,6 +14,11 @@ Craft.Upsnap.Settings = {
         return pattern.test(url);
     },
 
+    isValidApiKey : function (apiKey) {
+        const pattern = /^[a-zA-Z0-9]{32}$/;
+        return pattern.test(apiKey);
+    },
+
     // Toggle monitoring options based on URL validation
     toggleEnableMonitoring: function() {
         const urlValue = this.elements.urlField.value.trim();
@@ -47,6 +52,13 @@ Craft.Upsnap.Settings = {
             return false;
         }
 
+        const apiKeyValue = Craft.Upsnap.Settings.elements.apiKeyField.value.trim();
+        if (!Craft.Upsnap.Settings.isValidApiKey(apiKeyValue)) {
+            event.preventDefault();
+            alert('Please enter a valid API key');
+            return false;
+        }
+
         return true;
     },
 
@@ -59,7 +71,8 @@ Craft.Upsnap.Settings = {
             enableMonitoring: document.getElementById('enable-monitoring'),
             enabledField: document.getElementById('enabled'),
             advancedSettings: document.getElementById('advanced-settings'),
-            settingsForm: document.getElementById('settings-form')
+            settingsForm: document.getElementById('settings-form'),
+            apiKeyField: document.getElementById('apiKey')
         };
 
         // // Initial check on page load
