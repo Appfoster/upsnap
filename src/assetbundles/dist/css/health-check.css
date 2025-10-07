@@ -778,6 +778,25 @@
     transition: opacity 0.2s ease-out;
 }
 
+/* Loading Dots Animation */
+.loading-dots::after {
+    content: '';
+    animation: loading-dots 2s infinite;
+    padding-left: 3px;
+}
+
+@keyframes loading-dots {
+    0%, 20% {
+        content: '.';
+    }
+    40% {
+        content: '..';
+    }
+    60%, 100% {
+        content: '...';
+    }
+}
+
 /* Button Loading State */
 .btn .spinner {
     display: inline-block;

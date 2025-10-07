@@ -61,7 +61,7 @@
 .http-status {
     display: inline-block;
     background-color: #28a745;
-    color: white;
+    color: white !important;
     padding: 4px 8px;
     border-radius: 4px;
     font-size: 12px;
@@ -74,7 +74,6 @@
 
 .http-status.warning {
     background-color: #ffc107;
-    color: #333;
 }
 
 /* Status Icons */
@@ -667,24 +666,5 @@
 }
 
 .details-value {
-    color: #333;
-}
-
-.http-status {
-    display: inline-block;
-    background-color: #28a745;
-    color: white;
-    padding: 4px 8px;
-    border-radius: 4px;
-    font-size: 12px;
-    font-weight: 500;
-}
-
-.http-status.error {
-    background-color: #dc3545;
-}
-
-.http-status.warning {
-    background-color: #ffc107;
     color: #333;
 }

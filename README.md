@@ -2,7 +2,7 @@
 
 A comprehensive monitoring plugin for Craft CMS that provides real-time insights into your website's health, performance, and security.
 
-![Plugin Banner - Add a banner image showing the plugin interface](https://via.placeholder.com/800x200/0073aa/white?text=Site+Monitor+Plugin+Banner)
+![Plugin Dashboard](assets/images/dashboard.png)
 
 ## Features
 
@@ -76,27 +76,16 @@ composer require appfoster/upsnap
 3. In the Craft Control Panel, go to **Settings → Plugins**
 4. Find **Upsnap** in the plugin list and click **Install**
 
-## Configuration
-
-### Environment Variables
-
-Configure the following environment variables in your `.env` file:
-
-```env
-# Site to Monitor
-SITE_MONITOR_URL=https://your-site.com
-```
-
 ### Plugin Settings
 
 After installation, configure the plugin through the Craft Control Panel:
 
 1. Go to **Settings → Plugins → Upsnap**
 2. Configure the following options:
+   - **Monitoring URLs**: Additional URLs to monitor
    - **Enable Monitoring**: Toggle monitoring on/off
    - **Monitoring Interval**: Set check frequency (minutes)
    - **Notification Email**: Email for alerts
-   - **Monitoring URLs**: Additional URLs to monitor
 
 ## Usage
 
@@ -111,32 +100,32 @@ After installation, configure the plugin through the Craft Control Panel:
 #### Reachability
 Monitor your site's uptime and response times.
 
-![Reachability Dashboard - Screenshot showing uptime statistics and response times](https://via.placeholder.com/800x400/0073aa/white?text=Reachability+Dashboard+Screenshot)
+![Reachability](assets/images/reachability.png)
 
 #### Security Certificates
 Check SSL certificate validity and security.
 
-![Security Certificates - Screenshot showing certificate details and expiry information](https://via.placeholder.com/800x400/0073aa/white?text=Security+Certificates+Screenshot)
+![Security Certificates](assets/images/security-certificates.png)
 
 #### Broken Links
 Scan for and identify broken links across your site.
 
-![Broken Links Scanner - Screenshot showing broken links table with filtering options](https://via.placeholder.com/800x400/0073aa/white?text=Broken+Links+Scanner+Screenshot)
+![Broken Links](assets/images/broken-links.png)
 
 #### Lighthouse Scores
 View Google Lighthouse performance metrics.
 
-![Lighthouse Performance - Screenshot showing performance scores and metrics](https://via.placeholder.com/800x400/0073aa/white?text=Lighthouse+Performance+Screenshot)
+![Lighthouse Performance](assets/images/lighthouse.png)
 
 #### Domain Check
 Monitor domain health and DNS configuration.
 
-![Domain Check - Screenshot showing domain information and DNS records](https://via.placeholder.com/800x400/0073aa/white?text=Domain+Check+Screenshot)
+![Domain Check](assets/images/domain-check.png)
 
 #### Mixed Content
 Detect HTTP resources on HTTPS pages.
 
-![Mixed Content Detection - Screenshot showing mixed content warnings](https://via.placeholder.com/800x400/0073aa/white?text=Mixed+Content+Detection+Screenshot)
+![Mixed Content Detection](assets/images/mixed-content.png)
 
 ### API Integration
 
