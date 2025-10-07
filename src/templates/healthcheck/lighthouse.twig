@@ -17,32 +17,62 @@
 	</div>
 {% endblock %}
 
-
 {% block content %}
-	{% set statusClass = data.status == 'ok' ? 'success' : (data.status == 'error' ? 'error' : 'warning') %}
-	{% set containerClass = data.status == 'ok' ? '' : (data.status == 'error' ? 'error' : 'warning') %}
+	{% if success == 'warning' %}
+		{% set statusClass = 'warning' %}
+		{% set containerClass = 'warning' %}
 
+		{% include 'upsnap/_components/status-container.twig' %}
+	{% else %}
+		{# Status container will be updated via AJAX #}
+		<div id="status-container-wrapper" data-page="lighthouse">
+			<div class="skeleton-card">
+				<div class="skeleton-card-header">
+					<div class="skeleton-line skeleton-line-medium"></div>
+				</div>
+				<div class="skeleton-card-body">
+					<div class="skeleton-line skeleton-line-long"></div>
+					<div class="skeleton-line skeleton-line-short"></div>
+				</div>
+			</div>
+		</div>
+		<div id="details-container-wrapper">
+			<div class="skeleton-card">
+				<div class="skeleton-card-header">
+					<div class="skeleton-line skeleton-line-short"></div>
+				</div>
+				<div class="skeleton-card-body">
+					<div class="skeleton-field">
+						<div class="skeleton-line skeleton-line-short"></div>
+						<div class="skeleton-line skeleton-line-medium"></div>
+					</div>
+					<div class="skeleton-field">
+						<div class="skeleton-line skeleton-line-short"></div>
+						<div class="skeleton-line skeleton-line-long"></div>
+					</div>
+					<div class="skeleton-field">
+						<div class="skeleton-line skeleton-line-short"></div>
+						<div class="skeleton-line skeleton-line-medium"></div>
+					</div>
+					<div class="skeleton-field">
+						<div class="skeleton-line skeleton-line-short"></div>
+						<div class="skeleton-line skeleton-line-long"></div>
+					</div>
+				</div>
+			</div>
+		</div>
 
-	{% include 'upsnap/_components/status-container.twig' %}
-	{% include 'upsnap/_components/details-container.twig' %}
+		{# Hidden container for lighthouse data #}
+		<div id="lighthouse-data" style="display: none;"></div>
 
+		{# Scores Overview (hidden initially) #}
+		<div
+			class="scores-overview" id="scores-container" style="display: none;"><!-- Scores will be populated by JavaScript -->
+		</div>
 
-	<div id="lighthouse-data" style="display: none;">
-		{{ data|json_encode|raw }}
-	</div>
-
-	<!-- Scores Overview -->
-	<div
-		class="scores-overview" id="scores-container"><!-- Scores will be populated by JavaScript -->
-	</div>
-
-	<!-- Performance Metrics -->
-	<div
-		class="performance-section" id="performance-container"><!-- Performance metrics will be populated by JavaScript -->
-	</div>
-
-	<!-- Loading Overlay -->
-	<div class="loading-overlay" id="loading-overlay">
-		<div class="loading-spinner"></div>
-	</div>
+		{# Performance Metrics (hidden initially) #}
+		<div
+			class="performance-section" id="performance-container" style="display: none;"><!-- Performance metrics will be populated by JavaScript -->
+		</div>
+	{% endif %}
 {% endblock %}

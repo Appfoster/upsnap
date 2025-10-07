@@ -12,49 +12,49 @@
 {% endblock %}
 
 {% block content %}
+	{% if success == 'warning' %}
+		{% set statusClass = 'warning' %}
+		{% set containerClass = 'warning' %}
 
-	{% set hasMixed = data.details.mixedCount is defined and data.details.mixedCount > 0 %}
+		{% include 'upsnap/_components/status-container.twig' %}
+	{% else %}
 
-	{% set statusClass = data.status == 'ok' and not hasMixed ? 'success' : (data.status == 'error' ? 'error' : (hasMixed ? 'warning' : 'warning')) %}
-	{% set containerClass = data.status == 'ok' and not hasMixed ? '' : (data.status == 'error' ? 'error' : (hasMixed ? 'warning' : 'warning')) %}
-	{% include 'upsnap/_components/status-container.twig' %}
-
-	{% if data.error is not defined %}
-		<div class="pane">
-			<div class="meta read-only">
-				<div class="data fullwidth">
-					<div class="field">
-						<div class="heading">{{ "Monitored URL"|t('upsnap') }}</div>
-						<div>
-							<a href="{{ data.url }}" target="_blank">{{ data.url }}</a>
-						</div>
-					</div>
-
-					<div class="field">
-						<div class="heading">{{ "Last Checked"|t('upsnap') }}</div>
-						<div>{{ data.checkedAt|date("d M Y, H:i:s") }}</div>
-					</div>
-
-					<div class="field">
-						<div class="heading">{{ "Response Time"|t('upsnap') }}</div>
-						<div>{{ data.duration ?? '–' }}</div>
-					</div>
+		{# Status container will be updated via AJAX #}
+		<div id="status-container-wrapper" data-page="mixed-content">
+			<div class="skeleton-card">
+				<div class="skeleton-card-header">
+					<div class="skeleton-line skeleton-line-medium"></div>
 				</div>
-				{% if data.details.mixedContentItems is defined and data.details.mixedContentItems|length > 0 %}
-					<div class="data fullwidth">
-						<div class="field">
-							<div class="heading">{{ "Mixed Contents"|t('upsnap') }}</div>
-							<ul class="error-list margin-top">
-								{% for url in data.details.mixedContentItems %}
-									<li>
-										<a href={{ url }}>{{ url }}</a>
-									</li>
-								{% endfor %}
-							</ul>
-						</div>
-					</div>
+				<div class="skeleton-card-body">
+					<div class="skeleton-line skeleton-line-long"></div>
+					<div class="skeleton-line skeleton-line-short"></div>
 				</div>
-			{% endif %}
+			</div>
 		</div>
+		<div id="details-container-wrapper">
+			<div class="skeleton-card">
+				<div class="skeleton-card-header">
+					<div class="skeleton-line skeleton-line-short"></div>
+				</div>
+				<div class="skeleton-card-body">
+					<div class="skeleton-field">
+						<div class="skeleton-line skeleton-line-short"></div>
+						<div class="skeleton-line skeleton-line-long"></div>
+					</div>
+					<div class="skeleton-field">
+						<div class="skeleton-line skeleton-line-short"></div>
+						<div class="skeleton-line skeleton-line-medium"></div>
+					</div>
+					<div class="skeleton-field">
+						<div class="skeleton-line skeleton-line-short"></div>
+						<div class="skeleton-line skeleton-line-short"></div>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		{# Mixed content section - only shown when there are items #}
+		<div id="mixed-content-section"></div>
 	{% endif %}
+
 {% endblock %}
