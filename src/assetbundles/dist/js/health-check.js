@@ -10,65 +10,234 @@ document.addEventListener("DOMContentLoaded", function () {
 });
 
 function registerBrokenLinksJs() {
-    const typeFilter = document.getElementById("type-filter");
-    const statusFilter = document.getElementById("status-filter");
+    const refreshBtn = document.getElementById("refresh-btn");
+    const statusContainerWrapper = document.getElementById("status-container-wrapper");
+    const detailsContainerWrapper = document.getElementById("details-container-wrapper");
 
-    // Filter functionality
-    function applyFilters() {
-        const typeValue = typeFilter ? typeFilter.value : 'all';
-        const statusValue = statusFilter ? statusFilter.value : 'all';
-        const rows = document.querySelectorAll('.main-row');
-        let filteredRowsCount = 0;
+    // Only run on security certificates page - check for unique element
+    if (!statusContainerWrapper || !detailsContainerWrapper || !document.querySelector('[data-page="broken-links"]')) {
+        return;
+    }
 
-        rows.forEach(row => {
-            const rowType = row.dataset.type;
-            const rowStatus = row.dataset.status;
-            const expandableRow = row.nextElementSibling;
+    const contentContainer = document.querySelector("#broken-links-section");
+    contentContainer.style.display = "grid";
+    if (refreshBtn) {
+        refreshBtn.addEventListener("click", loadBrokenLinks);
+    }
 
-            let show = true;
+    loadBrokenLinks();
+    let brokenLinksData = {};
 
-            // Type filter
-            if (typeValue !== 'all' && rowType !== typeValue) {
-                show = false;
-            }
+    function loadBrokenLinks() {
+        Craft.sendActionRequest('POST', 'upsnap/health-check/broken-links', {})
+            .then(response => {
+                brokenLinksData = response?.data.data;
 
-            // Status filter
-            if (statusValue !== 'all' && !rowStatus.includes(statusValue)) {
-                show = false;
-            }
+                renderStatusContainer(brokenLinksData);
+                renderDetailsContainerForBrokenLinks(brokenLinksData);
 
-            // Show/hide row and its expandable content
-            row.style.display = show ? '' : 'none';
-            if (expandableRow && expandableRow.classList.contains('expandable-row')) {
-                expandableRow.style.display = show ? (expandableRow.classList.contains('show') ? 'table-row' : 'none') : 'none';
-            }
+                if (brokenLinksData && brokenLinksData.brokenLinks && brokenLinksData.brokenLinks.length > 0) {
+                    renderBrokenLinksUI(brokenLinksData);
+                    attachExpandListeners();
+                    attachFilterListeners();
+                } else {
+                    contentContainer.innerHTML = `<p>No broken links found.</p>`;
+                }
+            })
+            .catch(error => {
+                console.error("Failed to fetch broken links data:", error);
 
-            if (show) filteredRowsCount++;
+                // Render error in status container
+                const errorData = {
+                    status: 'error',
+                    message: 'Error loading domain data',
+                    error: error.message || 'Unknown error occurred'
+                };
+                renderStatusContainer(errorData);
+                renderDetailsContainer(errorData); // This will hide details since status !== 'ok'
+            });
+    }
+
+    function renderDetailsContainerForBrokenLinks(metaData) {
+        const detailsContainer = document.getElementById("details-container-wrapper");
+        if (!detailsContainer || !metaData) return;
+
+        // Fallbacks for missing values
+        const totalPagesChecked = metaData?.details.totalPagesChecked ?? 0;
+        const totalLinksScanned = metaData?.details.totalLinksScanned ?? 0;
+        const errorsCount = metaData?.details?.errorsCount ?? 0;
+
+        detailsContainer.innerHTML = `
+            <div class="pane">
+                <div class="meta read-only">
+                    <div class="data fullwidth">
+                        <div class="field">
+                            <div class="heading">Pages Checked</div>
+                            <div>${totalPagesChecked}</div>
+                        </div>
+                        <div class="field">
+                            <div class="heading">Links Scanned</div>
+                            <div>${totalLinksScanned}</div>
+                        </div>
+                        <div class="field">
+                            <div class="heading">Broken Links</div>
+                            <div>${errorsCount}</div>
+                        </div>
+                        <div class="field">
+                            <div class="heading">Last Checked</div>
+                            <div>${formatDate(metaData?.checkedAt)}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    // === Render Table + Filters ===
+    function renderBrokenLinksUI(data) {
+        contentContainer.innerHTML = `
+            <div class="filter-controls">
+                <div class="filter-row">
+                    <div class="filter-group">
+                        <label class="filter-label">Filter by Type</label>
+                        <select class="filter-select" id="type-filter">
+                            <option value="all">All Types</option>
+                            <option value="internal">Internal Links</option>
+                            <option value="external">External Links</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label class="filter-label">Filter by Status</label>
+                        <select class="filter-select" id="status-filter">
+                            <option value="all">All Status</option>
+                            <option value="404">404 Not Found</option>
+                            <option value="500">500 Server Error</option>
+                            <option value="timeout">Timeout</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="broken-links-table">
+                <div class="table-header">
+                    Broken Links Details (${data.brokenLinks.length} items)
+                </div>
+                <table class="table" id="broken-links-table">
+                    <thead>
+                        <tr>
+                            <th>Broken URL</th>
+                            <th>Found on Page</th>
+                            <th>Type</th>
+                            <th>Status</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${data.brokenLinks.map((link, i) => `
+                            <tr class="main-row" data-type="${link.type || 'N/A'}" data-status="${link.statusCode || 'N/A'}">
+                                <td>
+                                    <div class="url-display" title="${link.url || 'N/A'}">
+                                        ${link.anchorText ? `<strong>${link.anchorText}</strong><br>` : ""}
+                                        ${link.url ? `<a href="${link.url}" target="_blank">${link.url}</a>` : "<span>N/A</span>"}
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="url-display" title="${link.pageUrl || 'N/A'}">
+                                        ${link.pageUrl ? `<a href="${link.pageUrl}" target="_blank">${link.pageUrl}</a>` : "<span>N/A</span>"}
+                                    </div>
+                                </td>
+                                <td><span class="link-type">${link.type || 'N/A'}</span></td>
+                                <td class="broken-links-col">
+                                    <span class="status-code ${(link.statusCode && (link.statusCode.startsWith('4') || link.statusCode.startsWith('5'))) ? 'error' : 'warning'}">
+                                        ${link.statusCode || 'N/A'}
+                                    </span>
+                                </td>
+                                <td class="broken-links-col">
+                                    <button class="expand-btn" data-index="${i}"><span class="btn-text">View More</span></button>
+                                </td>
+                            </tr>
+                            <tr class="expandable-row hidden" id="row-${i}">
+                                <td colspan="6">
+                                    <div class="expandable-content">
+                                        <div class="detail-grid">
+                                            <div class="detail-item"><span class="detail-label">Title</span><span class="detail-value">${link.title || 'N/A'}</span></div>
+                                            <div class="detail-item"><span class="detail-label">Issue Description</span><span class="detail-value">${link.culprit || 'N/A'}</span></div>
+                                            <div class="detail-item"><span class="detail-label">Classification</span><span class="detail-value">${link.classification ? link.classification.charAt(0).toUpperCase() + link.classification.slice(1) : 'N/A'}</span></div>
+                                            <div class="detail-item"><span class="detail-label">Resolved</span><span class="detail-value">${link.resolved ? 'Yes' : 'No'}</span></div>
+                                            ${link.refUrl ? `<div class="detail-item"><span class="detail-label">Reference URL</span><span class="detail-value"><a href="${link.refUrl}" target="_blank">${link.refUrl}</a></span></div>` : ""}
+                                            ${link.rid ? `<div class="detail-item"><span class="detail-label">Report ID</span><span class="detail-value">${link.rid}</span></div>` : ""}
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            </div>
+        `;
+    }
+
+    // === Expand / Collapse logic ===
+    function attachExpandListeners() {
+        document.querySelectorAll(".expand-btn").forEach(btn => {
+            btn.addEventListener("click", () => {
+                const index = btn.dataset.index;
+                const row = document.getElementById(`row-${index}`);
+                const btnText = btn.querySelector(".btn-text");
+                if (row.classList.contains("hidden")) {
+                    row.classList.remove("hidden");
+                    row.classList.add("show");
+                    btnText.textContent = "View Less";
+                } else {
+                    row.classList.add("hidden");
+                    row.classList.remove("show");
+                    btnText.textContent = "View More";
+                }
+            });
         });
-        // Handle "No data" row
-        const tbody = document.querySelector('#broken-links-table tbody');
-        let noRow = tbody.querySelector('.no-results');
+    }
 
-        if (filteredRowsCount === 0) {
-            if (!noRow) {
-                noRow = document.createElement('tr');
-                noRow.classList.add('no-results');
-                noRow.innerHTML = `<td colspan="6">No data found for selected filters</td>`;
-                tbody.appendChild(noRow);
-            }
-        } else {
-            if (noRow) {
-                noRow.remove();
-            }
+    // === Filters logic ===
+    function attachFilterListeners() {
+        const typeFilter = document.getElementById("type-filter");
+        const statusFilter = document.getElementById("status-filter");
+
+        function applyFilters() {
+            const typeValue = typeFilter.value;
+            const statusValue = statusFilter.value;
+            let filteredRowsCount = 0;
+
+            document.querySelectorAll(".main-row").forEach(row => {
+                const rowType = row.dataset.type;
+                const rowStatus = row.dataset.status;
+                const expandableRow = row.nextElementSibling;
+
+                let show = true;
+                if (typeValue !== 'all' && rowType !== typeValue) show = false;
+                if (statusValue !== 'all' && !rowStatus.includes(statusValue)) show = false;
+
+                row.style.display = show ? '' : 'none';
+                if (expandableRow && expandableRow.classList.contains('expandable-row')) {
+                    expandableRow.style.display = show ? (expandableRow.classList.contains('show') ? 'table-row' : 'none') : 'none';
+                }
+
+                if (show) filteredRowsCount++;
+            });
+
+            const tbody = document.querySelector("#broken-links-table tbody");
+            const noRow = tbody.querySelector(".no-results");
+            if (filteredRowsCount === 0) {
+                if (!noRow) {
+                    const tr = document.createElement("tr");
+                    tr.classList.add("no-results");
+                    tr.innerHTML = `<td colspan="6">No data found for selected filters</td>`;
+                    tbody.appendChild(tr);
+                }
+            } else if (noRow) noRow.remove();
         }
-    }
 
-    // Add filter event listeners
-    if (typeFilter) {
-        typeFilter.addEventListener('change', applyFilters);
-    }
-    if (statusFilter) {
-        statusFilter.addEventListener('change', applyFilters);
+        typeFilter?.addEventListener("change", applyFilters);
+        statusFilter?.addEventListener("change", applyFilters);
     }
 }
 
@@ -109,8 +278,6 @@ function registerDomainCheckJs() {
                 }
             })
             .catch(error => {
-                console.error("Failed to fetch domain data:", error);
-
                 // Render error in status container
                 const errorData = {
                     status: 'error',
@@ -286,6 +453,9 @@ function registerLighthouseJs() {
     if (deviceSelector) {
         deviceSelector.addEventListener('change', function () {
             currentDevice = this.value;
+
+             // Show skeletons while fetching
+            showLoaderSkeleton();
             fetchLighthouseData(currentDevice);
         });
     }
@@ -304,6 +474,54 @@ function registerLighthouseJs() {
                 refreshBtn.innerHTML = originalText;
             });
         });
+    }
+
+    function showLoaderSkeleton() {
+        const statusWrapper = document.getElementById("status-container-wrapper");
+        const detailsWrapper = document.getElementById("details-container-wrapper");
+
+        if (statusWrapper && detailsWrapper) {
+            statusWrapper.innerHTML = `
+            <div class="skeleton-card">
+                <div class="skeleton-card-header">
+                    <div class="skeleton-line skeleton-line-medium"></div>
+                </div>
+                <div class="skeleton-card-body">
+                    <div class="skeleton-line skeleton-line-long"></div>
+                    <div class="skeleton-line skeleton-line-short"></div>
+                </div>
+            </div>
+        `;
+            detailsWrapper.innerHTML = `
+            <div class="skeleton-card">
+                <div class="skeleton-card-header">
+                    <div class="skeleton-line skeleton-line-short"></div>
+                </div>
+                <div class="skeleton-card-body">
+                    <div class="skeleton-field">
+                        <div class="skeleton-line skeleton-line-short"></div>
+                        <div class="skeleton-line skeleton-line-medium"></div>
+                    </div>
+                    <div class="skeleton-field">
+                        <div class="skeleton-line skeleton-line-short"></div>
+                        <div class="skeleton-line skeleton-line-long"></div>
+                    </div>
+                    <div class="skeleton-field">
+                        <div class="skeleton-line skeleton-line-short"></div>
+                        <div class="skeleton-line skeleton-line-medium"></div>
+                    </div>
+                    <div class="skeleton-field">
+                        <div class="skeleton-line skeleton-line-short"></div>
+                        <div class="skeleton-line skeleton-line-long"></div>
+                    </div>
+                </div>
+            </div>
+        `;
+        }
+
+        // Hide previous results
+        scoresContainer.style.display = 'none';
+        performanceContainer.style.display = 'none';
     }
 
     function getScoreColor(score) {
@@ -562,7 +780,7 @@ function registerReachabilityJs() {
 
     // Add event listener for refresh button
     if (refreshBtn) {
-        refreshBtn.addEventListener('click', function() {
+        refreshBtn.addEventListener('click', function () {
             fetchReachabilityData();
         });
     }
@@ -705,7 +923,7 @@ function registerReachabilityJs() {
 
     // Add event listener for refresh button
     if (refreshBtn) {
-        refreshBtn.addEventListener('click', function() {
+        refreshBtn.addEventListener('click', function () {
             fetchReachabilityData();
         });
     }
@@ -758,7 +976,7 @@ function registerSecurityCertificatesJs() {
 
     // Add event listener for refresh button
     if (refreshBtn) {
-        refreshBtn.addEventListener('click', function() {
+        refreshBtn.addEventListener('click', function () {
             fetchSecurityCertificatesData();
         });
     }
@@ -847,7 +1065,7 @@ function registerSecurityCertificatesJs() {
                                         </h4>
                                         <div class="certificate-type">
                                             ${cert.type === 'leaf' ? 'End Entity Certificate' :
-                                              cert.type === 'intermediate' ? 'Intermediate Certificate' : 'Root Certificate'}
+                cert.type === 'intermediate' ? 'Intermediate Certificate' : 'Root Certificate'}
                                         </div>
                                     </div>
                                     <div class="certificate-status">
@@ -977,7 +1195,7 @@ function registerSecurityCertificatesJs() {
 
     // Add event listener for refresh button
     if (refreshBtn) {
-        refreshBtn.addEventListener('click', function() {
+        refreshBtn.addEventListener('click', function () {
             fetchSecurityCertificatesData();
         });
     }
@@ -1079,25 +1297,6 @@ function renderDetailsContainer(data) {
         `;
 
     detailsContainerWrapper.innerHTML = html;
-}
-
-// Toggle row expansion
-function toggleRow(index) {
-    const expandableRow = document.getElementById('row-' + index);
-    const btn = document.querySelector('[onclick="toggleRow(' + index + ')"]');
-    const btnText = btn.querySelector('.btn-text');
-
-    if (expandableRow.classList.contains('show')) {
-        expandableRow.classList.remove('show');
-        expandableRow.style.display = 'none';
-        btn.classList.remove('expanded');
-        btnText.textContent = 'View More';
-    } else {
-        expandableRow.classList.add('show');
-        expandableRow.style.display = 'table-row';
-        btn.classList.add('expanded');
-        btnText.textContent = 'View Less';
-    }
 }
 
 // Function for history page details toggle
