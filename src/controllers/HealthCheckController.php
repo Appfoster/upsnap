@@ -25,6 +25,11 @@ class HealthCheckController extends BaseController
     {
         $isAjax = Craft::$app->getRequest()->getIsAjax();
         $url = Upsnap::getMonitoringUrl();
+        $apiKey = Upsnap::$plugin->settingsService->getApiKey();
+        
+        if (!$apiKey) {
+            return $this->service->handleMissingApiKey(Constants::SUBNAV_ITEM_REACHABILITY);
+        }
 
         if (!$url) {
             return $this->service->handleMissingMonitoringUrl(Constants::SUBNAV_ITEM_REACHABILITY);
@@ -112,6 +117,11 @@ class HealthCheckController extends BaseController
     {
         $url = Upsnap::getMonitoringUrl();
         $isAjax = Craft::$app->getRequest()->getIsAjax();
+        $apiKey = Upsnap::$plugin->settingsService->getApiKey();
+        
+        if (!$apiKey) {
+            return $this->service->handleMissingApiKey(Constants::SUBNAV_ITEM_REACHABILITY);
+        }
 
         if (!$url) {
             return $this->service->handleMissingMonitoringUrl(Constants::SUBNAV_ITEM_DOMAIN_CHECK);
@@ -187,7 +197,12 @@ class HealthCheckController extends BaseController
     public function actionLighthouse(): Response
     {
         $url = Upsnap::getMonitoringUrl();
+        $apiKey = Upsnap::$plugin->settingsService->getApiKey();
         
+        if (!$apiKey) {
+            return $this->service->handleMissingApiKey(Constants::SUBNAV_ITEM_REACHABILITY);
+        }
+
         if (!$url) {
             return $this->service->handleMissingMonitoringUrl(Constants::SUBNAV_ITEM_LIGHTHOUSE);
         }
@@ -256,6 +271,12 @@ class HealthCheckController extends BaseController
         $url = Upsnap::getMonitoringUrl();
         $isAjax = Craft::$app->getRequest()->getIsAjax();
 
+        $apiKey = Upsnap::$plugin->settingsService->getApiKey();
+        
+        if (!$apiKey) {
+            return $this->service->handleMissingApiKey(Constants::SUBNAV_ITEM_REACHABILITY);
+        }
+        
         if (!$url) {
             return $this->service->handleMissingMonitoringUrl(Constants::SUBNAV_ITEM_MIXED_CONTENT);
         }
@@ -318,6 +339,11 @@ class HealthCheckController extends BaseController
     {
         $data = [];
         $url = Upsnap::getMonitoringUrl();
+        $apiKey = Upsnap::$plugin->settingsService->getApiKey();
+
+        if (!$apiKey) {
+            return $this->service->handleMissingApiKey(Constants::SUBNAV_ITEM_REACHABILITY);
+        }
 
         if (!$url) {
             return $this->service->handleMissingMonitoringUrl(Constants::SUBNAV_ITEM_REACHABILITY);
@@ -385,6 +411,11 @@ class HealthCheckController extends BaseController
     {
         $data = [];
         $url = Upsnap::getMonitoringUrl();
+        $apiKey = Upsnap::$plugin->settingsService->getApiKey();
+        
+        if (!$apiKey) {
+            return $this->service->handleMissingApiKey(Constants::SUBNAV_ITEM_REACHABILITY);
+        }
 
         if (!$url) {
             return $this->service->handleMissingMonitoringUrl(Constants::SUBNAV_ITEM_REACHABILITY);

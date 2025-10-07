@@ -37,6 +37,13 @@ class HealthCheckService
 		return $this->sendResponse($this->prepareData($response, $subnavItem), $subnavItem['template']);
 	}
 
+	public function handleMissingApiKey(array $subnavItem): Response
+	{
+		$response['data']['status'] = 'warning';
+		$response['data']['message'] = 'API Key is not set. Please configure it in the settings.';
+		return $this->sendResponse($this->prepareData($response, $subnavItem), $subnavItem['template']);
+	}
+
 	public function sendResponse(array $data, string $template): Response
 	{
 		return $this->controller->renderTemplate($template, $data);
