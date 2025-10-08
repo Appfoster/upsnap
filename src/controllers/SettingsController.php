@@ -44,8 +44,6 @@ class SettingsController extends BaseController
         ];
 
         $this->renderSettings($settings);
-
-        // return $this->renderTemplate('upsnap/settings/_index', $variables);
     }
 
     /**
