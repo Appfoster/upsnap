@@ -1,6 +1,12 @@
 {% extends "_layouts/cp" %}
 {% import "_includes/forms" as forms %}
 
+{% block actionButton %}
+    <div class="buttons">
+        <button type="submit" class="btn submit">{{ "Save"|t('upsnap') }}</button>
+    </div>
+{% endblock %}
+
 {% block content %}
     <form id="settings-form" method="post" enctype="multipart/form-data">
         <!-- CSRF token and other hidden inputs -->
@@ -53,8 +59,5 @@
             </div>
         </div>
 
-        <div class="buttons">
-            <button type="submit" class="btn submit">{{ "Save"|t('upsnap') }}</button>
-        </div>
     </form>
 {% endblock %}
