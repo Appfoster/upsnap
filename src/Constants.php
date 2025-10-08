@@ -23,7 +23,7 @@ class Constants
     // API Endpoints
     public const ENDPOINT_HEALTHCHECK = 'healthcheck';
 
-    public const VERIFY_API_KEY_URL = 'verify-api-key';
+    public const ENDPOINT_VERIFY_API_KEY = 'verify-api-key';
 
     // Check Types
     public const CHECK_REACHABILITY = 'reachability';
@@ -32,6 +32,7 @@ class Constants
     public const CHECK_LIGHTHOUSE = 'lighthouse';
     public const CHECK_DOMAIN = 'domain_check';
     public const CHECK_MIXED_CONTENT = 'mixed_content';
+    public const API_KEY_MASKED_CHAR = 'X';
 
     // HTTP Status Codes
     public const HTTP_OK = 200;

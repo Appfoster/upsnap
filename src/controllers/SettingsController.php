@@ -28,15 +28,7 @@ class SettingsController extends BaseController
         $settings->enabled = $service->getMonitoringEnabled();
         $apiKey = $service->getApiKey();
 
-        if ($apiKey && strlen($apiKey) >= 8) {
-            $start = substr($apiKey, 0, 4);
-            $end = substr($apiKey, -4);
-            $maskedKey = $start . str_repeat('X', strlen($apiKey) - 8) . $end;
-            $settings->apiKey = $maskedKey;
-        } else {
-            $settings->apiKey = $apiKey ?: '';
-        }
-
+        $settings->apiKey = $service->maskApiKey($apiKey);
         $settings->monitoringInterval = $service->getMonitoringInterval();
         $settings->notificationEmail = $service->getNotificationEmail();
 

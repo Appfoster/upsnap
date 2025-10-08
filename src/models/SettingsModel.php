@@ -45,7 +45,7 @@ class SettingsModel extends Model
             ['monitoringInterval', 'required', 'when' => function($model) {
                 return $model->enabled === true;
             }],
-            ['apiKey', 'required',]
+            ['apiKey', 'string',]
         ];
     }
 }

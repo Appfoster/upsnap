@@ -165,13 +165,43 @@ class SettingsService extends Component
     public function verifyApiKey(string $apiKey): bool
     {
         try {
-            $response = Upsnap::$plugin->apiService->post(Constants::VERIFY_API_KEY_URL, [
+            $response = Upsnap::$plugin->apiService->post(Constants::ENDPOINT_VERIFY_API_KEY, [
                 'apikey' => $apiKey
             ]);
         } catch (\Exception $e) {
             Craft::error("Error verifying API key: " . $e->getMessage(), __METHOD__);
-            return true;
+            return true; // update it later to set it to false
         }
         return $response['success'] ?? true; // change it later to return false when success is not present
     }
+
+    /**
+     * Masks an API key by leaving a certain number of characters unmasked at each end,
+     * and replacing the middle part with a masked character.
+     *
+     */
+    public function maskApiKey(?string $apiKey): string
+    {
+        if (!$apiKey) {
+            return '';
+        }
+
+        $keyLength = strlen($apiKey);
+
+        // Determine number of characters to leave unmasked at each end (min 1, max 4)
+        $visibleCharsCount = max(1, min(4, floor($keyLength / 4)));
+
+        // Calculate number of characters to mask in the middle
+        $maskedCharsCount = max(1, $keyLength - ($visibleCharsCount * 2));
+
+        // Extract visible start and end parts
+        $visibleStart = substr($apiKey, 0, $visibleCharsCount);
+        $visibleEnd = substr($apiKey, -$visibleCharsCount);
+
+        // Generate masked middle part
+        $maskedMiddle = str_repeat(Constants::API_KEY_MASKED_CHAR, $maskedCharsCount);
+
+        return $visibleStart . $maskedMiddle . $visibleEnd;
+    }
+
 }
