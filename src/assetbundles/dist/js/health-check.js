@@ -394,7 +394,7 @@ function toggleShowDetails(domainDetailsSection) {
 
 function registerLighthouseJs() {
     const deviceSelector = document.getElementById("device-selector");
-    const refreshBtn = document.getElementById("refresh-btn");
+    const refreshBtn = document.getElementById("refresh-button");
     let currentDevice = deviceSelector?.value || 'desktop';
 
     const scoresContainer = document.getElementById("scores-container");
@@ -467,7 +467,7 @@ function registerLighthouseJs() {
             // Add loading state to button
             refreshBtn.disabled = true;
             refreshBtn.innerHTML = '<span class="spinner"></span> Refreshing...';
-
+            showLoaderSkeleton();
             fetchLighthouseData(currentDevice).finally(() => {
                 // Reset button state
                 refreshBtn.disabled = false;
