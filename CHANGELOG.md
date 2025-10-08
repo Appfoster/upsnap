@@ -16,6 +16,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Code quality improvements and bug fixes
 
+## [1.0.1] - 2025-10-08
+
+### Added
+- icon-mask.svg file for missing icon before plugin install.
+
+### Fixed
+- Page loading text not visible in lighthouse page when device changed or refreshed.
+- Device selection referesed on page reload.
+
+### Chore
+- Moved save button in settings page to action bar.
+- Added craft notification in place of alert on entering invalid url.
+
 ## [1.0.0] - 2025-10-08
 
 ### Added
@@ -53,5 +66,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Asset minification and optimization
 - Background processing for monitoring tasks
 
-[Unreleased]: https://github.com/Appfoster/upsnap/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/Appfoster/upsnap/compare/v1.0.1...HEAD
+[1.0.1]: https://github.com/Appfoster/upsnap/releases/tag/v1.0.1
 [1.0.0]: https://github.com/Appfoster/upsnap/releases/tag/v1.0.0
