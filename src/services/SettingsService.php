@@ -7,6 +7,7 @@ use craft\base\Component;
 use appfoster\upsnap\records\SettingRecord;
 use appfoster\upsnap\Upsnap;
 use Craft;
+use Exception;
 
 /**
  * Settings service for managing plugin settings using Record models
@@ -169,10 +170,10 @@ class SettingsService extends Component
                 'apikey' => $apiKey
             ]);
         } catch (\Exception $e) {
-            Craft::error("Error verifying API key: " . $e->getMessage(), __METHOD__);
-            return true; // update it later to set it to false
+            Craft::error('Error verifying API key: ' . $e->getMessage(), __METHOD__);
+            throw $e;
         }
-        return $response['success'] ?? true; // change it later to return false when success is not present
+        return $response['success'] ?? false;
     }
 
     /**
@@ -202,6 +203,15 @@ class SettingsService extends Component
         $maskedMiddle = str_repeat(Constants::API_KEY_MASKED_CHAR, $maskedCharsCount);
 
         return $visibleStart . $maskedMiddle . $visibleEnd;
+    }
+
+
+    /**
+     * Determine whether the provided API key represents an update.
+     *
+    */
+    public function isApiKeyUpdated(string $apiKey): bool {
+        return $this->maskApiKey($this->getApiKey()) != $apiKey;
     }
 
 }

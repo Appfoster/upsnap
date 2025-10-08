@@ -95,7 +95,7 @@ class Constants
         'label' => 'Settings',
         'key' => 'settings',
         'url' => 'upsnap/settings',
-        'template' => 'upsnap/healthcheck/settings'
+        'template' => 'upsnap/settings/_index'
     ];
 
     const SUBNAV_ITEM_DASHBOARD = [
