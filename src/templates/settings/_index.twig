@@ -18,6 +18,17 @@
             placeholder: 'https://example.com',
             errors: settings.getErrors('monitoringUrl') ?? false
         }) }}
+        {{ forms.textField({
+            label: "API Key"|t('upsnap'),
+            instructions: "Enter the Upsnap API Key"|t('upsnap'),
+            id: 'apiKey',
+            name: 'apikey',
+            type: 'text',
+            value: settings.apiKey ?? '',
+            placeholder: 'XXXX-XXXX-XXXX-XXXX',
+            autofocus: false,
+            errors: settings.getErrors('apiKey') ?? false
+        }) }}
 
         <div id="enable-monitoring" style="{% if not (settings.enabled ?? false) %}display: none;{% endif %}">
             {{ forms.lightswitchField({

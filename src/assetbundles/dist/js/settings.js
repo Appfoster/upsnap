@@ -59,7 +59,7 @@ Craft.Upsnap.Settings = {
             enableMonitoring: document.getElementById('enable-monitoring'),
             enabledField: document.getElementById('enabled'),
             advancedSettings: document.getElementById('advanced-settings'),
-            settingsForm: document.getElementById('settings-form')
+            settingsForm: document.getElementById('settings-form'),
         };
 
         // // Initial check on page load

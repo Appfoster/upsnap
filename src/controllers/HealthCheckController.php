@@ -187,7 +187,7 @@ class HealthCheckController extends BaseController
     public function actionLighthouse(): Response
     {
         $url = Upsnap::getMonitoringUrl();
-        
+
         if (!$url) {
             return $this->service->handleMissingMonitoringUrl(Constants::SUBNAV_ITEM_LIGHTHOUSE);
         }
@@ -255,7 +255,7 @@ class HealthCheckController extends BaseController
     {
         $url = Upsnap::getMonitoringUrl();
         $isAjax = Craft::$app->getRequest()->getIsAjax();
-
+        
         if (!$url) {
             return $this->service->handleMissingMonitoringUrl(Constants::SUBNAV_ITEM_MIXED_CONTENT);
         }

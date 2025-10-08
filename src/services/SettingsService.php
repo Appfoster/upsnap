@@ -2,8 +2,12 @@
 
 namespace appfoster\upsnap\services;
 
+use appfoster\upsnap\Constants;
 use craft\base\Component;
 use appfoster\upsnap\records\SettingRecord;
+use appfoster\upsnap\Upsnap;
+use Craft;
+use Exception;
 
 /**
  * Settings service for managing plugin settings using Record models
@@ -137,4 +141,77 @@ class SettingsService extends Component
         }
         return $this->setSetting('notificationEmail', $email);
     }
+    
+    /**
+     * Returns the API key set in the plugin settings.
+     *
+     */
+    public function getApiKey(): ?string
+    {
+        return $this->getSetting('apiKey');
+    }
+
+
+    /**
+     * Set the API key in the plugin settings.
+     */
+    public function setApiKey(?string $apiKey): bool
+    {
+        if ($apiKey === null || $apiKey === '') {
+            return $this->deleteSetting('apiKey');
+        }
+        return $this->setSetting('apiKey', $apiKey);
+    }
+
+    public function verifyApiKey(string $apiKey): bool
+    {
+        try {
+            $response = Upsnap::$plugin->apiService->post(Constants::ENDPOINT_VERIFY_API_KEY, [
+                'apikey' => $apiKey
+            ]);
+        } catch (\Exception $e) {
+            Craft::error('Error verifying API key: ' . $e->getMessage(), __METHOD__);
+            throw $e;
+        }
+        return $response['success'] ?? false;
+    }
+
+    /**
+     * Masks an API key by leaving a certain number of characters unmasked at each end,
+     * and replacing the middle part with a masked character.
+     *
+     */
+    public function maskApiKey(?string $apiKey): string
+    {
+        if (!$apiKey) {
+            return '';
+        }
+
+        $keyLength = strlen($apiKey);
+
+        // Determine number of characters to leave unmasked at each end (min 1, max 4)
+        $visibleCharsCount = max(1, min(4, floor($keyLength / 4)));
+
+        // Calculate number of characters to mask in the middle
+        $maskedCharsCount = max(1, $keyLength - ($visibleCharsCount * 2));
+
+        // Extract visible start and end parts
+        $visibleStart = substr($apiKey, 0, $visibleCharsCount);
+        $visibleEnd = substr($apiKey, -$visibleCharsCount);
+
+        // Generate masked middle part
+        $maskedMiddle = str_repeat(Constants::API_KEY_MASKED_CHAR, $maskedCharsCount);
+
+        return $visibleStart . $maskedMiddle . $visibleEnd;
+    }
+
+
+    /**
+     * Determine whether the provided API key represents an update.
+     *
+    */
+    public function isApiKeyUpdated(string $apiKey): bool {
+        return $this->maskApiKey($this->getApiKey()) != $apiKey;
+    }
+
 }
