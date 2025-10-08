@@ -483,6 +483,16 @@ function registerLighthouseJs() {
         if (statusWrapper && detailsWrapper) {
             statusWrapper.innerHTML = `
             <div class="skeleton-card">
+				<div class="skeleton-card-body">
+					<div>
+						<h3>
+							Fetching your scores. Please hang tight as it takes around 30 seconds
+							<span class="loading-dots"></span>
+						</h3>
+					</div>
+				</div>
+			</div>
+            <div class="skeleton-card">
                 <div class="skeleton-card-header">
                     <div class="skeleton-line skeleton-line-medium"></div>
                 </div>
