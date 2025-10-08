@@ -63,18 +63,8 @@ Upsnap provides a complete suite of monitoring tools to keep your Craft CMS site
 2. Run the following command:
 
 ```bash
-composer require appfoster/upsnap
+composer require appfoster/upsnap -w && php craft plugin/install appfoster/upsnap
 ```
-
-3. In the Craft Control Panel, go to **Settings → Plugins**
-4. Find **Upsnap** in the plugin list and click **Install**
-
-### Manual Installation
-
-1. Download the plugin files from the [GitHub repository](https://github.com/Appfoster/upsnap)
-2. Extract the archive and place the `upsnap` folder in your `craft/plugins/` directory
-3. In the Craft Control Panel, go to **Settings → Plugins**
-4. Find **Upsnap** in the plugin list and click **Install**
 
 ### Plugin Settings
 
@@ -127,48 +117,19 @@ Detect HTTP resources on HTTPS pages.
 
 ![Mixed Content Detection](assets/images/mixed-content.png)
 
-### API Integration
-
-The plugin integrates with external monitoring services. Configure your API credentials in the environment variables for full functionality.
-
-## API Reference
-
-### Available Checks
-
-- `reachability` - Site availability and response times
-- `security_certificates` - SSL/TLS certificate validation
-- `broken_links` - Link integrity scanning
-- `lighthouse` - Performance and SEO analysis
-- `domain_check` - Domain health monitoring
-- `mixed_content` - HTTPS security validation
-
-### Configuration Options
-
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `enabled` | boolean | `true` | Enable/disable monitoring |
-| `monitoringInterval` | integer | `5` | Check interval in minutes |
-| `notificationEmail` | string | `null` | Alert notification email |
-| `monitoringUrl` | string | `null` | URL to monitor |
 
 ## Troubleshooting
 
 ### Common Issues
 
 **Plugin not appearing in Control Panel**
-- Ensure the plugin is installed via Composer or manually placed in the correct directory
+- Ensure the plugin is installed via Composer
 - Check file permissions on the plugin directory
 - Clear Craft's cache: `php craft clear-caches/all`
-
-**API Connection Failed**
-- Verify environment variables are set correctly
-- Check API endpoint availability
-- Review API token permissions
 
 **Monitoring Not Working**
 - Confirm the target URL is accessible
 - Check firewall and security settings
-- Verify API service status
 
 ### Debug Mode
 
@@ -212,19 +173,11 @@ upsnap/
 4. Add tests if applicable
 5. Submit a pull request
 
-### Testing
-
-Run the test suite:
-
-```bash
-composer test
-```
 
 ## Support
 
 ### Documentation
 - [Full Documentation](https://github.com/Appfoster/upsnap/wiki)
-- [API Documentation](https://github.com/Appfoster/upsnap/wiki/API)
 
 ### Issue Tracking
 - [GitHub Issues](https://github.com/Appfoster/upsnap/issues)

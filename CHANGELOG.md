@@ -16,7 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Code quality improvements and bug fixes
 
-## [1.0.0] - 2025-09-29
+## [1.0.0] - 2025-10-08
 
 ### Added
 - **Initial Release** - Complete site monitoring plugin for Craft CMS 5.0+
@@ -28,10 +28,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Mixed Content Detection** - Identify HTTP resources on HTTPS pages
 - **Real-time Dashboard** - Control panel interface with monitoring status
 - **Configurable Alert System** - Email notifications for monitoring failures
-- **RESTful API** - Complete API for external integrations
 - **Plugin Settings** - Comprehensive configuration options
 - **Asset Management** - Organized asset bundles for optimal loading
-- **Comprehensive Documentation** - Complete wiki with guides and API reference
+- **Comprehensive Documentation** - Complete wiki with guides
 
 ### Technical
 - Craft CMS 5.0+ compatibility
