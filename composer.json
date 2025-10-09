@@ -39,7 +39,6 @@
 		"name": "Upsnap",
         "handle": "upsnap",
         "hasCpSection": true,
-        "basePath": "src",
 		"changelogUrl": "https://github.com/Appfoster/upsnap/master/CHANGELOG.md",
         "documentationUrl": "https://github.com/Appfoster/upsnap/wiki",
 		"class": "appfoster\\upsnap\\Upsnap"
