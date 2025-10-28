@@ -93,6 +93,7 @@ Craft.Upsnap.Settings = {
     updateHiddenField: function () {
         if (this.elements.emailHidden) {
             this.elements.emailHidden.value = JSON.stringify(this.emailTags);
+            this.elements.emailHidden.dispatchEvent(new Event('input'));
         }
     },
 
@@ -237,6 +238,60 @@ Craft.Upsnap.Settings = {
         if (this.elements.settingsForm) {
             this.elements.settingsForm.addEventListener('submit', this.validateForm.bind(this));
         }
+        // Add Craft-native form state tracking
+        if (this.elements.settingsForm) {
+            const form = this.elements.settingsForm;
+            const saveBtn = document.getElementById('save-button');
+
+            const initialData = new FormData(form);
+            const original = Object.fromEntries(initialData.entries());
+
+            // Disable save button by default
+            saveBtn.disabled = true;
+            saveBtn.classList.add("disabled");
+
+            const isDirty = () => {
+                const current = Object.fromEntries(new FormData(form).entries());
+                return Object.keys(current).some(
+                    (key) => current[key] !== original[key]
+                );
+            };
+
+            const toggleSaveButton = () => {
+                const dirty = isDirty();
+                if (dirty) {
+                    saveBtn.disabled = false;
+                    saveBtn.classList.remove('disabled');
+                } else {
+                    saveBtn.disabled = true;
+                    saveBtn.classList.add('disabled');
+                }
+            };
+
+            // Listen for any input/change in the form
+            form.querySelectorAll('input, select, textarea').forEach((el) => {
+                el.addEventListener('input', toggleSaveButton);
+                el.addEventListener('change', toggleSaveButton);
+            });
+
+            // Add Craft lightswitch listeners
+            form.querySelectorAll('.lightswitch').forEach((ls) => {
+                ls.addEventListener('click', () => {
+                    setTimeout(() => {
+                        toggleSaveButton();
+                    }, 50);
+                });
+            });
+
+            // Optional: disable after submit
+            form.addEventListener('submit', () => {
+                saveBtn.disabled = true;
+                saveBtn.classList.add('disabled');
+            });
+        }
+
+
+
     }
 };
 
