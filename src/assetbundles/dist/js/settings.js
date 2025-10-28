@@ -8,20 +8,35 @@ Craft.Upsnap.Settings = {
     // DOM elements
     elements: {},
 
-    // Validation functions
-    isValidUrl: function (url) {
-        const pattern = /^https:\/\/[^\s\/$.?#].[^\s]*$/i;
-        return pattern.test(url);
+    // Check if API key is provided
+    hasApiKey: function() {
+        return this.elements.apiKeyField && this.elements.apiKeyField.value.trim() !== '';
     },
 
-    // Toggle monitoring options based on URL validation
-    toggleEnableMonitoring: function() {
-        const urlValue = this.elements.urlField.value.trim();
-        if (this.isValidUrl(urlValue)) {
-            this.elements.enableMonitoring.style.display = 'block';
-        } else {
-            this.elements.enableMonitoring.style.display = 'none';
+    // Handle lightswitch toggle
+    handleMonitoringToggle: function(event) {
+        const isEnabled = this.elements.enabledField.getAttribute('aria-checked') === 'true';
+        
+        // If trying to enable monitoring
+        if (isEnabled) {
+            // Check if API key is present
+            if (!this.hasApiKey()) {
+                // Prevent the toggle
+                event.preventDefault();
+                
+                // Turn the lightswitch back off
+                this.elements.enabledField.setAttribute('aria-checked', 'false');
+                this.elements.enabledField.classList.remove('on');
+                
+                // Show toast notification
+                Craft.cp.displayNotice('Please obtain and add an API key before enabling monitoring.');
+                
+                return false;
+            }
         }
+        
+        // Toggle advanced settings
+        this.toggleAdvancedSettings();
     },
 
     // Toggle advanced settings based on enabled lightswitch
@@ -55,30 +70,22 @@ Craft.Upsnap.Settings = {
         // Get DOM elements
         this.elements = {
             urlField: document.getElementById('monitoringUrl'),
+            apiKeyField: document.getElementById('apiKey'),
             emailField: document.getElementById('notificationEmail'),
-            enableMonitoring: document.getElementById('enable-monitoring'),
             enabledField: document.getElementById('enabled'),
             advancedSettings: document.getElementById('advanced-settings'),
             settingsForm: document.getElementById('settings-form'),
         };
 
-        // // Initial check on page load
-        // if (this.elements.urlField && this.elements.enableMonitoring) {
-        //     this.toggleEnableMonitoring();
-        // }
+        // Initial check on page load
+        if (this.elements.enabledField && this.elements.advancedSettings) {
+            this.toggleAdvancedSettings();
+        }
 
-        // if (this.elements.enabledField && this.elements.advancedSettings) {
-        //     this.toggleAdvancedSettings();
-        // }
-
-        // // Event listeners
-        // if (this.elements.urlField) {
-        //     this.elements.urlField.addEventListener('input', this.toggleEnableMonitoring.bind(this));
-        // }
-
-        // if (this.elements.enabledField) {
-        //     this.elements.enabledField.addEventListener('click', this.toggleAdvancedSettings.bind(this));
-        // }
+        // Event listeners
+        if (this.elements.enabledField) {
+            this.elements.enabledField.addEventListener('click', this.handleMonitoringToggle.bind(this));
+        }
 
         if (this.elements.settingsForm) {
             this.elements.settingsForm.addEventListener('submit', this.validateForm.bind(this));

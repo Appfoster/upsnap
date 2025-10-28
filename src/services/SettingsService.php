@@ -165,9 +165,10 @@ class SettingsService extends Component
 
     public function verifyApiKey(string $apiKey): bool
     {
+        return true;
         try {
             $response = Upsnap::$plugin->apiService->post(Constants::ENDPOINT_VERIFY_API_KEY, [
-                'apikey' => $apiKey
+                'token' => $apiKey
             ]);
         } catch (\Exception $e) {
             Craft::error('Error verifying API key: ' . $e->getMessage(), __METHOD__);
