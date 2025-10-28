@@ -8,6 +8,22 @@ Craft.Upsnap.Settings = {
     // DOM elements
     elements: {},
 
+    // Healthcheck toggles configuration
+    healthchecks: [
+        {
+            id: 'reachabilityEnabled',
+            settingsId: 'reachability-settings'
+        },
+        {
+            id: 'sslEnabled',
+            settingsId: 'ssl-settings'
+        },
+        {
+            id: 'domainEnabled',
+            settingsId: 'domain-settings'
+        }
+    ],
+
     // Check if API key is provided
     hasApiKey: function() {
         return this.elements.apiKeyField && this.elements.apiKeyField.value.trim() !== '';
@@ -52,16 +68,25 @@ Craft.Upsnap.Settings = {
         }
     },
 
+    // Toggle healthcheck specific settings
+    toggleHealthcheckSettings: function(lightswitchId, settingsId) {
+        const lightswitch = document.getElementById(lightswitchId);
+        const settings = document.getElementById(settingsId);
+        
+        if (!lightswitch || !settings) return;
+
+        const isEnabled = lightswitch.getAttribute('aria-checked') === 'true';
+
+        if (isEnabled) {
+            settings.style.display = 'block';
+        } else {
+            settings.style.display = 'none';
+        }
+    },
+
     // Form validation
     validateForm: function(event) {
-        const urlValue = Craft.Upsnap.Settings.elements.urlField.value.trim();
-
-        if (!Craft.Upsnap.Settings.isValidUrl(urlValue)) {
-            event.preventDefault();
-            alert('Please enter a valid URL starting with https://');
-            return false;
-        }
-
+        // Add any form validation logic here if needed
         return true;
     },
 
@@ -82,11 +107,30 @@ Craft.Upsnap.Settings = {
             this.toggleAdvancedSettings();
         }
 
-        // Event listeners
+        // Event listeners for main monitoring toggle
         if (this.elements.enabledField) {
             this.elements.enabledField.addEventListener('click', this.handleMonitoringToggle.bind(this));
         }
 
+        // Initialize healthcheck toggles
+        this.healthchecks.forEach(function(healthcheck) {
+            const lightswitch = document.getElementById(healthcheck.id);
+            
+            if (lightswitch) {
+                // Initial state
+                this.toggleHealthcheckSettings(healthcheck.id, healthcheck.settingsId);
+                
+                // Add event listener
+                lightswitch.addEventListener('click', function() {
+                    // Use setTimeout to allow the lightswitch to update its state first
+                    setTimeout(function() {
+                        this.toggleHealthcheckSettings(healthcheck.id, healthcheck.settingsId);
+                    }.bind(this), 10);
+                }.bind(this));
+            }
+        }.bind(this));
+
+        // Form submit validation
         if (this.elements.settingsForm) {
             this.elements.settingsForm.addEventListener('submit', this.validateForm.bind(this));
         }

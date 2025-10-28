@@ -37,11 +37,17 @@ class SettingsController extends BaseController
         $settings->monitoringInterval = $service->getMonitoringInterval();
         $settings->notificationEmail = $service->getNotificationEmail();
 
-        $variables = [
-            'settings' => $settings,
-            'title' => Craft::t('upsnap', 'Settings'),
-            'selectedSubnavItem' => 'settings',
-        ];
+        $settings->reachabilityEnabled = $service->isCheckEnabled(Constants::CHECK_REACHABILITY);
+        $settings->securityCertificatesEnabled = $service->isCheckEnabled(Constants::CHECK_SECURITY_CERTIFICATES);
+        $settings->brokenLinksEnabled = $service->isCheckEnabled(Constants::CHECK_BROKEN_LINKS);
+        $settings->lighthouseEnabled = $service->isCheckEnabled(Constants::CHECK_LIGHTHOUSE);
+        $settings->domainEnabled = $service->isCheckEnabled(Constants::CHECK_DOMAIN);
+        $settings->mixedContentEnabled = $service->isCheckEnabled(Constants::CHECK_MIXED_CONTENT);
+
+        $settings->reachabilityToleranceMinutes = $service->getReachabilityTolerance();
+        $settings->sslDaysBeforeExpiryAlert = $service->getSslDaysBeforeExpiryAlert();
+        $settings->domainDaysBeforeExpiryAlert = $service->getDomainDaysBeforeExpiryAlert();
+
 
         $this->renderSettings($settings);
     }
@@ -63,6 +69,16 @@ class SettingsController extends BaseController
         $settings->enabled = (bool)$request->getBodyParam('enabled', false);
         $settings->monitoringInterval = (int)$request->getBodyParam('monitoringInterval');
         $settings->notificationEmail = $request->getBodyParam('notificationEmail');
+        $settings->reachabilityEnabled = (bool)$request->getBodyParam('reachabilityEnabled', false);
+        $settings->reachabilityToleranceMinutes = (int)$request->getBodyParam('reachabilityToleranceMinutes', 5);
+        $settings->brokenLinksEnabled = (bool)$request->getBodyParam('brokenLinksEnabled', false);
+        $settings->securityCertificatesEnabled = (bool)$request->getBodyParam('securityCertificatesEnabled', false);
+        $settings->sslDaysBeforeExpiryAlert = (int)$request->getBodyParam('sslDaysBeforeExpiryAlert', 30);
+        $settings->domainEnabled = (bool)$request->getBodyParam('domainEnabled', false);
+        $settings->domainDaysBeforeExpiryAlert = (int)$request->getBodyParam('domainDaysBeforeExpiryAlert', 30);
+        $settings->mixedContentEnabled = (bool)$request->getBodyParam('mixedContentEnabled', false);
+        $settings->lighthouseEnabled = (bool)$request->getBodyParam('lighthouseEnabled', false);
+
 
         $settings->apiKey = trim($request->getBodyParam('apikey'));
 
@@ -93,6 +109,18 @@ class SettingsController extends BaseController
         $service->setMonitoringEnabled($settings->enabled);
         $service->setMonitoringInterval($settings->monitoringInterval);
         $service->setNotificationEmail($settings->notificationEmail);
+
+
+        // Save healthcheck settings to database
+        $service->setCheckEnabled(Constants::CHECK_REACHABILITY, $settings->reachabilityEnabled ?? false);
+        $service->setReachabilityTolerance($settings->reachabilityToleranceMinutes );
+        $service->setCheckEnabled(Constants::CHECK_BROKEN_LINKS, $settings->brokenLinksEnabled ?? false);
+        $service->setCheckEnabled(Constants::CHECK_SECURITY_CERTIFICATES, $settings->securityCertificatesEnabled ?? false);
+        $service->setSslDaysBeforeExpiryAlert($settings->sslDaysBeforeExpiryAlert);
+        $service->setCheckEnabled(Constants::CHECK_DOMAIN, $settings->domainEnabled ?? false);
+        $service->setDomainDaysBeforeExpiryAlert($settings->domainDaysBeforeExpiryAlert);
+        $service->setCheckEnabled(Constants::CHECK_MIXED_CONTENT, $settings->mixedContentEnabled ?? false);
+        $service->setCheckEnabled(Constants::CHECK_LIGHTHOUSE, $settings->lighthouseEnabled ?? false);
 
         Craft::$app->getSession()->setNotice(Craft::t('upsnap', 'Settings saved.'));
 

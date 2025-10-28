@@ -141,7 +141,7 @@ class SettingsService extends Component
         }
         return $this->setSetting('notificationEmail', $email);
     }
-    
+
     /**
      * Returns the API key set in the plugin settings.
      *
@@ -210,9 +210,63 @@ class SettingsService extends Component
     /**
      * Determine whether the provided API key represents an update.
      *
-    */
-    public function isApiKeyUpdated(string $apiKey): bool {
+     */
+    public function isApiKeyUpdated(string $apiKey): bool
+    {
         return $this->maskApiKey($this->getApiKey()) != $apiKey;
     }
 
+
+    public function isCheckEnabled(string $checkType): bool
+    {
+        return (bool)$this->getSetting($checkType . 'Enabled', false);
+    }
+
+    public function getReachabilityTolerance(): int
+    {
+        return (int)$this->getSetting('reachabilityToleranceMinutes', 5);
+    }
+
+    public function getsslDaysBeforeExpiryAlert(): int
+    {
+        return (int)$this->getSetting('sslDaysBeforeExpiryAlert', 15);
+    }
+
+    public function getdomainDaysBeforeExpiryAlert(): int
+    {
+        return (int)$this->getSetting('domainDaysBeforeExpiryAlert', 15);
+    }
+
+
+    /**
+     * Set check enabled status
+     */
+    public function setCheckEnabled(string $checkType, bool $enabled): bool
+    {
+        return $this->setSetting($checkType . 'Enabled', $enabled);
+    }
+
+    /**
+     * Set reachability tolerance
+     */
+    public function setReachabilityTolerance(int $minutes): bool
+    {
+        return $this->setSetting('reachabilityToleranceMinutes', $minutes);
+    }
+
+    /**
+     * Set SSL days before expiry alert
+     */
+    public function setSslDaysBeforeExpiryAlert(int $days): bool
+    {
+        return $this->setSetting('sslDaysBeforeExpiryAlert', $days);
+    }
+
+    /**
+     * Set domain days before expiry alert
+     */
+    public function setDomainDaysBeforeExpiryAlert(int $days): bool
+    {
+        return $this->setSetting('domainDaysBeforeExpiryAlert', $days);
+    }
 }

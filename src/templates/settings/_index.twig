@@ -43,15 +43,6 @@
 
 		<div id="advanced-settings" style="{% if not (settings.enabled ?? false) %}display: none;{% endif %}">
 			{{ forms.textField({
-                label: "Notification Email"|t('upsnap'),
-                instructions: "Email address for monitoring alerts"|t('upsnap'),
-                id: 'notificationEmail',
-                name: 'notificationEmail',
-                type: 'email',
-                value: settings.notificationEmail ?? '',
-                errors: settings.getErrors('notificationEmail') ?? false
-            }) }}
-			{{ forms.textField({
                 label: "Monitoring Interval"|t('upsnap'),
                 instructions: "How often to check sites (in minutes)"|t('upsnap'),
                 id: 'monitoringInterval',
@@ -62,6 +53,131 @@
                 errors: settings.getErrors('monitoringInterval') ?? false
             }) }}
 
+			{{ forms.textField({
+                label: "Notification Email"|t('upsnap'),
+                instructions: "Email address for monitoring alerts"|t('upsnap'),
+                id: 'notificationEmail',
+                name: 'notificationEmail',
+                type: 'email',
+                value: settings.notificationEmail ?? '',
+                errors: settings.getErrors('notificationEmail') ?? false
+            }) }}
+
+			<hr style="margin: 30px 0;">
+
+			<h2>{{ "Healthcheck Endpoints"|t('upsnap') }}</h2>
+			<p class="light">{{ "Configure monitoring settings for each healthcheck endpoint"|t('upsnap') }}</p>
+
+			{# Reachability Check #}
+			<div class="healthcheck-section field">
+				{{ forms.lightswitchField({
+                    label: "Reachability Check"|t('upsnap'),
+                    instructions: "Monitor if the site is reachable"|t('upsnap'),
+                    id: 'reachabilityEnabled',
+                    name: 'reachabilityEnabled',
+                    on: settings.reachabilityEnabled ?? true,
+                    errors: settings.getErrors('reachabilityEnabled') ?? false
+                }) }}
+
+				<div id="reachability-settings" class="nested-settings" style="margin-left: 24px; {% if not (settings.reachabilityEnabled ?? true) %}display: none;{% endif %}">
+					{{ forms.textField({
+                        label: "Tolerance (minutes)"|t('upsnap'),
+                        instructions: "Time to wait before sending alert when server goes down"|t('upsnap'),
+                        id: 'reachabilityTolerance',
+                        name: 'reachabilityToleranceMinutes',
+                        type: 'number',
+                        value: settings.reachabilityToleranceMinutes ?? 5,
+                        min: 1,
+                        errors: settings.getErrors('reachabilityToleranceMinutes') ?? false
+                    }) }}
+				</div>
+			</div>
+
+			{# Broken Links Check #}
+			<div class="healthcheck-section field">
+				{{ forms.lightswitchField({
+                    label: "Broken Links Check"|t('upsnap'),
+                    instructions: "Monitor for broken links on your site"|t('upsnap'),
+                    id: 'brokenLinksEnabled',
+                    name: 'brokenLinksEnabled',
+                    on: settings.brokenLinksEnabled ?? true,
+                    errors: settings.getErrors('brokenLinksEnabled') ?? false
+                }) }}
+			</div>
+
+			{# SSL Certificate Check #}
+			<div class="healthcheck-section field">
+				{{ forms.lightswitchField({
+                    label: "SSL Certificate Check"|t('upsnap'),
+                    instructions: "Monitor SSL certificate expiration"|t('upsnap'),
+                    id: 'sslEnabled',
+                    name: 'securityCertificatesEnabled',
+                    on: settings.securityCertificatesEnabled ?? true,
+                    errors: settings.getErrors('securityCertificatesEnabled') ?? false
+                }) }}
+
+				<div id="ssl-settings" class="nested-settings" style="margin-left: 24px; {% if not (settings.securityCertificatesEnabled ?? true) %}display: none;{% endif %}">
+					{{ forms.textField({
+                        label: "Days Before Expiry"|t('upsnap'),
+                        instructions: "Number of days before certificate expires to send alert"|t('upsnap'),
+                        id: 'sslExpiryDays',
+                        name: 'sslDaysBeforeExpiryAlert',
+                        type: 'number',
+                        value: settings.sslDaysBeforeExpiryAlert ?? 30,
+                        min: 1,
+                        errors: settings.getErrors('sslDaysBeforeExpiryAlert') ?? false
+                    }) }}
+				</div>
+			</div>
+
+			{# Domain Check #}
+			<div class="healthcheck-section field">
+				{{ forms.lightswitchField({
+                    label: "Domain Expiry Check"|t('upsnap'),
+                    instructions: "Monitor domain expiration"|t('upsnap'),
+                    id: 'domainEnabled',
+                    name: 'domainEnabled',
+                    on: settings.domainEnabled ?? true,
+                    errors: settings.getErrors('domainEnabled') ?? false
+                }) }}
+
+				<div id="domain-settings" class="nested-settings" style="margin-left: 24px; {% if not (settings.domainEnabled ?? true) %}display: none;{% endif %}">
+					{{ forms.textField({
+                        label: "Days Before Expiry"|t('upsnap'),
+                        instructions: "Number of days before domain expires to send alert"|t('upsnap'),
+                        id: 'domainExpiryDays',
+                        name: 'domainDaysBeforeExpiryAlert',
+                        type: 'number',
+                        value: settings.domainDaysBeforeExpiryAlert ?? 30,
+                        min: 1,
+                        errors: settings.getErrors('domainDaysBeforeExpiryAlert') ?? false
+                    }) }}
+				</div>
+			</div>
+
+			{# Mixed Content Check #}
+			<div class="healthcheck-section field">
+				{{ forms.lightswitchField({
+                    label: "Mixed Content Check"|t('upsnap'),
+                    instructions: "Monitor for mixed content issues (HTTP content on HTTPS pages)"|t('upsnap'),
+                    id: 'mixedContentEnabled',
+                    name: 'mixedContentEnabled',
+                    on: settings.mixedContentEnabled ?? true,
+                    errors: settings.getErrors('mixedContentEnabled') ?? false
+                }) }}
+			</div>
+
+			{# Lighthouse Check #}
+			<div class="healthcheck-section field">
+				{{ forms.lightswitchField({
+                    label: "Lighthouse Performance Check"|t('upsnap'),
+                    instructions: "Monitor site performance using Google Lighthouse"|t('upsnap'),
+                    id: 'lighthouseEnabled',
+                    name: 'lighthouseEnabled',
+                    on: settings.lighthouseEnabled ?? false,
+                    errors: settings.getErrors('lighthouseEnabled') ?? false
+                }) }}
+			</div>
 		</div>
 
 		<div class="buttons">

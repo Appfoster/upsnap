@@ -30,6 +30,15 @@ class SettingsModel extends Model
     public ?string $monitoringUrl = null;
     
     public ?string $apiKey = null;
+    public bool $reachabilityEnabled = false;
+    public bool $securityCertificatesEnabled = false;
+    public bool $brokenLinksEnabled = false;
+    public bool $lighthouseEnabled = false;
+    public bool $domainEnabled = false;
+    public bool $mixedContentEnabled = false;
+    public int $reachabilityToleranceMinutes = 5;
+    public int $sslDaysBeforeExpiryAlert = 15;
+    public int $domainDaysBeforeExpiryAlert = 15;
 
     /**
      * @inheritdoc
