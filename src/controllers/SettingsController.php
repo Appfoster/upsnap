@@ -35,7 +35,6 @@ class SettingsController extends BaseController
 
         $settings->apiKey = $service->maskApiKey($apiKey);
         $settings->monitoringInterval = $service->getMonitoringInterval();
-        // $settings->notificationEmail = $service->getNotificationEmail();
 
         $settings->reachabilityEnabled = $service->isCheckEnabled(Constants::CHECK_REACHABILITY);
         $settings->securityCertificatesEnabled = $service->isCheckEnabled(Constants::CHECK_SECURITY_CERTIFICATES);
@@ -77,7 +76,6 @@ class SettingsController extends BaseController
         }
 
         $settings->notificationEmails = $emailsParam;
-        // $settings->notificationEmails = $request->getBodyParam('notificationEmails');
         $settings->reachabilityEnabled = (bool)$request->getBodyParam('reachabilityEnabled', false);
         $settings->reachabilityToleranceMinutes = (int)$request->getBodyParam('reachabilityToleranceMinutes', 5);
         $settings->brokenLinksEnabled = (bool)$request->getBodyParam('brokenLinksEnabled', false);

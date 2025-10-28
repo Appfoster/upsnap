@@ -165,16 +165,22 @@ class SettingsService extends Component
 
     public function verifyApiKey(string $apiKey): bool
     {
-        return true;
         try {
             $response = Upsnap::$plugin->apiService->post(Constants::ENDPOINT_VERIFY_API_KEY, [
                 'token' => $apiKey
             ]);
+            if (
+                is_array($response) &&
+                isset($response['status'], $response['data']['valid']) &&
+                $response['status'] === 'success'
+            ) {
+                return (bool) $response['data']['valid'];
+            }
+            return false;
         } catch (\Exception $e) {
             Craft::error('Error verifying API key: ' . $e->getMessage(), __METHOD__);
             throw $e;
         }
-        return $response['success'] ?? false;
     }
 
     /**
@@ -270,29 +276,29 @@ class SettingsService extends Component
         return $this->setSetting('domainDaysBeforeExpiryAlert', $days);
     }
 
-/**
-* Get notification emails
- */
-public function getNotificationEmails(): array
-{
-    $emails = $this->getSetting('notificationEmails');
-    return is_array($emails) ? $emails : [];
-}
-
-/**
- * Set notification emails
- */
-public function setNotificationEmails(array $emails): bool
-{
-    // Filter out empty emails and validate
-    $validEmails = array_filter($emails, function($email) {
-        return filter_var($email, FILTER_VALIDATE_EMAIL);
-    });
-    
-    if (empty($validEmails)) {
-        return $this->deleteSetting('notificationEmails');
+    /**
+     * Get notification emails
+     */
+    public function getNotificationEmails(): array
+    {
+        $emails = $this->getSetting('notificationEmails');
+        return is_array($emails) ? $emails : [];
     }
-    
-    return $this->setSetting('notificationEmails', array_values($validEmails));
-}
+
+    /**
+     * Set notification emails
+     */
+    public function setNotificationEmails(array $emails): bool
+    {
+        // Filter out empty emails and validate
+        $validEmails = array_filter($emails, function ($email) {
+            return filter_var($email, FILTER_VALIDATE_EMAIL);
+        });
+
+        if (empty($validEmails)) {
+            return $this->deleteSetting('notificationEmails');
+        }
+
+        return $this->setSetting('notificationEmails', array_values($validEmails));
+    }
 }
