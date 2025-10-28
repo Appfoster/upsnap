@@ -124,25 +124,6 @@ class SettingsService extends Component
     }
 
     /**
-     * Get notification email
-     */
-    public function getNotificationEmail(): ?string
-    {
-        return $this->getSetting('notificationEmail');
-    }
-
-    /**
-     * Set notification email
-     */
-    public function setNotificationEmail(?string $email): bool
-    {
-        if ($email === null || $email === '') {
-            return $this->deleteSetting('notificationEmail');
-        }
-        return $this->setSetting('notificationEmail', $email);
-    }
-
-    /**
      * Returns the API key set in the plugin settings.
      *
      */
