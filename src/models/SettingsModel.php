@@ -20,9 +20,9 @@ class SettingsModel extends Model
     public int $monitoringInterval = 5;
 
     /**
-     * @var string|null Notification email for alerts
+     * @var array|null Notification email for alerts
      */
-    public ?string $notificationEmail = null;
+    public ?array $notificationEmails = null;
 
     /**
      * @var string|null URL to monitor
@@ -48,7 +48,7 @@ class SettingsModel extends Model
         return [
             ['enabled', 'boolean'],
             ['monitoringInterval', 'integer', 'min' => 1],
-            ['notificationEmail', 'email'],
+            // ['notificationEmail', 'email'],
             ['monitoringUrl', 'required'],
             ['monitoringUrl', 'match', 'pattern' => '/^https:\/\/[^\s\/$.?#].[^\s]*$/i', 'message' => 'Monitoring URL must be a valid HTTPS URL.'],
             ['monitoringInterval', 'required', 'when' => function($model) {

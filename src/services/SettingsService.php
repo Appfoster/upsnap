@@ -269,4 +269,30 @@ class SettingsService extends Component
     {
         return $this->setSetting('domainDaysBeforeExpiryAlert', $days);
     }
+
+/**
+* Get notification emails
+ */
+public function getNotificationEmails(): array
+{
+    $emails = $this->getSetting('notificationEmails');
+    return is_array($emails) ? $emails : [];
+}
+
+/**
+ * Set notification emails
+ */
+public function setNotificationEmails(array $emails): bool
+{
+    // Filter out empty emails and validate
+    $validEmails = array_filter($emails, function($email) {
+        return filter_var($email, FILTER_VALIDATE_EMAIL);
+    });
+    
+    if (empty($validEmails)) {
+        return $this->deleteSetting('notificationEmails');
+    }
+    
+    return $this->setSetting('notificationEmails', array_values($validEmails));
+}
 }

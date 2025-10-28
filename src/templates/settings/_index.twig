@@ -1,5 +1,12 @@
 {% extends "_layouts/cp" %}
 {% import "_includes/forms" as forms %}
+{% block actionButton %}
+	<div class="buttons">
+		<button type="submit" form="settings-form" class="btn submit">
+			{{ "Save"|t('upsnap') }}
+		</button>
+	</div>
+{% endblock %}
 
 {% block content %}
 	<form
@@ -53,21 +60,49 @@
                 errors: settings.getErrors('monitoringInterval') ?? false
             }) }}
 
-			{{ forms.textField({
-                label: "Notification Email"|t('upsnap'),
-                instructions: "Email address for monitoring alerts"|t('upsnap'),
-                id: 'notificationEmail',
-                name: 'notificationEmail',
-                type: 'email',
-                value: settings.notificationEmail ?? '',
-                errors: settings.getErrors('notificationEmail') ?? false
-            }) }}
+			{# {{ forms.textField({
+						                label: "Notification Email"|t('upsnap'),
+						                instructions: "Email address for monitoring alerts"|t('upsnap'),
+						                id: 'notificationEmail',
+						                name: 'notificationEmail',
+						                type: 'email',
+						                value: settings.notificationEmail ?? '',
+						                errors: settings.getErrors('notificationEmail') ?? false
+						            }) }} #}
 
+			<div class="field" id="notificationEmails-field">
+				<div class="heading">
+					<label for="notificationEmails">{{ "Notification Emails"|t('upsnap') }}</label>
+					<div class="instructions">
+						<p>{{ "Email addresses for monitoring alerts. Press Enter or comma to add multiple emails."|t('upsnap') }}</p>
+					</div>
+				</div>
+				<div class="input ltr">
+					<div id="email-tags-container" class="email-tags-container">
+						{% if settings.notificationEmails is defined and settings.notificationEmails %}
+							{% for email in settings.notificationEmails %}
+								<span class="email-tag" data-email="{{ email }}">
+									{{ email }}
+									<button type="button" class="email-tag-remove" aria-label="Remove">×</button>
+								</span>
+							{% endfor %}
+						{% endif %}
+					</div>
+					<input type="text" id="notificationEmails-input" class="text fullwidth" placeholder="Add email address..." autocomplete="off">
+					<input type="hidden" name="notificationEmails" id="notificationEmails-hidden" value="{{ (settings.notificationEmails ?? [])|json_encode }}">
+				</div>
+				{% if settings.getErrors('notificationEmails') %}
+					<ul class="errors">
+						{% for error in settings.getErrors('notificationEmails') %}
+							<li>{{ error }}</li>
+						{% endfor %}
+					</ul>
+				{% endif %}
+			</div>
 			<hr style="margin: 30px 0;">
 
 			<h2>{{ "Healthcheck Endpoints"|t('upsnap') }}</h2>
 			<p class="light">{{ "Configure monitoring settings for each healthcheck endpoint"|t('upsnap') }}</p>
-
 			{# Reachability Check #}
 			<div class="healthcheck-section field">
 				{{ forms.lightswitchField({
@@ -178,10 +213,6 @@
                     errors: settings.getErrors('lighthouseEnabled') ?? false
                 }) }}
 			</div>
-		</div>
-
-		<div class="buttons">
-			<button type="submit" class="btn submit">{{ "Save"|t('upsnap') }}</button>
 		</div>
 	</form>
 {% endblock %}

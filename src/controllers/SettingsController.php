@@ -35,7 +35,7 @@ class SettingsController extends BaseController
 
         $settings->apiKey = $service->maskApiKey($apiKey);
         $settings->monitoringInterval = $service->getMonitoringInterval();
-        $settings->notificationEmail = $service->getNotificationEmail();
+        // $settings->notificationEmail = $service->getNotificationEmail();
 
         $settings->reachabilityEnabled = $service->isCheckEnabled(Constants::CHECK_REACHABILITY);
         $settings->securityCertificatesEnabled = $service->isCheckEnabled(Constants::CHECK_SECURITY_CERTIFICATES);
@@ -43,6 +43,7 @@ class SettingsController extends BaseController
         $settings->lighthouseEnabled = $service->isCheckEnabled(Constants::CHECK_LIGHTHOUSE);
         $settings->domainEnabled = $service->isCheckEnabled(Constants::CHECK_DOMAIN);
         $settings->mixedContentEnabled = $service->isCheckEnabled(Constants::CHECK_MIXED_CONTENT);
+        $settings->notificationEmails = $service->getNotificationEmails();
 
         $settings->reachabilityToleranceMinutes = $service->getReachabilityTolerance();
         $settings->sslDaysBeforeExpiryAlert = $service->getSslDaysBeforeExpiryAlert();
@@ -62,13 +63,21 @@ class SettingsController extends BaseController
         $request = Craft::$app->getRequest();
         $plugin = Upsnap::getInstance();
         $service = $plugin->settingsService;
+        Craft::error('Saving settings: ' . print_r($request->getBodyParams(), true), 'upsnap');
 
         // Create settings model and populate with form data
         $settings = $service->getNewModel();
         $settings->monitoringUrl = $request->getBodyParam('monitoringUrl');
         $settings->enabled = (bool)$request->getBodyParam('enabled', false);
         $settings->monitoringInterval = (int)$request->getBodyParam('monitoringInterval');
-        $settings->notificationEmail = $request->getBodyParam('notificationEmail');
+        $emailsParam = $request->getBodyParam('notificationEmails');
+
+        if (is_string($emailsParam)) {
+            $emailsParam = json_decode($emailsParam, true);
+        }
+
+        $settings->notificationEmails = $emailsParam;
+        // $settings->notificationEmails = $request->getBodyParam('notificationEmails');
         $settings->reachabilityEnabled = (bool)$request->getBodyParam('reachabilityEnabled', false);
         $settings->reachabilityToleranceMinutes = (int)$request->getBodyParam('reachabilityToleranceMinutes', 5);
         $settings->brokenLinksEnabled = (bool)$request->getBodyParam('brokenLinksEnabled', false);
@@ -108,7 +117,7 @@ class SettingsController extends BaseController
         $service->setMonitoringUrl($settings->monitoringUrl);
         $service->setMonitoringEnabled($settings->enabled);
         $service->setMonitoringInterval($settings->monitoringInterval);
-        $service->setNotificationEmail($settings->notificationEmail);
+        $service->setNotificationEmails($settings->notificationEmails);
 
 
         // Save healthcheck settings to database
