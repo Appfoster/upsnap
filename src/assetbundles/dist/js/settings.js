@@ -157,9 +157,19 @@ Craft.Upsnap.Settings = {
         }
     },
 
+    isValidUrl: function (url) {
+        const pattern = /^https:\/\/[^\s\/$.?#].[^\s]*$/i;
+        return pattern.test(url);
+    },
     // Form validation
     validateForm: function (event) {
-        // Add any form validation logic here if needed
+        const urlValue = Craft.Upsnap.Settings.elements.monitoringUrl.value.trim();
+
+        if (!Craft.Upsnap.Settings.isValidUrl(urlValue)) {
+            event.preventDefault();
+            alert('Please enter a valid URL starting with https://');
+            return false;
+        }
         return true;
     },
 
@@ -184,6 +194,7 @@ Craft.Upsnap.Settings = {
             } catch (e) {
                 this.emailTags = [];
             }
+            this.renderEmailTags();
         }
 
         // Email input handlers
