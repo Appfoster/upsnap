@@ -8,6 +8,7 @@
 	</div>
 {% endblock %}
 
+
 {% block content %}
 	<form
 		id="settings-form" method="post" enctype="multipart/form-data">
@@ -63,15 +64,6 @@
                 errors: settings.getErrors('monitoringInterval') ?? false
             }) }}
 
-			{# {{ forms.textField({
-						                label: "Notification Email"|t('upsnap'),
-						                instructions: "Email address for monitoring alerts"|t('upsnap'),
-						                id: 'notificationEmail',
-						                name: 'notificationEmail',
-						                type: 'email',
-						                value: settings.notificationEmail ?? '',
-						                errors: settings.getErrors('notificationEmail') ?? false
-						            }) }} #}
 
 			<div class="field" id="notificationEmails-field">
 				<div class="heading">
