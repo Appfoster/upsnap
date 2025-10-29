@@ -90,7 +90,12 @@ class SettingsController extends BaseController
 
         // Validate the settings
         if (!$settings->validate()) {
-            Craft::$app->getSession()->setError($settings->getErrors());
+            $allErrors = collect($settings->getErrors())
+                ->flatten()
+                ->join("\n");
+
+            Craft::$app->getSession()->setError($allErrors);
+
             return $this->renderSettings($settings);
         }
 
