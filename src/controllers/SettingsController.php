@@ -159,9 +159,11 @@ class SettingsController extends BaseController
      */
     private function renderSettings($settings): \yii\web\Response
     {
+        $service = Upsnap::getInstance()->settingsService;
         return $this->healthCheckService->sendResponse(
             [
                 'settings' => $settings,
+                'showHealthchecks' => $service->getApiKey() !== null,
                 'title' => Constants::SUBNAV_ITEM_SETTINGS['label'],
                 'selectedSubnavItem' => Constants::SUBNAV_ITEM_SETTINGS['key']
             ],

@@ -1,7 +1,7 @@
 {% extends "_layouts/cp" %}
 {% import "_includes/forms" as forms %}
 
-{% set showHealthchecks = settings.apiKey ?? false %}
+{% set showHealthchecks = showHealthchecks ?? false %}
 
 {% set tabs = [
     { label: "General"|t('upsnap'), url: '#general-tab', class: 'sel' },
