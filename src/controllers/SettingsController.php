@@ -88,6 +88,8 @@ class SettingsController extends BaseController
 
         $settings->apiKey = trim($request->getBodyParam('apikey'));
 
+        $settings->apiKey = trim($request->getBodyParam('apikey'));
+
         // Validate the settings
         if (!$settings->validate()) {
             $allErrors = collect($settings->getErrors())
