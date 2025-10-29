@@ -62,7 +62,6 @@ class SettingsController extends BaseController
         $request = Craft::$app->getRequest();
         $plugin = Upsnap::getInstance();
         $service = $plugin->settingsService;
-        Craft::error('Saving settings: ' . print_r($request->getBodyParams(), true), 'upsnap');
 
         // Create settings model and populate with form data
         $settings = $service->getNewModel();

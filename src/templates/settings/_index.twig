@@ -16,12 +16,15 @@
 		{{ actionInput('upsnap/settings/save') }}
 		{{ redirectInput('upsnap/settings') }}
 
-		{{ forms.textField({
+        {{ forms.textField({
             label: "URL to Monitor"|t('upsnap'),
-            instructions: "Enter the URL you want to monitor"|t('upsnap'),
+            instructions: (settings.apiKey ?? false)
+                ? "Enter the URL you want to monitor"|t('upsnap')
+                : "Please add and save your API key before editing the monitoring URL."|t('upsnap'),
             id: 'monitoringUrl',
             name: 'monitoringUrl',
             type: 'url',
+            readonly: not (settings.apiKey ?? false),
             value: settings.monitoringUrl ?? '',
             placeholder: 'https://example.com',
             errors: settings.getErrors('monitoringUrl') ?? false

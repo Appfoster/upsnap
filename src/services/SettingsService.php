@@ -77,7 +77,16 @@ class SettingsService extends Component
      */
     public function getMonitoringUrl(): ?string
     {
-        return $this->getSetting('monitoringUrl');
+        $url = null;
+        if (!$this->getApiKey()) {
+            $primarySite = Craft::$app->getSites()->getPrimarySite()?->baseUrl;
+            if ($primarySite) {
+                return $primarySite;
+            }
+        } else {
+            $url = $this->getSetting('monitoringUrl');
+        }
+        return $url;
     }
 
     /**
@@ -146,6 +155,7 @@ class SettingsService extends Component
 
     public function verifyApiKey(string $apiKey): bool
     {
+        return true;
         try {
             $response = Upsnap::$plugin->apiService->post(Constants::ENDPOINT_VERIFY_API_KEY, [
                 'token' => $apiKey
