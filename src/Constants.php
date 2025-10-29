@@ -23,6 +23,8 @@ class Constants
     // API Endpoints
     public const ENDPOINT_HEALTHCHECK = 'healthcheck';
 
+    public const ENDPOINT_VERIFY_API_KEY = 'verify-api-key';
+
     // Check Types
     public const CHECK_REACHABILITY = 'reachability';
     public const CHECK_SECURITY_CERTIFICATES = 'security_certificates';
@@ -30,6 +32,7 @@ class Constants
     public const CHECK_LIGHTHOUSE = 'lighthouse';
     public const CHECK_DOMAIN = 'domain_check';
     public const CHECK_MIXED_CONTENT = 'mixed_content';
+    public const API_KEY_MASKED_CHAR = 'X';
 
     // HTTP Status Codes
     public const HTTP_OK = 200;
@@ -92,7 +95,7 @@ class Constants
         'label' => 'Settings',
         'key' => 'settings',
         'url' => 'upsnap/settings',
-        'template' => 'upsnap/healthcheck/settings'
+        'template' => 'upsnap/settings/_index'
     ];
 
     const SUBNAV_ITEM_DASHBOARD = [

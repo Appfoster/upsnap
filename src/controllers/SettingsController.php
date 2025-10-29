@@ -5,13 +5,18 @@ namespace appfoster\upsnap\controllers;
 use Craft;
 use appfoster\upsnap\Upsnap;
 use appfoster\upsnap\assetbundles\SettingsAsset;
+use appfoster\upsnap\Constants;
+use appfoster\upsnap\services\HealthCheckService;
 
 class SettingsController extends BaseController
 {
+    private HealthCheckService $healthCheckService;
+
     public function __construct($id, $module = null)
     {
         parent::__construct($id, $module);
         SettingsAsset::register($this->view);
+        $this->healthCheckService = new HealthCheckService($this);
     }
 
     /**
@@ -26,22 +31,25 @@ class SettingsController extends BaseController
         $settings = $service->getNewModel();
         $settings->monitoringUrl = $service->getMonitoringUrl();
         $settings->enabled = $service->getMonitoringEnabled();
+        $apiKey = $service->getApiKey();
+
+        $settings->apiKey = $service->maskApiKey($apiKey);
         $settings->monitoringInterval = $service->getMonitoringInterval();
         $settings->notificationEmail = $service->getNotificationEmail();
 
         $variables = [
             'settings' => $settings,
-            'title' => \Craft::t('upsnap', 'Settings'),
+            'title' => Craft::t('upsnap', 'Settings'),
             'selectedSubnavItem' => 'settings',
         ];
 
-        return $this->renderTemplate('upsnap/settings/_index', $variables);
+        $this->renderSettings($settings);
     }
 
     /**
      * Save settings
      */
-    public function actionSave()
+    public function actionSave(): \yii\web\Response
     {
         $this->requirePostRequest();
 
@@ -56,16 +64,28 @@ class SettingsController extends BaseController
         $settings->monitoringInterval = (int)$request->getBodyParam('monitoringInterval');
         $settings->notificationEmail = $request->getBodyParam('notificationEmail');
 
+        $settings->apiKey = trim($request->getBodyParam('apikey'));
+
         // Validate the settings
         if (!$settings->validate()) {
             Craft::$app->getSession()->setError($settings->getErrors());
+            return $this->renderSettings($settings);
+        }
 
-            // Send the settings back to the template with errors
-            Craft::$app->getUrlManager()->setRouteParams([
-                'settings' => $settings
-            ]);
+        if ($service->isApiKeyUpdated($settings->apiKey)) {
+            try {
+                $validationSuccess = $service->verifyApiKey($settings->apiKey);
+            } catch (\Throwable $e) {
+                Craft::$app->getSession()->setError('Error verifying API key: ' . $e->getMessage());
+                return $this->renderSettings($settings);
+            }
 
-            return null;
+            if (!$validationSuccess) {
+                Craft::$app->getSession()->setError(Craft::t('upsnap', 'Invalid API Key.'));
+                return $this->renderSettings($settings);
+            }
+
+            $service->setApiKey($settings->apiKey); // save the API key
         }
 
         // Save settings to database
@@ -77,5 +97,20 @@ class SettingsController extends BaseController
         Craft::$app->getSession()->setNotice(Craft::t('upsnap', 'Settings saved.'));
 
         return $this->redirectToPostedUrl();
+    }
+
+    /**
+     * Render the settings page with validation errors.
+     */
+    private function renderSettings($settings): \yii\web\Response
+    {
+        return $this->healthCheckService->sendResponse(
+            [
+                'settings' => $settings,
+                'title' => Constants::SUBNAV_ITEM_SETTINGS['label'],
+                'selectedSubnavItem' => Constants::SUBNAV_ITEM_SETTINGS['key']
+            ],
+            Constants::SUBNAV_ITEM_SETTINGS['template']
+        );
     }
 }

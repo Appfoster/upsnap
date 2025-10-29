@@ -28,6 +28,8 @@ class SettingsModel extends Model
      * @var string|null URL to monitor
      */
     public ?string $monitoringUrl = null;
+    
+    public ?string $apiKey = null;
 
     /**
      * @inheritdoc
@@ -43,6 +45,7 @@ class SettingsModel extends Model
             ['monitoringInterval', 'required', 'when' => function($model) {
                 return $model->enabled === true;
             }],
+            ['apiKey', 'string',]
         ];
     }
 }

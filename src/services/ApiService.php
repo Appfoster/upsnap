@@ -8,6 +8,7 @@ use GuzzleHttp\Client;
 use GuzzleHttp\Exception\RequestException;
 
 use appfoster\upsnap\Constants;
+use appfoster\upsnap\Upsnap;
 
 class ApiService extends Component
 {
