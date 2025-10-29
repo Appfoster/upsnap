@@ -394,7 +394,7 @@ function toggleShowDetails(domainDetailsSection) {
 
 function registerLighthouseJs() {
     const deviceSelector = document.getElementById("device-selector");
-    const refreshBtn = document.getElementById("refresh-btn");
+    const refreshBtn = document.getElementById("refresh-button");
     let currentDevice = deviceSelector?.value || 'desktop';
 
     const scoresContainer = document.getElementById("scores-container");
@@ -467,7 +467,7 @@ function registerLighthouseJs() {
             // Add loading state to button
             refreshBtn.disabled = true;
             refreshBtn.innerHTML = '<span class="spinner"></span> Refreshing...';
-
+            showLoaderSkeleton();
             fetchLighthouseData(currentDevice).finally(() => {
                 // Reset button state
                 refreshBtn.disabled = false;
@@ -482,6 +482,16 @@ function registerLighthouseJs() {
 
         if (statusWrapper && detailsWrapper) {
             statusWrapper.innerHTML = `
+            <div class="skeleton-card">
+				<div class="skeleton-card-body">
+					<div>
+						<h3>
+							Fetching your scores. Please hang tight as it takes around 30 seconds
+							<span class="loading-dots"></span>
+						</h3>
+					</div>
+				</div>
+			</div>
             <div class="skeleton-card">
                 <div class="skeleton-card-header">
                     <div class="skeleton-line skeleton-line-medium"></div>

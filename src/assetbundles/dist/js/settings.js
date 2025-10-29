@@ -167,7 +167,7 @@ Craft.Upsnap.Settings = {
 
         if (!Craft.Upsnap.Settings.isValidUrl(urlValue)) {
             event.preventDefault();
-            alert('Please enter a valid URL starting with https://');
+            Craft.cp.displayError('Please enter a valid URL starting with https://');
             return false;
         }
         return true;
