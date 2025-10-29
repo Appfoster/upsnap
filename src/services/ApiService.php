@@ -74,6 +74,7 @@ class ApiService extends Component
         return [
             'Authorization' => 'Bearer ' . $this->authToken,
             'Accept'        => 'application/json',
+            'X-Requested-From' => 'craft',
         ];
     }
 }

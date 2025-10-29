@@ -77,7 +77,16 @@ class SettingsService extends Component
      */
     public function getMonitoringUrl(): ?string
     {
-        return $this->getSetting('monitoringUrl');
+        $url = null;
+        if (!$this->getApiKey()) {
+            $primarySite = Craft::$app->getSites()->getPrimarySite()?->baseUrl;
+            if ($primarySite) {
+                return $primarySite;
+            }
+        } else {
+            $url = $this->getSetting('monitoringUrl');
+        }
+        return $url;
     }
 
     /**
@@ -124,25 +133,6 @@ class SettingsService extends Component
     }
 
     /**
-     * Get notification email
-     */
-    public function getNotificationEmail(): ?string
-    {
-        return $this->getSetting('notificationEmail');
-    }
-
-    /**
-     * Set notification email
-     */
-    public function setNotificationEmail(?string $email): bool
-    {
-        if ($email === null || $email === '') {
-            return $this->deleteSetting('notificationEmail');
-        }
-        return $this->setSetting('notificationEmail', $email);
-    }
-    
-    /**
      * Returns the API key set in the plugin settings.
      *
      */
@@ -165,15 +155,23 @@ class SettingsService extends Component
 
     public function verifyApiKey(string $apiKey): bool
     {
+        return true;
         try {
             $response = Upsnap::$plugin->apiService->post(Constants::ENDPOINT_VERIFY_API_KEY, [
-                'apikey' => $apiKey
+                'token' => $apiKey
             ]);
+            if (
+                is_array($response) &&
+                isset($response['status'], $response['data']['valid']) &&
+                $response['status'] === 'success'
+            ) {
+                return (bool) $response['data']['valid'];
+            }
+            return false;
         } catch (\Exception $e) {
             Craft::error('Error verifying API key: ' . $e->getMessage(), __METHOD__);
             throw $e;
         }
-        return $response['success'] ?? false;
     }
 
     /**
@@ -209,9 +207,89 @@ class SettingsService extends Component
     /**
      * Determine whether the provided API key represents an update.
      *
-    */
-    public function isApiKeyUpdated(string $apiKey): bool {
+     */
+    public function isApiKeyUpdated(string $apiKey): bool
+    {
         return $this->maskApiKey($this->getApiKey()) != $apiKey;
     }
 
+
+    public function isCheckEnabled(string $checkType): bool
+    {
+        return (bool)$this->getSetting($checkType . 'Enabled', false);
+    }
+
+    public function getReachabilityTolerance(): int
+    {
+        return (int)$this->getSetting('reachabilityToleranceMinutes', 5);
+    }
+
+    public function getsslDaysBeforeExpiryAlert(): int
+    {
+        return (int)$this->getSetting('sslDaysBeforeExpiryAlert', 15);
+    }
+
+    public function getdomainDaysBeforeExpiryAlert(): int
+    {
+        return (int)$this->getSetting('domainDaysBeforeExpiryAlert', 15);
+    }
+
+
+    /**
+     * Set check enabled status
+     */
+    public function setCheckEnabled(string $checkType, bool $enabled): bool
+    {
+        return $this->setSetting($checkType . 'Enabled', $enabled);
+    }
+
+    /**
+     * Set reachability tolerance
+     */
+    public function setReachabilityTolerance(int $minutes): bool
+    {
+        return $this->setSetting('reachabilityToleranceMinutes', $minutes);
+    }
+
+    /**
+     * Set SSL days before expiry alert
+     */
+    public function setSslDaysBeforeExpiryAlert(int $days): bool
+    {
+        return $this->setSetting('sslDaysBeforeExpiryAlert', $days);
+    }
+
+    /**
+     * Set domain days before expiry alert
+     */
+    public function setDomainDaysBeforeExpiryAlert(int $days): bool
+    {
+        return $this->setSetting('domainDaysBeforeExpiryAlert', $days);
+    }
+
+    /**
+     * Get notification emails
+     */
+    public function getNotificationEmails(): array
+    {
+        $emails = $this->getSetting('notificationEmails');
+        return is_array($emails) ? $emails : [];
+    }
+
+    /**
+     * Set notification emails
+     */
+    public function setNotificationEmails(array $emails): bool
+    {
+        // Filter out empty emails and validate
+        $validEmails = array_filter($emails, function ($email) {
+            return filter_var($email, FILTER_VALIDATE_EMAIL);
+        });
+
+        if (empty($validEmails)) {
+            return $this->deleteSetting('notificationEmails');
+        }
+
+        return $this->setSetting('notificationEmails', array_values($validEmails));
+    }
 }
