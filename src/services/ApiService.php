@@ -14,7 +14,7 @@ class ApiService extends Component
 {
     protected string $baseUrl;
     protected string $apiVersion;
-    protected string $authToken;
+    protected ?string $apiToken = null;
     protected Client $client;
 
     public function __construct($config = [])
@@ -24,7 +24,7 @@ class ApiService extends Component
         // Load from constants or environment
         $this->baseUrl = Constants::API_BASE_URL;
         $this->apiVersion = Constants::API_VERSION;
-        $this->authToken = Constants::API_AUTH_TOKEN;
+        $this->apiToken = Upsnap::getInstance()->settingsService->getApiKey();
 
         $this->client = new Client([
             'base_uri' => $this->baseUrl . '/' . $this->apiVersion . '/',
@@ -72,7 +72,7 @@ class ApiService extends Component
     protected function getHeaders(): array
     {
         return [
-            'Authorization' => 'Bearer ' . $this->authToken,
+            'Authorization' => 'Bearer ' . $this->apiToken,
             'Accept'        => 'application/json',
             'X-Requested-From' => 'craft',
         ];

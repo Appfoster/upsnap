@@ -63,8 +63,8 @@ function registerBrokenLinksJs() {
         if (!detailsContainer || !metaData) return;
 
         // Fallbacks for missing values
-        const totalPagesChecked = metaData?.details.totalPagesChecked ?? 0;
-        const totalLinksScanned = metaData?.details.totalLinksScanned ?? 0;
+        const totalPagesChecked = metaData?.details?.totalPagesChecked ?? 0;
+        const totalLinksScanned = metaData?.details?.totalLinksScanned ?? 0;
         const errorsCount = metaData?.details?.errorsCount ?? 0;
 
         detailsContainer.innerHTML = `
@@ -454,7 +454,7 @@ function registerLighthouseJs() {
         deviceSelector.addEventListener('change', function () {
             currentDevice = this.value;
 
-             // Show skeletons while fetching
+            // Show skeletons while fetching
             showLoaderSkeleton();
             fetchLighthouseData(currentDevice);
         });
@@ -813,22 +813,22 @@ function registerReachabilityJs() {
                     <tr>
                         <td class="details-label">Duration</td>
                         <td class="details-value">
-                            ${details.duration || 'Unknown'}
-                            ${details.startedAt ? `<span style="color: #999; margin-left: 16px;">Started at ${details.startedAt}</span>` : ''}
+                            ${details?.duration ?? 'Unknown'}
+                            ${details?.startedAt ? `<span style="color: #999; margin-left: 16px;">Started at ${details.startedAt}</span>` : ''}
                         </td>
                     </tr>
 
-                    ${details.monitoredFrom ? `
+                    ${details?.monitoredFrom ? `
                     <tr>
                         <td class="details-label">Monitored from</td>
                         <td class="details-value">
-                            ${details.monitoredFrom.location || 'Unknown'}
-                            ${details.monitoredFrom.ip ? `<span style="color: #999; margin-left: 16px;">${details.monitoredFrom.ip}</span>` : ''}
+                            ${details?.monitoredFrom?.location ?? 'Unknown'}
+                            ${details?.monitoredFrom?.ip ? `<span style="color: #999; margin-left: 16px;">${details.monitoredFrom.ip}</span>` : ''}
                         </td>
                     </tr>
                     ` : ''}
 
-                    ${details.httpStatus ? `
+                    ${details?.httpStatus ? `
                     <tr>
                         <td class="details-label">HTTP Response Code</td>
                         <td class="details-value">
@@ -845,31 +845,31 @@ function registerReachabilityJs() {
                     <table class="details-table">
                         <tr>
                             <td class="details-label">HTTP Status</td>
-                            <td class="details-value">${details.httpStatus}</td>
+                            <td class="details-value">${details?.httpStatus ?? '–'}</td>
                         </tr>
                         <tr>
                             <td class="details-label">Final URL</td>
-                            <td class="details-value">${details.finalURL}</td>
+                            <td class="details-value">${details?.finalURL ?? '–'}</td>
                         </tr>
                         <tr>
                             <td class="details-label">Redirect Paths</td>
-                            <td class="details-value">${details.redirects ? details.redirects.join(' → ') : '–'}</td>
+                            <td class="details-value">${details?.redirects?.length ? details.redirects.join(' → ') : '–'}</td>
                         </tr>
                         <tr>
                             <td class="details-label">Resolved IPs</td>
-                            <td class="details-value">${details.resolvedIPs ? details.resolvedIPs.join(', ') : '–'}</td>
+                            <td class="details-value">${details?.resolvedIPs?.length ? details.resolvedIPs.join(', ') : '–'}</td>
                         </tr>
                         <tr>
                             <td class="details-label">Server Technology</td>
-                            <td class="details-value">${details.server}</td>
+                            <td class="details-value">${details?.server ?? '–'}</td>
                         </tr>
                         <tr>
                             <td class="details-label">Content Type</td>
-                            <td class="details-value">${details.contentType}</td>
+                            <td class="details-value">${details?.contentType ?? '–'}</td>
                         </tr>
                         <tr>
                             <td class="details-label">Content Length</td>
-                            <td class="details-value">${details.contentLength} bytes</td>
+                            <td class="details-value">${details?.contentLength ? details.contentLength + ' bytes' : '–'}</td>
                         </tr>
                     </table>
 
@@ -877,28 +877,28 @@ function registerReachabilityJs() {
                     <table class="details-table">
                         <tr>
                             <td class="details-label">Page Title</td>
-                            <td class="details-value">${details.pageTitle}</td>
+                            <td class="details-value">${details?.pageTitle ?? '–'}</td>
                         </tr>
                     </table>
 
-                    ${details.tls ? `
+                    ${details?.tls ? `
                     <h2 class="pt-2rem">TLS / Security</h2>
                     <table class="details-table">
                         <tr>
                             <td class="details-label">TLS Version</td>
-                            <td class="details-value">${details.tls.version}</td>
+                            <td class="details-value">${details?.tls?.version ?? '–'}</td>
                         </tr>
                         <tr>
                             <td class="details-label">Protocol (ALPN)</td>
-                            <td class="details-value">${details.tls.alpn}</td>
+                            <td class="details-value">${details?.tls?.alpn ?? '–'}</td>
                         </tr>
                         <tr>
                             <td class="details-label">Encryption Method</td>
-                            <td class="details-value">${details.tls.cipherSuite}</td>
+                            <td class="details-value">${details?.tls?.cipherSuite ?? '–'}</td>
                         </tr>
                         <tr>
                             <td class="details-label">Certificate Host</td>
-                            <td class="details-value">${details.tls.serverName}</td>
+                            <td class="details-value">${details?.tls?.serverName ?? '–'}</td>
                         </tr>
                     </table>
                     ` : ''}
