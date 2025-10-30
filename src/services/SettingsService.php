@@ -79,9 +79,10 @@ class SettingsService extends Component
     {
         $url = null;
         if (!$this->getApiKey()) {
-            $primarySite = Craft::$app->getSites()->getPrimarySite()?->baseUrl;
-            if ($primarySite) {
-                return $primarySite;
+            $primarySiteUrl = Craft::$app->getSites()->getPrimarySite()?->baseUrl;
+            if ($primarySiteUrl) {
+                $this->setMonitoringUrl($primarySiteUrl);
+                return $primarySiteUrl;
             }
         } else {
             $url = $this->getSetting('monitoringUrl');
