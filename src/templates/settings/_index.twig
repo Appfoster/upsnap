@@ -33,14 +33,15 @@
                 name: 'monitoringUrl',
                 type: 'url',
                 readonly: not (settings.apiKey ?? false),
+                class: (not (settings.apiKey ?? false)) ? 'disabled-field' : '',
                 value: settings.monitoringUrl ?? '',
                 placeholder: 'https://example.com',
                 errors: settings.getErrors('monitoringUrl') ?? false
             }) }}
 
-			{{ forms.textField({
+            {{ forms.textField({
                 label: "API Key"|t('upsnap'),
-                instructions: "Enter the Upsnap API Key and save to enable Healthcheck settings."|t('upsnap'),
+                instructions: "Enter the Upsnap API Key and save to enable Healthcheck settings. To access the API key, please visit the Upsnap dashboard at <a href='#{upsnapDashboardUrl}' target='_blank'>#{upsnapDashboardUrl}</a>"|t('upsnap')|raw,
                 id: 'apiKey',
                 name: 'apiKey',
                 type: 'text',
@@ -48,6 +49,7 @@
                 placeholder: 'XXXX-XXXX-XXXX-XXXX',
                 errors: settings.getErrors('apiKey') ?? false
             }) }}
+
 		</div>
 
 		{# ====================== HEALTHCHECK TAB ====================== #}
