@@ -31,7 +31,7 @@
                     : "Please add and save your API key before editing the monitoring URL."|t('upsnap'),
                 id: 'monitoringUrl',
                 name: 'monitoringUrl',
-                type: 'url',
+                type: 'text',
                 readonly: not (settings.apiKey ?? false),
                 class: (not (settings.apiKey ?? false)) ? 'disabled-field' : '',
                 value: settings.monitoringUrl ?? '',

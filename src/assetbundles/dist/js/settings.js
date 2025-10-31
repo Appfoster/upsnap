@@ -156,22 +156,44 @@ Craft.Upsnap.Settings = {
             settings.style.display = 'none';
         }
     },
-
     isValidUrl: function (url) {
-        const pattern = /^https:\/\/[^\s\/$.?#].[^\s]*$/i;
-        return pattern.test(url);
+        if (!url) return false;
+
+        // Allow: http(s)://, www., or bare domain
+        const pattern = /^(https?:\/\/)?(www\.)?([a-zA-Z0-9-]+\.[a-zA-Z]{2,})([^\s]*)?$/i;
+        return pattern.test(url.trim());
     },
+
     // Form validation
     validateForm: function (event) {
-        const urlValue = Craft.Upsnap.Settings.elements.monitoringUrl.value.trim();
+        const urlField = Craft.Upsnap.Settings.elements.urlField;
+        let urlValue = urlField.value.trim();
 
+        // Check if it matches allowed format
         if (!Craft.Upsnap.Settings.isValidUrl(urlValue)) {
             event.preventDefault();
-            Craft.cp.displayError('Please enter a valid URL starting with https://');
+            Craft.cp.displayError('Please enter a valid domain or URL (e.g. https://example.com or example.com)');
             return false;
         }
+
+        // Normalize before sending to backend
+        // If user entered full http(s) already — leave it.
+        if (/^https?:\/\//i.test(urlValue)) {
+            // do nothing, already complete
+        } else if (/^www\./i.test(urlValue)) {
+            // add https:// before www
+            urlValue = `https://${urlValue}`;
+        } else {
+            // assume domain only
+            urlValue = `https://www.${urlValue}`;
+        }
+
+        // Update the input field before form submission
+        urlField.value = urlValue;
+
         return true;
     },
+
 
     // Initialize the settings page
     init: function () {
