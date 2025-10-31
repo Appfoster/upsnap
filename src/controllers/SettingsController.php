@@ -26,6 +26,8 @@ class SettingsController extends BaseController
     {
         $plugin = Upsnap::getInstance();
         $service = $plugin->settingsService;
+        $service->validateApiKey(); // Validate API key on loading settings page
+
 
         // Create a settings model with current database values
         $settings = $service->getNewModel();
@@ -164,8 +166,10 @@ class SettingsController extends BaseController
             [
                 'settings' => $settings,
                 'showHealthchecks' => $service->getApiKey() !== null,
+                'upsnapDashboardUrl' => Constants::UPSNAP_DASHBOARD_URL,
                 'title' => Constants::SUBNAV_ITEM_SETTINGS['label'],
-                'selectedSubnavItem' => Constants::SUBNAV_ITEM_SETTINGS['key']
+                'selectedSubnavItem' => Constants::SUBNAV_ITEM_SETTINGS['key'],
+                'userSubscriptionType' => $service->getUserSubscriptionType()
             ],
             Constants::SUBNAV_ITEM_SETTINGS['template']
         );

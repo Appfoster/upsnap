@@ -33,14 +33,15 @@
                 name: 'monitoringUrl',
                 type: 'url',
                 readonly: not (settings.apiKey ?? false),
+                class: (not (settings.apiKey ?? false)) ? 'disabled-field' : '',
                 value: settings.monitoringUrl ?? '',
                 placeholder: 'https://example.com',
                 errors: settings.getErrors('monitoringUrl') ?? false
             }) }}
 
-			{{ forms.textField({
+            {{ forms.textField({
                 label: "API Key"|t('upsnap'),
-                instructions: "Enter the Upsnap API Key and save to enable Healthcheck settings."|t('upsnap'),
+                instructions: "Enter the Upsnap API Key and save to enable Healthcheck settings. To access the API key, please visit the Upsnap dashboard at <a href='#{upsnapDashboardUrl}' target='_blank' rel='noopener noreferrer'>Upsnap Dashboard<span class='sr-only' style='position:absolute;left:-10000px;'> (opens in a new tab)</span></a>"|t('upsnap')|raw,
                 id: 'apiKey',
                 name: 'apiKey',
                 type: 'text',
@@ -48,16 +49,21 @@
                 placeholder: 'XXXX-XXXX-XXXX-XXXX',
                 errors: settings.getErrors('apiKey') ?? false
             }) }}
+
 		</div>
 
 		{# ====================== HEALTHCHECK TAB ====================== #}
 		{% if showHealthchecks %}
 			<div id="healthchecks-tab" class="tab-content hidden">
+            {% set isFreePlan = (userSubscriptionType ?? 'free') == 'free' %}
 				{{ forms.lightswitchField({
                     label: "Enable Monitoring"|t('upsnap'),
-                    instructions: "Turn monitoring on or off"|t('upsnap'),
+                     instructions: isFreePlan
+                    ? "Monitoring is available only in paid plans. (Current plan: Free)"|t('upsnap')
+                    : "Turn monitoring on or off"|t('upsnap'),
                     id: 'enabled',
                     name: 'enabled',
+                    disabled: isFreePlan,
                     on: settings.enabled ?? false,
                     errors: settings.getErrors('enabled') ?? false
                 }) }}

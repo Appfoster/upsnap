@@ -17,9 +17,8 @@ class Constants
 
     // API Configuration
     public const API_BASE_URL = 'https://api.upsnap.ai';
+    public const UPSNAP_DASHBOARD_URL = 'https://upsnap.ai';
     public const API_VERSION = 'v1';
-    public const API_AUTH_TOKEN = 'test-token';
-
     // API Endpoints
     public const ENDPOINT_HEALTHCHECK = 'healthcheck';
 
@@ -143,5 +142,11 @@ class Constants
     const BROKEN_LINKS_TYPE = [
         'internal' => 'internal',
         'external' => 'external',
+    ];
+
+    const SUBSCRIPTION_TYPES = [
+        'free' => 'free',
+        'pro' => 'pro',
+        'enterprise' => 'enterprise',
     ];
 }

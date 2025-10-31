@@ -39,7 +39,6 @@ class HealthCheckController extends BaseController
     
                 if (isset($response['result']['details'][$paramName]['error'])) {
                     $errorMsg = $response['result']['details'][$paramName]['error'];
-                    Craft::$app->getSession()->setError('Something went wrong: ' . $errorMsg);
                     throw new \Exception($errorMsg);
                 }
     
@@ -88,7 +87,6 @@ class HealthCheckController extends BaseController
                 ];
     
             } catch (\Throwable $e) {
-                Craft::$app->getSession()->setError('Error fetching broken links data: ' . $e->getMessage());
                 $data = [
                     'data' => [
                         'status' => 'error',
@@ -164,7 +162,6 @@ class HealthCheckController extends BaseController
                     ];
                 }
             } catch (\Throwable $e) {
-                Craft::$app->getSession()->setError('Error fetching domain check data: ' . $e->getMessage());
                 $data = [
                     'data' => [
                         'status' => 'error',
@@ -201,7 +198,6 @@ class HealthCheckController extends BaseController
                 $response = $this->service->getHealthcheck($url, [$paramName], Craft::$app->getRequest()->getParam('device', 'desktop'));
     
                 if (isset($response['result']['details'][$paramName]['error'])) {
-                    Craft::$app->getSession()->setError('Something went wrong: ' . $response['result']['details'][$paramName]['error']);
                     throw new \Exception($response['result']['details'][$paramName]['error']);
                 }
     
@@ -232,7 +228,6 @@ class HealthCheckController extends BaseController
                     ];
                 }
             } catch (\Throwable $e) {
-                Craft::$app->getSession()->setError('Error fetching lighthouse scores: ' . $e->getMessage());
                 $data = [
                     'data' => [
                         'status' => 'error',
@@ -269,7 +264,6 @@ class HealthCheckController extends BaseController
     
                 if (isset($response['result']['details'][$paramName]['error'])) {
                     $errorMsg = $response['result']['details'][$paramName]['error'];
-                    Craft::$app->getSession()->setError('Something went wrong: ' . $errorMsg);
                     throw new \Exception($errorMsg);
                 }
     
@@ -295,7 +289,6 @@ class HealthCheckController extends BaseController
                     ];
                 }
             } catch (\Throwable $e) {
-                Craft::$app->getSession()->setError('Error fetching mixed content check data: ' . $e->getMessage());
                 $data = [
                     'data' => [
                         'status' => 'error',
@@ -328,7 +321,6 @@ class HealthCheckController extends BaseController
             $response = $this->service->getHealthcheck($url, [$paramName]);
 
             if (isset($response['result']['details'][$paramName]['error'])) {
-                Craft::$app->getSession()->setError('Something went wrong: ' . $response['result']['details'][$paramName]['error']);
                 throw new \Exception($response['result']['details'][$paramName]['error']);
             }
 
@@ -345,8 +337,8 @@ class HealthCheckController extends BaseController
                         'message' => $isOk ? 'Website is reachable' : 'Website reachability issues detected!',
                         'url' => $response['url'] ?? '',
                         'checkedAt' => $response['checkedAt'] ?? '',
-                        'duration' => isset($result['durationMs']) ? $result['durationMs'] . ' ms' : 'Unknown',
                         'details' => [
+                            'duration' => isset($result['durationMs']) ? $result['durationMs'] . ' ms' : 'Unknown',
                             'httpStatus' => $meta['statusCode'] ?? 0,
                             'finalURL' => $meta['finalURL'] ?? '',
                             'redirects' => $meta['redirects'] ?? null,
@@ -362,7 +354,6 @@ class HealthCheckController extends BaseController
                 ];
             }
         } catch (\Throwable $e) {
-            Craft::$app->getSession()->setError('Error fetching uptime status: ' . $e->getMessage());
             $data = [
                 'data' => [
                     'status' => 'error',
@@ -395,7 +386,6 @@ class HealthCheckController extends BaseController
             $response = $this->service->getHealthcheck($url, [$paramName]);
 
             if (isset($response['result']['details'][$paramName]['error'])) {
-                Craft::$app->getSession()->setError('Something went wrong: ' . $response['result']['details'][$paramName]['error']);
                 throw new \Exception($response['result']['details'][$paramName]['error']);
             }
 
@@ -432,7 +422,6 @@ class HealthCheckController extends BaseController
                 ];
             }
         } catch (\Throwable $e) {
-            Craft::$app->getSession()->setError('Error fetching SSL certificate status: ' . $e->getMessage());
             $data = [
                 'data' => [
                     'status' => 'error',
