@@ -61,7 +61,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Asset minification and optimization
 - Background processing for monitoring tasks
 
-[Unreleased]: https://github.com/Appfoster/upsnap/compare/v1.0.2...HEAD
-[1.0.2]: https://github.com/Appfoster/upsnap/releases/tag/v1.0.2
-[1.0.1]: https://github.com/Appfoster/upsnap/releases/tag/v1.0.1
-[1.0.0]: https://github.com/Appfoster/upsnap/releases/tag/v1.0.0
+[Unreleased]: https://github.com/Appfoster/upsnap/compare/1.0.2...HEAD
+[1.0.2]: https://github.com/Appfoster/upsnap/releases/tag/1.0.2
+[1.0.1]: https://github.com/Appfoster/upsnap/releases/tag/1.0.1
+[1.0.0]: https://github.com/Appfoster/upsnap/releases/tag/1.0.0
