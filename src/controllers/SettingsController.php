@@ -169,7 +169,8 @@ class SettingsController extends BaseController
                 'upsnapDashboardUrl' => Constants::UPSNAP_DASHBOARD_URL,
                 'title' => Constants::SUBNAV_ITEM_SETTINGS['label'],
                 'selectedSubnavItem' => Constants::SUBNAV_ITEM_SETTINGS['key'],
-                'userSubscriptionType' => $service->getUserSubscriptionType()
+                'userSubscriptionType' => $service->getUserSubscriptionType(),
+                'subscriptionTypes' => Constants::SUBSCRIPTION_TYPES,
             ],
             Constants::SUBNAV_ITEM_SETTINGS['template']
         );
