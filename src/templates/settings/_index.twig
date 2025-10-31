@@ -55,11 +55,15 @@
 		{# ====================== HEALTHCHECK TAB ====================== #}
 		{% if showHealthchecks %}
 			<div id="healthchecks-tab" class="tab-content hidden">
+            {% set isFreePlan = (userSubscriptionType ?? 'free') == 'free' %}
 				{{ forms.lightswitchField({
                     label: "Enable Monitoring"|t('upsnap'),
-                    instructions: "Turn monitoring on or off"|t('upsnap'),
+                     instructions: isFreePlan
+                    ? "Monitoring is available only in paid plans. (Current plan: Free)"|t('upsnap')
+                    : "Turn monitoring on or off"|t('upsnap'),
                     id: 'enabled',
                     name: 'enabled',
+                    disabled: isFreePlan,
                     on: settings.enabled ?? false,
                     errors: settings.getErrors('enabled') ?? false
                 }) }}

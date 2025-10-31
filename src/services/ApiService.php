@@ -29,6 +29,7 @@ class ApiService extends Component
         $this->client = new Client([
             'base_uri' => $this->baseUrl . '/' . $this->apiVersion . '/',
             'timeout'  => Constants::API_TIMEOUT,
+            'http_errors' => false,
         ]);
     }
 

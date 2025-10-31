@@ -143,4 +143,10 @@ class Constants
         'internal' => 'internal',
         'external' => 'external',
     ];
+
+    const SUBSCRIPTION_TYPES = [
+        'free' => 'free',
+        'pro' => 'pro',
+        'enterprise' => 'enterprise',
+    ];
 }

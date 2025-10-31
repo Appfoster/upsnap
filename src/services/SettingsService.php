@@ -14,6 +14,7 @@ use Exception;
  */
 class SettingsService extends Component
 {
+    public ?string $userSubscriptionType;
     /**
      * Create a new Settings model instance
      */
@@ -291,5 +292,116 @@ class SettingsService extends Component
         }
 
         return $this->setSetting('notificationEmails', array_values($validEmails));
+    }
+
+    /**
+     * Validate API Key with microservice
+     */
+    public function validateApiKey(): void
+    {
+        $storedKey = $this->getApiKey();
+
+        if (!$storedKey) {
+            return;
+        }
+
+        try {
+            $result = $this->getValidateApiKeyResponse($storedKey);
+
+            if ($result['status'] === 'error') {
+                $this->handleInvalidTokenResponse($result['message']);
+                return;
+            }
+
+            // Store subscription type for use in the settings template
+            if (isset($result['subscriptionType'])) {
+                $this->setUserSubscriptionType($result['subscriptionType']);
+            }
+        } catch (\Throwable $e) {
+            Craft::error("Error validating stored API key: {$e->getMessage()}", __METHOD__);
+        }
+    }
+
+    
+    public function getValidateApiKeyResponse(string $apiKey): array
+    {
+        try {
+            $response = Upsnap::$plugin->apiService->post(Constants::ENDPOINT_VERIFY_API_KEY, [
+                'token' => $apiKey,
+            ]);
+
+            if (is_array($response)) {
+                if ($response['status'] === 'success') {
+                    return [
+                        'status' => 'success',
+                        'valid' => (bool) ($response['data']['valid'] ?? false),
+                        'message' => 'valid',
+                        'subscriptionType' => $response['data']['subscription'] ?? Constants::SUBSCRIPTION_TYPES['free'],
+                    ];
+                }
+
+                // Capture explicit error responses like suspended, expired, or not found
+                if ($response['status'] === 'error' && isset($response['message'])) {
+                    return [
+                        'status' => 'error',
+                        'valid' => false,
+                        'message' => $response['message'],
+                    ];
+                }
+            }
+
+            return ['status' => 'error', 'valid' => false, 'message' => 'Something went wrong.'];
+        } catch (\Exception $e) {
+            Craft::error('Error verifying API key: ' . $e->getMessage(), __METHOD__);
+            throw $e;
+        }
+    }
+
+    /**
+     * Handles invalid, expired, or missing API token responses from the Upsnap API.
+     *
+     * Depending on the API response message, this method will:
+     * - Notify the user via Craft session errors.
+     * - Delete the stored token only if it was not found (i.e., deleted remotely).
+     *
+     * @param string $apiMessage The message returned by the Upsnap API response.
+     */
+    protected function handleInvalidTokenResponse(string $apiMessage): void
+    {
+        $normalizedMessage = strtolower($apiMessage);
+        $displayMessage = null;
+        $shouldRemoveToken = false;
+
+        if (str_contains($normalizedMessage, 'suspended')) {
+            $displayMessage = Craft::t('upsnap', 'Your API token has been suspended. Please add a valid one.');
+        } elseif (str_contains($normalizedMessage, 'expired')) {
+            $displayMessage = Craft::t('upsnap', 'Your API token has expired. Please add a valid one.');
+        } elseif (str_contains($normalizedMessage, 'not found')) {
+            $displayMessage = Craft::t('upsnap', 'Your API token was not found (it may have been deleted). Please add a valid one.');
+            $shouldRemoveToken = true;
+        }
+
+        if ($displayMessage !== null) {
+            if ($shouldRemoveToken) {
+                $this->setApiKey('');
+            }
+            Craft::$app->getSession()->setError($displayMessage);
+        }
+    }
+
+    /**
+     * Get current user subscription type (defaults to 'free')
+     */
+    public function getUserSubscriptionType(): string
+    {
+        return $this->userSubscriptionType ?? Constants::SUBSCRIPTION_TYPES['free'];
+    }
+
+    /**
+     * Set current user plan
+     */
+    public function setUserSubscriptionType(?string $plan): void
+    {
+        $this->userSubscriptionType = $plan ?? Constants::SUBSCRIPTION_TYPES['free'];
     }
 }
