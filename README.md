@@ -181,7 +181,7 @@ upsnap/
 
 ### Issue Tracking
 - [GitHub Issues](https://github.com/Appfoster/upsnap/issues)
-- [Changelog](https://github.com/Appfoster/upsnap/master/CHANGELOG.md)
+- [Changelog](https://github.com/Appfoster/upsnap/blob/master/CHANGELOG.md)
 
 ### Contact
 - **Email**: support@appfoster.com

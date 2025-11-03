@@ -20,14 +20,25 @@ class SettingsModel extends Model
     public int $monitoringInterval = 5;
 
     /**
-     * @var string|null Notification email for alerts
+     * @var array|null Notification email for alerts
      */
-    public ?string $notificationEmail = null;
+    public ?array $notificationEmails = null;
 
     /**
      * @var string|null URL to monitor
      */
     public ?string $monitoringUrl = null;
+    
+    public ?string $apiKey = null;
+    public bool $reachabilityEnabled = false;
+    public bool $securityCertificatesEnabled = false;
+    public bool $brokenLinksEnabled = false;
+    public bool $lighthouseEnabled = false;
+    public bool $domainEnabled = false;
+    public bool $mixedContentEnabled = false;
+    public int $reachabilityToleranceMinutes = 5;
+    public int $sslDaysBeforeExpiryAlert = 15;
+    public int $domainDaysBeforeExpiryAlert = 15;
 
     /**
      * @inheritdoc
@@ -37,12 +48,11 @@ class SettingsModel extends Model
         return [
             ['enabled', 'boolean'],
             ['monitoringInterval', 'integer', 'min' => 1],
-            ['notificationEmail', 'email'],
             ['monitoringUrl', 'required'],
-            ['monitoringUrl', 'match', 'pattern' => '/^https:\/\/[^\s\/$.?#].[^\s]*$/i', 'message' => 'Monitoring URL must be a valid HTTPS URL.'],
             ['monitoringInterval', 'required', 'when' => function($model) {
                 return $model->enabled === true;
             }],
+            ['apiKey', 'string',]
         ];
     }
 }

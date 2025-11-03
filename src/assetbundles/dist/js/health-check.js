@@ -9,6 +9,29 @@ document.addEventListener("DOMContentLoaded", function () {
     registerSecurityCertificatesJs();
 });
 
+
+/**
+ * Display Craft CP notification
+ * @param {'success' | 'error' } type - Type of notification
+ * @param {string} message - Message to display
+ */
+function showCraftMessage(type, message) {
+    if (!message) message = 'Something went wrong';
+
+    switch (type) {
+        case 'success':
+            Craft.cp.displayNotice(message);
+            break;
+        case 'error':
+            Craft.cp.displayError(message);
+            break;
+        case 'notice':
+        default:
+            Craft.cp.displayNotice(message);
+            break;
+    }
+}
+
 function registerBrokenLinksJs() {
     const refreshBtn = document.getElementById("refresh-btn");
     const statusContainerWrapper = document.getElementById("status-container-wrapper");
@@ -31,17 +54,19 @@ function registerBrokenLinksJs() {
     function loadBrokenLinks() {
         Craft.sendActionRequest('POST', 'upsnap/health-check/broken-links', {})
             .then(response => {
-                brokenLinksData = response?.data.data;
+                brokenLinksData = response?.data?.data || {};
+                if (response?.data?.success) {
+                    renderStatusContainer(brokenLinksData);
+                    renderDetailsContainerForBrokenLinks(brokenLinksData);
 
-                renderStatusContainer(brokenLinksData);
-                renderDetailsContainerForBrokenLinks(brokenLinksData);
-
-                if (brokenLinksData && brokenLinksData.brokenLinks && brokenLinksData.brokenLinks.length > 0) {
-                    renderBrokenLinksUI(brokenLinksData);
-                    attachExpandListeners();
-                    attachFilterListeners();
+                    if (brokenLinksData && brokenLinksData.brokenLinks && brokenLinksData.brokenLinks.length > 0) {
+                        renderBrokenLinksUI(brokenLinksData);
+                        attachExpandListeners();
+                        attachFilterListeners();
+                    }
                 } else {
-                    contentContainer.innerHTML = `<p>No broken links found.</p>`;
+                    const errorMessage = response?.data?.error || 'Failed to fetch broken links data';
+                    throw new Error(errorMessage);
                 }
             })
             .catch(error => {
@@ -53,6 +78,7 @@ function registerBrokenLinksJs() {
                     message: 'Error loading domain data',
                     error: error.message || 'Unknown error occurred'
                 };
+                showCraftMessage('error', errorData.error)
                 renderStatusContainer(errorData);
                 renderDetailsContainer(errorData); // This will hide details since status !== 'ok'
             });
@@ -63,8 +89,8 @@ function registerBrokenLinksJs() {
         if (!detailsContainer || !metaData) return;
 
         // Fallbacks for missing values
-        const totalPagesChecked = metaData?.details.totalPagesChecked ?? 0;
-        const totalLinksScanned = metaData?.details.totalLinksScanned ?? 0;
+        const totalPagesChecked = metaData?.details?.totalPagesChecked ?? 0;
+        const totalLinksScanned = metaData?.details?.totalLinksScanned ?? 0;
         const errorsCount = metaData?.details?.errorsCount ?? 0;
 
         detailsContainer.innerHTML = `
@@ -259,7 +285,7 @@ function registerDomainCheckJs() {
 
         return Craft.sendActionRequest('POST', 'upsnap/health-check/domain-check', {})
             .then(response => {
-                if (response?.data?.success) {
+                if (response?.data?.success === 'ok') {
                     domainData = response.data.data;
 
                     // Render status and details containers
@@ -274,7 +300,8 @@ function registerDomainCheckJs() {
                     detailsContainerWrapper.style.display = "block";
                     domainDetailsSection.style.display = "block";
                 } else {
-                    throw new Error(response?.data?.error || 'Failed to fetch domain data');
+                    const errorMessage = response?.data?.error || 'Failed to fetch domain data';
+                    throw new Error(errorMessage);
                 }
             })
             .catch(error => {
@@ -284,6 +311,7 @@ function registerDomainCheckJs() {
                     message: 'Error loading domain data',
                     error: error.message || 'Unknown error occurred'
                 };
+                showCraftMessage('error', errorData.error)
                 renderStatusContainer(errorData);
                 renderDetailsContainer(errorData); // This will hide details since status !== 'ok'
 
@@ -414,7 +442,7 @@ function registerLighthouseJs() {
             data: { device: device }
         })
             .then(response => {
-                if (response?.data?.success) {
+                if (response?.data?.success === 'ok') {
                     lighthouseData = response.data.data;
 
                     // Update the hidden data element
@@ -428,7 +456,8 @@ function registerLighthouseJs() {
                     scoresContainer.style.display = "grid";
                     performanceContainer.style.display = "block";
                 } else {
-                    throw new Error(response?.data?.error || 'Failed to fetch data');
+                    const errorMessage = response?.data?.error || 'Failed to fetch lighthouse data';
+                    throw new Error(errorMessage);
                 }
             })
             .catch(error => {
@@ -440,6 +469,7 @@ function registerLighthouseJs() {
                     message: 'Error loading Lighthouse data',
                     error: error.message || 'Unknown error occurred'
                 };
+                showCraftMessage('error', errorData.error);
                 renderStatusContainer(errorData);
                 renderDetailsContainer(errorData); // This will hide details since status !== 'ok'
 
@@ -454,7 +484,7 @@ function registerLighthouseJs() {
         deviceSelector.addEventListener('change', function () {
             currentDevice = this.value;
 
-             // Show skeletons while fetching
+            // Show skeletons while fetching
             showLoaderSkeleton();
             fetchLighthouseData(currentDevice);
         });
@@ -653,7 +683,7 @@ function registerMixedContentJs() {
     function fetchMixedContentData() {
         return Craft.sendActionRequest('POST', 'upsnap/health-check/mixed-content', {})
             .then(response => {
-                if (response?.data?.success) {
+                if (response?.data?.success === 'ok') {
                     mixedContentData = response.data.data;
 
                     // Render status
@@ -665,7 +695,8 @@ function registerMixedContentJs() {
                     // Render mixed content list
                     renderMixedContentItems(mixedContentData.details || {});
                 } else {
-                    throw new Error(response?.data?.error || 'Failed to fetch mixed content data');
+                    const errorMessage = response?.data?.error || 'Failed to fetch mixed content data';
+                    throw new Error(errorMessage);
                 }
             })
             .catch(error => {
@@ -677,6 +708,7 @@ function registerMixedContentJs() {
                     message: 'Error loading Mixed Content data',
                     error: error.message || 'Unknown error occurred'
                 };
+                showCraftMessage('error', errorData.error);
                 renderStatusContainer(errorData);
                 renderDetailsContainer(errorData); // This will hide details since status !== 'ok'
 
@@ -753,21 +785,18 @@ function registerReachabilityJs() {
     // Function to fetch reachability data
     function fetchReachabilityData() {
         return Craft.sendActionRequest('POST', 'upsnap/health-check/reachability', {})
-            .then(response => {
-                if (response?.data?.success) {
-                    reachabilityData = response.data.data;
+                .then(response => {
+                    if (response?.data?.success === 'ok') {
+                        reachabilityData = response.data.data;
 
-                    // Render status
-                    renderStatusContainer(reachabilityData);
-
-                    // Render details
-                    renderDetailsContainer(reachabilityData);
-
-                    // Render reachability details
-                    renderReachabilityDetails(reachabilityData.details || {});
-                } else {
-                    throw new Error(response?.data?.error || 'Failed to fetch reachability data');
-                }
+                        // Render containers
+                        renderStatusContainer(reachabilityData);
+                        renderDetailsContainer(reachabilityData);
+                        renderReachabilityDetails(reachabilityData.details || {});
+                    } else {
+                        const errorMessage = response?.data?.error || 'Failed to fetch reachability data';
+                        throw new Error(errorMessage);
+                    }
             })
             .catch(error => {
                 console.error("Failed to fetch reachability data:", error);
@@ -778,6 +807,7 @@ function registerReachabilityJs() {
                     message: 'Error loading Reachability data',
                     error: error.message || 'Unknown error occurred'
                 };
+                showCraftMessage('error', errorData.error);
                 renderStatusContainer(errorData);
                 renderDetailsContainer(errorData); // This will hide details since status !== 'ok'
 
@@ -813,22 +843,22 @@ function registerReachabilityJs() {
                     <tr>
                         <td class="details-label">Duration</td>
                         <td class="details-value">
-                            ${details.duration || 'Unknown'}
-                            ${details.startedAt ? `<span style="color: #999; margin-left: 16px;">Started at ${details.startedAt}</span>` : ''}
+                            ${details?.duration ?? 'Unknown'}
+                            ${details?.startedAt ? `<span style="color: #999; margin-left: 16px;">Started at ${details.startedAt}</span>` : ''}
                         </td>
                     </tr>
 
-                    ${details.monitoredFrom ? `
+                    ${details?.monitoredFrom ? `
                     <tr>
                         <td class="details-label">Monitored from</td>
                         <td class="details-value">
-                            ${details.monitoredFrom.location || 'Unknown'}
-                            ${details.monitoredFrom.ip ? `<span style="color: #999; margin-left: 16px;">${details.monitoredFrom.ip}</span>` : ''}
+                            ${details?.monitoredFrom?.location ?? 'Unknown'}
+                            ${details?.monitoredFrom?.ip ? `<span style="color: #999; margin-left: 16px;">${details.monitoredFrom.ip}</span>` : ''}
                         </td>
                     </tr>
                     ` : ''}
 
-                    ${details.httpStatus ? `
+                    ${details?.httpStatus ? `
                     <tr>
                         <td class="details-label">HTTP Response Code</td>
                         <td class="details-value">
@@ -845,31 +875,31 @@ function registerReachabilityJs() {
                     <table class="details-table">
                         <tr>
                             <td class="details-label">HTTP Status</td>
-                            <td class="details-value">${details.httpStatus}</td>
+                            <td class="details-value">${details?.httpStatus ?? '–'}</td>
                         </tr>
                         <tr>
                             <td class="details-label">Final URL</td>
-                            <td class="details-value">${details.finalURL}</td>
+                            <td class="details-value">${details?.finalURL ?? '–'}</td>
                         </tr>
                         <tr>
                             <td class="details-label">Redirect Paths</td>
-                            <td class="details-value">${details.redirects ? details.redirects.join(' → ') : '–'}</td>
+                            <td class="details-value">${details?.redirects?.length ? details.redirects.join(' → ') : '–'}</td>
                         </tr>
                         <tr>
                             <td class="details-label">Resolved IPs</td>
-                            <td class="details-value">${details.resolvedIPs ? details.resolvedIPs.join(', ') : '–'}</td>
+                            <td class="details-value">${details?.resolvedIPs?.length ? details.resolvedIPs.join(', ') : '–'}</td>
                         </tr>
                         <tr>
                             <td class="details-label">Server Technology</td>
-                            <td class="details-value">${details.server}</td>
+                            <td class="details-value">${details?.server ?? '–'}</td>
                         </tr>
                         <tr>
                             <td class="details-label">Content Type</td>
-                            <td class="details-value">${details.contentType}</td>
+                            <td class="details-value">${details?.contentType ?? '–'}</td>
                         </tr>
                         <tr>
                             <td class="details-label">Content Length</td>
-                            <td class="details-value">${details.contentLength} bytes</td>
+                            <td class="details-value">${details?.contentLength ? details.contentLength + ' bytes' : '–'}</td>
                         </tr>
                     </table>
 
@@ -877,28 +907,28 @@ function registerReachabilityJs() {
                     <table class="details-table">
                         <tr>
                             <td class="details-label">Page Title</td>
-                            <td class="details-value">${details.pageTitle}</td>
+                            <td class="details-value">${details?.pageTitle ?? '–'}</td>
                         </tr>
                     </table>
 
-                    ${details.tls ? `
+                    ${details?.tls ? `
                     <h2 class="pt-2rem">TLS / Security</h2>
                     <table class="details-table">
                         <tr>
                             <td class="details-label">TLS Version</td>
-                            <td class="details-value">${details.tls.version}</td>
+                            <td class="details-value">${details?.tls?.version ?? '–'}</td>
                         </tr>
                         <tr>
                             <td class="details-label">Protocol (ALPN)</td>
-                            <td class="details-value">${details.tls.alpn}</td>
+                            <td class="details-value">${details?.tls?.alpn ?? '–'}</td>
                         </tr>
                         <tr>
                             <td class="details-label">Encryption Method</td>
-                            <td class="details-value">${details.tls.cipherSuite}</td>
+                            <td class="details-value">${details?.tls?.cipherSuite ?? '–'}</td>
                         </tr>
                         <tr>
                             <td class="details-label">Certificate Host</td>
-                            <td class="details-value">${details.tls.serverName}</td>
+                            <td class="details-value">${details?.tls?.serverName ?? '–'}</td>
                         </tr>
                     </table>
                     ` : ''}
@@ -955,7 +985,7 @@ function registerSecurityCertificatesJs() {
     function fetchSecurityCertificatesData() {
         return Craft.sendActionRequest('POST', 'upsnap/health-check/security-certificates', {})
             .then(response => {
-                if (response?.data?.success) {
+                if (response?.data?.success === 'ok') {
                     securityCertificatesData = response.data.data;
 
                     // Render status
@@ -967,7 +997,8 @@ function registerSecurityCertificatesJs() {
                     // Render security certificates details
                     renderSecurityCertificatesDetails(securityCertificatesData.details || {});
                 } else {
-                    throw new Error(response?.data?.error || 'Failed to fetch security certificates data');
+                    const errorMessage = response?.data?.error || 'Failed to fetch security certificates data';
+                    throw new Error(errorMessage);
                 }
             })
             .catch(error => {
@@ -979,6 +1010,7 @@ function registerSecurityCertificatesJs() {
                     message: 'Error loading Security Certificates data',
                     error: error.message || 'Unknown error occurred'
                 };
+                showCraftMessage('error', errorData.error);
                 renderStatusContainer(errorData);
                 renderDetailsContainer(errorData); // This will hide details since status !== 'ok'
             });

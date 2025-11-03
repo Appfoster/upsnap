@@ -8,12 +8,13 @@ use GuzzleHttp\Client;
 use GuzzleHttp\Exception\RequestException;
 
 use appfoster\upsnap\Constants;
+use appfoster\upsnap\Upsnap;
 
 class ApiService extends Component
 {
     protected string $baseUrl;
     protected string $apiVersion;
-    protected string $authToken;
+    protected ?string $apiToken = null;
     protected Client $client;
 
     public function __construct($config = [])
@@ -21,13 +22,14 @@ class ApiService extends Component
         parent::__construct($config);
 
         // Load from constants or environment
-        $this->baseUrl = Constants::API_BASE_URL;
+        $this->baseUrl = Constants::getAPIBaseUrl();
         $this->apiVersion = Constants::API_VERSION;
-        $this->authToken = Constants::API_AUTH_TOKEN;
+        $this->apiToken = Upsnap::getInstance()->settingsService->getApiKey();
 
         $this->client = new Client([
             'base_uri' => $this->baseUrl . '/' . $this->apiVersion . '/',
             'timeout'  => Constants::API_TIMEOUT,
+            'http_errors' => false,
         ]);
     }
 
@@ -71,8 +73,9 @@ class ApiService extends Component
     protected function getHeaders(): array
     {
         return [
-            'Authorization' => 'Bearer ' . $this->authToken,
+            'Authorization' => 'Bearer ' . $this->apiToken,
             'Accept'        => 'application/json',
+            'X-Requested-From' => 'craft',
         ];
     }
 }

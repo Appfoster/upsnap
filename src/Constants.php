@@ -1,6 +1,7 @@
 <?php
 
 namespace appfoster\upsnap;
+use craft\helpers\App;
 
 /**
  * Upsnap Constants
@@ -16,12 +17,13 @@ class Constants
     public const ASSET_SOURCE_PATH = '@upsnap/assetbundles/dist';
 
     // API Configuration
-    public const API_BASE_URL = 'https://api.upsnap.ai';
+    public const API_BASE_URL_DEFAULT = 'https://api.upsnap.ai';
+    public const UPSNAP_DASHBOARD_URL = 'https://upsnap.ai';
     public const API_VERSION = 'v1';
-    public const API_AUTH_TOKEN = 'test-token';
-
     // API Endpoints
     public const ENDPOINT_HEALTHCHECK = 'healthcheck';
+
+    public const ENDPOINT_VERIFY_API_KEY = 'tokens/validate';
 
     // Check Types
     public const CHECK_REACHABILITY = 'reachability';
@@ -30,6 +32,7 @@ class Constants
     public const CHECK_LIGHTHOUSE = 'lighthouse';
     public const CHECK_DOMAIN = 'domain_check';
     public const CHECK_MIXED_CONTENT = 'mixed_content';
+    public const API_KEY_MASKED_CHAR = 'X';
 
     // HTTP Status Codes
     public const HTTP_OK = 200;
@@ -92,7 +95,7 @@ class Constants
         'label' => 'Settings',
         'key' => 'settings',
         'url' => 'upsnap/settings',
-        'template' => 'upsnap/healthcheck/settings'
+        'template' => 'upsnap/settings/_index'
     ];
 
     const SUBNAV_ITEM_DASHBOARD = [
@@ -141,4 +144,15 @@ class Constants
         'internal' => 'internal',
         'external' => 'external',
     ];
+
+    const SUBSCRIPTION_TYPES = [
+        'trial' => 'trial',
+        'pro' => 'pro',
+        'enterprise' => 'enterprise',
+    ];
+
+    public static function getAPIBaseUrl(): string
+    {
+        return App::env('UPSNAP_API_BASE_URL') ?? self::API_BASE_URL_DEFAULT;
+    }
 }
