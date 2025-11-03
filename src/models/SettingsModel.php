@@ -49,7 +49,6 @@ class SettingsModel extends Model
             ['enabled', 'boolean'],
             ['monitoringInterval', 'integer', 'min' => 1],
             ['monitoringUrl', 'required'],
-            ['monitoringUrl', 'match', 'pattern' => '/^https:\/\/[^\s\/$.?#].[^\s]*$/i', 'message' => 'Monitoring URL must be a valid HTTPS URL.'],
             ['monitoringInterval', 'required', 'when' => function($model) {
                 return $model->enabled === true;
             }],

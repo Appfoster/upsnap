@@ -54,7 +54,8 @@ function registerBrokenLinksJs() {
     function loadBrokenLinks() {
         Craft.sendActionRequest('POST', 'upsnap/health-check/broken-links', {})
             .then(response => {
-                if (response?.data?.success === 'ok') {
+                brokenLinksData = response?.data?.data || {};
+                if (response?.data?.success) {
                     renderStatusContainer(brokenLinksData);
                     renderDetailsContainerForBrokenLinks(brokenLinksData);
 
@@ -62,8 +63,6 @@ function registerBrokenLinksJs() {
                         renderBrokenLinksUI(brokenLinksData);
                         attachExpandListeners();
                         attachFilterListeners();
-                    } else {
-                        contentContainer.innerHTML = `<p>No broken links found.</p>`;
                     }
                 } else {
                     const errorMessage = response?.data?.error || 'Failed to fetch broken links data';

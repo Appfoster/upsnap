@@ -1,6 +1,7 @@
 <?php
 
 namespace appfoster\upsnap;
+use craft\helpers\App;
 
 /**
  * Upsnap Constants
@@ -16,7 +17,7 @@ class Constants
     public const ASSET_SOURCE_PATH = '@upsnap/assetbundles/dist';
 
     // API Configuration
-    public const API_BASE_URL = 'https://api.upsnap.ai';
+    public const API_BASE_URL_DEFAULT = 'https://api.upsnap.ai';
     public const UPSNAP_DASHBOARD_URL = 'https://upsnap.ai';
     public const API_VERSION = 'v1';
     // API Endpoints
@@ -145,8 +146,13 @@ class Constants
     ];
 
     const SUBSCRIPTION_TYPES = [
-        'free' => 'free',
+        'trial' => 'trial',
         'pro' => 'pro',
         'enterprise' => 'enterprise',
     ];
+
+    public static function getAPIBaseUrl(): string
+    {
+        return App::env('UPSNAP_API_BASE_URL') ?? self::API_BASE_URL_DEFAULT;
+    }
 }

@@ -22,7 +22,7 @@ class ApiService extends Component
         parent::__construct($config);
 
         // Load from constants or environment
-        $this->baseUrl = Constants::API_BASE_URL;
+        $this->baseUrl = Constants::getAPIBaseUrl();
         $this->apiVersion = Constants::API_VERSION;
         $this->apiToken = Upsnap::getInstance()->settingsService->getApiKey();
 

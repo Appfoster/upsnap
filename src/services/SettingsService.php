@@ -336,7 +336,7 @@ class SettingsService extends Component
                         'status' => 'success',
                         'valid' => (bool) ($response['data']['valid'] ?? false),
                         'message' => 'valid',
-                        'subscriptionType' => $response['data']['subscription'] ?? Constants::SUBSCRIPTION_TYPES['free'],
+                        'subscriptionType' => $response['data']['subscription'] ?? Constants::SUBSCRIPTION_TYPES['trial'],
                     ];
                 }
 
@@ -394,7 +394,7 @@ class SettingsService extends Component
      */
     public function getUserSubscriptionType(): string
     {
-        return $this->userSubscriptionType ?? Constants::SUBSCRIPTION_TYPES['free'];
+        return $this->userSubscriptionType ?? Constants::SUBSCRIPTION_TYPES['trial'];
     }
 
     /**
@@ -402,6 +402,6 @@ class SettingsService extends Component
      */
     public function setUserSubscriptionType(?string $plan): void
     {
-        $this->userSubscriptionType = $plan ?? Constants::SUBSCRIPTION_TYPES['free'];
+        $this->userSubscriptionType = $plan ?? Constants::SUBSCRIPTION_TYPES['trial'];
     }
 }
