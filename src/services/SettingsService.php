@@ -8,6 +8,7 @@ use appfoster\upsnap\records\SettingRecord;
 use appfoster\upsnap\Upsnap;
 use Craft;
 use Exception;
+use GuzzleHttp\Client;
 
 /**
  * Settings service for managing plugin settings using Record models
@@ -403,5 +404,22 @@ class SettingsService extends Component
     public function setUserSubscriptionType(?string $plan): void
     {
         $this->userSubscriptionType = $plan ?? Constants::SUBSCRIPTION_TYPES['trial'];
+    }
+
+    public function isUrlReachable(string $url): bool
+    {
+        $client = new Client(['timeout' => 5, 'verify' => false]);
+
+        try {
+            $response = $client->head($url, [
+                'http_errors' => false,
+            ]);
+
+            $statusCode = $response->getStatusCode();
+
+            return $statusCode >= 200 && $statusCode < 400;
+        } catch (\Throwable $e) {
+            return false;
+        }
     }
 }

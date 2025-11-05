@@ -93,6 +93,16 @@ class SettingsController extends BaseController
             return $this->renderSettings($settings);
         }
 
+        // Check monitoring URL reachability before saving
+        if (array_key_exists('monitoringUrl', $body) && !empty($settings->monitoringUrl)) {
+           if (!$service->isUrlReachable($settings->monitoringUrl)) {
+                Craft::$app->getSession()->setError(
+                    Craft::t('upsnap', 'The monitoring URL could not be reached. Please check the URL and try again.')
+                );
+                return $this->renderSettings($settings);
+            }
+        }
+
         // API key handling if updated
         if (array_key_exists('apiKey', $body) && $service->isApiKeyUpdated($settings->apiKey)) {
             try {

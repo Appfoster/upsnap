@@ -32,8 +32,8 @@
                 id: 'monitoringUrl',
                 name: 'monitoringUrl',
                 type: 'text',
-                readonly: not (settings.apiKey ?? false),
-                class: (not (settings.apiKey ?? false)) ? 'disabled-field' : '',
+                readonly: not (showHealthchecks ?? false),
+                class: (not (showHealthchecks ?? false)) ? 'disabled-field' : '',
                 value: settings.monitoringUrl ?? '',
                 placeholder: 'https://example.com',
                 errors: settings.getErrors('monitoringUrl') ?? false

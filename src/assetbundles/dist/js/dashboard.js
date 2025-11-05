@@ -1,8 +1,14 @@
 // Dashboard-specific JavaScript functionality
 
 document.addEventListener("DOMContentLoaded", function () {
+    const refreshBtn = document.getElementById("refresh-btn");
+
     // Dashboard-specific initialization
     initializeDashboard();
+
+    if (refreshBtn) {
+        runWithRefreshButton(refreshBtn, initializeDashboard);
+    }
 });
 
 function renderCard({ cardId, title, status, message, checkedAt, detailUrl }) {
@@ -15,8 +21,8 @@ function renderCard({ cardId, title, status, message, checkedAt, detailUrl }) {
     let icon = status === 'ok' ? '✓' : (status === 'error' ? '✗' : '!');
     let formattedCheckedAt = '';
     if (checkedAt) {
-        formattedCheckedAt = new Date(checkedAt).toLocaleString(); 
-    }  else {
+        formattedCheckedAt = new Date(checkedAt).toLocaleString();
+    } else {
         formattedCheckedAt = 'N/A';
     }
     card.innerHTML = `
@@ -51,57 +57,77 @@ function renderErrorCard({ cardId, title, errorMsg }) {
 }
 
 function fetchAndRenderCard({ action, cardId, getMessage, getStatus }) {
-    Craft.sendActionRequest('POST', action)
+    return Craft.sendActionRequest('POST', action)
         .then((response) => {
             response = response?.data;
             const data = response?.data;
 
             renderCard({
                 cardId,
-                title : response?.title,
+                title: response?.title,
                 status: getStatus ? getStatus(data) : data.status,
                 message: getMessage ? getMessage(data) : (data.status === 'ok' ? data.message : data.error),
                 checkedAt: data.checkedAt,
-                detailUrl : response?.url
+                detailUrl: response?.url
             });
         })
         .catch((error) => {
-            let msg = error.response && error.response.data
+            const msg = error.response && error.response.data
                 ? error.response.data.error || 'Unknown error'
                 : error.message;
-            renderErrorCard({ cardId, title, errorMsg: msg });
+            renderErrorCard({ cardId, title: action, errorMsg: msg });
         });
 }
 
+
 function initializeDashboard() {
-    fetchAndRenderCard({
-        action: 'upsnap/health-check/reachability',
-        cardId: 'reachability-card',
-    });
+    const calls = [
+        fetchAndRenderCard({
+            action: 'upsnap/health-check/reachability',
+            cardId: 'reachability-card',
+        }),
+        fetchAndRenderCard({
+            action: 'upsnap/health-check/security-certificates',
+            cardId: 'ssl-card',
+        }),
+        fetchAndRenderCard({
+            action: 'upsnap/health-check/broken-links',
+            cardId: 'broken-links-card',
+            getMessage: (data) => data.status === 'false' ? data.error : data.message
+        }),
+        fetchAndRenderCard({
+            action: 'upsnap/health-check/domain-check',
+            cardId: 'domain-check-card',
+        }),
+        fetchAndRenderCard({
+            action: 'upsnap/health-check/mixed-content',
+            cardId: 'mixed-content-card',
+        }),
+        fetchAndRenderCard({
+            action: 'upsnap/health-check/lighthouse',
+            cardId: 'lighthouse-card',
+        }),
+    ];
 
-    fetchAndRenderCard({
-        action: 'upsnap/health-check/security-certificates',
-        cardId: 'ssl-card',
-    });
+    // Return a promise that resolves when all requests finish
+    return Promise.allSettled(calls);
+}
 
-    fetchAndRenderCard({
-        action: 'upsnap/health-check/broken-links',
-        cardId: 'broken-links-card',
-        getMessage: (data) => data.status === 'false' ? data.error : data.message
-    });
+function runWithRefreshButton(button, fetchFn) {
+    if (!button || typeof fetchFn !== 'function') return;
 
-    fetchAndRenderCard({
-        action: 'upsnap/health-check/domain-check',
-        cardId: 'domain-check-card',
-    });
+    const originalHtml = button.innerHTML;
+    button.disabled = true;
+    button.classList.add('disabled');
 
-    fetchAndRenderCard({
-        action: 'upsnap/health-check/mixed-content',
-        cardId: 'mixed-content-card',
-    });
-
-    fetchAndRenderCard({
-        action: 'upsnap/health-check/lighthouse',
-        cardId: 'lighthouse-card',
-    });
+    return Promise.resolve()
+        .then(fetchFn)
+        .catch(err => {
+            console.error("Dashboard refresh error:", err);
+        })
+        .finally(() => {
+            button.disabled = false;
+            button.classList.remove('disabled');
+            button.innerHTML = originalHtml;
+        });
 }
