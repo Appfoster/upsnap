@@ -51,7 +51,7 @@ class SettingsController extends BaseController
         $settings->domainDaysBeforeExpiryAlert = $service->getDomainDaysBeforeExpiryAlert();
 
 
-        $this->renderSettings($settings);
+        return $this->renderSettings($settings);
     }
 
     /**

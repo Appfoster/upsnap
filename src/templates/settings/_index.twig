@@ -35,7 +35,7 @@
                 readonly: not (showHealthchecks ?? false),
                 class: (not (showHealthchecks ?? false)) ? 'disabled-field' : '',
                 value: settings.monitoringUrl ?? '',
-                placeholder: 'https://example.com',
+                placeholder: 'https://www.example.com',
                 errors: settings.getErrors('monitoringUrl') ?? false
             }) }}
 
@@ -55,15 +55,11 @@
 		{# ====================== HEALTHCHECK TAB ====================== #}
 		{% if showHealthchecks %}
 			<div id="healthchecks-tab" class="tab-content hidden">
-            {% set isFreePlan = (userSubscriptionType ??  subscriptionTypes.trial) ==  subscriptionTypes.trial %}
 				{{ forms.lightswitchField({
                     label: "Enable Monitoring"|t('upsnap'),
-                     instructions: isFreePlan
-                    ? ("Monitoring is available only in paid plans. ( Current plan: " ~ userSubscriptionType ~ " )")|t('upsnap')
-                    : "Turn monitoring on or off"|t('upsnap'),
+                    instructions: "Turn monitoring on or off"|t('upsnap'),
                     id: 'enabled',
                     name: 'enabled',
-                    disabled: isFreePlan,
                     on: settings.enabled ?? false,
                     errors: settings.getErrors('enabled') ?? false
                 }) }}
