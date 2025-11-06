@@ -759,34 +759,51 @@
   flex-wrap: wrap;
 }
 
-.api-pill {
-  display: inline-block;
-  padding: 4px 10px;
-  border-radius: 9999px;
-  font-size: 0.875rem;
-  font-weight: 600;
-  text-transform: capitalize;
-  color: #fff;
-  line-height: 1.2;
-  min-width: 80px;
-  text-align: center;
+.api-key-field-with-status {
+    position: relative;
+    margin-bottom: 1.5rem;
 }
 
-/* Pill color variations */
+#apiKey-instructions {
+    position: relative;
+    padding-right: 100px;
+    font-size: 0.875rem;
+    color: #666;
+    margin-top: 0.25rem;
+}
+
+.api-pill {
+    position: absolute;
+    top: 30%;
+    right: 0;
+    transform: translateY(-50%);
+    display: inline-block;
+    padding: 0.2rem 0.6rem;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: bold;
+    white-space: nowrap;
+    color: #fff;
+    background-color: #6c757d;
+    user-select: none;
+}
+
+/* Your status colors */
 .pill--green {
-  background-color: #27ae60; /* active */
+    background-color: #28a745;
 }
 
 .pill--red {
-  background-color: #e74c3c; /* expired */
-}
-
-.pill--grey {
-  background-color: #7f8c8d; /* deleted */
+    background-color: #dc3545;
 }
 
 .pill--yellow {
-  background-color: #f1c40f; /* suspended */
+    background-color: #ffc107;
+    color: #212529;
+}
+
+.pill--grey {
+    background-color: #6c757d;
 }
 
 .api-pill:hover {

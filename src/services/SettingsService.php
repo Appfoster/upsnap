@@ -15,7 +15,6 @@ use GuzzleHttp\Client;
  */
 class SettingsService extends Component
 {
-    public ?string $userSubscriptionType;
     public ?string $apiKeyStatus;
     /**
      * Create a new Settings model instance
@@ -382,23 +381,6 @@ class SettingsService extends Component
 
         $this->setApiTokenStatus($apiKeyStatus);
     }
-
-    /**
-     * Get current user subscription type (defaults to 'free')
-     */
-    public function getUserSubscriptionType(): string
-    {
-        return $this->userSubscriptionType ?? Constants::SUBSCRIPTION_TYPES['trial'];
-    }
-
-    /**
-     * Set current user plan
-     */
-    public function setUserSubscriptionType(?string $plan): void
-    {
-        $this->userSubscriptionType = $plan ?? Constants::SUBSCRIPTION_TYPES['trial'];
-    }
-
     
     /**
      * Get current user subscription type (defaults to 'free')
