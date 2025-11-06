@@ -15,6 +15,17 @@
 		</button>
 	</div>
 {% endblock %}
+{% set apiTokenStatus = apiTokenStatus ?? 'expired' %}
+
+{% set statusColorMap = {
+    (apiTokenStatuses['active']): 'pill--green',
+    (apiTokenStatuses['expired']): 'pill--red',
+    (apiTokenStatuses['deleted']): 'pill--grey',
+    (apiTokenStatuses['suspended']): 'pill--yellow'
+} %}
+
+{% set statusColorClass = statusColorMap[apiTokenStatus]|default('pill--grey') %}
+
 
 {% block content %}
 	<form id="settings-form" method="post" accept-charset="UTF-8" enctype="multipart/form-data">
@@ -39,16 +50,22 @@
                 errors: settings.getErrors('monitoringUrl') ?? false
             }) }}
 
-            {{ forms.textField({
-                label: "API Key"|t('upsnap'),
-                instructions: "Enter the Upsnap API Key and save to enable Healthcheck settings. To access the API key, please visit the Upsnap dashboard at <a href='#{upsnapDashboardUrl}' target='_blank' rel='noopener noreferrer'>Upsnap Dashboard<span class='sr-only' style='position:absolute;left:-10000px;'> (opens in a new tab)</span></a>"|t('upsnap')|raw,
-                id: 'apiKey',
-                name: 'apiKey',
-                type: 'text',
-                value: settings.apiKey ?? '',
-                placeholder: 'XXXX-XXXX-XXXX-XXXX',
-                errors: settings.getErrors('apiKey') ?? false
-            }) }}
+            <div class="api-key-field-with-status">
+                {{ forms.textField({
+                    label: "API Key"|t('upsnap'),
+                    instructions: "Enter the Upsnap API Key and save to enable Healthcheck settings. To access the API key, please visit the Upsnap dashboard at <a href='#{upsnapDashboardUrl}' target='_blank' rel='noopener noreferrer'>Upsnap Dashboard<span class='sr-only' style='position:absolute;left:-10000px;'> (opens in a new tab)</span></a>"|t('upsnap')|raw,
+                    id: 'apiKey',
+                    name: 'apiKey',
+                    type: 'text',
+                    value: settings.apiKey ?? '',
+                    placeholder: 'XXXX-XXXX-XXXX-XXXX',
+                    errors: settings.getErrors('apiKey') ?? false
+                }) }}
+
+                <span class="api-pill {{ statusColorClass }}">
+                    {{ apiTokenStatus|capitalize }}
+                </span>
+            </div>
 
 		</div>
 
@@ -104,42 +121,67 @@
 					<h2>{{ "Healthcheck Endpoints"|t('upsnap') }}</h2>
 					<p class="light">{{ "Configure monitoring settings for each healthcheck endpoint"|t('upsnap') }}</p>
 
-					{# Example: Reachability #}
-					{{ forms.lightswitchField({
-                        label: "Reachability Check"|t('upsnap'),
-                        instructions: "Monitor if the site is reachable"|t('upsnap'),
-                        id: 'reachabilityEnabled',
-                        name: 'reachabilityEnabled',
-                        on: settings.reachabilityEnabled ?? true,
-                        errors: settings.getErrors('reachabilityEnabled') ?? false
-                    }) }}
+                    <div class="healthcheck-row grouped-row">
+                        <div class="healthcheck-section">
+                            {{ forms.lightswitchField({
+                                label: "Broken Links Check"|t('upsnap'),
+                                instructions: "Monitor for broken links on your site"|t('upsnap'),
+                                id: 'brokenLinksEnabled',
+                                name: 'brokenLinksEnabled',
+                                on: settings.brokenLinksEnabled ?? true,
+                                errors: settings.getErrors('brokenLinksEnabled') ?? false
+                            }) }}
+                        </div>
 
-					<div id="reachability-settings" class="nested-settings" style="margin-left:24px; {% if not (settings.reachabilityEnabled ?? true) %}display:none;{% endif %}">
-						{{ forms.textField({
-                            label: "Tolerance (minutes)"|t('upsnap'),
-                            id: 'reachabilityToleranceMinutes',
-                            name: 'reachabilityToleranceMinutes',
-                            type: 'number',
-                            value: settings.reachabilityToleranceMinutes ?? 5,
-                            min: 1
+                        <div class="healthcheck-section">
+                            {{ forms.lightswitchField({
+                                label: "Mixed Content Check"|t('upsnap'),
+                                instructions: "Monitor for mixed content issues (HTTP content on HTTPS pages)"|t('upsnap'),
+                                id: 'mixedContentEnabled',
+                                name: 'mixedContentEnabled',
+                                on: settings.mixedContentEnabled ?? true,
+                                errors: settings.getErrors('mixedContentEnabled') ?? false
+                            }) }}
+                        </div>
+
+                        <div class="healthcheck-section">
+                            {{ forms.lightswitchField({
+                                label: "Lighthouse Performance Check"|t('upsnap'),
+                                instructions: "Monitor site performance using Google Lighthouse"|t('upsnap'),
+                                id: 'lighthouseEnabled',
+                                name: 'lighthouseEnabled',
+                                on: settings.lighthouseEnabled ?? false,
+                                errors: settings.getErrors('lighthouseEnabled') ?? false
+                            }) }}
+                        </div>
+                    </div>
+
+                    {# Reachability Check #}
+                    <div class="healthcheck-row">
+                        {{ forms.lightswitchField({
+                            label: "Reachability Check"|t('upsnap'),
+                            instructions: "Monitor if the site is reachable"|t('upsnap'),
+                            id: 'reachabilityEnabled',
+                            name: 'reachabilityEnabled',
+                            on: settings.reachabilityEnabled ?? true,
+                            errors: settings.getErrors('reachabilityEnabled') ?? false
                         }) }}
-					</div>
 
-					{# Broken Links Check #}
-					<div class="healthcheck-section field">
-						{{ forms.lightswitchField({
-                            label: "Broken Links Check"|t('upsnap'),
-                            instructions: "Monitor for broken links on your site"|t('upsnap'),
-                            id: 'brokenLinksEnabled',
-                            name: 'brokenLinksEnabled',
-                            on: settings.brokenLinksEnabled ?? true,
-                            errors: settings.getErrors('brokenLinksEnabled') ?? false
-                        }) }}
-					</div>
+                        <div id="reachability-settings" class="nested-settings" {% if not (settings.reachabilityEnabled ?? true) %}style="display:none;"{% endif %}>
+                            {{ forms.textField({
+                                label: "Tolerance (minutes)"|t('upsnap'),
+                                id: 'reachabilityToleranceMinutes',
+                                name: 'reachabilityToleranceMinutes',
+                                type: 'number',
+                                value: settings.reachabilityToleranceMinutes ?? 5,
+                                min: 1
+                            }) }}
+                        </div>
+                    </div>
 
-					{# SSL Certificate Check #}
-					<div class="healthcheck-section field">
-						{{ forms.lightswitchField({
+                    {# SSL Check #}
+                    <div class="healthcheck-row">
+                        {{ forms.lightswitchField({
                             label: "SSL Certificate Check"|t('upsnap'),
                             instructions: "Monitor SSL certificate expiration"|t('upsnap'),
                             id: 'sslEnabled',
@@ -148,23 +190,22 @@
                             errors: settings.getErrors('securityCertificatesEnabled') ?? false
                         }) }}
 
-						<div id="ssl-settings" class="nested-settings" style="margin-left: 24px; {% if not (settings.securityCertificatesEnabled ?? true) %}display: none;{% endif %}">
-							{{ forms.textField({
+                        <div id="ssl-settings" class="nested-settings" {% if not (settings.securityCertificatesEnabled ?? true) %}style="display:none;"{% endif %}>
+                            {{ forms.textField({
                                 label: "Days Before Expiry"|t('upsnap'),
                                 instructions: "Number of days before certificate expires to send alert"|t('upsnap'),
                                 id: 'sslExpiryDays',
                                 name: 'sslDaysBeforeExpiryAlert',
                                 type: 'number',
                                 value: settings.sslDaysBeforeExpiryAlert ?? 30,
-                                min: 1,
-                                errors: settings.getErrors('sslDaysBeforeExpiryAlert') ?? false
+                                min: 1
                             }) }}
-						</div>
-					</div>
+                        </div>
+                    </div>
 
-					{# Domain Check #}
-					<div class="healthcheck-section field">
-						{{ forms.lightswitchField({
+                    {# Domain Check #}
+                    <div class="healthcheck-row">
+                        {{ forms.lightswitchField({
                             label: "Domain Expiry Check"|t('upsnap'),
                             instructions: "Monitor domain expiration"|t('upsnap'),
                             id: 'domainEnabled',
@@ -173,43 +214,18 @@
                             errors: settings.getErrors('domainEnabled') ?? false
                         }) }}
 
-						<div id="domain-settings" class="nested-settings" style="margin-left: 24px; {% if not (settings.domainEnabled ?? true) %}display: none;{% endif %}">
-							{{ forms.textField({
+                        <div id="domain-settings" class="nested-settings" {% if not (settings.domainEnabled ?? true) %}style="display:none;"{% endif %}>
+                            {{ forms.textField({
                                 label: "Days Before Expiry"|t('upsnap'),
                                 instructions: "Number of days before domain expires to send alert"|t('upsnap'),
                                 id: 'domainExpiryDays',
                                 name: 'domainDaysBeforeExpiryAlert',
                                 type: 'number',
                                 value: settings.domainDaysBeforeExpiryAlert ?? 30,
-                                min: 1,
-                                errors: settings.getErrors('domainDaysBeforeExpiryAlert') ?? false
+                                min: 1
                             }) }}
-						</div>
-					</div>
-
-					{# Mixed Content Check #}
-					<div class="healthcheck-section field">
-						{{ forms.lightswitchField({
-                            label: "Mixed Content Check"|t('upsnap'),
-                            instructions: "Monitor for mixed content issues (HTTP content on HTTPS pages)"|t('upsnap'),
-                            id: 'mixedContentEnabled',
-                            name: 'mixedContentEnabled',
-                            on: settings.mixedContentEnabled ?? true,
-                            errors: settings.getErrors('mixedContentEnabled') ?? false
-                        }) }}
-					</div>
-
-					{# Lighthouse Check #}
-					<div class="healthcheck-section field">
-						{{ forms.lightswitchField({
-                            label: "Lighthouse Performance Check"|t('upsnap'),
-                            instructions: "Monitor site performance using Google Lighthouse"|t('upsnap'),
-                            id: 'lighthouseEnabled',
-                            name: 'lighthouseEnabled',
-                            on: settings.lighthouseEnabled ?? false,
-                            errors: settings.getErrors('lighthouseEnabled') ?? false
-                        }) }}
-					</div>
+                        </div>
+                    </div>
 				</div>
 			</div>
 		{% endif %}

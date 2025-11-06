@@ -151,6 +151,13 @@ class Constants
         'enterprise' => 'enterprise',
     ];
 
+    const API_KEY_STATUS = [
+        'active' => 'active',
+        'suspended' => 'suspended',
+        'expired' => 'expired',
+        'deleted' => 'deleted',
+    ];
+
     public static function getAPIBaseUrl(): string
     {
         return App::env('UPSNAP_API_BASE_URL') ?? self::API_BASE_URL_DEFAULT;

@@ -16,6 +16,7 @@ use GuzzleHttp\Client;
 class SettingsService extends Component
 {
     public ?string $userSubscriptionType;
+    public ?string $apiKeyStatus;
     /**
      * Create a new Settings model instance
      */
@@ -314,10 +315,9 @@ class SettingsService extends Component
                 return;
             }
 
-            // Store subscription type for use in the settings template
-            if (isset($result['subscriptionType'])) {
-                $this->setUserSubscriptionType($result['subscriptionType']);
-            }
+            $isValid = $result['isValid'];
+            $tokenStatus = $isValid ? Constants::API_KEY_STATUS['active'] : Constants::API_KEY_STATUS['deleted'];
+            $this->setApiTokenStatus($tokenStatus);
         } catch (\Throwable $e) {
             Craft::error("Error validating stored API key: {$e->getMessage()}", __METHOD__);
         }
@@ -335,7 +335,7 @@ class SettingsService extends Component
                 if ($response['status'] === 'success') {
                     return [
                         'status' => 'success',
-                        'valid' => (bool) ($response['data']['valid'] ?? false),
+                        'isValid' => (bool) ($response['data']['valid'] ?? false),
                         'message' => 'valid',
                         'subscriptionType' => $response['data']['subscription'] ?? Constants::SUBSCRIPTION_TYPES['trial'],
                     ];
@@ -345,7 +345,7 @@ class SettingsService extends Component
                 if ($response['status'] === 'error' && isset($response['message'])) {
                     return [
                         'status' => 'error',
-                        'valid' => false,
+                        'isValid' => false,
                         'message' => $response['message'],
                     ];
                 }
@@ -370,24 +370,17 @@ class SettingsService extends Component
     protected function handleInvalidTokenResponse(string $apiMessage): void
     {
         $normalizedMessage = strtolower($apiMessage);
-        $displayMessage = null;
-        $shouldRemoveToken = false;
+        $apiKeyStatus = null;
 
         if (str_contains($normalizedMessage, 'suspended')) {
-            $displayMessage = Craft::t('upsnap', 'Your API token has been suspended. Please add a valid one.');
+            $apiKeyStatus = Constants::API_KEY_STATUS['suspended'];
         } elseif (str_contains($normalizedMessage, 'expired')) {
-            $displayMessage = Craft::t('upsnap', 'Your API token has expired. Please add a valid one.');
+            $apiKeyStatus = Constants::API_KEY_STATUS['expired'];
         } elseif (str_contains($normalizedMessage, 'not found')) {
-            $displayMessage = Craft::t('upsnap', 'Your API token was not found (it may have been deleted). Please add a valid one.');
-            $shouldRemoveToken = true;
+            $apiKeyStatus = Constants::API_KEY_STATUS['deleted'];
         }
 
-        if ($displayMessage !== null) {
-            if ($shouldRemoveToken) {
-                $this->setApiKey('');
-            }
-            Craft::$app->getSession()->setError($displayMessage);
-        }
+        $this->setApiTokenStatus($apiKeyStatus);
     }
 
     /**
@@ -405,6 +398,24 @@ class SettingsService extends Component
     {
         $this->userSubscriptionType = $plan ?? Constants::SUBSCRIPTION_TYPES['trial'];
     }
+
+    
+    /**
+     * Get current user subscription type (defaults to 'free')
+     */
+    public function getApiTokenStatus(): string
+    {
+        return $this->apiKeyStatus ?? Constants::API_KEY_STATUS['active'];
+    }
+
+    /**
+     * Set current user plan
+     */
+    public function setApiTokenStatus(?string $status): void
+    {
+        $this->apiKeyStatus = $status ?? Constants::API_KEY_STATUS['active'];
+    }
+
 
     public function isUrlReachable(string $url): bool
     {
