@@ -9,11 +9,14 @@
 ]|filter(v => v) %}
 
 {% block actionButton %}
-	<div class="buttons">
+	 <div class="flex smallgap">
+		<button type="button" class="btn add icon" id="add-monitor-btn">
+            {{ "Add New Monitor"|t('upsnap') }}
+        </button>
 		<button id="save-button" type="submit" form="settings-form" class="btn submit">
 			{{ "Save"|t('upsnap') }}
-		</button>
-	</div>
+		</button>        
+    </div>
 {% endblock %}
 {% set apiTokenStatus = apiTokenStatus ?? 'expired' %}
 
@@ -28,6 +31,18 @@
 
 
 {% block content %}
+	{# Include modal component separately #}
+	{% include "upsnap/_components/addMonitorModal.twig" %}
+
+	{# inject server values for JS to consume - put this before monitor.js is loaded #}
+	<script>
+		window.Upsnap = window.Upsnap || {};
+		window.Upsnap.settings = {
+		monitoringUrl: {{ (settings.monitoringUrl ?? '')|json_encode|raw }},
+		// If you want to send other server data, add here, e.g.
+		// somethingElse: {{ (someVar ?? null)|json_encode|raw }},
+		};
+	</script>
 	<form id="settings-form" method="post" accept-charset="UTF-8" enctype="multipart/form-data">
 		{{ csrfInput() }}
 		{{ actionInput('upsnap/settings/save') }}
@@ -35,20 +50,19 @@
 
 		{# ====================== GENERAL TAB ====================== #}
 		<div id="general-tab" class="tab-content">
-			{{ forms.textField({
-                label: "URL to Monitor"|t('upsnap'),
-                instructions: (settings.apiKey ?? false)
-                    ? "Enter the URL you want to monitor"|t('upsnap')
-                    : "Please add and save your API key before editing the monitoring URL."|t('upsnap'),
-                id: 'monitoringUrl',
-                name: 'monitoringUrl',
-                type: 'text',
-                readonly: not (showHealthchecks ?? false),
-                class: (not (showHealthchecks ?? false)) ? 'disabled-field' : '',
-                value: settings.monitoringUrl ?? '',
-                placeholder: 'https://www.example.com',
-                errors: settings.getErrors('monitoringUrl') ?? false
-            }) }}
+
+			{{ forms.selectField({
+				label: "Select Monitor"|t('upsnap'),
+				instructions: "Choose a monitor from the available list or create a new one."|t('upsnap'),
+				id: "monitorDropdown",
+				name: "monitoringUrl",
+				options: [
+					{ label: "Loading monitors...", value: "" }
+				],
+				value: settings.monitoringUrl ?? "",
+				data: { value: settings.monitoringUrl ?? "" }, 
+				errors: settings.getErrors("monitoringUrl") ?? false
+			}) }}
 
 			<div class="api-key-field-with-status">
 				{{ forms.textField({
@@ -306,4 +320,5 @@
 			</div>
 		{% endif %}
 	</form>
+	
 {% endblock %}

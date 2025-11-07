@@ -147,7 +147,6 @@ Craft.Upsnap.Settings = {
         // Store original display type the first time we toggle
         if (!settings.dataset.originalDisplay) {
             const currentDisplay = window.getComputedStyle(settings).display;
-            // If it's currently hidden inline (style="display:none;"), we assume it was flex by default in CSS
             settings.dataset.originalDisplay = currentDisplay !== 'none' ? currentDisplay : 'flex';
         }
 

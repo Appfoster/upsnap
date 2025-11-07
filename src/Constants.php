@@ -158,6 +158,21 @@ class Constants
         'deleted' => 'deleted',
     ];
 
+    // Microservice endpoints
+    public const MICROSERVICE_ENDPOINTS = [
+        'monitors' => [
+            'create' => 'user/monitors',
+            'list' => 'user/monitors',
+            'view' => 'user/monitors/{id}',
+            'delete' => 'user/monitors/{id}',
+            'update' => 'user/monitors/{id}',
+        ],
+    ];
+
+    public const SERVICE_TYPES = [
+        'website' => 'website',
+    ];
+
     public static function getAPIBaseUrl(): string
     {
         return App::env('UPSNAP_API_BASE_URL') ?? self::API_BASE_URL_DEFAULT;
