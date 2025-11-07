@@ -722,36 +722,6 @@
   opacity: 0.7;
 }
 
-/* Healthcheck settings Styles */
-.healthcheck-row {
-  margin-bottom: 1.5rem;
-}
-
-.nested-settings {
-  margin-left: 24px;
-  margin-top: 0.5rem;
-}
-.grouped-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1rem;
-  align-items: flex-start;
-}
-
-.healthcheck-section {
-  flex: 1 1 30%;
-  min-width: 260px;
-}
-
-@media (max-width: 900px) {
-  .grouped-row {
-    flex-direction: column;
-  }
-  .healthcheck-section {
-    flex: 1 1 100%;
-  }
-}
-
 .api-key-field-with-status {
   display: flex;
   align-items: center;
@@ -809,3 +779,71 @@
 .api-pill:hover {
   opacity: 0.9;
 }
+
+/* Healthcheck settings Styles */
+.healthcheck-row-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 2rem;
+  margin-bottom: 1.5rem;
+}
+
+.healthcheck-section {
+  display: flex;
+  flex-direction: column;
+}
+
+.nested-settings-inline {
+  margin-left: .5rem;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+}
+
+.nested-settings-inline .field {
+  margin-bottom: 0;
+  margin-top: 0;
+}
+
+/* Responsive layout */
+@media (max-width: 900px) {
+  .healthcheck-row-grid {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+}
+
+.healthcheck-section .field {
+  margin-bottom: 0.5rem;
+}
+
+/* lightswitch customization */
+.healthcheck-section .field.lightswitch-field {
+  position: relative;
+}
+
+.healthcheck-section .field.lightswitch-field .heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0;
+}
+
+.healthcheck-section .field.lightswitch-field .input {
+  position: absolute;
+  top: 0;
+  right: 0;
+  margin: 0;
+}
+
+.healthcheck-section .field.lightswitch-field .instructions {
+  margin-top: 8px;
+  clear: both;
+}
+
+.healthcheck-section .field.lightswitch-field .lightswitch {
+  margin: 0;
+}
+
+/* healthcheck settings end */

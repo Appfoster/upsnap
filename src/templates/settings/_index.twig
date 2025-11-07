@@ -50,8 +50,8 @@
                 errors: settings.getErrors('monitoringUrl') ?? false
             }) }}
 
-            <div class="api-key-field-with-status">
-                {{ forms.textField({
+			<div class="api-key-field-with-status">
+				{{ forms.textField({
                     label: "API Key"|t('upsnap'),
                     instructions: "Enter the Upsnap API Key and save to enable Healthcheck settings. To access the API key, please visit the Upsnap dashboard at <a href='#{upsnapDashboardUrl}' target='_blank' rel='noopener noreferrer'>Upsnap Dashboard<span class='sr-only' style='position:absolute;left:-10000px;'> (opens in a new tab)</span></a>"|t('upsnap')|raw,
                     id: 'apiKey',
@@ -62,10 +62,10 @@
                     errors: settings.getErrors('apiKey') ?? false
                 }) }}
 
-                <span class="api-pill {{ statusColorClass }}">
-                    {{ apiTokenStatus|capitalize }}
-                </span>
-            </div>
+				<span class="api-pill {{ statusColorClass }}">
+					{{ apiTokenStatus|capitalize }}
+				</span>
+			</div>
 
 		</div>
 
@@ -73,24 +73,15 @@
 		{% if showHealthchecks %}
 			<div id="healthchecks-tab" class="tab-content hidden">
 				{{ forms.lightswitchField({
-                    label: "Enable Monitoring"|t('upsnap'),
-                    instructions: "Turn monitoring on or off"|t('upsnap'),
-                    id: 'enabled',
-                    name: 'enabled',
-                    on: settings.enabled ?? false,
-                    errors: settings.getErrors('enabled') ?? false
-                }) }}
+					label: "Enable Monitoring"|t('upsnap'),
+					instructions: "Turn monitoring on or off"|t('upsnap'),
+					id: 'enabled',
+					name: 'enabled',
+					on: settings.enabled ?? false,
+					errors: settings.getErrors('enabled') ?? false
+				}) }}
 
 				<div id="advanced-settings" style="{% if not (settings.enabled ?? false) %}display:none;{% endif %}">
-					{{ forms.textField({
-                        label: "Monitoring Interval (minutes)"|t('upsnap'),
-                        id: 'monitoringInterval',
-                        name: 'monitoringInterval',
-                        type: 'number',
-                        value: settings.monitoringInterval ?? 5,
-                        min: 1,
-                        errors: settings.getErrors('monitoringInterval') ?? false
-                    }) }}
 
 					{# Notification Emails #}
 					<div class="field" id="notificationEmails-field">
@@ -119,113 +110,198 @@
 					<hr>
 
 					<h2>{{ "Healthcheck Endpoints"|t('upsnap') }}</h2>
-					<p class="light">{{ "Configure monitoring settings for each healthcheck endpoint"|t('upsnap') }}</p>
+					<p class="light ">{{ "Configure monitoring settings for each healthcheck endpoint"|t('upsnap') }}</p>
 
-                    <div class="healthcheck-row grouped-row">
-                        <div class="healthcheck-section">
-                            {{ forms.lightswitchField({
-                                label: "Broken Links Check"|t('upsnap'),
-                                instructions: "Monitor for broken links on your site"|t('upsnap'),
-                                id: 'brokenLinksEnabled',
-                                name: 'brokenLinksEnabled',
-                                on: settings.brokenLinksEnabled ?? true,
-                                errors: settings.getErrors('brokenLinksEnabled') ?? false
-                            }) }}
-                        </div>
+					{# First Row: Broken Links and Mixed Content #}
+					<div class="healthcheck-row-grid">
+						<div class="healthcheck-section">
+							{{ forms.lightswitchField({
+								label: "Broken Links Check"|t('upsnap'),
+								instructions: "Monitor for broken links on your site"|t('upsnap'),
+								id: 'brokenLinksEnabled',
+								name: 'brokenLinksEnabled',
+								on: settings.brokenLinksEnabled ?? true,
+								errors: settings.getErrors('brokenLinksEnabled') ?? false
+							}) }}
+							<div class="nested-settings-inline" id="brokenLinks-settings">
+								{{ forms.selectField({
+									label: "Monitoring Interval"|t('upsnap'),
+									id: 'brokenLinksMonitoringInterval',
+									name: 'brokenLinksMonitoringInterval',
+									options: [
+										{ label: "30 seconds"|t('upsnap'), value: "30s" },
+										{ label: "1 minute"|t('upsnap'), value: "1m" },
+										{ label: "10 minutes"|t('upsnap'), value: "10m" },
+										{ label: "1 hour"|t('upsnap'), value: "1h" }
+									],
+									value: settings.brokenLinksMonitoringInterval ?? "1m",
+									errors: settings.getErrors('brokenLinksMonitoringInterval') ?? false
+								}) }}
+							</div>
+						</div>
 
-                        <div class="healthcheck-section">
-                            {{ forms.lightswitchField({
-                                label: "Mixed Content Check"|t('upsnap'),
-                                instructions: "Monitor for mixed content issues (HTTP content on HTTPS pages)"|t('upsnap'),
-                                id: 'mixedContentEnabled',
-                                name: 'mixedContentEnabled',
-                                on: settings.mixedContentEnabled ?? true,
-                                errors: settings.getErrors('mixedContentEnabled') ?? false
-                            }) }}
-                        </div>
+						<div class="healthcheck-section">
+							{{ forms.lightswitchField({
+								label: "Mixed Content Check"|t('upsnap'),
+								instructions: "Monitor for mixed content issues (HTTP content on HTTPS pages)"|t('upsnap'),
+								id: 'mixedContentEnabled',
+								name: 'mixedContentEnabled',
+								on: settings.mixedContentEnabled ?? true,
+								errors: settings.getErrors('mixedContentEnabled') ?? false
+							}) }}
+							<div class="nested-settings-inline" id="mixedContent-settings" {% if not (settings.mixedContentEnabled ?? true) %}style="display:none;"{% endif %}>
+								{{ forms.selectField({
+									label: "Monitoring Interval"|t('upsnap'),
+									id: 'mixedContentMonitoringInterval',
+									name: 'mixedContentMonitoringInterval',
+									options: [
+										{ label: "30 seconds"|t('upsnap'), value: "30s" },
+										{ label: "1 minute"|t('upsnap'), value: "1m" },
+										{ label: "10 minutes"|t('upsnap'), value: "10m" },
+										{ label: "1 hour"|t('upsnap'), value: "1h" }
+									],
+									value: settings.mixedContentMonitoringInterval ?? "1m",
+									errors: settings.getErrors('mixedContentMonitoringInterval') ?? false
+								}) }}
+							</div>
+						</div>
+					</div>
 
-                        <div class="healthcheck-section">
-                            {{ forms.lightswitchField({
-                                label: "Lighthouse Performance Check"|t('upsnap'),
-                                instructions: "Monitor site performance using Google Lighthouse"|t('upsnap'),
-                                id: 'lighthouseEnabled',
-                                name: 'lighthouseEnabled',
-                                on: settings.lighthouseEnabled ?? false,
-                                errors: settings.getErrors('lighthouseEnabled') ?? false
-                            }) }}
-                        </div>
-                    </div>
+					{# Second Row: Lighthouse and Reachability #}
+					<div class="healthcheck-row-grid">
+						<div class="healthcheck-section">
+							{{ forms.lightswitchField({
+								label: "Lighthouse Performance Check"|t('upsnap'),
+								instructions: "Monitor site performance using Google Lighthouse"|t('upsnap'),
+								id: 'lighthouseEnabled',
+								name: 'lighthouseEnabled',
+								on: settings.lighthouseEnabled ?? false,
+								errors: settings.getErrors('lighthouseEnabled') ?? false
+							}) }}
+							<div class="nested-settings-inline" id="lighthouse-settings">
+								{{ forms.selectField({
+									label: "Monitoring Interval"|t('upsnap'),
+									id: 'lighthouseMonitoringInterval',
+									name: 'lighthouseMonitoringInterval',
+									options: [
+										{ label: "30 seconds"|t('upsnap'), value: "30s" },
+										{ label: "1 minute"|t('upsnap'), value: "1m" },
+										{ label: "10 minutes"|t('upsnap'), value: "10m" },
+										{ label: "1 hour"|t('upsnap'), value: "1h" }
+									],
+									value: settings.lighthouseMonitoringInterval ?? "1m",
+									errors: settings.getErrors('lighthouseMonitoringInterval') ?? false
+								}) }}
+							</div>
+						</div>
 
-                    {# Reachability Check #}
-                    <div class="healthcheck-row">
-                        {{ forms.lightswitchField({
-                            label: "Reachability Check"|t('upsnap'),
-                            instructions: "Monitor if the site is reachable"|t('upsnap'),
-                            id: 'reachabilityEnabled',
-                            name: 'reachabilityEnabled',
-                            on: settings.reachabilityEnabled ?? true,
-                            errors: settings.getErrors('reachabilityEnabled') ?? false
-                        }) }}
+						<div class="healthcheck-section">
+							{{ forms.lightswitchField({
+								label: "Reachability Check"|t('upsnap'),
+								instructions: "Monitor if the site is reachable"|t('upsnap'),
+								id: 'reachabilityEnabled',
+								name: 'reachabilityEnabled',
+								on: settings.reachabilityEnabled ?? true,
+								errors: settings.getErrors('reachabilityEnabled') ?? false
+							}) }}
+							<div class="nested-settings-inline" id="reachability-settings">
+								{{ forms.selectField({
+									label: "Monitoring Interval"|t('upsnap'),
+									id: 'reachabilityMonitoringInterval',
+									name: 'reachabilityMonitoringInterval',
+									options: [
+										{ label: "30 seconds"|t('upsnap'), value: "30s" },
+										{ label: "1 minute"|t('upsnap'), value: "1m" },
+										{ label: "10 minutes"|t('upsnap'), value: "10m" },
+										{ label: "1 hour"|t('upsnap'), value: "1h" }
+									],
+									value: settings.reachabilityMonitoringInterval ?? "1m",
+									errors: settings.getErrors('reachabilityMonitoringInterval') ?? false
+								}) }}
+							</div>
+						</div>
+					</div>
 
-                        <div id="reachability-settings" class="nested-settings" {% if not (settings.reachabilityEnabled ?? true) %}style="display:none;"{% endif %}>
-                            {{ forms.textField({
-                                label: "Tolerance (minutes)"|t('upsnap'),
-                                id: 'reachabilityToleranceMinutes',
-                                name: 'reachabilityToleranceMinutes',
-                                type: 'number',
-                                value: settings.reachabilityToleranceMinutes ?? 5,
-                                min: 1
-                            }) }}
-                        </div>
-                    </div>
+					{# Third Row: SSL and Domain #}
+					<div class="healthcheck-row-grid">
+						<div class="healthcheck-section">
+							{{ forms.lightswitchField({
+								label: "SSL Certificate Check"|t('upsnap'),
+								instructions: "Monitor SSL certificate expiration"|t('upsnap'),
+								id: 'sslEnabled',
+								name: 'securityCertificatesEnabled',
+								on: settings.securityCertificatesEnabled ?? true,
+								errors: settings.getErrors('securityCertificatesEnabled') ?? false
+							}) }}
+							<div class="nested-settings-inline" id="ssl-settings">
+								{{ forms.selectField({
+									label: "Days Before Expiry"|t('upsnap'),
+									id: 'sslExpiryDays',
+									name: 'sslDaysBeforeExpiryAlert',
+									options: [
+										{ label: "1 day"|t('upsnap'), value: "1" },
+										{ label: "7 days"|t('upsnap'), value: "7" },
+										{ label: "15 days"|t('upsnap'), value: "15" },
+										{ label: "1 month"|t('upsnap'), value: "30" },
+										{ label: "3 months"|t('upsnap'), value: "90" }
+									],
+									value: settings.sslDaysBeforeExpiryAlert ?? "30"
+								}) }}
+								{{ forms.selectField({
+									label: "Monitoring Interval"|t('upsnap'),
+									id: 'securityCertificatesMonitoringInterval',
+									name: 'securityCertificatesMonitoringInterval',
+									options: [
+										{ label: "30 seconds"|t('upsnap'), value: "30s" },
+										{ label: "1 minute"|t('upsnap'), value: "1m" },
+										{ label: "10 minutes"|t('upsnap'), value: "10m" },
+										{ label: "1 hour"|t('upsnap'), value: "1h" }
+									],
+									value: settings.securityCertificatesMonitoringInterval ?? "1m",
+									errors: settings.getErrors('securityCertificatesMonitoringInterval') ?? false
+								}) }}
+							</div>
+						</div>
 
-                    {# SSL Check #}
-                    <div class="healthcheck-row">
-                        {{ forms.lightswitchField({
-                            label: "SSL Certificate Check"|t('upsnap'),
-                            instructions: "Monitor SSL certificate expiration"|t('upsnap'),
-                            id: 'sslEnabled',
-                            name: 'securityCertificatesEnabled',
-                            on: settings.securityCertificatesEnabled ?? true,
-                            errors: settings.getErrors('securityCertificatesEnabled') ?? false
-                        }) }}
-
-                        <div id="ssl-settings" class="nested-settings" {% if not (settings.securityCertificatesEnabled ?? true) %}style="display:none;"{% endif %}>
-                            {{ forms.textField({
-                                label: "Days Before Expiry"|t('upsnap'),
-                                instructions: "Number of days before certificate expires to send alert"|t('upsnap'),
-                                id: 'sslExpiryDays',
-                                name: 'sslDaysBeforeExpiryAlert',
-                                type: 'number',
-                                value: settings.sslDaysBeforeExpiryAlert ?? 30,
-                                min: 1
-                            }) }}
-                        </div>
-                    </div>
-
-                    {# Domain Check #}
-                    <div class="healthcheck-row">
-                        {{ forms.lightswitchField({
-                            label: "Domain Expiry Check"|t('upsnap'),
-                            instructions: "Monitor domain expiration"|t('upsnap'),
-                            id: 'domainEnabled',
-                            name: 'domainEnabled',
-                            on: settings.domainEnabled ?? true,
-                            errors: settings.getErrors('domainEnabled') ?? false
-                        }) }}
-
-                        <div id="domain-settings" class="nested-settings" {% if not (settings.domainEnabled ?? true) %}style="display:none;"{% endif %}>
-                            {{ forms.textField({
-                                label: "Days Before Expiry"|t('upsnap'),
-                                instructions: "Number of days before domain expires to send alert"|t('upsnap'),
-                                id: 'domainExpiryDays',
-                                name: 'domainDaysBeforeExpiryAlert',
-                                type: 'number',
-                                value: settings.domainDaysBeforeExpiryAlert ?? 30,
-                                min: 1
-                            }) }}
-                        </div>
-                    </div>
+						<div class="healthcheck-section">
+							{{ forms.lightswitchField({
+								label: "Domain Expiry Check"|t('upsnap'),
+								instructions: "Monitor domain expiration"|t('upsnap'),
+								id: 'domainEnabled',
+								name: 'domainEnabled',
+								on: settings.domainEnabled ?? true,
+								errors: settings.getErrors('domainEnabled') ?? false
+							}) }}
+							<div class="nested-settings-inline" id= "domain-settings">
+								{{ forms.selectField({
+									label: "Days Before Expiry"|t('upsnap'),
+									id: 'domainExpiryDays',
+									name: 'domainDaysBeforeExpiryAlert',
+									options: [
+										{ label: "1 day"|t('upsnap'), value: "1" },
+										{ label: "7 days"|t('upsnap'), value: "7" },
+										{ label: "15 days"|t('upsnap'), value: "15" },
+										{ label: "1 month"|t('upsnap'), value: "30" },
+										{ label: "3 months"|t('upsnap'), value: "90" }
+									],
+									value: settings.domainDaysBeforeExpiryAlert ?? "30"
+								}) }}
+								{{ forms.selectField({
+									label: "Monitoring Interval"|t('upsnap'),
+									id: 'domainMonitoringInterval',
+									name: 'domainMonitoringInterval',
+									options: [
+										{ label: "30 seconds"|t('upsnap'), value: "30s" },
+										{ label: "1 minute"|t('upsnap'), value: "1m" },
+										{ label: "10 minutes"|t('upsnap'), value: "10m" },
+										{ label: "1 hour"|t('upsnap'), value: "1h" }
+									],
+									value: settings.domainMonitoringInterval ?? "1m",
+									errors: settings.getErrors('domainMonitoringInterval') ?? false
+								}) }}
+							</div>
+						</div>
+					</div>
 				</div>
 			</div>
 		{% endif %}

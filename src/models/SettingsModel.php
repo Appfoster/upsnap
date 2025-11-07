@@ -39,6 +39,13 @@ class SettingsModel extends Model
     public int $reachabilityToleranceMinutes = 5;
     public int $sslDaysBeforeExpiryAlert = 15;
     public int $domainDaysBeforeExpiryAlert = 15;
+    public int $brokenLinksMonitoringInterval = 5;
+    public int $lighthouseMonitoringInterval = 5;
+    public int $mixedContentMonitoringInterval = 5;
+    public int $reachabilityMonitoringInterval = 5;
+    public int $securityCertificatesMonitoringInterval = 5;
+    public int $domainMonitoringInterval = 5;
+
 
     /**
      * @inheritdoc

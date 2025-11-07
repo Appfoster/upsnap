@@ -12,18 +12,12 @@ Craft.Upsnap.Settings = {
 
     // Healthcheck toggles configuration
     healthchecks: [
-        {
-            id: 'reachabilityEnabled',
-            settingsId: 'reachability-settings'
-        },
-        {
-            id: 'sslEnabled',
-            settingsId: 'ssl-settings'
-        },
-        {
-            id: 'domainEnabled',
-            settingsId: 'domain-settings'
-        }
+        { id: 'brokenLinksEnabled', settingsId: 'brokenLinks-settings' },
+        { id: 'mixedContentEnabled', settingsId: 'mixedContent-settings' },
+        { id: 'lighthouseEnabled', settingsId: 'lighthouse-settings' },
+        { id: 'reachabilityEnabled', settingsId: 'reachability-settings' },
+        { id: 'sslEnabled', settingsId: 'ssl-settings' },
+        { id: 'domainEnabled', settingsId: 'domain-settings' }
     ],
 
     // Email validation
@@ -150,11 +144,14 @@ Craft.Upsnap.Settings = {
 
         const isEnabled = lightswitch.getAttribute('aria-checked') === 'true';
 
-        if (isEnabled) {
-            settings.style.display = 'block';
-        } else {
-            settings.style.display = 'none';
+        // Store original display type the first time we toggle
+        if (!settings.dataset.originalDisplay) {
+            const currentDisplay = window.getComputedStyle(settings).display;
+            // If it's currently hidden inline (style="display:none;"), we assume it was flex by default in CSS
+            settings.dataset.originalDisplay = currentDisplay !== 'none' ? currentDisplay : 'flex';
         }
+
+        settings.style.display = isEnabled ? settings.dataset.originalDisplay : 'none';
     },
     isValidUrl: function (url) {
         if (!url) return false;

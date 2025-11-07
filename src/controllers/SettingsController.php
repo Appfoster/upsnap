@@ -50,6 +50,14 @@ class SettingsController extends BaseController
         $settings->sslDaysBeforeExpiryAlert = $service->getSslDaysBeforeExpiryAlert();
         $settings->domainDaysBeforeExpiryAlert = $service->getDomainDaysBeforeExpiryAlert();
 
+        $settings->brokenLinksMonitoringInterval = 15;
+        $settings->securityCertificatesMonitoringInterval = 15;
+        $settings->lighthouseMonitoringInterval = 15;
+        $settings->securityCertificatesMonitoringInterval = 15;
+        $settings->mixedContentMonitoringInterval = 15;
+        $settings->reachabilityMonitoringInterval = 15;
+        $settings->domainMonitoringInterval = 15;
+
 
         return $this->renderSettings($settings);
     }
