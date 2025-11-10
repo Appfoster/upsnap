@@ -55,6 +55,8 @@ Craft.Upsnap.Monitor = {
       const monitors = data.data.monitors;
       dropdown.innerHTML = "";
 
+      let savedInList = false; // flag to check if the savedValue is in the fetched monitors list
+
       if (monitors.length === 0) {
         dropdown.innerHTML = `<option value="">No monitors available</option>`;
         return;
@@ -70,10 +72,23 @@ Craft.Upsnap.Monitor = {
           opt.dataset.id = id;
           opt.value = url;
           opt.textContent = `${name} (${url})`;
-          if (url === savedValue) opt.selected = true; // select if matches injected value
+          if (url === savedValue) {
+            opt.selected = true; // select if matches injected value
+            savedInList = true;
+          }
+          
           dropdown.appendChild(opt);
         }
       });
+
+      //  If savedValue not in fetched list, still show it as an option
+      if (savedValue && !savedInList) {
+        const customOpt = document.createElement("option");
+        customOpt.value = savedValue;
+        customOpt.textContent = `${savedValue} (Default)`;
+        customOpt.selected = true;
+        dropdown.appendChild(customOpt);
+      }
 
       // Update hidden field based on initially selected option
       const selectedOption = dropdown.selectedOptions[0];

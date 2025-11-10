@@ -104,45 +104,13 @@ class MonitorsController extends Controller
         }
     }
 
-    public function actionDetails(): Response
-    {
-        $this->requirePostRequest();
-        $request = Craft::$app->getRequest();
-
-        $id = $request->getBodyParam('id');
-        $endpoint = Constants::MICROSERVICE_ENDPOINTS['monitors']['view'];
-
-        if (!$id) {
-            return $this->asJson([
-                'success' => false,
-                'message' => Craft::t('upsnap', 'Monitor ID is required.'),
-            ]);
-        }
-
-        try {
-            $response = Upsnap::$plugin->apiService->get($endpoint);
-            if (!isset($response['status']) || $response['status'] !== 'success') {
-                $errorMsg = $response['message'] ?? Craft::t('upsnap', 'Failed to fetch monitor details.');
-                throw new \Exception($errorMsg);
-            }
-            $endpoint = str_replace('{id}', $id, $endpoint);
-
-
-            return $this->asJson([
-                'success' => true,
-                'message' => Craft::t('upsnap', 'Monitor details fetched successfully.'),
-                'data' => $response['data'] ?? [],
-            ]);
-        } catch (\Throwable $e) {
-            Craft::error("Monitor details fetch failed: {$e->getMessage()}", __METHOD__);
-            return $this->asJson([
-                'success' => false,
-                'message' => Craft::t('upsnap', 'Failed to fetch monitor details.'),
-                'error' => $e->getMessage(),
-            ]);
-        }
-    }
-
+    /**
+     * Update a monitor.
+     *
+     * This action requires a POST request.
+     *
+     * @throws \Throwable
+     */
     public function actionUpdate(): Response
     {
         $settingsService = Upsnap::$plugin->settingsService;    
@@ -193,7 +161,7 @@ class MonitorsController extends Controller
     private function prepareMonitorPayload($request): array
     {
         $tags = $request->getBodyParam('tags', ['default']);
-        $isEnabled = (bool)$request->getBodyParam('is_enabled', true);
+        $isEnabled = (bool)$request->getBodyParam('enabled', true);
 
         $services = [
             'broken_links' => [
