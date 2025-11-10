@@ -125,6 +125,12 @@ Craft.Upsnap.Monitor = {
     const closeBtn = modal.querySelector(".modal__close");
     const cancelBtn = document.getElementById("cancel-monitor-btn");
     const saveBtn = document.getElementById("save-monitor-btn");
+    const nameField = document.getElementById("monitorName");
+    const urlField = document.getElementById("monitorUrl");
+    const resetForm = () => {
+      if (nameField) nameField.value = "";
+      if (urlField) urlField.value = "";
+    };
 
     const showModal = () => modal.classList.remove("hidden");
     const hideModal = () => modal.classList.add("hidden");
@@ -158,6 +164,12 @@ Craft.Upsnap.Monitor = {
       url = Craft.Upsnap.Monitor.normalizeUrl(url);
       urlField.value = url;
 
+      // Disable Save button to prevent multiple clicks
+      saveBtn.disabled = true;
+      saveBtn.classList.add('disabled')
+      saveBtn.textContent = "Saving...";
+
+
       try {
         const response = await fetch("/actions/upsnap/monitors/create", {
           method: "POST",
@@ -180,12 +192,19 @@ Craft.Upsnap.Monitor = {
           data?.message || "Monitor added successfully.",
           "success"
         );
+
+        resetForm(); // reset the form
         this.loadMonitorsDropdown();
         hideModal();
 
       } catch (error) {
         console.error("Monitor create error:", error);
         Craft.Upsnap.Monitor.notify(error.message, "error");
+      } finally {
+        // Re-enable button after API completes
+        saveBtn.disabled = false;
+        saveBtn.textContent = "Save";
+        saveBtn.classList.remove('disabled')
       }
     });
   },
