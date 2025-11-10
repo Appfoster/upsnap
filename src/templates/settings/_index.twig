@@ -4,13 +4,22 @@
 {% set showHealthchecks = showHealthchecks ?? false %}
 
 {% set tabs = [
-    { label: "General"|t('upsnap'), url: '#general-tab', class: 'sel' },
-    showHealthchecks ? { label: "Healthchecks"|t('upsnap'), url: '#healthchecks-tab' } : null
-]|filter(v => v) %}
+	{ label: "General"|t('upsnap'), url: '#general-tab', class: 'sel' }
+] %}
+
+{% if showHealthchecks and (settings.monitorId ?? false) %}
+	{% set tabs = tabs|merge([
+		{ label: "Healthchecks"|t('upsnap'), url: '#healthchecks-tab' }
+	]) %}
+{% endif %}
 
 {% block actionButton %}
 	 <div class="flex smallgap">
-		<button type="button" class="btn add icon" id="add-monitor-btn">
+        <button
+            type="button"
+            class="btn add icon"
+            id="add-monitor-btn"
+        >
             {{ "Add New Monitor"|t('upsnap') }}
         </button>
 		<button id="save-button" type="submit" form="settings-form" class="btn submit">
@@ -38,7 +47,8 @@
 	<script>
 		window.Upsnap = window.Upsnap || {};
 		window.Upsnap.settings = {
-		monitoringUrl: {{ (settings.monitoringUrl ?? '')|json_encode|raw }},
+			monitoringUrl: {{ (settings.monitoringUrl ?? '')|json_encode|raw }},
+			apiKey: {{ (settings.apiKey ?? '')|json_encode|raw }}
 		};
 	</script>
 	<form id="settings-form" method="post" accept-charset="UTF-8" enctype="multipart/form-data">
@@ -75,10 +85,11 @@
                     placeholder: 'XXXX-XXXX-XXXX-XXXX',
                     errors: settings.getErrors('apiKey') ?? false
                 }) }}
-
-				<span class="api-pill {{ statusColorClass }}">
-					{{ apiTokenStatus|capitalize }}
-				</span>
+				{% if settings.apiKey %}
+					<span class="api-pill {{ statusColorClass }}">
+						{{ apiTokenStatus|capitalize }}
+					</span>
+				{% endif %}
 			</div>
 
 		</div>

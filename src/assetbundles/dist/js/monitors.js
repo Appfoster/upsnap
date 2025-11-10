@@ -18,6 +18,29 @@ Craft.Upsnap.Monitor = {
     if (!dropdown) return;
 
     const savedValue = window?.Upsnap?.settings?.monitoringUrl || '';
+    const apiKey = window?.Upsnap?.settings?.apiKey || '';
+
+    // 🔒 If API key is missing → disable dropdown and show saved URL only
+    if (!apiKey) {
+      const addMonitorButton = document.getElementById("add-monitor-btn");
+      if (addMonitorButton) {
+        addMonitorButton.classList.add('disabled');
+        addMonitorButton.disabled = true;
+      }
+      dropdown.innerHTML = '';
+
+      if (savedValue) {
+        const opt = document.createElement("option");
+        opt.value = savedValue;
+        opt.textContent = savedValue;
+        dropdown.appendChild(opt);
+      } else {
+        dropdown.innerHTML = `<option value="">No API key — monitors unavailable</option>`;
+      }
+
+      dropdown.classList.add('disabled-field');
+      return;
+    }
 
     try {
       const response = await fetch("/actions/upsnap/monitors/list", {

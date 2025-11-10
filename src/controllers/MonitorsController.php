@@ -16,11 +16,21 @@ class MonitorsController extends Controller
     {
         $this->requirePostRequest();
         $request = Craft::$app->getRequest();
+        $settingsService = Upsnap::$plugin->settingsService;    
 
         $name = $request->getBodyParam('name');
         $url = $request->getBodyParam('url');
         $tags = $request->getBodyParam('tags', ['default']); // optional
         $endpoint = Constants::MICROSERVICE_ENDPOINTS['monitors']['create'];
+
+        if ($url) {
+            if (!$settingsService->isUrlReachable($url)) {
+                 return $this->asJson([
+                    'success' => false,
+                    'message' => Craft::t('upsnap', 'The monitoring URL could not be reached. Please check the URL and try again.'),
+                ]);
+            }
+        }
 
         if (!$name || !$url) {
             return $this->asJson([
