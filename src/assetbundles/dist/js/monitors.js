@@ -122,7 +122,7 @@ Craft.Upsnap.Monitor = {
     const openBtn = document.getElementById("add-monitor-btn");
     if (!modal || !openBtn) return;
 
-    const closeBtn = modal.querySelector(".modal__close");
+    const closeBtn = modal.querySelector(".upsnap-modal__close");
     const cancelBtn = document.getElementById("cancel-monitor-btn");
     const saveBtn = document.getElementById("save-monitor-btn");
     const nameField = document.getElementById("monitorName");
