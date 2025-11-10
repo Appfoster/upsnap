@@ -72,8 +72,7 @@ class MonitorsController extends Controller
 
             return $this->asJson([
                 'success' => false,
-                'message' => Craft::t('upsnap', 'Failed to add monitor.'),
-                'error' => $e->getMessage(),
+                'message' => $e->getMessage(),
             ]);
         }
     }
@@ -85,7 +84,14 @@ class MonitorsController extends Controller
         try {
             $response = Upsnap::$plugin->apiService->get($endpoint);
             if (!isset($response['status']) || $response['status'] !== 'success') {
+                Craft::error("error message" . $response['message'], __METHOD__);
                 $errorMsg = $response['message'] ?? Craft::t('upsnap', 'Failed to fetch monitors.');
+
+                if (stripos($errorMsg, 'invalid authentication token') !== false) {
+                    $errorMsg = Craft::t('upsnap',
+                        'The API token seems to be invalid (it might have expired, been suspended, or deleted). Please add a new API token to be able to list, add monitors, and update monitor settings.'
+                    );
+                }
                 throw new \Exception($errorMsg);
             }
 
@@ -98,8 +104,7 @@ class MonitorsController extends Controller
             Craft::error("Monitors fetch failed: {$e->getMessage()}", __METHOD__);
             return $this->asJson([
                 'success' => false,
-                'message' => Craft::t('upsnap', 'Failed to fetch monitors.'),
-                'error' => $e->getMessage(),
+                'message' => $e->getMessage(),
             ]);
         }
     }
@@ -149,8 +154,7 @@ class MonitorsController extends Controller
 
             return $this->asJson([
                 'success' => false,
-                'message' => Craft::t('upsnap', 'Failed to update monitor.'),
-                'error' => $e->getMessage(),
+                'message' => $e->getMessage(),
             ]);
         }
     }

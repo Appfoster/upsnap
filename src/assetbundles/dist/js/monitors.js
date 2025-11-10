@@ -27,18 +27,10 @@ Craft.Upsnap.Monitor = {
         addMonitorButton.classList.add('disabled');
         addMonitorButton.disabled = true;
       }
-      dropdown.innerHTML = '';
-
-      if (savedValue) {
-        const opt = document.createElement("option");
-        opt.value = savedValue;
-        opt.textContent = savedValue;
-        dropdown.appendChild(opt);
-      } else {
-        dropdown.innerHTML = `<option value="">No API key — monitors unavailable</option>`;
-      }
-
-      dropdown.classList.add('disabled-field');
+      this.populateSavedMonitorDropdown(dropdown, savedValue, {
+        disable: true,
+        labelSuffix: "",
+      });
       return;
     }
 
@@ -59,6 +51,12 @@ Craft.Upsnap.Monitor = {
 
       if (monitors.length === 0) {
         dropdown.innerHTML = `<option value="">No monitors available</option>`;
+        this.populateSavedMonitorDropdown(dropdown, savedValue, {
+          disable: true,
+          labelSuffix: "(Default)",
+        });
+
+        this.disableTab('a[href="#healthchecks-tab"]');
         return;
       }
 
@@ -76,7 +74,7 @@ Craft.Upsnap.Monitor = {
             opt.selected = true; // select if matches injected value
             savedInList = true;
           }
-          
+
           dropdown.appendChild(opt);
         }
       });
@@ -88,7 +86,12 @@ Craft.Upsnap.Monitor = {
         customOpt.textContent = `${savedValue} (Default)`;
         customOpt.selected = true;
         dropdown.appendChild(customOpt);
+        this.disableTab('a[href="#healthchecks-tab"]'); // disable healthchecks tab
+      } else {
+        this.enableTab('a[href="#healthchecks-tab"]');
+        dropdown.classList.remove("disabled-field");
       }
+
 
       // Update hidden field based on initially selected option
       const selectedOption = dropdown.selectedOptions[0];
@@ -107,14 +110,92 @@ Craft.Upsnap.Monitor = {
       if (!dropdown.value && savedValue) {
         const normalize = s => (s || "").replace(/\/$/, '');
         const optToSelect = Array.from(dropdown.options).find(o => normalize(o.value) === normalize(savedValue));
-        if (optToSelect) optToSelect.selected = true;
+        if (optToSelect) {
+          optToSelect.selected = true;
+          enableTab('a[href="#healthchecks-tab"]');
+        }
       }
 
     } catch (error) {
-      console.error("Monitor list fetch failed:", error);
-      dropdown.innerHTML = `<option value="">Failed to load monitors</option>`;
+      // Keep existing saved value logic
+      this.populateSavedMonitorDropdown(dropdown, savedValue, {
+        disable: true,
+        labelSuffix: "(Default)",
+      });
+
+      this.disableTab('a[href="#healthchecks-tab"]');
+
+
       Craft.Upsnap.Monitor.notify(error.message, "error");
     }
+  },
+
+  /**
+   * Populate a dropdown with the saved monitor value, and disable it if desired.
+   *
+   * @param {HTMLElement} dropdown - The dropdown element to populate.
+   * @param {string} savedValue - The saved monitor value to populate the dropdown with.
+   * @param {Object} [options] - Optional configuration options.
+   * @param {boolean} [options.disable=true] - Whether to disable the dropdown.
+   * @param {string} [options.labelSuffix="(Default)"] - The suffix to append to the saved value in the dropdown.
+   */
+  populateSavedMonitorDropdown(dropdown, savedValue, options = {}) {
+    const { disable = true, labelSuffix = "(Default)" } = options;
+
+    dropdown.innerHTML = "";
+
+    if (savedValue) {
+      const opt = document.createElement("option");
+      opt.value = savedValue;
+      opt.textContent = `${savedValue} ${labelSuffix}`;
+      opt.selected = true;
+      dropdown.appendChild(opt);
+    } else {
+      dropdown.innerHTML = `<option value="">No monitors available</option>`;
+    }
+
+    if (disable) {
+      dropdown.classList.add("disabled-field");
+    }
+  },
+
+  /**
+   * Disable a tab link by adding a disabled visual style and blocking click navigation.
+   *
+   * @param {string} tabSelector - The CSS selector for the tab link to disable.
+   */
+  disableTab(tabSelector) {
+    const tabLink = document.querySelector(tabSelector);
+    if (!tabLink) return;
+
+    // Add disabled visual style
+    tabLink.classList.add("disabled-tab");
+
+    // Block click navigation
+    tabLink.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+    });
+
+    // Optional: visually indicate disabled state
+    tabLink.style.pointerEvents = "none";
+    tabLink.style.opacity = "0.5";
+    tabLink.style.cursor = "not-allowed";
+  },
+
+  /**
+   * Enable a tab link by removing the disabled visual style and unblocking click navigation.
+   *
+   * @param {string} tabSelector - The CSS selector for the tab link to enable.
+   */
+  enableTab(tabSelector) {
+    const tabLink = document.querySelector(tabSelector);
+    if (!tabLink) return;
+
+    tabLink.classList.remove("disabled-tab");
+    tabLink.style.pointerEvents = "";
+    tabLink.style.opacity = "";
+    tabLink.style.cursor = "";
   },
 
   registerAddMonitor() {
@@ -213,6 +294,19 @@ Craft.Upsnap.Monitor = {
   // URL Validation Helpers
   // ----------------------------
 
+  /**
+   * Checks if a given URL is valid.
+   *
+   * @param {string} url - The URL to check.
+   * @returns {boolean} - True if the URL is valid, false otherwise.
+   *
+   * A valid URL is expected to have the following format:
+   * - Optional protocol (http or https)
+   * - Optional "www" prefix
+   * - At least one alphanumeric character as the domain
+   * - At least two alphanumeric characters as the top-level domain
+   * - Optional path and query string
+   */
   isValidUrl(url) {
     if (!url) return false;
     const pattern =
@@ -220,6 +314,14 @@ Craft.Upsnap.Monitor = {
     return pattern.test(url.trim());
   },
 
+  /**
+   * Normalizes a given URL by appending "https://" if it does not already have a protocol.
+   * If the URL starts with "www", it will append "https://" without adding "www".
+   * If the URL is already a full URL, it will be returned as is.
+   *
+   * @param {string} url - The URL to normalize.
+   * @returns {string} - The normalized URL.
+   */
   normalizeUrl(url) {
     if (!url) return "";
     url = url.trim();
@@ -228,11 +330,11 @@ Craft.Upsnap.Monitor = {
       // already full URL
       return url;
     } else if (/^www\./i.test(url)) {
-      // add protocol
+      // add protocol without appending "www"
       return `https://${url}`;
     } else {
-      // assume bare domain
-      return `https://www.${url}`;
+      // assume bare domain without "www"
+      return `https://${url}`;
     }
   },
 

@@ -2,26 +2,37 @@
 {% import "_includes/forms" as forms %}
 
 {% set showHealthchecks = showHealthchecks ?? false %}
+{% set isActiveApiToken = apiTokenStatus is same as(apiTokenStatuses.active) ? true : false %}
 
 {% set tabs = [
 	{ label: "General"|t('upsnap'), url: '#general-tab', class: 'sel' }
 ] %}
-
+{# 
 {% if showHealthchecks and (settings.monitorId ?? false) %}
 	{% set tabs = tabs|merge([
 		{ label: "Healthchecks"|t('upsnap'), url: '#healthchecks-tab' }
 	]) %}
+{% endif %} #}
+
+{% if showHealthchecks and (settings.monitorId ?? false) %}
+	{% set tabs = tabs|merge([
+		isActiveApiToken
+			? { label: "Healthchecks"|t('upsnap'), url: '#healthchecks-tab' }
+			: { label: "Healthchecks"|t('upsnap'), url: '#healthchecks-tab', class: 'disabled-tab' }
+	]) %}
 {% endif %}
+
 
 {% block actionButton %}
 	 <div class="flex smallgap">
-        <button
-            type="button"
-            class="btn add icon"
-            id="add-monitor-btn"
-        >
-            {{ "Add New Monitor"|t('upsnap') }}
-        </button>
+		<button
+			type="button"
+			class="btn add icon{% if not isActiveApiToken %} disabled{% endif %}"
+			id="add-monitor-btn"
+			{% if not isActiveApiToken %}disabled aria-disabled="true"{% endif %}
+		>
+			{{ "Add Monitor"|t('upsnap') }}
+		</button>
 		<button id="save-button" type="submit" form="settings-form" class="btn submit">
 			{{ "Save"|t('upsnap') }}
 		</button>        
@@ -48,7 +59,8 @@
 		window.Upsnap = window.Upsnap || {};
 		window.Upsnap.settings = {
 			monitoringUrl: {{ (settings.monitoringUrl ?? '')|json_encode|raw }},
-			apiKey: {{ (showHealthchecks ?? '')|json_encode|raw }}
+			apiKey: {{ (showHealthchecks ?? '')|json_encode|raw }},
+			isActiveApiToken : {{ (isActiveApiToken ?? '')|json_encode|raw }}
 		};
 	</script>
 	<form id="settings-form" method="post" accept-charset="UTF-8" enctype="multipart/form-data">
@@ -95,7 +107,8 @@
 		</div>
 
 		{# ====================== HEALTHCHECK TAB ====================== #}
-		{% if showHealthchecks %}
+		{# TODO	 just show the disabled tab and not the content here #}
+		{% if showHealthchecks and isActiveApiToken %} 
 			<div id="healthchecks-tab" class="tab-content hidden">
 				{{ forms.lightswitchField({
 					label: "Enable Monitoring"|t('upsnap'),

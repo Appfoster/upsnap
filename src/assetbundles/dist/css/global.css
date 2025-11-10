@@ -847,3 +847,9 @@
 }
 
 /* healthcheck settings end */
+
+.disabled-tab {
+  pointer-events: none;
+    cursor: not-allowed;
+  opacity: 0.5;
+}
