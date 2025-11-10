@@ -68,6 +68,24 @@ class ApiService extends Component
     }
 
     /**
+     * Make a PUT request
+     */
+    public function put(string $endpoint, array $body = []): ?array
+    {
+        try {
+            $response = $this->client->put($endpoint, [
+                'headers' => $this->getHeaders(),
+                'json'    => $body,
+            ]);
+
+            return json_decode((string) $response->getBody(), true);
+        } catch (RequestException $e) {
+            Craft::error("API PUT failed: " . $e->getMessage(), __METHOD__);
+            throw $e;
+        }
+    }
+
+    /**
      * Common headers
      */
     protected function getHeaders(): array

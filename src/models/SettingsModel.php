@@ -2,6 +2,7 @@
 
 namespace appfoster\upsnap\models;
 
+use appfoster\upsnap\Constants;
 use craft\base\Model;
 
 /**
@@ -28,7 +29,7 @@ class SettingsModel extends Model
      * @var string|null URL to monitor
      */
     public ?string $monitoringUrl = null;
-    
+    public ?string $monitorId = null;
     public ?string $apiKey = null;
     public bool $reachabilityEnabled = false;
     public bool $securityCertificatesEnabled = false;
@@ -45,6 +46,7 @@ class SettingsModel extends Model
     public int $reachabilityMonitoringInterval = 5;
     public int $securityCertificatesMonitoringInterval = 5;
     public int $domainMonitoringInterval = 5;
+    public string $lighthouseStrategy = Constants::LIGHTHOUSE_STRATEGY['desktop'];
 
 
     /**

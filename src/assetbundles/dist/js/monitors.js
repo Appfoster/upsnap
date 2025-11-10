@@ -1,4 +1,4 @@
-// Monitor-related JavaScript functionality for the Upsnap plugin
+// Monitor-related JavaScript functionality
 
 window.Craft = window.Craft || {};
 Craft.Upsnap = Craft.Upsnap || {};
@@ -14,11 +14,10 @@ Craft.Upsnap.Monitor = {
   // =============================
   async loadMonitorsDropdown() {
     const dropdown = document.getElementById("monitorDropdown");
+    const hiddenIdField = document.getElementById("monitorId");
     if (!dropdown) return;
 
     const savedValue = window?.Upsnap?.settings?.monitoringUrl || '';
-    console.log("Dropdown element:", savedValue);
-
 
     try {
       const response = await fetch("/actions/upsnap/monitors/list", {
@@ -39,16 +38,30 @@ Craft.Upsnap.Monitor = {
       }
 
       monitors.forEach((monitor) => {
+        const id = monitor?.id || "";
         const url = monitor?.config?.meta?.url || "";
         const name = monitor?.name || url || "Unnamed Monitor";
 
         if (url) {
           const opt = document.createElement("option");
+          opt.dataset.id = id;
           opt.value = url;
           opt.textContent = `${name} (${url})`;
           if (url === savedValue) opt.selected = true; // select if matches injected value
           dropdown.appendChild(opt);
         }
+      });
+
+      // Update hidden field based on initially selected option
+      const selectedOption = dropdown.selectedOptions[0];
+      if (selectedOption && hiddenIdField) {
+        hiddenIdField.value = selectedOption.dataset.id || "";
+      }
+
+      // When user changes dropdown, update hidden field
+      dropdown.addEventListener("change", (e) => {
+        const selected = e.target.selectedOptions[0];
+        hiddenIdField.value = selected?.dataset?.id || "";
       });
 
       // optional: if nothing selected and savedValue exists but wasn't matched (maybe URL normalized),

@@ -163,10 +163,39 @@ class Constants
         'monitors' => [
             'create' => 'user/monitors',
             'list' => 'user/monitors',
-            'view' => 'user/monitors/{id}',
+            'view' => 'user/monitors',
             'delete' => 'user/monitors/{id}',
-            'update' => 'user/monitors/{id}',
+            'update' => 'user/monitors',
         ],
+    ];
+
+    public const LIGHTHOUSE_STRATEGY = [
+        'mobile' => 'mobile',
+        'desktop' => 'desktop',
+    ];
+
+    // Monitor intervals (seconds → label)
+    public const MONITOR_INTERVALS = [
+        30 => '30 seconds',
+        60 => '1 minute',
+        600 => '10 minutes',
+        3600 => '1 hour',
+        86400 => '1 day',
+    ];
+
+    // Lighthouse strategies
+    public const LIGHTHOUSE_STRATEGIES = [
+        'mobile' => 'Mobile',
+        'desktop' => 'Desktop',
+    ];
+
+    // SSL / Domain expiry days
+    public const EXPIRY_DAYS = [
+        1 => '1 day',
+        7 => '7 days',
+        15 => '15 days',
+        30 => '1 month',
+        90 => '3 months',
     ];
 
     public const SERVICE_TYPES = [

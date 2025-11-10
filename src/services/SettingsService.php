@@ -106,6 +106,22 @@ class SettingsService extends Component
     /**
      * Get monitoring enabled status
      */
+    public function getMonitorId(): string | null
+    {
+        return $this->getSetting('monitorId', null);
+    }
+
+    public function setMonitorId(?string $monitorId): bool
+    {
+        if ($monitorId === null || $monitorId === '') {
+            return $this->deleteSetting('monitorId');
+        }
+        return $this->setSetting('monitorId', $monitorId);
+    }
+
+    /**
+     * Get monitoring enabled status
+     */
     public function getMonitoringEnabled(): bool
     {
         return (bool)$this->getSetting('monitoringEnabled', false);
@@ -322,7 +338,7 @@ class SettingsService extends Component
         }
     }
 
-    
+
     public function getValidateApiKeyResponse(string $apiKey): array
     {
         try {
@@ -381,7 +397,7 @@ class SettingsService extends Component
 
         $this->setApiTokenStatus($apiKeyStatus);
     }
-    
+
     /**
      * Get current user subscription type (defaults to 'free')
      */
@@ -399,6 +415,9 @@ class SettingsService extends Component
     }
 
 
+    /**
+     * Check if a URL is reachable
+     */
     public function isUrlReachable(string $url): bool
     {
         $client = new Client(['timeout' => 5, 'verify' => false]);
@@ -414,5 +433,75 @@ class SettingsService extends Component
         } catch (\Throwable $e) {
             return false;
         }
+    }
+
+    public function getMonitorDetails(string $monitorId): ?array
+    {
+        $endpoint = Constants::MICROSERVICE_ENDPOINTS['monitors']['view'] . '/' . $monitorId;
+
+        try {
+            $response = Upsnap::$plugin->apiService->get($endpoint);
+            Craft::error("RESPONSE" . json_encode($response), __METHOD__);
+
+            if (!isset($response['status']) || $response['status'] !== 'success') {
+                $errorMsg = $response['message'] ?? Craft::t('upsnap', 'Failed to fetch monitor details.');
+                throw new \Exception($errorMsg);
+            }
+
+            $data = $response['data'] ?? [];
+
+            if (empty($data)) {
+                throw new \Exception(Craft::t('upsnap', 'Empty monitor details received.'));
+            }
+
+            // Extract monitor details safely
+            $config = $data['monitor']['config'] ?? [];
+            $meta = $config['meta'] ?? [];
+            $services = $config['services'] ?? [];
+
+            return [
+                'name' => $data['name'] ?? '',
+                'url' => $meta['url'] ?? '',
+                'is_enabled' => $data['monitor']['is_enabled'] ?? false,
+                'tags' => $data['tags'] ?? [],
+
+                // Services and intervals
+                'broken_links_enabled' => $services['broken_links']['enabled'] ?? false,
+                'broken_links_interval' => $services['broken_links']['monitor_interval'] ?? 0,
+
+                'domain_enabled' => $services['domain']['enabled'] ?? false,
+                'domain_interval' => $services['domain']['monitor_interval'] ?? 0,
+                'domain_notify_days_before_expiry' => $services['domain']['notify_days_before_expiry'] ?? 7,
+
+                'lighthouse_enabled' => $services['lighthouse']['enabled'] ?? false,
+                'lighthouse_interval' => $services['lighthouse']['monitor_interval'] ?? 0,
+                'lighthouse_strategy' => $services['lighthouse']['strategy'] ?? 'desktop',
+
+                'mixed_content_enabled' => $services['mixed_content']['enabled'] ?? false,
+                'mixed_content_interval' => $services['mixed_content']['monitor_interval'] ?? 0,
+
+                'ssl_enabled' => $services['ssl']['enabled'] ?? false,
+                'ssl_interval' => $services['ssl']['monitor_interval'] ?? 0,
+                'ssl_notify_days_before_expiry' => $services['ssl']['notify_days_before_expiry'] ?? 7,
+
+                'uptime_enabled' => $services['uptime']['enabled'] ?? false,
+                'uptime_interval' => $services['uptime']['monitor_interval'] ?? 0,
+            ];
+        } catch (\Throwable $e) {
+            Craft::error("Monitor details fetch failed: {$e->getMessage()}", __METHOD__);
+            return null;
+        }
+    }
+
+    public function formatOptions(array $constants): array
+    {
+        $options = [];
+        foreach ($constants as $value => $label) {
+            $options[] = [
+                'label' => Craft::t('upsnap', $label),
+                'value' => (string)$value,
+            ];
+        }
+        return $options;
     }
 }

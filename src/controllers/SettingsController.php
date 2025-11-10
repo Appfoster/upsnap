@@ -28,35 +28,45 @@ class SettingsController extends BaseController
         $service = $plugin->settingsService;
         $service->validateApiKey(); // Validate API key on loading settings page
 
+        $monitorData = null;
+        $monitorId = $service->getMonitorId();
+        if ($monitorId) {
+            $monitorData = $service->getMonitorDetails($monitorId);
+        }
+
 
         // Create a settings model with current database values
         $settings = $service->getNewModel();
         $settings->monitoringUrl = $service->getMonitoringUrl();
-        $settings->enabled = $service->getMonitoringEnabled();
         $apiKey = $service->getApiKey();
-
+        
         $settings->apiKey = $service->maskApiKey($apiKey);
         $settings->monitoringInterval = $service->getMonitoringInterval();
-
-        $settings->reachabilityEnabled = $service->isCheckEnabled(Constants::CHECK_REACHABILITY);
-        $settings->securityCertificatesEnabled = $service->isCheckEnabled(Constants::CHECK_SECURITY_CERTIFICATES);
-        $settings->brokenLinksEnabled = $service->isCheckEnabled(Constants::CHECK_BROKEN_LINKS);
-        $settings->lighthouseEnabled = $service->isCheckEnabled(Constants::CHECK_LIGHTHOUSE);
-        $settings->domainEnabled = $service->isCheckEnabled(Constants::CHECK_DOMAIN);
-        $settings->mixedContentEnabled = $service->isCheckEnabled(Constants::CHECK_MIXED_CONTENT);
+        
         $settings->notificationEmails = $service->getNotificationEmails();
+        
+        $settings->enabled = $monitorData['is_enabled'];
+        $settings->reachabilityEnabled = $monitorData['uptime_enabled'];
+        $settings->reachabilityMonitoringInterval = $monitorData['uptime_interval'];
 
-        $settings->reachabilityToleranceMinutes = $service->getReachabilityTolerance();
-        $settings->sslDaysBeforeExpiryAlert = $service->getSslDaysBeforeExpiryAlert();
-        $settings->domainDaysBeforeExpiryAlert = $service->getDomainDaysBeforeExpiryAlert();
+        $settings->securityCertificatesEnabled = $monitorData['ssl_enabled'];
+        $settings->securityCertificatesMonitoringInterval = $monitorData['ssl_interval'];
+        $settings->sslDaysBeforeExpiryAlert = $monitorData['ssl_notify_days_before_expiry'];
 
-        $settings->brokenLinksMonitoringInterval = 15;
-        $settings->securityCertificatesMonitoringInterval = 15;
-        $settings->lighthouseMonitoringInterval = 15;
-        $settings->securityCertificatesMonitoringInterval = 15;
-        $settings->mixedContentMonitoringInterval = 15;
-        $settings->reachabilityMonitoringInterval = 15;
-        $settings->domainMonitoringInterval = 15;
+        $settings->brokenLinksEnabled = $monitorData['broken_links_enabled'];
+        $settings->brokenLinksMonitoringInterval = $monitorData['broken_links_interval'];
+
+        $settings->domainEnabled = $monitorData['domain_enabled'];
+        $settings->domainMonitoringInterval = $monitorData['domain_interval'];
+        $settings->domainDaysBeforeExpiryAlert = $monitorData['domain_notify_days_before_expiry'];
+
+        $settings->lighthouseEnabled = $monitorData['lighthouse_enabled'];
+        $settings->lighthouseMonitoringInterval = $monitorData['lighthouse_interval'];
+        $settings->lighthouseStrategy = $monitorData['lighthouse_strategy'];
+
+        $settings->mixedContentEnabled = $monitorData['mixed_content_enabled'];
+        $settings->mixedContentMonitoringInterval = $monitorData['mixed_content_interval'];
+
 
 
         return $this->renderSettings($settings);
@@ -79,20 +89,21 @@ class SettingsController extends BaseController
 
         // Only update fields that are actually in the request
         $this->updateIfExists($settings, $body, 'monitoringUrl');
-        $this->updateIfExists($settings, $body, 'enabled', 'bool');
+        $this->updateIfExists($settings, $body, 'monitorId');
+        // $this->updateIfExists($settings, $body, 'enabled', 'bool');
         $this->updateIfExists($settings, $body, 'monitoringInterval', 'int');
         $this->updateIfExists($settings, $body, 'apiKey', 'trim');
         $this->updateIfExists($settings, $body, 'notificationEmails', 'json');
 
-        $this->updateIfExists($settings, $body, 'reachabilityEnabled', 'bool');
-        $this->updateIfExists($settings, $body, 'reachabilityToleranceMinutes', 'int');
-        $this->updateIfExists($settings, $body, 'brokenLinksEnabled', 'bool');
-        $this->updateIfExists($settings, $body, 'securityCertificatesEnabled', 'bool');
-        $this->updateIfExists($settings, $body, 'sslDaysBeforeExpiryAlert', 'int');
-        $this->updateIfExists($settings, $body, 'domainEnabled', 'bool');
-        $this->updateIfExists($settings, $body, 'domainDaysBeforeExpiryAlert', 'int');
-        $this->updateIfExists($settings, $body, 'mixedContentEnabled', 'bool');
-        $this->updateIfExists($settings, $body, 'lighthouseEnabled', 'bool');
+        // $this->updateIfExists($settings, $body, 'reachabilityEnabled', 'bool');
+        // $this->updateIfExists($settings, $body, 'reachabilityToleranceMinutes', 'int');
+        // $this->updateIfExists($settings, $body, 'brokenLinksEnabled', 'bool');
+        // $this->updateIfExists($settings, $body, 'securityCertificatesEnabled', 'bool');
+        // $this->updateIfExists($settings, $body, 'sslDaysBeforeExpiryAlert', 'int');
+        // $this->updateIfExists($settings, $body, 'domainEnabled', 'bool');
+        // $this->updateIfExists($settings, $body, 'domainDaysBeforeExpiryAlert', 'int');
+        // $this->updateIfExists($settings, $body, 'mixedContentEnabled', 'bool');
+        // $this->updateIfExists($settings, $body, 'lighthouseEnabled', 'bool');
 
         // Validate only updated fields
         if (!$settings->validate()) {
@@ -103,7 +114,7 @@ class SettingsController extends BaseController
 
         // Check monitoring URL reachability before saving
         if (array_key_exists('monitoringUrl', $body) && !empty($settings->monitoringUrl)) {
-           if (!$service->isUrlReachable($settings->monitoringUrl)) {
+            if (!$service->isUrlReachable($settings->monitoringUrl)) {
                 Craft::$app->getSession()->setError(
                     Craft::t('upsnap', 'The monitoring URL could not be reached. Please check the URL and try again.')
                 );
@@ -128,6 +139,10 @@ class SettingsController extends BaseController
         // Save only what was updated
         if (array_key_exists('monitoringUrl', $body)) {
             $service->setMonitoringUrl($settings->monitoringUrl);
+        }
+
+        if (array_key_exists('monitorId', $body)) {
+            $service->setMonitorId($settings->monitorId);
         }
 
         if (array_key_exists('enabled', $body)) {
@@ -190,6 +205,9 @@ class SettingsController extends BaseController
                 'apiTokenStatus' => $service->getApiTokenStatus(),
                 'subscriptionTypes' => Constants::SUBSCRIPTION_TYPES,
                 'apiTokenStatuses' => Constants::API_KEY_STATUS,
+                'intervalOptions' => $service->formatOptions(Constants::MONITOR_INTERVALS),
+                'strategyOptions' => $service->formatOptions(Constants::LIGHTHOUSE_STRATEGIES),
+                'expiryDayOptions' => $service->formatOptions(Constants::EXPIRY_DAYS),
             ],
             Constants::SUBNAV_ITEM_SETTINGS['template']
         );

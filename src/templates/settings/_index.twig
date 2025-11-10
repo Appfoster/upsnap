@@ -39,13 +39,11 @@
 		window.Upsnap = window.Upsnap || {};
 		window.Upsnap.settings = {
 		monitoringUrl: {{ (settings.monitoringUrl ?? '')|json_encode|raw }},
-		// If you want to send other server data, add here, e.g.
-		// somethingElse: {{ (someVar ?? null)|json_encode|raw }},
 		};
 	</script>
 	<form id="settings-form" method="post" accept-charset="UTF-8" enctype="multipart/form-data">
 		{{ csrfInput() }}
-		{{ actionInput('upsnap/settings/save') }}
+		{{ actionInput('upsnap/settings/save', { id: 'form-action-input' }) }}
 		{{ redirectInput('upsnap/settings') }}
 
 		{# ====================== GENERAL TAB ====================== #}
@@ -63,6 +61,8 @@
 				data: { value: settings.monitoringUrl ?? "" }, 
 				errors: settings.getErrors("monitoringUrl") ?? false
 			}) }}
+
+			<input type="hidden" id="monitorId" name="monitorId" value="{{ settings.monitorId ?? '' }}">
 
 			<div class="api-key-field-with-status">
 				{{ forms.textField({
@@ -142,12 +142,7 @@
 									label: "Monitoring Interval"|t('upsnap'),
 									id: 'brokenLinksMonitoringInterval',
 									name: 'brokenLinksMonitoringInterval',
-									options: [
-										{ label: "30 seconds"|t('upsnap'), value: "30s" },
-										{ label: "1 minute"|t('upsnap'), value: "1m" },
-										{ label: "10 minutes"|t('upsnap'), value: "10m" },
-										{ label: "1 hour"|t('upsnap'), value: "1h" }
-									],
+									options: intervalOptions,
 									value: settings.brokenLinksMonitoringInterval ?? "1m",
 									errors: settings.getErrors('brokenLinksMonitoringInterval') ?? false
 								}) }}
@@ -168,12 +163,7 @@
 									label: "Monitoring Interval"|t('upsnap'),
 									id: 'mixedContentMonitoringInterval',
 									name: 'mixedContentMonitoringInterval',
-									options: [
-										{ label: "30 seconds"|t('upsnap'), value: "30s" },
-										{ label: "1 minute"|t('upsnap'), value: "1m" },
-										{ label: "10 minutes"|t('upsnap'), value: "10m" },
-										{ label: "1 hour"|t('upsnap'), value: "1h" }
-									],
+									options: intervalOptions,
 									value: settings.mixedContentMonitoringInterval ?? "1m",
 									errors: settings.getErrors('mixedContentMonitoringInterval') ?? false
 								}) }}
@@ -197,14 +187,17 @@
 									label: "Monitoring Interval"|t('upsnap'),
 									id: 'lighthouseMonitoringInterval',
 									name: 'lighthouseMonitoringInterval',
-									options: [
-										{ label: "30 seconds"|t('upsnap'), value: "30s" },
-										{ label: "1 minute"|t('upsnap'), value: "1m" },
-										{ label: "10 minutes"|t('upsnap'), value: "10m" },
-										{ label: "1 hour"|t('upsnap'), value: "1h" }
-									],
+									options: intervalOptions,
 									value: settings.lighthouseMonitoringInterval ?? "1m",
 									errors: settings.getErrors('lighthouseMonitoringInterval') ?? false
+								}) }}
+								{{ forms.selectField({
+									label: "Strategy Type"|t('upsnap'),
+									id: 'lighthouseStrategy',
+									name: 'lighthouseStrategy',
+									options: strategyOptions,
+									value: settings.lighthouseStrategy ?? 'desktop',
+									errors: settings.getErrors('lighthouseStrategy') ?? false
 								}) }}
 							</div>
 						</div>
@@ -252,25 +245,14 @@
 									label: "Days Before Expiry"|t('upsnap'),
 									id: 'sslExpiryDays',
 									name: 'sslDaysBeforeExpiryAlert',
-									options: [
-										{ label: "1 day"|t('upsnap'), value: "1" },
-										{ label: "7 days"|t('upsnap'), value: "7" },
-										{ label: "15 days"|t('upsnap'), value: "15" },
-										{ label: "1 month"|t('upsnap'), value: "30" },
-										{ label: "3 months"|t('upsnap'), value: "90" }
-									],
+									options: expiryDayOptions,
 									value: settings.sslDaysBeforeExpiryAlert ?? "30"
 								}) }}
 								{{ forms.selectField({
 									label: "Monitoring Interval"|t('upsnap'),
 									id: 'securityCertificatesMonitoringInterval',
 									name: 'securityCertificatesMonitoringInterval',
-									options: [
-										{ label: "30 seconds"|t('upsnap'), value: "30s" },
-										{ label: "1 minute"|t('upsnap'), value: "1m" },
-										{ label: "10 minutes"|t('upsnap'), value: "10m" },
-										{ label: "1 hour"|t('upsnap'), value: "1h" }
-									],
+									options: intervalOptions,
 									value: settings.securityCertificatesMonitoringInterval ?? "1m",
 									errors: settings.getErrors('securityCertificatesMonitoringInterval') ?? false
 								}) }}
@@ -291,25 +273,14 @@
 									label: "Days Before Expiry"|t('upsnap'),
 									id: 'domainExpiryDays',
 									name: 'domainDaysBeforeExpiryAlert',
-									options: [
-										{ label: "1 day"|t('upsnap'), value: "1" },
-										{ label: "7 days"|t('upsnap'), value: "7" },
-										{ label: "15 days"|t('upsnap'), value: "15" },
-										{ label: "1 month"|t('upsnap'), value: "30" },
-										{ label: "3 months"|t('upsnap'), value: "90" }
-									],
+									options: expiryDayOptions,
 									value: settings.domainDaysBeforeExpiryAlert ?? "30"
 								}) }}
 								{{ forms.selectField({
 									label: "Monitoring Interval"|t('upsnap'),
 									id: 'domainMonitoringInterval',
 									name: 'domainMonitoringInterval',
-									options: [
-										{ label: "30 seconds"|t('upsnap'), value: "30s" },
-										{ label: "1 minute"|t('upsnap'), value: "1m" },
-										{ label: "10 minutes"|t('upsnap'), value: "10m" },
-										{ label: "1 hour"|t('upsnap'), value: "1h" }
-									],
+									options: intervalOptions,
 									value: settings.domainMonitoringInterval ?? "1m",
 									errors: settings.getErrors('domainMonitoringInterval') ?? false
 								}) }}
