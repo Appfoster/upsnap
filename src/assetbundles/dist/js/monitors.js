@@ -181,6 +181,11 @@ Craft.Upsnap.Monitor = {
     tabLink.style.pointerEvents = "none";
     tabLink.style.opacity = "0.5";
     tabLink.style.cursor = "not-allowed";
+
+    const parentTabList = tabLink.closest('[role="tablist"]');
+    if (parentTabList) {
+      parentTabList.style.cursor = "not-allowed";
+    }
   },
 
   /**
@@ -196,6 +201,11 @@ Craft.Upsnap.Monitor = {
     tabLink.style.pointerEvents = "";
     tabLink.style.opacity = "";
     tabLink.style.cursor = "";
+
+    const parentTabList = tabLink.closest('[role="tablist"]');
+    if (parentTabList) {
+      parentTabList.style.cursor = "pointer";
+    }
   },
 
   registerAddMonitor() {
