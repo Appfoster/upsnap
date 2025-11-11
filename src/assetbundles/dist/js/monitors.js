@@ -289,8 +289,9 @@ Craft.Upsnap.Monitor = {
         hideModal();
 
       } catch (error) {
-        console.error("Monitor create error:", error);
-        Craft.Upsnap.Monitor.notify(error.message, "error");
+        const rawMessage = error?.message || "Something went wrong.";
+        const message = rawMessage.charAt(0).toUpperCase() + rawMessage.slice(1);
+        Craft.Upsnap.Monitor.notify(message, "error");
       } finally {
         // Re-enable button after API completes
         saveBtn.disabled = false;
