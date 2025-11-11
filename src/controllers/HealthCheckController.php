@@ -30,7 +30,11 @@ class HealthCheckController extends BaseController
             return $this->service->handleMissingMonitoringUrl(Constants::SUBNAV_ITEM_REACHABILITY);
         }
  
-        $data = [];
+        $data = [
+            'data' => [
+                'url' => $url
+            ]
+        ];
 
         if( $isAjax ) {
             try {
@@ -75,7 +79,7 @@ class HealthCheckController extends BaseController
                     'data' => [
                         'status' => $isOk ? 'ok' : 'error',
                         'message' => $isOk ? 'All links are working fine' : 'Some broken links detected',
-                        'url' => $response['url'] ?? '',
+                        'url' => $url ?? '',
                         'checkedAt' => $response['checkedAt'] ?? '',
                         'brokenLinks' => $brokenLinks,
                         'details' => [
@@ -114,7 +118,12 @@ class HealthCheckController extends BaseController
         if (!$url) {
             return $this->service->handleMissingMonitoringUrl(Constants::SUBNAV_ITEM_DOMAIN_CHECK);
         }
-        $data = [];
+
+        $data = [
+            'data' => [
+                'url' => $url
+            ]
+        ];
 
         if ($isAjax) {
             try {
@@ -136,7 +145,7 @@ class HealthCheckController extends BaseController
                         'data' => [
                             'status' => $isOk ? 'ok' : 'error',
                             'message' => $isOk ? 'Domain is active!' : 'Domain issues detected!',
-                            'url' => $response['url'] ?? '',
+                            'url' => $url ?? '',
                             'checkedAt' => $response['checkedAt'] ?? '',
                             'duration' => isset($result['durationMs']) ? $result['durationMs'] . ' ms' : 'Unknown',
                             'details' => [
@@ -190,7 +199,12 @@ class HealthCheckController extends BaseController
         }
         $isAjax = Craft::$app->getRequest()->getIsAjax();
 
-        $data = [];
+        $data = [
+            'data' => [
+                'url' => $url
+            ]
+        ];
+
         if ($isAjax) {
             try {
                 $paramName = Constants::SUBNAV_ITEM_LIGHTHOUSE['apiLabel'];
@@ -211,7 +225,7 @@ class HealthCheckController extends BaseController
                         'data' => [
                             'status' => $isOk ? 'ok' : 'error',
                             'message' => $isOk ? 'All checks completed' : 'Some issues detected',
-                            'url' => $response['url'] ?? '',
+                            'url' => $url ?? '',
                             'checkedAt' => $response['checkedAt'] ?? '',
                             "result" => [
                                 "summary" => [
@@ -255,7 +269,11 @@ class HealthCheckController extends BaseController
             return $this->service->handleMissingMonitoringUrl(Constants::SUBNAV_ITEM_MIXED_CONTENT);
         }
 
-        $data = [];
+        $data = [
+            'data' => [
+                'url' => $url
+            ]
+        ];
 
         if ($isAjax) {
             try {
@@ -278,7 +296,7 @@ class HealthCheckController extends BaseController
                         'data' => [
                             'status' => $isOk ? 'ok' : 'error',
                             'message' => $isOk ? 'No mixed content found!' : 'Mixed content detected!',
-                            'url' => $response['url'] ?? '',
+                            'url' => $url ?? '',
                             'checkedAt' => $response['checkedAt'] ?? '',
                             'duration' => isset($result['durationMs']) ? $result['durationMs'] . ' ms' : 'Unknown',
                             'details' => [
@@ -335,7 +353,7 @@ class HealthCheckController extends BaseController
                     'data' => [
                         'status' => $isOk ? 'ok' : 'error',
                         'message' => $isOk ? 'Website is reachable' : 'Website reachability issues detected!',
-                        'url' => $response['url'] ?? '',
+                        'url' => $url ?? '',
                         'checkedAt' => $response['checkedAt'] ?? '',
                         'details' => [
                             'duration' => isset($result['durationMs']) ? $result['durationMs'] . ' ms' : 'Unknown',
@@ -410,7 +428,7 @@ class HealthCheckController extends BaseController
                    'data' => [
                         'status' => $isOk ? 'ok' : 'error',
                         'message' => $isOk ? 'Website SSL checks are valid' : 'Website SSL issues detected!',
-                        'url' => $response['url'] ?? '',
+                        'url' => $url ?? '',
                         'checkedAt' => $response['checkedAt'] ?? '',
                         'duration' => isset($result['durationMs']) ? $result['durationMs'] . ' ms' : 'Unknown',
                         'details' => [

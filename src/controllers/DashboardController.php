@@ -30,6 +30,7 @@ class DashboardController extends BaseController
             'success' => true,
             'title' => Constants::SUBNAV_ITEM_DASHBOARD['label'],
             'selectedSubnavItem' => Constants::SUBNAV_ITEM_DASHBOARD['key'],
+            'url' => $url
         ];
         
         if (!$url) {

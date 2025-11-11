@@ -7,12 +7,6 @@
 {% set tabs = [
 	{ label: "General"|t('upsnap'), url: '#general-tab', class: 'sel' }
 ] %}
-{# 
-{% if showHealthchecks and (settings.monitorId ?? false) %}
-	{% set tabs = tabs|merge([
-		{ label: "Healthchecks"|t('upsnap'), url: '#healthchecks-tab' }
-	]) %}
-{% endif %} #}
 
 {% if showHealthchecks and (settings.monitorId ?? false) %}
 	{% set tabs = tabs|merge([
@@ -316,4 +310,13 @@
 		{% endif %}
 	</form>
 	
+{% endblock %}
+
+{% block foot %}
+    <script>
+        window.CraftPageData = {
+            title: {{ title|json_encode|raw }},
+            monitorUrl: {{ settings.monitoringUrl|json_encode|raw }}
+        };
+    </script>
 {% endblock %}

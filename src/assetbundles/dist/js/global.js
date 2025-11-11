@@ -29,4 +29,27 @@ document.addEventListener("DOMContentLoaded", function () {
             showLessBtn.classList.add('hidden');
         });
     }
+
+    // ----------------------------------------
+    // Global Craft CP Page Title Enhancer
+    // ----------------------------------------
+    if (window.CraftPageData && window.CraftPageData.title && window.CraftPageData.monitorUrl) {
+        const { title, monitorUrl } = window.CraftPageData;
+        const heading = document.querySelector('#page-title h1, #page-heading');
+        if (heading) {
+            // Clean the display URL (remove protocol, www, and path)
+            const displayUrl = monitorUrl
+                .replace(/^https?:\/\//, '')
+                .replace(/^www\./, '')
+                .split('/')[0];
+
+            // Update the page title dynamically
+            heading.innerHTML = `
+                ${title}
+                <a href="${monitorUrl}" target="_blank" rel="noopener" class="monitor-url">
+                    (${displayUrl})
+                </a>
+            `;
+        }
+    }
 });
