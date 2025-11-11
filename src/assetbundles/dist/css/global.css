@@ -863,3 +863,11 @@
 .monitor-url:hover {
     text-decoration: underline;
 }
+
+.capitalize {
+    text-transform: capitalize;
+}
+
+.notification-channel-header {
+    margin-bottom: 2rem;
+}

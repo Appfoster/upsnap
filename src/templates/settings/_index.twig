@@ -12,7 +12,10 @@
 	{% set tabs = tabs|merge([
 		isActiveApiToken
 			? { label: "Healthchecks"|t('upsnap'), url: '#healthchecks-tab' }
-			: { label: "Healthchecks"|t('upsnap'), url: '#healthchecks-tab', class: 'disabled-tab' }
+			: { label: "Healthchecks"|t('upsnap'), url: '#healthchecks-tab', class: 'disabled-tab' },
+		isActiveApiToken
+			? { label: "Notification Channels"|t('upsnap'), url: '#notification-channels-tab' }
+			: { label: "Notification Channels"|t('upsnap'), url: '#notification-channels-tab', class: 'disabled-tab' }
 	]) %}
 {% endif %}
 
@@ -308,6 +311,7 @@
 				</div>
 			</div>
 		{% endif %}
+		{% include "upsnap/_components/notificationChannels.twig" %}
 	</form>
 	
 {% endblock %}
