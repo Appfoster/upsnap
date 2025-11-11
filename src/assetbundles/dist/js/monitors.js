@@ -57,6 +57,8 @@ Craft.Upsnap.Monitor = {
         });
 
         this.disableTab('a[href="#healthchecks-tab"]');
+        this.disableTab('a[href="#notification-channels-tab"]');
+
         return;
       }
 
@@ -87,8 +89,11 @@ Craft.Upsnap.Monitor = {
         customOpt.selected = true;
         dropdown.appendChild(customOpt);
         this.disableTab('a[href="#healthchecks-tab"]'); // disable healthchecks tab
+        this.disableTab('a[href="#notification-channels-tab"]');
+
       } else {
         this.enableTab('a[href="#healthchecks-tab"]');
+        this.enableTab('a[href="#notification-channels-tab"]');
         dropdown.classList.remove("disabled-field");
       }
 
@@ -124,6 +129,8 @@ Craft.Upsnap.Monitor = {
       });
 
       this.disableTab('a[href="#healthchecks-tab"]');
+      this.disableTab('a[href="#notification-channels-tab"]');
+
 
 
       Craft.Upsnap.Monitor.notify(error.message, "error");

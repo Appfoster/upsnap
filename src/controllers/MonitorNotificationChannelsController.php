@@ -19,7 +19,7 @@ class MonitorNotificationChannelsController extends Controller
     {
         parent::__construct($id, $module, $config);
         $this->apiService = Upsnap::$plugin->apiService;
-        $this->settingsService =  Upsnap::$plugin->settingsService; 
+        $this->settingsService =  Upsnap::$plugin->settingsService;
     }
 
     // ✅ Create Notification Channel
@@ -78,7 +78,7 @@ class MonitorNotificationChannelsController extends Controller
         $this->requirePostRequest();
         $request = Craft::$app->getRequest();
 
-        $monitorId = $request->getBodyParam('monitorId');
+        $monitorId = $this->settingsService->getMonitorId();
         $channelId = $request->getBodyParam('channelId');
         $label = $request->getBodyParam('label');
         $config = $request->getBodyParam('config', []);
@@ -139,24 +139,7 @@ class MonitorNotificationChannelsController extends Controller
         $endpoint = str_replace('{monitorId}', $monitorId, $endpointTemplate);
 
         try {
-            // $response = $this->apiService->get($endpoint);
-
-             $response = [
-                'status' => 'success',
-                'message' => 'User notification channels fetched successfully.',
-                'data' => [
-                    [
-                        'id' => 1,
-                        'type' => 'email',
-                        'label' => 'Primary Email',
-                        'config' => [
-                            'recipient' => 'asdasdas@example.com',
-                        ],
-                        'createdAt' => '2025-11-07T10:30:00Z',
-                        'updatedAt' => '2025-11-07T12:15:00Z',
-                    ],
-                ],
-            ];
+            $response = $this->apiService->get($endpoint);
 
             if (!isset($response['status']) || $response['status'] !== 'success') {
                 Craft::error("Notification channels fetch failed: " . json_encode($response), __METHOD__);
@@ -183,6 +166,7 @@ class MonitorNotificationChannelsController extends Controller
             return $this->asJson([
                 'success' => false,
                 'message' => $e->getMessage(),
+                'data' => []
             ]);
         }
     }
