@@ -166,6 +166,11 @@ class Constants
             'view' => 'user/monitors',
             'delete' => 'user/monitors/{id}',
             'update' => 'user/monitors',
+            'notification_channels' => [
+                'list' => 'user/monitors/{monitorId}/notification-channels',
+                'create' => 'user/monitors/{monitorId}/notification-channels',
+                'update' => 'user/monitors/{monitorId}/notification-channels/{channelId}',
+            ]
         ],
     ];
 

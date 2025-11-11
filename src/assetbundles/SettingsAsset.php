@@ -11,6 +11,7 @@ class SettingsAsset extends BaseAsset
         // Add settings-specific assets
         $this->js[] = 'js/settings.js';
         $this->js[] = 'js/monitors.js';
+        $this->js[] = 'js/notificationChannels.js';
         $this->css[] = 'css/addMonitorModal.css';
     }
 }
