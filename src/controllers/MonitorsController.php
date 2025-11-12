@@ -82,16 +82,18 @@ class MonitorsController extends Controller
         $endpoint = Constants::MICROSERVICE_ENDPOINTS['monitors']['list'];
 
         try {
+            $response = [];
             $response = Upsnap::$plugin->apiService->get($endpoint);
+
+            // Ensure $response is an array before accessing its keys
+            if (!is_array($response) || !isset($response['status'])) {
+                throw new \Exception(Craft::t('upsnap', 'Something went wrong while fetching monitors. Please try again.'));
+            }
+
             if (!isset($response['status']) || $response['status'] !== 'success') {
                 Craft::error("error message" . $response['message'], __METHOD__);
                 $errorMsg = $response['message'] ?? Craft::t('upsnap', 'Failed to fetch monitors.');
 
-                if (stripos($errorMsg, 'invalid authentication token') !== false) {
-                    $errorMsg = Craft::t('upsnap',
-                        'The API token seems to be invalid (it might have expired, been suspended, or deleted). Please add a new API token to be able to list, add monitors, and update monitor settings.'
-                    );
-                }
                 throw new \Exception($errorMsg);
             }
 

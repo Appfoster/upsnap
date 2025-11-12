@@ -26,8 +26,6 @@ class SettingsController extends BaseController
     {
         $plugin = Upsnap::getInstance();
         $service = $plugin->settingsService;
-        $service->validateApiKey(); // Validate API key on loading settings page
-
         $monitorData = null;
         $monitorId = $service->getMonitorId();
         if ($monitorId) {
@@ -138,6 +136,7 @@ class SettingsController extends BaseController
     private function renderSettings($settings): \yii\web\Response
     {
         $service = Upsnap::getInstance()->settingsService;
+        $service->validateApiKey();
         return $this->healthCheckService->sendResponse(
             [
                 'settings' => $settings,

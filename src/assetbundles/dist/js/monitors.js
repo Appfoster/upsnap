@@ -131,9 +131,15 @@ Craft.Upsnap.Monitor = {
       this.disableTab('a[href="#healthchecks-tab"]');
       this.disableTab('a[href="#notification-channels-tab"]');
 
-
-
-      Craft.Upsnap.Monitor.notify(error.message, "error");
+      // Render status container with error when the api key has either expired, suspended or deleted
+      if(error.message === 'Invalid authentication token') {
+        this.renderStatusContainer({
+          message: "There was a problem fetching data.",
+          error: error.message || "",
+        });
+      } else {
+        Craft.Upsnap.Monitor.notify(error.message, "error");
+      }
     }
   },
 
@@ -213,6 +219,63 @@ Craft.Upsnap.Monitor = {
     if (parentTabList) {
       parentTabList.style.cursor = "pointer";
     }
+  },
+
+
+  renderStatusContainer(data) {
+    const statusContainerWrapper = document.getElementById("status-container-wrapper");
+    if (!statusContainerWrapper) return;
+
+    const apiTokenStatus = window.Upsnap?.settings?.apiTokenStatus || "unknown";
+    const apiTokenStatuses = window.Upsnap?.settings?.apiTokenStatuses || {};
+
+    // Default warning setup
+    let statusClass = "warning";
+    let containerClass = "warning";
+    let icon = "!";
+    let title = data.message || "There are some issues!";
+    let error = data.error || "";
+
+    // Adjust title/error message automatically based on token status
+    switch (apiTokenStatus) {
+      case apiTokenStatuses.expired:
+        title = "Your API token has expired.";
+        error = "Your current API token is invalid. Please provide a valid API token to create monitors, modify health check settings, and set up notification channels.";
+        break;
+      case apiTokenStatuses.suspended:
+        title = "Your API token is suspended.";
+        error = "Your current API token is invalid. Please provide a valid API token to create monitors, modify health check settings, and set up notification channels.";
+        break;
+      case apiTokenStatuses.deleted:
+        title = "Your API token has been deleted.";
+        error = "Your current API token is invalid. Please provide a valid API token to create monitors, modify health check settings, and set up notification channels.";
+        break;
+      case apiTokenStatuses.active:
+        // Only override if custom message isn’t passed
+        if (!data.message && !data.error) {
+          title = "An unexpected error occurred.";
+          error = "Something went wrong while fetching monitors. Please try again.";
+        }
+        break;
+      default:
+        if (!data.message && !data.error) {
+          title = "There are some issues!";
+          error = "Something went wrong while fetching monitors. Please try again.";
+        }
+        break;
+    }
+
+    const html = `
+      <div class="status-container ${containerClass}">
+        <div class="status-header">
+          <div class="status-icon ${statusClass}">${icon}</div>
+          <h3 class="status-title">${title}</h3>
+        </div>
+        ${error ? `<p class="status-message">${error}</p>` : ""}
+      </div>
+    `;
+
+    statusContainerWrapper.innerHTML = html;
   },
 
   registerAddMonitor() {
