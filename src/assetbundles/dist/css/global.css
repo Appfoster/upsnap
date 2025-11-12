@@ -674,11 +674,14 @@
     flex-wrap: wrap;
     gap: 8px;
     padding: 8px;
-    border: 1px solid #e3e5e8;
     border-radius: 4px;
     background: #fff;
-    min-height: 42px;
     margin-bottom: 8px;
+}
+
+.email-tags-container:empty {
+    padding: 0;
+    background: transparent;
 }
 
 .email-tag {
@@ -717,4 +720,154 @@
   color: #888;
   cursor: not-allowed;
   opacity: 0.7;
+}
+
+.api-key-field-with-status {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.api-key-field-with-status {
+    position: relative;
+    margin-bottom: 1.5rem;
+}
+
+#apiKey-instructions {
+    position: relative;
+    padding-right: 100px;
+    font-size: 0.875rem;
+    color: #666;
+    margin-top: 0.25rem;
+}
+
+.api-pill {
+    position: absolute;
+    top: 30%;
+    right: 0;
+    transform: translateY(-50%);
+    display: inline-block;
+    padding: 0.2rem 0.6rem;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: bold;
+    white-space: nowrap;
+    color: #fff;
+    background-color: #6c757d;
+    user-select: none;
+}
+
+/* Your status colors */
+.pill--green {
+    background-color: #28a745;
+}
+
+.pill--red {
+    background-color: #dc3545;
+}
+
+.pill--yellow {
+    background-color: #ffc107;
+    color: #212529;
+}
+
+.pill--grey {
+    background-color: #6c757d;
+}
+
+.api-pill:hover {
+  opacity: 0.9;
+}
+
+/* Healthcheck settings Styles */
+.healthcheck-row-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 2rem;
+  margin-bottom: 1.5rem;
+}
+
+.healthcheck-section {
+  display: flex;
+  flex-direction: column;
+}
+
+.nested-settings-inline {
+  margin-left: .5rem;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+}
+
+.nested-settings-inline .field {
+  margin-bottom: 0;
+  margin-top: 0;
+}
+
+/* Responsive layout */
+@media (max-width: 900px) {
+  .healthcheck-row-grid {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+}
+
+.healthcheck-section .field {
+  margin-bottom: 0.5rem;
+}
+
+/* lightswitch customization */
+.healthcheck-section .field.lightswitch-field {
+  position: relative;
+}
+
+.healthcheck-section .field.lightswitch-field .heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0;
+}
+
+.healthcheck-section .field.lightswitch-field .input {
+  position: absolute;
+  top: 0;
+  right: 0;
+  margin: 0;
+}
+
+.healthcheck-section .field.lightswitch-field .instructions {
+  margin-top: 8px;
+  clear: both;
+}
+
+.healthcheck-section .field.lightswitch-field .lightswitch {
+  margin: 0;
+}
+
+/* healthcheck settings end */
+
+.disabled-tab {
+  pointer-events: none;
+    cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.monitor-url {
+    color: #2980b9;
+    text-decoration: none;
+    margin-left: 6px;
+    font-weight: normal;
+}
+.monitor-url:hover {
+    text-decoration: underline;
+}
+
+.capitalize {
+    text-transform: capitalize;
+}
+
+.notification-channel-header {
+    margin-bottom: 2rem;
 }

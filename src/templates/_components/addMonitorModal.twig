@@ -1,0 +1,33 @@
+{% import "_includes/forms" as forms %}
+
+<div id="add-monitor-modal" class="upsnap-modal hidden">
+  <div class="upsnap-modal__overlay"></div>
+  <div class="upsnap-modal__container">
+    <div class="upsnap-modal__header">
+      <h2 class="upsnap-modal__title">{{ "Add New Monitor"|t('upsnap') }}</h2>
+      <button type="button" class="upsnap-modal__close" aria-label="Close">&times;</button>
+    </div>
+
+    <div class="upsnap-modal__body">
+      {{ forms.textField({
+        label: "Monitor Name"|t('upsnap'),
+        id: 'monitorName',
+        name: 'monitorName',
+        required: true
+      }) }}
+
+      {{ forms.textField({
+        label: "Monitor URL"|t('upsnap'),
+        id: 'monitorUrl',
+        name: 'monitorUrl',
+        required: true,
+        placeholder: 'https://example.com'
+      }) }}
+    </div>
+
+    <div class="upsnap-modal__footer">
+      <button type="button" id="cancel-monitor-btn" class="btn cancel">{{ "Cancel"|t('upsnap') }}</button>
+      <button type="button" id="save-monitor-btn" class="btn submit">{{ "Save Monitor"|t('upsnap') }}</button>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,92 @@
+/* Hide modal by default */
+.upsnap-modal.hidden {
+  display: none;
+}
+
+/* Overlay background */
+.upsnap-modal__overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  z-index: 5000;
+}
+
+/* Modal container */
+.upsnap-modal__container {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  width: 420px;
+  background: var(--white, #fff);
+  border-radius: 6px;
+  transform: translate(-50%, -50%);
+  z-index: 5001;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.25);
+  overflow: hidden;
+}
+
+/* Header + footer layout */
+.upsnap-modal__header,
+.upsnap-modal__footer {
+  padding: 14px 18px;
+  background: #f9fafb;
+  border-bottom: 1px solid #e3e5e8;
+}
+
+.upsnap-modal__footer {
+  border-top: 1px solid #e3e5e8;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+/* Title */
+.upsnap-modal__title {
+  font-size: 1.05rem;
+  margin: 0;
+  color: #2c2f36;
+  font-weight: 500;
+}
+
+/* Body area */
+.upsnap-modal__body {
+  padding: 18px;
+}
+
+/* Close icon */
+.upsnap-modal__close {
+  background: none;
+  border: none;
+  font-size: 20px;
+  position: absolute;
+  right: 14px;
+  top: 10px;
+  cursor: pointer;
+  color: #777;
+  transition: color 0.2s ease;
+}
+
+.upsnap-modal__close:hover {
+  color: #333;
+}
+
+/* Field spacing */
+.upsnap-modal__body .field {
+  margin-bottom: 16px;
+}
+
+/* Footer buttons */
+.upsnap-modal__footer .btn {
+  padding: 7px 14px;
+  border-radius: 4px;
+}
+
+.upsnap-modal__footer .btn.cancel {
+  background: #e3e5e8;
+  color: #333;
+}
+
+.upsnap-modal__footer .btn.submit {
+  background: #da5a47;
+  color: white;
+}

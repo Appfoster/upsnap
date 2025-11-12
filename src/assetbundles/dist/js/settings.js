@@ -12,18 +12,12 @@ Craft.Upsnap.Settings = {
 
     // Healthcheck toggles configuration
     healthchecks: [
-        {
-            id: 'reachabilityEnabled',
-            settingsId: 'reachability-settings'
-        },
-        {
-            id: 'sslEnabled',
-            settingsId: 'ssl-settings'
-        },
-        {
-            id: 'domainEnabled',
-            settingsId: 'domain-settings'
-        }
+        { id: 'brokenLinksEnabled', settingsId: 'brokenLinks-settings' },
+        { id: 'mixedContentEnabled', settingsId: 'mixedContent-settings' },
+        { id: 'lighthouseEnabled', settingsId: 'lighthouse-settings' },
+        { id: 'reachabilityEnabled', settingsId: 'reachability-settings' },
+        { id: 'sslEnabled', settingsId: 'ssl-settings' },
+        { id: 'domainEnabled', settingsId: 'domain-settings' }
     ],
 
     // Email validation
@@ -150,47 +144,17 @@ Craft.Upsnap.Settings = {
 
         const isEnabled = lightswitch.getAttribute('aria-checked') === 'true';
 
-        if (isEnabled) {
-            settings.style.display = 'block';
-        } else {
-            settings.style.display = 'none';
+        // Store original display type the first time we toggle
+        if (!settings.dataset.originalDisplay) {
+            const currentDisplay = window.getComputedStyle(settings).display;
+            settings.dataset.originalDisplay = currentDisplay !== 'none' ? currentDisplay : 'flex';
         }
-    },
-    isValidUrl: function (url) {
-        if (!url) return false;
 
-        // Allow: http(s)://, www., or bare domain
-        const pattern = /^(https?:\/\/)?(www\.)?([a-zA-Z0-9-]+\.[a-zA-Z]{2,})([^\s]*)?$/i;
-        return pattern.test(url.trim());
+        settings.style.display = isEnabled ? settings.dataset.originalDisplay : 'none';
     },
 
     // Form validation
     validateForm: function (event) {
-        const urlField = Craft.Upsnap.Settings.elements.urlField;
-        let urlValue = urlField.value.trim();
-
-        // Check if it matches allowed format
-        if (!Craft.Upsnap.Settings.isValidUrl(urlValue)) {
-            event.preventDefault();
-            Craft.cp.displayError('Please enter a valid domain or URL (e.g. https://example.com or example.com)');
-            return false;
-        }
-
-        // Normalize before sending to backend
-        // If user entered full http(s) already — leave it.
-        if (/^https?:\/\//i.test(urlValue)) {
-            // do nothing, already complete
-        } else if (/^www\./i.test(urlValue)) {
-            // add https:// before www
-            urlValue = `https://${urlValue}`;
-        } else {
-            // assume domain only
-            urlValue = `https://www.${urlValue}`;
-        }
-
-        // Update the input field before form submission
-        urlField.value = urlValue;
-
         return true;
     },
 
@@ -323,6 +287,52 @@ Craft.Upsnap.Settings = {
             });
         }
 
+        // -------------------------------
+    // Tab-based form action switching
+    // -------------------------------
+    // Intercept form submission for Healthcheck tab
+                const form = this.elements.settingsForm;
+
+form.addEventListener('submit', function (e) {
+    const activeTab = document.querySelector('.tab-content:not(.hidden)');
+    if (!activeTab || activeTab.id !== 'healthchecks-tab') {
+        return; // Normal submit for other tabs
+    }
+
+    e.preventDefault(); // Stop full page reload
+
+    const url = Craft.getActionUrl('upsnap/monitors/update');
+    const formData = new FormData(form);
+
+    // Optional: show spinner or disable save button
+    const saveBtn = document.getElementById('save-button');
+    saveBtn.disabled = true;
+    saveBtn.classList.add('disabled');
+
+    fetch(url, {
+        method: 'POST',
+        headers: {
+            'X-CSRF-Token': Craft.csrfTokenValue,
+        },
+        body: formData,
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            Craft.cp.displayNotice(data.message || 'Monitor updated successfully.');
+        } else {
+            Craft.cp.displayError(data.message || 'Failed to update monitor.');
+        }
+    })
+    .catch(err => {
+        console.error('Healthcheck update failed:', err);
+        Craft.cp.displayError('An unexpected error occurred.');
+    })
+    .finally(() => {
+        saveBtn.disabled = false;
+        saveBtn.classList.remove('disabled');
+    });
+});
 
 
     }

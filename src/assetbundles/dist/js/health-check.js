@@ -37,6 +37,8 @@ function registerBrokenLinksJs() {
     const statusContainerWrapper = document.getElementById("status-container-wrapper");
     const detailsContainerWrapper = document.getElementById("details-container-wrapper");
 
+    if (refreshBtn) refreshBtn.disabled = true;
+
     // Only run on security certificates page - check for unique element
     if (!statusContainerWrapper || !detailsContainerWrapper || !document.querySelector('[data-page="broken-links"]')) {
         return;
@@ -81,6 +83,8 @@ function registerBrokenLinksJs() {
                 showCraftMessage('error', errorData.error)
                 renderStatusContainer(errorData);
                 renderDetailsContainer(errorData); // This will hide details since status !== 'ok'
+            }).finally(() => {
+                refreshBtn.disabled = false;
             });
     }
 
@@ -273,6 +277,8 @@ function registerDomainCheckJs() {
     const detailsContainerWrapper = document.getElementById("details-container-wrapper");
     const domainDetailsSection = document.getElementById("domain-details-section");
 
+    if (refreshBtn) refreshBtn.disabled = true;
+
     // Only run on domain check page - check for unique element
     if (!statusContainerWrapper || !detailsContainerWrapper || !domainDetailsSection || !document.querySelector('[data-page="domain-check"]')) {
         return;
@@ -319,6 +325,8 @@ function registerDomainCheckJs() {
                 if (domainDetailsSection) {
                     domainDetailsSection.style.display = 'none';
                 }
+            }).finally(() => {
+                refreshBtn.disabled = false;
             });
     }
 
@@ -425,6 +433,8 @@ function registerLighthouseJs() {
     const refreshBtn = document.getElementById("refresh-button");
     let currentDevice = deviceSelector?.value || 'desktop';
 
+    if (refreshBtn) refreshBtn.disabled = true;
+
     const scoresContainer = document.getElementById("scores-container");
     const performanceContainer = document.getElementById("performance-container");
     const lighthouseDataElement = document.getElementById("lighthouse-data");
@@ -476,6 +486,8 @@ function registerLighthouseJs() {
                 // Hide scores and performance containers
                 scoresContainer.style.display = 'none';
                 performanceContainer.style.display = 'none';
+            }).finally(() => {
+                refreshBtn.disabled = false;
             });
     }
 
@@ -672,6 +684,8 @@ function registerMixedContentJs() {
     const detailsContainerWrapper = document.getElementById("details-container-wrapper");
     const mixedContentSection = document.getElementById("mixed-content-section");
 
+    if (refreshBtn) refreshBtn.disabled = true;
+
     // Only run on mixed content page - check for unique element
     if (!statusContainerWrapper || !detailsContainerWrapper || !mixedContentSection || !document.querySelector('[data-page="mixed-content"]')) {
         return;
@@ -716,6 +730,8 @@ function registerMixedContentJs() {
                 if (mixedContentSection) {
                     mixedContentSection.style.display = 'none';
                 }
+            }).finally(() => {
+                refreshBtn.disabled = false;
             });
     }
 
@@ -775,6 +791,8 @@ function registerReachabilityJs() {
     const detailsContainerWrapper = document.getElementById("details-container-wrapper");
     const reachabilitySection = document.getElementById("reachability-section");
 
+    if (refreshBtn) refreshBtn.disabled = true;
+
     // Only run on reachability page - check for unique element
     if (!statusContainerWrapper || !detailsContainerWrapper || !reachabilitySection || !document.querySelector('[data-page="reachability"]')) {
         return;
@@ -814,7 +832,9 @@ function registerReachabilityJs() {
                 // Hide reachability section
                 if (reachabilitySection) {
                     reachabilitySection.style.display = 'none';
-                }
+                } 
+            }).finally(() => {
+                refreshBtn.disabled = false;
             });
     }
 
@@ -974,6 +994,8 @@ function registerSecurityCertificatesJs() {
     const statusContainerWrapper = document.getElementById("status-container-wrapper");
     const detailsContainerWrapper = document.getElementById("details-container-wrapper");
 
+    if (refreshBtn) refreshBtn.disabled = true;
+
     // Only run on security certificates page - check for unique element
     if (!statusContainerWrapper || !detailsContainerWrapper || !document.querySelector('[data-page="security-certificates"]')) {
         return;
@@ -1013,6 +1035,8 @@ function registerSecurityCertificatesJs() {
                 showCraftMessage('error', errorData.error);
                 renderStatusContainer(errorData);
                 renderDetailsContainer(errorData); // This will hide details since status !== 'ok'
+            }).finally(() => {
+                refreshBtn.disabled = false;
             });
     }
 
