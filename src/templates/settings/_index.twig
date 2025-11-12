@@ -117,31 +117,6 @@
 				}) }}
 
 				<div id="advanced-settings" style="{% if not (settings.enabled ?? false) %}display:none;{% endif %}">
-
-					{# Notification Emails #}
-					<div class="field" id="notificationEmails-field">
-						<div class="heading">
-							<label for="notificationEmails">{{ "Notification Emails"|t('upsnap') }}</label>
-							<div class="instructions">
-								<p>{{ "Email addresses for monitoring alerts. Press Enter or comma to add multiple emails."|t('upsnap') }}</p>
-							</div>
-						</div>
-						<div class="input ltr">
-							<div id="email-tags-container" class="email-tags-container">
-								{% if settings.notificationEmails %}
-									{% for email in settings.notificationEmails %}
-										<span class="email-tag" data-email="{{ email }}">
-											<email>{{ email }}</email>
-											<button type="button" class="email-tag-remove" aria-label="Remove">×</button>
-										</span>
-									{% endfor %}
-								{% endif %}
-							</div>
-							<input type="text" id="notificationEmails-input" class="text fullwidth" placeholder="Add email address..." autocomplete="off">
-							<input type="hidden" name="notificationEmails" id="notificationEmails-hidden" value="{{ (settings.notificationEmails ?? [])|json_encode }}">
-						</div>
-					</div>
-
 					<hr>
 
 					<h2>{{ "Healthcheck Endpoints"|t('upsnap') }}</h2>
