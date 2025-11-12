@@ -45,8 +45,8 @@ class MonitorNotificationChannelsController extends Controller
 
         try {
             $payload = [
-                'type' => $type,
-                'label' => $label,
+                'channel_type' => $type,
+                'name' => $label,
                 'config' => $config,
             ];
 
@@ -91,11 +91,10 @@ class MonitorNotificationChannelsController extends Controller
         }
 
         $endpointTemplate = Constants::MICROSERVICE_ENDPOINTS['monitors']['notification_channels']['update'];
-        $endpoint = str_replace(['{monitorId}', '{id}'], [$monitorId, $channelId], $endpointTemplate);
+        $endpoint = str_replace(['{monitorId}', '{channelId}'], [$monitorId, $channelId], $endpointTemplate);
 
         try {
             $payload = [
-                'label' => $label,
                 'config' => $config,
             ];
 
