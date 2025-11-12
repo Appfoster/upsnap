@@ -16,7 +16,7 @@ class MonitorsController extends Controller
     {
         $this->requirePostRequest();
         $request = Craft::$app->getRequest();
-        $settingsService = Upsnap::$plugin->settingsService;    
+        $settingsService = Upsnap::$plugin->settingsService;
 
         $name = $request->getBodyParam('name');
         $url = $request->getBodyParam('url');
@@ -25,7 +25,7 @@ class MonitorsController extends Controller
 
         if ($url) {
             if (!$settingsService->isUrlReachable($url)) {
-                 return $this->asJson([
+                return $this->asJson([
                     'success' => false,
                     'message' => Craft::t('upsnap', 'The monitoring URL could not be reached. Please check the URL and try again.'),
                 ]);
@@ -120,7 +120,7 @@ class MonitorsController extends Controller
      */
     public function actionUpdate(): Response
     {
-        $settingsService = Upsnap::$plugin->settingsService;    
+        $settingsService = Upsnap::$plugin->settingsService;
         $this->requirePostRequest();
         $request = Craft::$app->getRequest();
 
@@ -153,6 +153,58 @@ class MonitorsController extends Controller
             ]);
         } catch (\Throwable $e) {
             Craft::error("Monitor update failed: {$e->getMessage()}", __METHOD__);
+
+            return $this->asJson([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * Delete a monitor.
+     *
+     * This action requires a POST request.
+     *
+     * @throws \Throwable
+     */
+    public function actionDelete(): Response
+    {
+        $settingsService = Upsnap::$plugin->settingsService;
+        $this->requirePostRequest();
+        $request = Craft::$app->getRequest();
+
+        $id = $request->getBodyParam('monitorId');
+        if (!$id) {
+            return $this->asJson([
+                'success' => false,
+                'message' => Craft::t('upsnap', 'Monitor ID is required.'),
+            ]);
+        }
+
+        $endpoint = Constants::MICROSERVICE_ENDPOINTS['monitors']['delete'];
+
+        try {
+            $response = Upsnap::$plugin->apiService->delete("{$endpoint}/{$id}");
+
+            if (!isset($response['status']) || $response['status'] !== 'success') {
+                $errorMsg = $response['message'] ?? Craft::t('upsnap', 'Failed to delete monitor.');
+                throw new \Exception($errorMsg);
+            }
+
+            $primaryMonitor = $settingsService->getMonitorId();
+
+            if($primaryMonitor == $id) {
+                $settingsService->setMonitorId(null);
+                $settingsService->setMonitoringUrl(null);
+            }
+
+            return $this->asJson([
+                'success' => true,
+                'message' => Craft::t('upsnap', 'Monitor deleted successfully.'),
+            ]);
+        } catch (\Throwable $e) {
+            Craft::error("Monitor delete failed: {$e->getMessage()}", __METHOD__);
 
             return $this->asJson([
                 'success' => false,

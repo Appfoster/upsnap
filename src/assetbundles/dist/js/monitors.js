@@ -7,6 +7,7 @@ Craft.Upsnap.Monitor = {
   init() {
     this.registerAddMonitor();
     this.loadMonitorsDropdown();
+    this.registerDeleteMonitor();
   },
 
   // =============================
@@ -56,11 +57,17 @@ Craft.Upsnap.Monitor = {
           labelSuffix: "(Default)",
         });
 
+        this.hideDelteMonitorButton()
+
         this.disableTab('a[href="#healthchecks-tab"]');
         this.disableTab('a[href="#notification-channels-tab"]');
 
         return;
+      } else {
+        this.showDeleteMonitorButton()
       }
+              this.showDeleteMonitorButton()
+
 
       monitors.forEach((monitor) => {
         const id = monitor?.id || "";
@@ -130,9 +137,10 @@ Craft.Upsnap.Monitor = {
 
       this.disableTab('a[href="#healthchecks-tab"]');
       this.disableTab('a[href="#notification-channels-tab"]');
+      this.hideDelteMonitorButton()
 
       // Render status container with error when the api key has either expired, suspended or deleted
-      if(error.message === 'Invalid authentication token') {
+      if (error.message === 'Invalid authentication token') {
         this.renderStatusContainer({
           message: "There was a problem fetching data.",
           error: error.message || "",
@@ -221,6 +229,17 @@ Craft.Upsnap.Monitor = {
     }
   },
 
+  showDeleteMonitorButton() {
+    // hide delete button
+    const deleteBtn = document.getElementById("delete-monitor-btn");
+    deleteBtn.style.display = "block !important";
+  },
+
+  hideDelteMonitorButton() {
+    // hide delete button
+    const deleteBtn = document.getElementById("delete-monitor-btn");
+    deleteBtn.style.display = "none";
+  },
 
   renderStatusContainer(data) {
     const statusContainerWrapper = document.getElementById("status-container-wrapper");
@@ -367,6 +386,79 @@ Craft.Upsnap.Monitor = {
         saveBtn.disabled = false;
         saveBtn.textContent = "Save";
         saveBtn.classList.remove('disabled')
+      }
+    });
+  },
+
+  registerDeleteMonitor() {
+    const deleteBtn = document.getElementById("delete-monitor-btn");
+    const modal = document.getElementById("delete-monitor-modal");
+    if (!deleteBtn || !modal) return;
+
+    const closeBtn = modal.querySelector(".upsnap-modal__close");
+    const cancelBtn = document.getElementById("cancel-delete-monitor-btn");
+    const confirmBtn = document.getElementById("confirm-delete-monitor-btn");
+
+    const showModal = () => modal.classList.remove("hidden");
+    const hideModal = () => modal.classList.add("hidden");
+
+    deleteBtn.addEventListener("click", () => {
+      const dropdown = document.getElementById("monitorDropdown");
+      const selectedOption = dropdown?.selectedOptions[0];
+      const monitorId = selectedOption?.dataset.id;
+
+      if (!monitorId) {
+        Craft.Upsnap.Monitor.notify("Please select a monitor to delete.", "error");
+        return;
+      }
+      showModal();
+    });
+
+    closeBtn?.addEventListener("click", hideModal);
+    cancelBtn?.addEventListener("click", hideModal);
+
+    confirmBtn?.addEventListener("click", async () => {
+      const dropdown = document.getElementById("monitorDropdown");
+      const selectedOption = dropdown?.selectedOptions[0];
+      const monitorId = selectedOption?.dataset.id;
+
+      if (!monitorId) {
+        Craft.Upsnap.Monitor.notify("No monitor selected.", "error");
+        hideModal();
+        return;
+      }
+
+      confirmBtn.disabled = true;
+      confirmBtn.textContent = "Deleting...";
+
+      try {
+        const response = await fetch("/actions/upsnap/monitors/delete", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-CSRF-Token": Craft.csrfTokenValue,
+          },
+          body: JSON.stringify({ monitorId: monitorId }),
+        });
+
+        const data = await response.json();
+        if (!response.ok || !data.success) {
+          const message = data?.message || "Failed to delete monitor.";
+          throw new Error(message);
+        }
+
+        Craft.Upsnap.Monitor.notify(data?.message || "Monitor deleted successfully.", "success");
+
+        // Refresh dropdown list
+        window.location.reload();
+
+        hideModal();
+      } catch (error) {
+        const message = error?.message || "Something went wrong.";
+        Craft.Upsnap.Monitor.notify(message, "error");
+      } finally {
+        confirmBtn.disabled = false;
+        confirmBtn.textContent = "Delete";
       }
     });
   },
