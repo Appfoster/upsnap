@@ -48,6 +48,12 @@ class HealthCheckController extends BaseController
     
                 $brokenLinksMeta = $response['result']['details'][$paramName]['meta'] ?? [];
                 $isOk = $response['result']['details'][$paramName]['ok'] ?? true;
+                $errorsCount = $brokenLinksMeta['broken'] ?? 0;
+    
+                // If there are broken links, consider it an error even if API says ok
+                if ($errorsCount > 0) {
+                    $isOk = false;
+                }
     
                 $brokenLinks = [];
     

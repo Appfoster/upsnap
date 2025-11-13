@@ -147,7 +147,7 @@ class SettingsController extends BaseController
                 'apiTokenStatus' => $service->getApiTokenStatus(),
                 'subscriptionTypes' => Constants::SUBSCRIPTION_TYPES,
                 'apiTokenStatuses' => Constants::API_KEY_STATUS,
-                'intervalOptions' => $service->formatOptions(Constants::MONITOR_INTERVALS),
+                'intervalOptions' => $service->formatOptions(Constants::MONITOR_INTERVALS, true),
                 'strategyOptions' => $service->formatOptions(Constants::LIGHTHOUSE_STRATEGIES),
                 'expiryDayOptions' => $service->formatOptions(Constants::EXPIRY_DAYS),
             ],

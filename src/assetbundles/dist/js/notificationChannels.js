@@ -32,6 +32,8 @@ function registerNotificationChannelsJs() {
     const tabContainer = document.getElementById("notification-channels-tab");
     const tableBody = document.getElementById("notification-channels-table-body");
 
+    if (!tabContainer) return;
+
     if (!tabContainer.classList.contains("hidden")) {
         loadNotificationChannels();
     }
@@ -48,7 +50,7 @@ function registerNotificationChannelsJs() {
     // Fetch channels from Craft action
     function loadNotificationChannels() {
         // Optional: clear table while loading
-        tableBody.innerHTML = `<tr><td colspan="3">Loading...</td></tr>`;
+        tableBody.innerHTML = `<tr><td colspan="4">Loading...</td></tr>`;
 
         Craft.sendActionRequest("GET", "upsnap/monitor-notification-channels/list")
             .then((response) => {
@@ -65,13 +67,13 @@ function registerNotificationChannelsJs() {
                     "error",
                     error?.response?.data?.message || "Failed to load notification channels"
                 );
-                tableBody.innerHTML = `<tr><td colspan="3">Error loading data</td></tr>`;
+                tableBody.innerHTML = `<tr><td colspan="4">Error loading data</td></tr>`;
             });
     }
 
     function renderNotificationChannels(channels) {
         if (!channels.length) {
-            tableBody.innerHTML = `<tr><td colspan="3" class="light">No notification channels found.</td></tr>`;
+            tableBody.innerHTML = `<tr><td colspan="4" class="light">No notification channels found.</td></tr>`;
             return;
         }
 
@@ -79,6 +81,7 @@ function registerNotificationChannelsJs() {
         channels.forEach((channel) => {
             const row = document.createElement("tr");
             row.innerHTML = `
+                <td>${channel.name || "N/A"}</td>
                 <td class='capitalize'>${channel.channel_type || "N/A"}</td>
                 <td>${channel.config?.recipients?.to || "—"}</td>
                 <td>
@@ -117,6 +120,7 @@ function registerNotificationChannelModal() {
     const saveBtn = document.getElementById("save-notification-channel-btn");
     const typeField = document.getElementById("channelType");
     const recipientField = document.getElementById("channelRecipient");
+    const nameField = document.getElementById("channelName");
     const modalTitle = modal.querySelector(".upsnap-modal__title");
 
     let editMode = false;
@@ -125,10 +129,11 @@ function registerNotificationChannelModal() {
     const resetForm = () => {
         if (typeField) typeField.value = "email";
         if (recipientField) recipientField.value = "";
+        if (nameField) nameField.value = "";
         editMode = false;
         currentChannelId = null;
         if (modalTitle) modalTitle.textContent = "Add Notification Channel";
-        if (saveBtn) saveBtn.textContent = "Save Channel";
+        if (saveBtn) saveBtn.textContent = "Save";
     };
 
     const showModal = () => modal.classList.remove("hidden");
@@ -153,8 +158,9 @@ function registerNotificationChannelModal() {
 
         if (typeField) typeField.value = channelData.channel_type || "email";
         if (recipientField) recipientField.value = channelData.config?.recipients?.to || "";
+        if (nameField) nameField.value = channelData.name || "";
         if (modalTitle) modalTitle.textContent = "Edit Notification Channel";
-        if (saveBtn) saveBtn.textContent = "Update Channel";
+        if (saveBtn) saveBtn.textContent = "Update";
 
         showModal();
     }
@@ -166,6 +172,12 @@ function registerNotificationChannelModal() {
     saveBtn?.addEventListener("click", async () => {
         const type = typeField?.value || "email";
         const recipient = recipientField?.value.trim();
+        const name = nameField?.value.trim();
+
+        if (!name) {
+            showCraftMessage("error", "Please enter a channel name.");
+            return;
+        }
 
         if (!recipient) {
             showCraftMessage("error", "Please enter recipient email.");
@@ -183,7 +195,7 @@ function registerNotificationChannelModal() {
 
             const payload = {
                 type,
-                label: "Email Alerts",
+                label: name,
                 config: { recipients: { to: recipient } },
             };
 
@@ -208,7 +220,7 @@ function registerNotificationChannelModal() {
 
             showCraftMessage(
                 "success",
-                data?.message || `Notification channel ${editMode ? 'updated' : 'added'} successfully.`
+                data?.message || `Notification channel ${editMode ? 'updated' : 'created'} successfully.`
             );
 
             hideModal();
@@ -226,7 +238,7 @@ function registerNotificationChannelModal() {
             showCraftMessage("error", message);
         } finally {
             saveBtn.disabled = false;
-            saveBtn.textContent = editMode ? "Update Channel" : "Save Channel";
+            saveBtn.textContent = editMode ? "Update" : "Save";
             saveBtn.classList.remove("disabled");
         }
     });
@@ -238,7 +250,7 @@ function registerNotificationChannelModal() {
             // Re-trigger the load
             const tableBody = document.getElementById("notification-channels-table-body");
             if (tableBody) {
-                tableBody.innerHTML = `<tr><td colspan="3">Loading...</td></tr>`;
+                tableBody.innerHTML = `<tr><td colspan="4">Loading...</td></tr>`;
 
                 Craft.sendActionRequest("GET", "upsnap/monitor-notification-channels/list")
                     .then((response) => {
@@ -261,7 +273,7 @@ function registerNotificationChannelModal() {
         if (!tableBody) return;
 
         if (!channels.length) {
-            tableBody.innerHTML = `<tr><td colspan="3" class="light">No notification channels found.</td></tr>`;
+            tableBody.innerHTML = `<tr><td colspan="4" class="light">No notification channels found.</td></tr>`;
             return;
         }
 
@@ -269,6 +281,7 @@ function registerNotificationChannelModal() {
         channels.forEach((channel) => {
             const row = document.createElement("tr");
             row.innerHTML = `
+                <td>${channel.name || "N/A"}</td>
                 <td class='capitalize'>${channel.channel_type || "N/A"}</td>
                 <td>${channel.config?.recipients?.to || "—"}</td>
                 <td>

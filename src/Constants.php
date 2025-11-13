@@ -164,7 +164,7 @@ class Constants
             'create' => 'user/monitors',
             'list' => 'user/monitors',
             'view' => 'user/monitors',
-            'delete' => 'user/monitors/{id}',
+            'delete' => 'user/monitors',
             'update' => 'user/monitors',
             'notification_channels' => [
                 'list' => 'user/monitors/{monitorId}/notification-channels',
@@ -181,12 +181,15 @@ class Constants
 
     // Monitor intervals (seconds → label)
     public const MONITOR_INTERVALS = [
-        30 => '30 seconds',
         60 => '1 minute',
-        600 => '10 minutes',
+        300 => '5 minutes',
+        900 => '15 minutes',
         3600 => '1 hour',
+        21600 => '6 hours',
         86400 => '1 day',
+        604800 => '1 week',
     ];
+
 
     // Lighthouse strategies
     public const LIGHTHOUSE_STRATEGIES = [

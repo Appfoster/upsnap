@@ -8,12 +8,12 @@
 	{ label: "General"|t('upsnap'), url: '#general-tab', class: 'sel' }
 ] %}
 
-{% if showHealthchecks and (settings.monitorId ?? false) %}
+{% if showHealthchecks %}
 	{% set tabs = tabs|merge([
-		isActiveApiToken
+		(isActiveApiToken and (settings.monitorId ?? false))
 			? { label: "Healthchecks"|t('upsnap'), url: '#healthchecks-tab' }
 			: { label: "Healthchecks"|t('upsnap'), url: '#healthchecks-tab', class: 'disabled-tab' },
-		isActiveApiToken
+		(isActiveApiToken and (settings.monitorId ?? false))
 			? { label: "Notification Channels"|t('upsnap'), url: '#notification-channels-tab' }
 			: { label: "Notification Channels"|t('upsnap'), url: '#notification-channels-tab', class: 'disabled-tab' }
 	]) %}
@@ -21,19 +21,14 @@
 
 
 {% block actionButton %}
-	 <div class="flex smallgap">
-		<button
-			type="button"
-			class="btn add icon{% if not isActiveApiToken %} disabled{% endif %}"
-			id="add-monitor-btn"
-			{% if not isActiveApiToken %}disabled aria-disabled="true"{% endif %}
-		>
-			{{ "Add Monitor"|t('upsnap') }}
+	<div class="flex smallgap">
+		<button type="button" class="btn add icon{% if not isActiveApiToken %} disabled{% endif %}" id="add-monitor-btn" {% if not isActiveApiToken %} disabled aria-disabled="true" {% endif %}>
+			{{ "Add Monitor URL"|t('upsnap') }}
 		</button>
 		<button id="save-button" type="submit" form="settings-form" class="btn submit">
 			{{ "Save"|t('upsnap') }}
-		</button>        
-    </div>
+		</button>
+	</div>
 {% endblock %}
 {% set apiTokenStatus = apiTokenStatus ?? 'expired' %}
 
@@ -50,16 +45,17 @@
 {% block content %}
 	{# Include modal component separately #}
 	{% include "upsnap/_components/addMonitorModal.twig" %}
+	{% include "upsnap/_components/deleteMonitorModal.twig" %}
 
 	{# inject server values for JS to consume - put this before monitor.js is loaded #}
 	<script>
 		window.Upsnap = window.Upsnap || {};
 		window.Upsnap.settings = {
-			monitoringUrl: {{ (settings.monitoringUrl ?? '')|json_encode|raw }},
-			apiKey: {{ (showHealthchecks ?? '')|json_encode|raw }},
-			isActiveApiToken : {{ (isActiveApiToken ?? '')|json_encode|raw }},
-			apiTokenStatus: {{ (apiTokenStatus ?? 'unknown')|json_encode|raw }},
-			apiTokenStatuses: {{ (apiTokenStatuses ?? 'unknown')|json_encode|raw }}
+		monitoringUrl: {{ (settings.monitoringUrl ?? '')|json_encode|raw }},
+		apiKey: {{ (showHealthchecks ?? '')|json_encode|raw }},
+		isActiveApiToken: {{ (isActiveApiToken ?? '')|json_encode|raw }},
+		apiTokenStatus: {{ (apiTokenStatus ?? 'unknown')|json_encode|raw }},
+		apiTokenStatuses: {{ (apiTokenStatuses ?? 'unknown')|json_encode|raw }}
 		};
 	</script>
 	<form id="settings-form" method="post" accept-charset="UTF-8" enctype="multipart/form-data">
@@ -71,25 +67,35 @@
 		{# ====================== GENERAL TAB ====================== #}
 		<div id="general-tab" class="tab-content">
 
-			{{ forms.selectField({
-				label: "Select Monitor"|t('upsnap'),
-				instructions: "Choose a monitor from the available list or create a new one."|t('upsnap'),
-				id: "monitorDropdown",
-				name: "monitoringUrl",
-				options: [
-					{ label: "Loading monitors...", value: "" }
-				],
-				value: settings.monitoringUrl ?? "",
-				data: { value: settings.monitoringUrl ?? "" }, 
-				errors: settings.getErrors("monitoringUrl") ?? false
-			}) }}
+			<div class="flex" style='margin-bottom: 10px;'>
+				<div style="flex: .4;">
+					{{ forms.selectField({
+						label: "Select Monitor URL"|t('upsnap'),
+						instructions: "Choose a monitor url from the available list or create a new one."|t('upsnap'),
+						id: "monitorDropdown",
+						name: "monitoringUrl",
+						options: [
+							{ label: "Loading monitors...", value: "" }
+						],
+						value: settings.monitoringUrl ?? "",
+						data: { value: settings.monitoringUrl ?? "" }, 
+						errors: settings.getErrors("monitoringUrl") ?? false
+						}) }}
+				</div>
+
+				<div style="align-self: flex-end; margin-left: 10px;">
+					<button id="delete-monitor-btn" type="button" class="btn submit">
+						{{ "Delete Monitor"|t('upsnap') }}
+					</button>
+				</div>
+			</div>
 
 			<input type="hidden" id="monitorId" name="monitorId" value="{{ settings.monitorId ?? '' }}">
 
 			<div class="api-key-field-with-status">
 				{{ forms.textField({
                     label: "API Key"|t('upsnap'),
-                    instructions: "Enter the Upsnap API Key and save to enable Healthcheck settings. To access the API key, please visit the Upsnap dashboard at <a href='#{upsnapDashboardUrl}' target='_blank' rel='noopener noreferrer'>Upsnap Dashboard<span class='sr-only' style='position:absolute;left:-10000px;'> (opens in a new tab)</span></a>"|t('upsnap')|raw,
+                    instructions: "Enter the Upsnap API Key and save to enable Healthcheck settings. To access the API key, please visit the <a href='#{upsnapDashboardUrl}' target='_blank' rel='noopener noreferrer'>Upsnap Dashboard<span class='sr-only' style='position:absolute;left:-10000px;'> (opens in a new tab)</span></a>"|t('upsnap')|raw,
                     id: 'apiKey',
                     name: 'apiKey',
                     type: 'text',
@@ -108,7 +114,7 @@
 
 		{# ====================== HEALTHCHECK TAB ====================== #}
 		{# TODO	 just show the disabled tab and not the content here #}
-		{% if showHealthchecks and isActiveApiToken %} 
+		{% if showHealthchecks and isActiveApiToken and (settings.monitorId ?? false) %}
 			<div id="healthchecks-tab" class="tab-content hidden">
 				{{ forms.lightswitchField({
 					label: "Enable Monitoring"|t('upsnap'),
@@ -121,8 +127,9 @@
 
 				<div id="advanced-settings" style="{% if not (settings.enabled ?? false) %}display:none;{% endif %}">
 					<hr>
-
-					<h2>{{ "Healthcheck Endpoints"|t('upsnap') }}</h2>
+					<h2>{{ "Healthcheck Endpoints"|t('upsnap') }}
+						<a href="{{ settings.monitoringUrl }}" target="_blank" rel="noopener" class="monitor-url">({{ settings.monitoringUrl }})</a>
+					</h2>
 					<p class="light ">{{ "Configure monitoring settings for each healthcheck endpoint"|t('upsnap') }}</p>
 
 					{# First Row: Broken Links and Mixed Content #}
@@ -157,7 +164,7 @@
 								on: settings.mixedContentEnabled ?? true,
 								errors: settings.getErrors('mixedContentEnabled') ?? false
 							}) }}
-							<div class="nested-settings-inline" id="mixedContent-settings" {% if not (settings.mixedContentEnabled ?? true) %}style="display:none;"{% endif %}>
+							<div class="nested-settings-inline" id="mixedContent-settings" {% if not (settings.mixedContentEnabled ?? true) %} style="display:none;" {% endif %}>
 								{{ forms.selectField({
 									label: "Monitoring Interval"|t('upsnap'),
 									id: 'mixedContentMonitoringInterval',
@@ -215,13 +222,8 @@
 									label: "Monitoring Interval"|t('upsnap'),
 									id: 'reachabilityMonitoringInterval',
 									name: 'reachabilityMonitoringInterval',
-									options: [
-										{ label: "30 seconds"|t('upsnap'), value: "30s" },
-										{ label: "1 minute"|t('upsnap'), value: "1m" },
-										{ label: "10 minutes"|t('upsnap'), value: "10m" },
-										{ label: "1 hour"|t('upsnap'), value: "1h" }
-									],
-									value: settings.reachabilityMonitoringInterval ?? "1m",
+									options: intervalOptions,
+									value: settings.reachabilityMonitoringInterval,
 									errors: settings.getErrors('reachabilityMonitoringInterval') ?? false
 								}) }}
 							</div>
@@ -267,7 +269,7 @@
 								on: settings.domainEnabled ?? true,
 								errors: settings.getErrors('domainEnabled') ?? false
 							}) }}
-							<div class="nested-settings-inline" id= "domain-settings">
+							<div class="nested-settings-inline" id="domain-settings">
 								{{ forms.selectField({
 									label: "Days Before Expiry"|t('upsnap'),
 									id: 'domainExpiryDays',
@@ -289,16 +291,18 @@
 				</div>
 			</div>
 		{% endif %}
+		{% if settings.monitorId ?? false %}
 		{% include "upsnap/_components/notificationChannels.twig" %}
+		{% endif %}
 	</form>
-	
+
 {% endblock %}
 
 {% block foot %}
-    <script>
-        window.CraftPageData = {
-            title: {{ title|json_encode|raw }},
-            monitorUrl: {{ settings.monitoringUrl|json_encode|raw }}
-        };
-    </script>
+	<script>
+		window.CraftPageData = {
+			title: {{ title|json_encode|raw }},
+			monitorUrl: {{ settings.monitoringUrl|json_encode|raw }}
+		};
+	</script>
 {% endblock %}

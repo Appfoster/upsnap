@@ -80,7 +80,7 @@ class SettingsService extends Component
     public function getMonitoringUrl(): ?string
     {
         $url = null;
-        if (!$this->getSetting('monitoringUrl') && !$this->getApiKey()) {
+        if (!$this->getSetting('monitoringUrl')) {
             $primarySiteUrl = Craft::$app->getSites()->getPrimarySite()?->baseUrl;
             if ($primarySiteUrl) {
                 $this->setMonitoringUrl($primarySiteUrl);
@@ -493,13 +493,14 @@ class SettingsService extends Component
         }
     }
 
-    public function formatOptions(array $constants): array
+    public function formatOptions(array $constants, ?bool $isMonitoringOptions = false): array
     {
         $options = [];
         foreach ($constants as $value => $label) {
             $options[] = [
                 'label' => Craft::t('upsnap', $label),
                 'value' => (string)$value,
+                'disabled' => $isMonitoringOptions ? ($value === 60) : false,
             ];
         }
         return $options;
