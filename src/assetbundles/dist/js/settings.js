@@ -8,8 +8,6 @@ Craft.Upsnap.Settings = {
     // DOM elements
     elements: {},
 
-    emailTags: [],
-
     // Healthcheck toggles configuration
     healthchecks: [
         { id: 'brokenLinksEnabled', settingsId: 'brokenLinks-settings' },
@@ -19,77 +17,6 @@ Craft.Upsnap.Settings = {
         { id: 'sslEnabled', settingsId: 'ssl-settings' },
         { id: 'domainEnabled', settingsId: 'domain-settings' }
     ],
-
-    // Email validation
-    isValidEmail: function (email) {
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        return emailRegex.test(email);
-    },
-
-    // Add email tag
-    addEmailTag: function (email) {
-        email = email.trim();
-
-        if (!email) return;
-
-        if (!this.isValidEmail(email)) {
-            Craft.cp.displayNotice('Please enter a valid email address.');
-            return;
-        }
-
-        if (this.emailTags.includes(email)) {
-            Craft.cp.displayNotice('This email address is already added.');
-            return;
-        }
-
-        this.emailTags.push(email);
-        this.renderEmailTags();
-        this.updateHiddenField();
-
-        // Clear input
-        if (this.elements.emailInput) {
-            this.elements.emailInput.value = '';
-        }
-    },
-
-    // Remove email tag
-    removeEmailTag: function (email) {
-        const index = this.emailTags.indexOf(email);
-        if (index > -1) {
-            this.emailTags.splice(index, 1);
-            this.renderEmailTags();
-            this.updateHiddenField();
-        }
-    },
-
-    // Render email tags
-    renderEmailTags: function () {
-        if (!this.elements.emailContainer) return;
-
-        this.elements.emailContainer.innerHTML = '';
-
-        this.emailTags.forEach(function (email) {
-            const tag = document.createElement('span');
-            tag.className = 'email-tag';
-            tag.setAttribute('data-email', email);
-            tag.innerHTML = email + '<button type="button" class="email-tag-remove" aria-label="Remove">×</button>';
-
-            const removeBtn = tag.querySelector('.email-tag-remove');
-            removeBtn.addEventListener('click', function () {
-                this.removeEmailTag(email);
-            }.bind(this));
-
-            this.elements.emailContainer.appendChild(tag);
-        }.bind(this));
-    },
-
-    // Update hidden field with email array
-    updateHiddenField: function () {
-        if (this.elements.emailHidden) {
-            this.elements.emailHidden.value = JSON.stringify(this.emailTags);
-            this.elements.emailHidden.dispatchEvent(new Event('input'));
-        }
-    },
 
     // Check if API key is provided
     hasApiKey: function () {
@@ -165,43 +92,10 @@ Craft.Upsnap.Settings = {
         this.elements = {
             urlField: document.getElementById('monitoringUrl'),
             apiKeyField: document.getElementById('apiKey'),
-            emailContainer: document.getElementById('email-tags-container'),
-            emailInput: document.getElementById('notificationEmails-input'),
-            emailHidden: document.getElementById('notificationEmails-hidden'),
             enabledField: document.getElementById('enabled'),
             advancedSettings: document.getElementById('advanced-settings'),
             settingsForm: document.getElementById('settings-form'),
         };
-
-        // Initialize email tags from hidden field
-        if (this.elements.emailHidden && this.elements.emailHidden.value) {
-            try {
-                this.emailTags = JSON.parse(this.elements.emailHidden.value);
-            } catch (e) {
-                this.emailTags = [];
-            }
-            this.renderEmailTags();
-        }
-
-        // Email input handlers
-        if (this.elements.emailInput) {
-            this.elements.emailInput.addEventListener('keydown', function (e) {
-                if (e.key === 'Enter' || e.key === ',') {
-                    e.preventDefault();
-                    const email = e.target.value.replace(',', '').trim();
-                    if (email) {
-                        this.addEmailTag(email);
-                    }
-                }
-            }.bind(this));
-
-            this.elements.emailInput.addEventListener('blur', function (e) {
-                const email = e.target.value.trim();
-                if (email) {
-                    this.addEmailTag(email);
-                }
-            }.bind(this));
-        }
 
         // Initial check on page load
         if (this.elements.enabledField && this.elements.advancedSettings) {
@@ -288,51 +182,51 @@ Craft.Upsnap.Settings = {
         }
 
         // -------------------------------
-    // Tab-based form action switching
-    // -------------------------------
-    // Intercept form submission for Healthcheck tab
-                const form = this.elements.settingsForm;
+        // Tab-based form action switching
+        // -------------------------------
+        // Intercept form submission for Healthcheck tab
+        const form = this.elements.settingsForm;
 
-form.addEventListener('submit', function (e) {
-    const activeTab = document.querySelector('.tab-content:not(.hidden)');
-    if (!activeTab || activeTab.id !== 'healthchecks-tab') {
-        return; // Normal submit for other tabs
-    }
+        form.addEventListener('submit', function (e) {
+            const activeTab = document.querySelector('.tab-content:not(.hidden)');
+            if (!activeTab || activeTab.id !== 'healthchecks-tab') {
+                return; // Normal submit for other tabs
+            }
 
-    e.preventDefault(); // Stop full page reload
+            e.preventDefault(); // Stop full page reload
 
-    const url = Craft.getActionUrl('upsnap/monitors/update');
-    const formData = new FormData(form);
+            const url = Craft.getActionUrl('upsnap/monitors/update');
+            const formData = new FormData(form);
 
-    // Optional: show spinner or disable save button
-    const saveBtn = document.getElementById('save-button');
-    saveBtn.disabled = true;
-    saveBtn.classList.add('disabled');
+            // Optional: show spinner or disable save button
+            const saveBtn = document.getElementById('save-button');
+            saveBtn.disabled = true;
+            saveBtn.classList.add('disabled');
 
-    fetch(url, {
-        method: 'POST',
-        headers: {
-            'X-CSRF-Token': Craft.csrfTokenValue,
-        },
-        body: formData,
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            Craft.cp.displayNotice(data.message || 'Monitor updated successfully.');
-        } else {
-            Craft.cp.displayError(data.message || 'Failed to update monitor.');
-        }
-    })
-    .catch(err => {
-        console.error('Healthcheck update failed:', err);
-        Craft.cp.displayError('An unexpected error occurred.');
-    })
-    .finally(() => {
-        saveBtn.disabled = false;
-        saveBtn.classList.remove('disabled');
-    });
-});
+            fetch(url, {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-Token': Craft.csrfTokenValue,
+                },
+                body: formData,
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        Craft.cp.displayNotice(data.message || 'Monitor updated successfully.');
+                    } else {
+                        Craft.cp.displayError(data.message || 'Failed to update monitor.');
+                    }
+                })
+                .catch(err => {
+                    console.error('Healthcheck update failed:', err);
+                    Craft.cp.displayError('An unexpected error occurred.');
+                })
+                .finally(() => {
+                    saveBtn.disabled = false;
+                    saveBtn.classList.remove('disabled');
+                });
+        });
 
 
     }
