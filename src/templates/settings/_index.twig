@@ -243,19 +243,19 @@
 							}) }}
 							<div class="nested-settings-inline" id="ssl-settings">
 								{{ forms.selectField({
-									label: "Days Before Expiry"|t('upsnap'),
-									id: 'sslExpiryDays',
-									name: 'sslDaysBeforeExpiryAlert',
-									options: expiryDayOptions,
-									value: settings.sslDaysBeforeExpiryAlert ?? "30"
-								}) }}
-								{{ forms.selectField({
 									label: "Monitoring Interval"|t('upsnap'),
 									id: 'securityCertificatesMonitoringInterval',
 									name: 'securityCertificatesMonitoringInterval',
 									options: intervalOptions,
 									value: settings.securityCertificatesMonitoringInterval ?? "1m",
 									errors: settings.getErrors('securityCertificatesMonitoringInterval') ?? false
+								}) }}
+								{{ forms.selectField({
+									label: "Days Before Expiry"|t('upsnap'),
+									id: 'sslExpiryDays',
+									name: 'sslDaysBeforeExpiryAlert',
+									options: expiryDayOptions,
+									value: settings.sslDaysBeforeExpiryAlert ?? "30"
 								}) }}
 							</div>
 						</div>
@@ -271,19 +271,19 @@
 							}) }}
 							<div class="nested-settings-inline" id="domain-settings">
 								{{ forms.selectField({
-									label: "Days Before Expiry"|t('upsnap'),
-									id: 'domainExpiryDays',
-									name: 'domainDaysBeforeExpiryAlert',
-									options: expiryDayOptions,
-									value: settings.domainDaysBeforeExpiryAlert ?? "30"
-								}) }}
-								{{ forms.selectField({
 									label: "Monitoring Interval"|t('upsnap'),
 									id: 'domainMonitoringInterval',
 									name: 'domainMonitoringInterval',
 									options: intervalOptions,
 									value: settings.domainMonitoringInterval ?? "1m",
 									errors: settings.getErrors('domainMonitoringInterval') ?? false
+								}) }}
+								{{ forms.selectField({
+									label: "Days Before Expiry"|t('upsnap'),
+									id: 'domainExpiryDays',
+									name: 'domainDaysBeforeExpiryAlert',
+									options: expiryDayOptions,
+									value: settings.domainDaysBeforeExpiryAlert ?? "30"
 								}) }}
 							</div>
 						</div>
