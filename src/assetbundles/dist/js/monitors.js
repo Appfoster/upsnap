@@ -3,6 +3,25 @@
 window.Craft = window.Craft || {};
 Craft.Upsnap = Craft.Upsnap || {};
 
+Craft.Upsnap.capitalizeFirst = function(str) {
+    if (!str || typeof str !== 'string') return str;
+    return str.charAt(0).toUpperCase() + str.slice(1);
+};
+
+// Override Craft's notification methods to auto-capitalize messages
+if (Craft && Craft.cp) {
+    const originalDisplayNotice = Craft.cp.displayNotice;
+    const originalDisplayError = Craft.cp.displayError;
+
+    Craft.cp.displayNotice = function(message, ...args) {
+        return originalDisplayNotice.call(this, Craft.Upsnap.capitalizeFirst(message), ...args);
+    };
+
+    Craft.cp.displayError = function(message, ...args) {
+        return originalDisplayError.call(this, Craft.Upsnap.capitalizeFirst(message), ...args);
+    };
+}
+
 Craft.Upsnap.Monitor = {
   init() {
     this.registerAddMonitor();
@@ -404,7 +423,7 @@ Craft.Upsnap.Monitor = {
 
       } catch (error) {
         const rawMessage = error?.message || "Something went wrong.";
-        const message = rawMessage.charAt(0).toUpperCase() + rawMessage.slice(1);
+        const message = rawMessage;
         Craft.Upsnap.Monitor.notify(message, "error");
       } finally {
         // Re-enable button after API completes
@@ -474,8 +493,10 @@ Craft.Upsnap.Monitor = {
 
         Craft.Upsnap.Monitor.notify(data?.message || "Monitor deleted successfully.", "success");
 
-        // Refresh dropdown list
-        window.location.reload();
+        // Refresh dropdown list after a short delay to allow user to see the success message
+        setTimeout(() => {
+          window.location.reload();
+        }, 1500);
 
         hideModal();
       } catch (error) {

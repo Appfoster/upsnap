@@ -46,7 +46,7 @@ class MonitorNotificationChannelsController extends Controller
         try {
             $payload = [
                 'channel_type' => $type,
-                // 'name' => $label, // to be taken dyamically later on
+                'name' => $label,
                 'config' => $config,
             ];
 
@@ -95,6 +95,7 @@ class MonitorNotificationChannelsController extends Controller
 
         try {
             $payload = [
+                'name' => $label,
                 'config' => $config,
             ];
 

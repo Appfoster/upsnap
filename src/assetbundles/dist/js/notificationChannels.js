@@ -281,8 +281,8 @@ function registerNotificationChannelModal() {
         channels.forEach((channel) => {
             const row = document.createElement("tr");
             row.innerHTML = `
+                <td>${channel.name || "N/A"}</td>
                 <td class='capitalize'>${channel.channel_type || "N/A"}</td>
-                <td>${channel.label || "N/A"}</td>
                 <td>${channel.config?.recipients?.to || "—"}</td>
                 <td>
                     <button type="button" class="btn small icon edit edit-channel-btn" data-channel='${JSON.stringify(channel)}' title="Edit Channel">
