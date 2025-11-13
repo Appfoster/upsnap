@@ -49,7 +49,7 @@ Craft.Upsnap.Monitor = {
       }
       this.populateSavedMonitorDropdown(dropdown, savedValue, {
         disable: true,
-        labelSuffix: "",
+        labelSuffix: "(Default)",
       });
       this.disableDeleteMonitorButton();
       return;

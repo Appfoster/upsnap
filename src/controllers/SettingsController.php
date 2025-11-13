@@ -35,7 +35,13 @@ class SettingsController extends BaseController
 
         // Create a settings model with current database values
         $settings = $service->getNewModel();
-        $settings->monitoringUrl = $service->getMonitoringUrl();
+        $monitoringUrl = $service->getMonitoringUrl();
+        if (!$monitoringUrl) {
+            // For fresh setup, use the primary site's base URL as default
+            $primarySite = Craft::$app->getSites()->getPrimarySite();
+            $monitoringUrl = rtrim($primarySite->getBaseUrl(), '/');
+        }
+        $settings->monitoringUrl = $monitoringUrl;
         $settings->monitorId = $monitorId;
         $apiKey = $service->getApiKey();
 
@@ -66,8 +72,6 @@ class SettingsController extends BaseController
         $settings->mixedContentEnabled = $monitorData['mixed_content_enabled'] ?? true;
         $settings->mixedContentMonitoringInterval = $monitorData['mixed_content_interval'] ?? 3600;
 
-
-
         return $this->renderSettings($settings);
     }
 
@@ -85,6 +89,12 @@ class SettingsController extends BaseController
         $body = $request->getBodyParams();
 
         $settings = $service->getNewModel();
+
+        // Set default monitoring URL if not set
+        if (!$settings->monitoringUrl) {
+            $primarySite = Craft::$app->getSites()->getPrimarySite();
+            $settings->monitoringUrl = rtrim($primarySite->getBaseUrl(), '/');
+        }
 
         // Only update fields that are actually in the request
         $this->updateIfExists($settings, $body, 'monitoringUrl');
