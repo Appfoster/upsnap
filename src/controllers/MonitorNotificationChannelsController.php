@@ -123,9 +123,7 @@ class MonitorNotificationChannelsController extends Controller
     // ✅ List Notification Channels
     public function actionList(): Response
     {
-        $request = Craft::$app->getRequest();
         $monitorId = $this->settingsService->getMonitorId();
-
 
         if (!$monitorId) {
             return $this->asJson([

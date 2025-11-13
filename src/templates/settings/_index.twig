@@ -8,12 +8,12 @@
 	{ label: "General"|t('upsnap'), url: '#general-tab', class: 'sel' }
 ] %}
 
-{% if showHealthchecks and (settings.monitorId ?? false) %}
+{% if showHealthchecks %}
 	{% set tabs = tabs|merge([
-		isActiveApiToken
+		(isActiveApiToken and (settings.monitorId ?? false))
 			? { label: "Healthchecks"|t('upsnap'), url: '#healthchecks-tab' }
 			: { label: "Healthchecks"|t('upsnap'), url: '#healthchecks-tab', class: 'disabled-tab' },
-		isActiveApiToken
+		(isActiveApiToken and (settings.monitorId ?? false))
 			? { label: "Notification Channels"|t('upsnap'), url: '#notification-channels-tab' }
 			: { label: "Notification Channels"|t('upsnap'), url: '#notification-channels-tab', class: 'disabled-tab' }
 	]) %}
@@ -84,12 +84,11 @@
 				</div>
 
 				<div style="align-self: flex-end; margin-left: 10px;">
-					<button id="delete-monitor-btn" type="button" class="btn delete icon">
+					<button id="delete-monitor-btn" type="button" class="btn submit">
 						{{ "Delete Monitor"|t('upsnap') }}
 					</button>
 				</div>
 			</div>
-
 
 			<input type="hidden" id="monitorId" name="monitorId" value="{{ settings.monitorId ?? '' }}">
 
@@ -115,7 +114,7 @@
 
 		{# ====================== HEALTHCHECK TAB ====================== #}
 		{# TODO	 just show the disabled tab and not the content here #}
-		{% if showHealthchecks and isActiveApiToken %}
+		{% if showHealthchecks and isActiveApiToken and (settings.monitorId ?? false) %}
 			<div id="healthchecks-tab" class="tab-content hidden">
 				{{ forms.lightswitchField({
 					label: "Enable Monitoring"|t('upsnap'),
@@ -292,7 +291,9 @@
 				</div>
 			</div>
 		{% endif %}
+		{% if settings.monitorId ?? false %}
 		{% include "upsnap/_components/notificationChannels.twig" %}
+		{% endif %}
 	</form>
 
 {% endblock %}

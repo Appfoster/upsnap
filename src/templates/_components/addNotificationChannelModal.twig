@@ -10,18 +10,27 @@
     </div>
 
     <div class="upsnap-modal__body">
+      {{ forms.textField({
+        label: "Name"|t('upsnap'),
+        id: 'channelName',
+        name: 'channelName',
+        required: true,
+        placeholder: 'e.g., Primary Email Alerts'
+      }) }}
+
       {{ forms.selectField({
-        label: "Channel Type"|t('upsnap'),
+        label: "Type"|t('upsnap'),
         id: 'channelType',
         name: 'channelType',
         options: [
           { label: 'Email', value: 'email' }
         ],
-        required: true
+        required: true,
+        class: 'fullwidth'
       }) }}
 
       {{ forms.textField({
-        label: "Recipient Email"|t('upsnap'),
+        label: "Recipient"|t('upsnap'),
         id: 'channelRecipient',
         name: 'channelRecipient',
         required: true,

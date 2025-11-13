@@ -32,6 +32,7 @@ Craft.Upsnap.Monitor = {
         disable: true,
         labelSuffix: "",
       });
+      this.disableDeleteMonitorButton();
       return;
     }
 
@@ -57,16 +58,16 @@ Craft.Upsnap.Monitor = {
           labelSuffix: "(Default)",
         });
 
-        this.hideDelteMonitorButton()
+        this.disableDeleteMonitorButton()
 
         this.disableTab('a[href="#healthchecks-tab"]');
         this.disableTab('a[href="#notification-channels-tab"]');
 
         return;
       } else {
-        this.showDeleteMonitorButton()
+        this.enableDeleteMonitorButton()
       }
-              this.showDeleteMonitorButton()
+              this.enableDeleteMonitorButton()
 
 
       monitors.forEach((monitor) => {
@@ -97,7 +98,7 @@ Craft.Upsnap.Monitor = {
         dropdown.appendChild(customOpt);
         this.disableTab('a[href="#healthchecks-tab"]'); // disable healthchecks tab
         this.disableTab('a[href="#notification-channels-tab"]');
-
+        this.disableDeleteMonitorButton();
       } else {
         this.enableTab('a[href="#healthchecks-tab"]');
         this.enableTab('a[href="#notification-channels-tab"]');
@@ -111,10 +112,26 @@ Craft.Upsnap.Monitor = {
         hiddenIdField.value = selectedOption.dataset.id || "";
       }
 
-      // When user changes dropdown, update hidden field
+      // Disable delete button if no monitor ID (default monitor)
+      if (!selectedOption?.dataset?.id) {
+        this.disableDeleteMonitorButton();
+      } else {
+        this.enableDeleteMonitorButton();
+      }
+
+      // Ensure dropdown is enabled when monitors are loaded
+      dropdown.disabled = false;
+      dropdown.classList.remove("disabled-field");
+
+      // When user changes dropdown, update hidden field and toggle delete button
       dropdown.addEventListener("change", (e) => {
         const selected = e.target.selectedOptions[0];
         hiddenIdField.value = selected?.dataset?.id || "";
+        if (!selected?.dataset?.id) {
+          this.disableDeleteMonitorButton();
+        } else {
+          this.enableDeleteMonitorButton();
+        }
       });
 
       // optional: if nothing selected and savedValue exists but wasn't matched (maybe URL normalized),
@@ -137,7 +154,7 @@ Craft.Upsnap.Monitor = {
 
       this.disableTab('a[href="#healthchecks-tab"]');
       this.disableTab('a[href="#notification-channels-tab"]');
-      this.hideDelteMonitorButton()
+      this.disableDeleteMonitorButton()
 
       // Render status container with error when the api key has either expired, suspended or deleted
       if (error.message === 'Invalid authentication token') {
@@ -176,7 +193,11 @@ Craft.Upsnap.Monitor = {
     }
 
     if (disable) {
+      dropdown.disabled = true;
       dropdown.classList.add("disabled-field");
+    } else {
+      dropdown.disabled = false;
+      dropdown.classList.remove("disabled-field");
     }
   },
 
@@ -229,16 +250,20 @@ Craft.Upsnap.Monitor = {
     }
   },
 
-  showDeleteMonitorButton() {
-    // hide delete button
+  enableDeleteMonitorButton() {
     const deleteBtn = document.getElementById("delete-monitor-btn");
-    deleteBtn.style.display = "block !important";
+    if (deleteBtn) {
+      deleteBtn.disabled = false;
+      deleteBtn.style.display = "block";
+    }
   },
 
-  hideDelteMonitorButton() {
-    // hide delete button
+  disableDeleteMonitorButton() {
     const deleteBtn = document.getElementById("delete-monitor-btn");
-    deleteBtn.style.display = "none";
+    if (deleteBtn) {
+      deleteBtn.disabled = true;
+      deleteBtn.style.display = "none";
+    }
   },
 
   renderStatusContainer(data) {

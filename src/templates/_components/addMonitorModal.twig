@@ -10,14 +10,14 @@
 
     <div class="upsnap-modal__body">
       {{ forms.textField({
-        label: "Monitor Name"|t('upsnap'),
+        label: "Name"|t('upsnap'),
         id: 'monitorName',
         name: 'monitorName',
         required: true
       }) }}
 
       {{ forms.textField({
-        label: "Monitor URL"|t('upsnap'),
+        label: "URL"|t('upsnap'),
         id: 'monitorUrl',
         name: 'monitorUrl',
         required: true,
@@ -27,7 +27,7 @@
 
     <div class="upsnap-modal__footer">
       <button type="button" id="cancel-monitor-btn" class="btn cancel">{{ "Cancel"|t('upsnap') }}</button>
-      <button type="button" id="save-monitor-btn" class="btn submit">{{ "Save Monitor"|t('upsnap') }}</button>
+      <button type="button" id="save-monitor-btn" class="btn submit">{{ "Save"|t('upsnap') }}</button>
     </div>
   </div>
 </div>
