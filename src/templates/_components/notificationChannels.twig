@@ -1,0 +1,37 @@
+{% include "upsnap/_components/addNotificationChannelModal.twig" %}
+
+<div id="notification-channels-tab" class="tab-content hidden">
+	<div class="flex notification-channel-header">
+		<div class="flex-grow">
+			<h2>{{ "Notification Channels"|t('upsnap') }}</h2>
+			<p class="light">{{ "Manage where notifications from your monitors are sent."|t('upsnap') }}</p>
+		</div>
+		<div class="align-right">
+			<button type="button" class="btn add icon" id="add-notification-channel-btn">
+				{{ "Add Channel"|t('upsnap') }}
+			</button>
+		</div>
+	</div>
+
+	<table class="data fullwidth">
+		<thead>
+			<tr>
+				<th>{{ "Name"|t('upsnap') }}</th>
+				<th>{{ "Type"|t('upsnap') }}</th>
+				<th>{{ "Destination"|t('upsnap') }}</th>
+				<th>{{ "Actions"|t('upsnap') }}</th>
+			</tr>
+		</thead>
+		<tbody
+			id="notification-channels-table-body">
+			<tr>
+				<td></td>
+				<td></td>
+				<td></td>
+				<td>
+					<button type="button" class="btn small icon edit" title="Edit Channel"></button>
+				</td>
+			</tr>
+		</tbody>
+	</table>
+</div>

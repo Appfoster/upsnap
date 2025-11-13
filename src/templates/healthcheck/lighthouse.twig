@@ -86,3 +86,12 @@
 		</div>
 	{% endif %}
 {% endblock %}
+
+{% block foot %}
+    <script>
+        window.CraftPageData = {
+            title: {{ title|json_encode|raw }},
+            monitorUrl: {{ data.url|json_encode|raw }}
+        };
+    </script>
+{% endblock %}

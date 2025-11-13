@@ -151,6 +151,65 @@ class Constants
         'enterprise' => 'enterprise',
     ];
 
+    const API_KEY_STATUS = [
+        'active' => 'active',
+        'suspended' => 'suspended',
+        'expired' => 'expired',
+        'deleted' => 'deleted',
+    ];
+
+    // Microservice endpoints
+    public const MICROSERVICE_ENDPOINTS = [
+        'monitors' => [
+            'create' => 'user/monitors',
+            'list' => 'user/monitors',
+            'view' => 'user/monitors',
+            'delete' => 'user/monitors',
+            'update' => 'user/monitors',
+            'notification_channels' => [
+                'list' => 'user/monitors/{monitorId}/notification-channels',
+                'create' => 'user/monitors/{monitorId}/notification-channels',
+                'update' => 'user/monitors/{monitorId}/notification-channels/{channelId}',
+            ]
+        ],
+    ];
+
+    public const LIGHTHOUSE_STRATEGY = [
+        'mobile' => 'mobile',
+        'desktop' => 'desktop',
+    ];
+
+    // Monitor intervals (seconds → label)
+    public const MONITOR_INTERVALS = [
+        60 => '1 minute',
+        300 => '5 minutes',
+        900 => '15 minutes',
+        3600 => '1 hour',
+        21600 => '6 hours',
+        86400 => '1 day',
+        604800 => '1 week',
+    ];
+
+
+    // Lighthouse strategies
+    public const LIGHTHOUSE_STRATEGIES = [
+        'mobile' => 'Mobile',
+        'desktop' => 'Desktop',
+    ];
+
+    // SSL / Domain expiry days
+    public const EXPIRY_DAYS = [
+        1 => '1 day',
+        7 => '7 days',
+        15 => '15 days',
+        30 => '1 month',
+        90 => '3 months',
+    ];
+
+    public const SERVICE_TYPES = [
+        'website' => 'website',
+    ];
+
     public static function getAPIBaseUrl(): string
     {
         return App::env('UPSNAP_API_BASE_URL') ?? self::API_BASE_URL_DEFAULT;

@@ -1,0 +1,50 @@
+{% import "_includes/forms" as forms %}
+
+<div id="add-notification-channel-modal" class="upsnap-modal hidden">
+  <div class="upsnap-modal__overlay"></div>
+
+  <div class="upsnap-modal__container">
+    <div class="upsnap-modal__header">
+      <h2 class="upsnap-modal__title">{{ "Add Notification Channel"|t('upsnap') }}</h2>
+      <button type="button" class="upsnap-modal__close" aria-label="Close">&times;</button>
+    </div>
+
+    <div class="upsnap-modal__body">
+      {{ forms.textField({
+        label: "Name"|t('upsnap'),
+        id: 'channelName',
+        name: 'channelName',
+        required: true,
+        placeholder: 'e.g., Primary Email Alerts'
+      }) }}
+
+      {{ forms.selectField({
+        label: "Type"|t('upsnap'),
+        id: 'channelType',
+        name: 'channelType',
+        options: [
+          { label: 'Email', value: 'email' }
+        ],
+        required: true,
+        class: 'fullwidth'
+      }) }}
+
+      {{ forms.textField({
+        label: "Recipient"|t('upsnap'),
+        id: 'channelRecipient',
+        name: 'channelRecipient',
+        required: true,
+        placeholder: 'alerts@example.com'
+      }) }}
+    </div>
+
+    <div class="upsnap-modal__footer">
+      <button type="button" id="cancel-notification-channel-btn" class="btn cancel">
+        {{ "Cancel"|t('upsnap') }}
+      </button>
+      <button type="button" id="save-notification-channel-btn" class="btn submit">
+        {{ "Save Channel"|t('upsnap') }}
+      </button>
+    </div>
+  </div>
+</div>

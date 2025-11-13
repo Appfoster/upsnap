@@ -8,13 +8,14 @@ use appfoster\upsnap\records\SettingRecord;
 use appfoster\upsnap\Upsnap;
 use Craft;
 use Exception;
+use GuzzleHttp\Client;
 
 /**
  * Settings service for managing plugin settings using Record models
  */
 class SettingsService extends Component
 {
-    public ?string $userSubscriptionType;
+    public ?string $apiKeyStatus;
     /**
      * Create a new Settings model instance
      */
@@ -79,7 +80,7 @@ class SettingsService extends Component
     public function getMonitoringUrl(): ?string
     {
         $url = null;
-        if (!$this->getApiKey()) {
+        if (!$this->getSetting('monitoringUrl')) {
             $primarySiteUrl = Craft::$app->getSites()->getPrimarySite()?->baseUrl;
             if ($primarySiteUrl) {
                 $this->setMonitoringUrl($primarySiteUrl);
@@ -100,6 +101,22 @@ class SettingsService extends Component
             return $this->deleteSetting('monitoringUrl');
         }
         return $this->setSetting('monitoringUrl', $url);
+    }
+
+    /**
+     * Get monitoring enabled status
+     */
+    public function getMonitorId(): string | null
+    {
+        return $this->getSetting('monitorId', null);
+    }
+
+    public function setMonitorId(?string $monitorId): bool
+    {
+        if ($monitorId === null || $monitorId === '') {
+            return $this->deleteSetting('monitorId');
+        }
+        return $this->setSetting('monitorId', $monitorId);
     }
 
     /**
@@ -313,16 +330,15 @@ class SettingsService extends Component
                 return;
             }
 
-            // Store subscription type for use in the settings template
-            if (isset($result['subscriptionType'])) {
-                $this->setUserSubscriptionType($result['subscriptionType']);
-            }
+            $isValid = $result['isValid'];
+            $tokenStatus = $isValid ? Constants::API_KEY_STATUS['active'] : Constants::API_KEY_STATUS['deleted'];
+            $this->setApiTokenStatus($tokenStatus);
         } catch (\Throwable $e) {
             Craft::error("Error validating stored API key: {$e->getMessage()}", __METHOD__);
         }
     }
 
-    
+
     public function getValidateApiKeyResponse(string $apiKey): array
     {
         try {
@@ -334,7 +350,7 @@ class SettingsService extends Component
                 if ($response['status'] === 'success') {
                     return [
                         'status' => 'success',
-                        'valid' => (bool) ($response['data']['valid'] ?? false),
+                        'isValid' => (bool) ($response['data']['valid'] ?? false),
                         'message' => 'valid',
                         'subscriptionType' => $response['data']['subscription'] ?? Constants::SUBSCRIPTION_TYPES['trial'],
                     ];
@@ -344,7 +360,7 @@ class SettingsService extends Component
                 if ($response['status'] === 'error' && isset($response['message'])) {
                     return [
                         'status' => 'error',
-                        'valid' => false,
+                        'isValid' => false,
                         'message' => $response['message'],
                     ];
                 }
@@ -369,39 +385,124 @@ class SettingsService extends Component
     protected function handleInvalidTokenResponse(string $apiMessage): void
     {
         $normalizedMessage = strtolower($apiMessage);
-        $displayMessage = null;
-        $shouldRemoveToken = false;
+        $apiKeyStatus = null;
 
         if (str_contains($normalizedMessage, 'suspended')) {
-            $displayMessage = Craft::t('upsnap', 'Your API token has been suspended. Please add a valid one.');
+            $apiKeyStatus = Constants::API_KEY_STATUS['suspended'];
         } elseif (str_contains($normalizedMessage, 'expired')) {
-            $displayMessage = Craft::t('upsnap', 'Your API token has expired. Please add a valid one.');
+            $apiKeyStatus = Constants::API_KEY_STATUS['expired'];
         } elseif (str_contains($normalizedMessage, 'not found')) {
-            $displayMessage = Craft::t('upsnap', 'Your API token was not found (it may have been deleted). Please add a valid one.');
-            $shouldRemoveToken = true;
+            $apiKeyStatus = Constants::API_KEY_STATUS['deleted'];
         }
 
-        if ($displayMessage !== null) {
-            if ($shouldRemoveToken) {
-                $this->setApiKey('');
-            }
-            Craft::$app->getSession()->setError($displayMessage);
-        }
+        $this->setApiTokenStatus($apiKeyStatus);
     }
 
     /**
      * Get current user subscription type (defaults to 'free')
      */
-    public function getUserSubscriptionType(): string
+    public function getApiTokenStatus(): string
     {
-        return $this->userSubscriptionType ?? Constants::SUBSCRIPTION_TYPES['trial'];
+        return $this->apiKeyStatus ?? Constants::API_KEY_STATUS['active'];
     }
 
     /**
      * Set current user plan
      */
-    public function setUserSubscriptionType(?string $plan): void
+    public function setApiTokenStatus(?string $status): void
     {
-        $this->userSubscriptionType = $plan ?? Constants::SUBSCRIPTION_TYPES['trial'];
+        $this->apiKeyStatus = $status ?? Constants::API_KEY_STATUS['active'];
+    }
+
+
+    /**
+     * Check if a URL is reachable
+     */
+    public function isUrlReachable(string $url): bool
+    {
+        $client = new Client(['timeout' => 5, 'verify' => false]);
+
+        try {
+            $response = $client->head($url, [
+                'http_errors' => false,
+            ]);
+
+            $statusCode = $response->getStatusCode();
+
+            return $statusCode >= 200 && $statusCode < 400;
+        } catch (\Throwable $e) {
+            return false;
+        }
+    }
+
+    public function getMonitorDetails(string $monitorId): ?array
+    {
+        $endpoint = Constants::MICROSERVICE_ENDPOINTS['monitors']['view'] . '/' . $monitorId;
+
+        try {
+            $response = Upsnap::$plugin->apiService->get($endpoint);
+            Craft::error("RESPONSE" . json_encode($response), __METHOD__);
+
+            if (!isset($response['status']) || $response['status'] !== 'success') {
+                $errorMsg = $response['message'] ?? Craft::t('upsnap', 'Failed to fetch monitor details.');
+                throw new \Exception($errorMsg);
+            }
+
+            $data = $response['data'] ?? [];
+
+            if (empty($data)) {
+                throw new \Exception(Craft::t('upsnap', 'Empty monitor details received.'));
+            }
+
+            // Extract monitor details safely
+            $config = $data['monitor']['config'] ?? [];
+            $meta = $config['meta'] ?? [];
+            $services = $config['services'] ?? [];
+
+            return [
+                'name' => $data['name'] ?? '',
+                'url' => $meta['url'] ?? '',
+                'is_enabled' => $data['monitor']['is_enabled'] ?? false,
+                'tags' => $data['tags'] ?? [],
+
+                // Services and intervals
+                'broken_links_enabled' => $services['broken_links']['enabled'] ?? false,
+                'broken_links_interval' => $services['broken_links']['monitor_interval'] ?? 0,
+
+                'domain_enabled' => $services['domain']['enabled'] ?? false,
+                'domain_interval' => $services['domain']['monitor_interval'] ?? 0,
+                'domain_notify_days_before_expiry' => $services['domain']['notify_days_before_expiry'] ?? 7,
+
+                'lighthouse_enabled' => $services['lighthouse']['enabled'] ?? false,
+                'lighthouse_interval' => $services['lighthouse']['monitor_interval'] ?? 0,
+                'lighthouse_strategy' => $services['lighthouse']['strategy'] ?? 'desktop',
+
+                'mixed_content_enabled' => $services['mixed_content']['enabled'] ?? false,
+                'mixed_content_interval' => $services['mixed_content']['monitor_interval'] ?? 0,
+
+                'ssl_enabled' => $services['ssl']['enabled'] ?? false,
+                'ssl_interval' => $services['ssl']['monitor_interval'] ?? 0,
+                'ssl_notify_days_before_expiry' => $services['ssl']['notify_days_before_expiry'] ?? 7,
+
+                'uptime_enabled' => $services['uptime']['enabled'] ?? false,
+                'uptime_interval' => $services['uptime']['monitor_interval'] ?? 0,
+            ];
+        } catch (\Throwable $e) {
+            Craft::error("Monitor details fetch failed: {$e->getMessage()}", __METHOD__);
+            return null;
+        }
+    }
+
+    public function formatOptions(array $constants, ?bool $isMonitoringOptions = false): array
+    {
+        $options = [];
+        foreach ($constants as $value => $label) {
+            $options[] = [
+                'label' => Craft::t('upsnap', $label),
+                'value' => (string)$value,
+                'disabled' => $isMonitoringOptions ? ($value === 60) : false,
+            ];
+        }
+        return $options;
     }
 }
