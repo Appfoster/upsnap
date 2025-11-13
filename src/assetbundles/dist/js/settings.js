@@ -130,56 +130,84 @@ Craft.Upsnap.Settings = {
             this.elements.settingsForm.addEventListener('submit', this.validateForm.bind(this));
         }
         // Add Craft-native form state tracking
+        // ---- Save button state tracking ----
         if (this.elements.settingsForm) {
             const form = this.elements.settingsForm;
             const saveBtn = document.getElementById('save-button');
+            if (!saveBtn) return;
 
-            const initialData = new FormData(form);
-            const original = Object.fromEntries(initialData.entries());
+            const getFormSnapshot = () => {
+                const data = Object.fromEntries(new FormData(form).entries());
 
-            // Disable save button by default
-            saveBtn.disabled = true;
-            saveBtn.classList.add("disabled");
+                // Include lightswitch states explicitly
+                form.querySelectorAll('.lightswitch').forEach(ls => {
+                    const id = ls.getAttribute('id');
+                    if (id) {
+                        data[id] = ls.getAttribute('aria-checked');
+                    }
+                });
+
+                return data;
+            };
+
+            let originalState = getFormSnapshot();
 
             const isDirty = () => {
-                const current = Object.fromEntries(new FormData(form).entries());
-                return Object.keys(current).some(
-                    (key) => current[key] !== original[key]
-                );
+                const current = getFormSnapshot();
+                return Object.keys(current).some(k => current[k] !== originalState[k]);
             };
 
             const toggleSaveButton = () => {
                 const dirty = isDirty();
-                if (dirty) {
-                    saveBtn.disabled = false;
-                    saveBtn.classList.remove('disabled');
-                } else {
-                    saveBtn.disabled = true;
-                    saveBtn.classList.add('disabled');
-                }
+                saveBtn.disabled = !dirty;
+                saveBtn.classList.toggle('disabled', !dirty);
             };
 
-            // Listen for any input/change in the form
-            form.querySelectorAll('input, select, textarea').forEach((el) => {
+            form.querySelectorAll('input, select, textarea').forEach(el => {
                 el.addEventListener('input', toggleSaveButton);
                 el.addEventListener('change', toggleSaveButton);
             });
 
-            // Add Craft lightswitch listeners
-            form.querySelectorAll('.lightswitch').forEach((ls) => {
+            form.querySelectorAll('.lightswitch').forEach(ls => {
                 ls.addEventListener('click', () => {
-                    setTimeout(() => {
-                        toggleSaveButton();
-                    }, 50);
+                    setTimeout(toggleSaveButton, 50);
                 });
             });
 
-            // Optional: disable after submit
+            const monitorDropdown = document.getElementById('monitorDropdown');
+            if (monitorDropdown) {
+                monitorDropdown.addEventListener('change', toggleSaveButton);
+            }
+
+            this.healthchecks.forEach(h => {
+                const toggle = document.getElementById(h.id);
+                if (toggle) {
+                    toggle.addEventListener('click', () => setTimeout(toggleSaveButton, 50));
+                }
+            });
+
+            //  Watch for DOM mutations in case some settings update dynamically
+            const observer = new MutationObserver(() => toggleSaveButton());
+            observer.observe(form, { attributes: true, subtree: true, childList: true });
+
+            // Initialize state
+            saveBtn.disabled = true;
+            saveBtn.classList.add('disabled');
+
+             // 🔹 Reset original state after monitors load
+            document.addEventListener('monitorsDropdownReady', () => {
+                originalState = getFormSnapshot();
+                saveBtn.disabled = true;
+                saveBtn.classList.add('disabled');
+            });
+
+            // 🔹 Disable save after submit
             form.addEventListener('submit', () => {
                 saveBtn.disabled = true;
                 saveBtn.classList.add('disabled');
             });
         }
+
 
         // -------------------------------
         // Tab-based form action switching
