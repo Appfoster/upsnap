@@ -201,4 +201,46 @@ class SettingsController extends BaseController
 
         $settings->$key = $value;
     }
+
+
+    public function actionSetPrimaryMonitor(): \yii\web\Response
+    {
+        $this->requirePostRequest();
+
+        $request = Craft::$app->getRequest();
+        $plugin = Upsnap::getInstance();
+        $service = $plugin->settingsService;
+
+        $monitorId = $request->getBodyParam('monitorId');
+        $monitoringUrl = $request->getBodyParam('monitoringUrl');
+
+        if (!$monitorId || !$monitoringUrl) {
+            return $this->asJson([
+                'success' => false,
+                'message' => 'Missing monitorId or monitoringUrl.'
+            ]);
+        }
+
+        try {
+            // Save values
+            $service->setMonitorId($monitorId);
+            $service->setMonitoringUrl($monitoringUrl);
+
+            return $this->asJson([
+                'success' => true,
+                'message' => 'Primary monitor updated.',
+                'data' => [
+                    'monitorId' => $monitorId,
+                    'monitoringUrl' => $monitoringUrl,
+                ]
+            ]);
+
+        } catch (\Throwable $e) {
+            return $this->asJson([
+                'success' => false,
+                'message' => 'Error saving monitor: ' . $e->getMessage()
+            ]);
+        }
+    }
+
 }

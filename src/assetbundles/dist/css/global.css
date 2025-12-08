@@ -758,6 +758,20 @@
     user-select: none;
 }
 
+.pill {
+    position: absolute;
+    top: 10%;
+    left: 16%;
+    display: inline-block;
+    padding: 0.1rem 0.4rem;
+    border-radius: 12px;
+    font-size: 0.685rem;
+    white-space: nowrap;
+    color: #fff;
+    background-color: #6c757d;
+    user-select: none;
+}
+
 /* Your status colors */
 .pill--green {
     background-color: #28a745;
@@ -870,4 +884,8 @@
 
 .notification-channel-header {
     margin-bottom: 2rem;
+}
+
+#save-monitor {
+    margin-top: 1.5rem;
 }

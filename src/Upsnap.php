@@ -111,6 +111,8 @@ class Upsnap extends Plugin
 
                     // Setting Route
                     Constants::SUBNAV_ITEM_SETTINGS['url'] => 'upsnap/settings/index',
+                    'upsnap/monitors/new' => 'upsnap/monitors/new',
+                    'upsnap/monitors/edit/<monitorId:[0-9a-fA-F\-]+>' => 'upsnap/monitors/edit',
                 ]);
             }
         );

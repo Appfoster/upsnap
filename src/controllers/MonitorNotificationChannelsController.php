@@ -133,7 +133,7 @@ class MonitorNotificationChannelsController extends Controller
             ]);
         }
 
-        $endpointTemplate = Constants::MICROSERVICE_ENDPOINTS['monitors']['notification_channels']['list'];
+        $endpointTemplate = Constants::MICROSERVICE_ENDPOINTS['monitors']['integrations']['list'];
         $endpoint = str_replace('{monitorId}', $monitorId, $endpointTemplate);
 
         try {
