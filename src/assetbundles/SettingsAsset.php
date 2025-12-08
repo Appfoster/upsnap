@@ -14,5 +14,6 @@ class SettingsAsset extends BaseAsset
         $this->js[] = 'js/monitorsTable.js';
         $this->js[] = 'js/notificationChannels.js';
         $this->css[] = 'css/addMonitorModal.css';
+        $this->css[] = 'css/notificationChannels.css';
     }
 }

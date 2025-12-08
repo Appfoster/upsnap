@@ -56,25 +56,24 @@
 		apiTokenStatuses: {{ (apiTokenStatuses ?? 'unknown')|json_encode|raw }}
 		};
 	</script>
+			{# ====================== GENERAL TAB ====================== #}
+		<div id="monitors-tab" class="tab-content">
+
+		
+		 	{% include "upsnap/_components/monitorsTable.twig" %}
+
+			<input type="hidden" id="monitorId" name="monitorId" value="{{ settings.monitorId ?? '' }}">
+		</div>
+		{% if settings.monitorId ?? false %}
+			{% include "upsnap/_components/notificationChannels.twig" %}
+		{% endif %}
 	<form id="settings-form" method="post" accept-charset="UTF-8" enctype="multipart/form-data">
 		{{ csrfInput() }}
 		{{ actionInput('upsnap/settings/save', { id: 'form-action-input' }) }}
 		{{ redirectInput('upsnap/settings') }}
 		<div id="status-container-wrapper" data-page="reachability"></div>
-
-		{# ====================== GENERAL TAB ====================== #}
-		<div id="monitors-tab" class="tab-content">
-
-		
-		 {% include "upsnap/_components/monitorsTable.twig" %}
-
-			<input type="hidden" id="monitorId" name="monitorId" value="{{ settings.monitorId ?? '' }}">
-		</div>
-
 		{# ====================== HEALTHCHECK TAB ====================== #}
-		{% if settings.monitorId ?? false %}
-			{% include "upsnap/_components/notificationChannels.twig" %}
-		{% endif %}
+
 		<div id="api-tab" class="tab-content">
 			<div class="api-key-field-with-status">
 				{{ forms.textField({

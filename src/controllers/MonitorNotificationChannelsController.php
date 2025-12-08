@@ -22,7 +22,6 @@ class MonitorNotificationChannelsController extends Controller
         $this->settingsService =  Upsnap::$plugin->settingsService;
     }
 
-    // ✅ Create Notification Channel
     public function actionCreate(): Response
     {
         $this->requirePostRequest();
@@ -72,26 +71,23 @@ class MonitorNotificationChannelsController extends Controller
         }
     }
 
-    // ✅ Update Notification Channel
     public function actionUpdate(): Response
     {
         $this->requirePostRequest();
         $request = Craft::$app->getRequest();
 
-        $monitorId = $this->settingsService->getMonitorId();
         $channelId = $request->getBodyParam('channelId');
         $label = $request->getBodyParam('label');
         $config = $request->getBodyParam('config', []);
 
-        if (!$monitorId || !$channelId || !$label || empty($config)) {
+        if (!$channelId || !$label || empty($config)) {
             return $this->asJson([
                 'success' => false,
-                'message' => Craft::t('upsnap', 'Monitor ID, Channel ID, label, and config are required.'),
+                'message' => Craft::t('upsnap', 'Channel ID, label, and config are required.'),
             ]);
         }
 
-        $endpointTemplate = Constants::MICROSERVICE_ENDPOINTS['monitors']['notification_channels']['update'];
-        $endpoint = str_replace(['{monitorId}', '{channelId}'], [$monitorId, $channelId], $endpointTemplate);
+        $endpoint = Constants::MICROSERVICE_ENDPOINTS['monitors']['integrations']['create'] . '/' . $channelId;
 
         try {
             $payload = [
@@ -121,7 +117,6 @@ class MonitorNotificationChannelsController extends Controller
         }
     }
 
-    // ✅ List Notification Channels
     public function actionList(): Response
     {
         $monitorId = $this->settingsService->getMonitorId();
@@ -165,6 +160,85 @@ class MonitorNotificationChannelsController extends Controller
                 'success' => false,
                 'message' => $e->getMessage(),
                 'data' => []
+            ]);
+        }
+    }
+
+    public function actionDelete(): Response
+    {
+        $this->requirePostRequest();
+        $request = Craft::$app->getRequest();
+
+        $channelId = $request->getBodyParam('channelId');
+
+        if (!$channelId) {
+            return $this->asJson([
+                'success' => false,
+                'message' => Craft::t('upsnap', 'Channel ID are required.'),
+            ]);
+        }
+
+        $endpoint = Constants::MICROSERVICE_ENDPOINTS['monitors']['notification_channels']['list'] . '/' . $channelId;
+
+        try {
+            $response = $this->apiService->delete($endpoint);
+
+            if (!isset($response['status']) || $response['status'] !== 'success') {
+                $errorMsg = $response['message'] ?? Craft::t('upsnap', 'Failed to delete notification channel.');
+                throw new \Exception($errorMsg);
+            }
+
+            return $this->asJson([
+                'success' => true,
+                'message' => Craft::t('upsnap', 'Notification channel deleted successfully.'),
+            ]);
+        } catch (\Throwable $e) {
+            Craft::error("Notification channel delete failed: {$e->getMessage()}", __METHOD__);
+
+            return $this->asJson([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    // ✅ Test Notification Channel
+    public function actionTest(): Response
+    {
+        $this->requirePostRequest();
+        $request = Craft::$app->getRequest();
+
+        $monitorId = $this->settingsService->getMonitorId();
+        $channelId = $request->getBodyParam('channelId');
+
+        if (!$monitorId || !$channelId) {
+            return $this->asJson([
+                'success' => false,
+                'message' => Craft::t('upsnap', 'Monitor ID and Channel ID are required.'),
+            ]);
+        }
+
+        $endpoint = Constants::MICROSERVICE_ENDPOINTS['monitors']['notification_channels']['list'] . '/' . $channelId . '/test';
+
+        try {
+            $response = $this->apiService->post($endpoint, []);  // test requires POST
+
+            if (!isset($response['status']) || $response['status'] !== 'success') {
+                $errorMsg = $response['message'] ?? Craft::t('upsnap', 'Failed to test notification channel.');
+                throw new \Exception($errorMsg);
+            }
+
+            return $this->asJson([
+                'success' => true,
+                'message' => Craft::t('upsnap', 'Test notification sent successfully.'),
+                'data' => $response['data'] ?? [],
+            ]);
+        } catch (\Throwable $e) {
+            Craft::error("Notification channel test failed: {$e->getMessage()}", __METHOD__);
+
+            return $this->asJson([
+                'success' => false,
+                'message' => $e->getMessage(),
             ]);
         }
     }

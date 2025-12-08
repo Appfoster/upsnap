@@ -171,11 +171,12 @@ class Constants
             'integrations' => [
                 'list' => 'user/integrations',
                 'create' => 'user/integrations',
+                'delete' => 'user/integrations/',
             ],
             'notification_channels' => [
-                'list' => 'user/monitors/{monitorId}/notification-channels',
-                'create' => 'user/monitors/{monitorId}/notification-channels',
-                'update' => 'user/monitors/{monitorId}/notification-channels/{channelId}',
+                'list' => 'user/integrations',
+                'create' => 'user/integrations',
+                'update' => 'user/integrations',
             ]
         ],
     ];
