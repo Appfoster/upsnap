@@ -113,6 +113,7 @@ class Upsnap extends Plugin
                     Constants::SUBNAV_ITEM_SETTINGS['url'] => 'upsnap/settings/index',
                     'upsnap/monitors/new' => 'upsnap/monitors/new',
                     'upsnap/monitors/edit/<monitorId:[0-9a-fA-F\-]+>' => 'upsnap/monitors/edit',
+                    'upsnap/monitors/detail/<monitorId:[0-9a-fA-F\-]+>' => 'upsnap/monitors/detail',
                 ]);
             }
         );

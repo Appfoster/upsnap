@@ -21,11 +21,32 @@
 		else alert(msg);
 	};
 
-	const buildRow = (monitor, selectedUrl) => {
+	const buildRow = (monitor, primaryMonitorId) => {
 		const url = monitor.config?.meta?.url || "";
 		const name = monitor.name || url || "Unnamed Monitor";
 		const isSelected =
-			selectedUrl && normalize(url) === normalize(selectedUrl);
+			primaryMonitorId && monitor?.id === primaryMonitorId;
+
+		// Determine status
+		let statusLabel = "";
+		let statusClass = "";
+
+		if (!monitor.is_enabled) {
+			statusLabel = "Paused";
+			statusClass = "pill--gray";
+		} else {
+			if (!monitor.last_status || monitor.last_status === null) {
+				statusLabel = "Checking";
+				statusClass = "pill--yellow";
+			} else if (monitor.last_status === "up") {
+				statusLabel = "Up";
+				statusClass = "pill--green";
+			} else if (monitor.last_status === "down") {
+				statusLabel = "Down";
+				statusClass = "pill--red";
+			}
+		}
+
 
 		const tr = document.createElement("tr");
 		tr.dataset.id = monitor.id ?? "";
@@ -46,26 +67,40 @@
 		// monitor column: name + url + selected pill
 		const tdMonitor = document.createElement("td");
 		tdMonitor.innerHTML = `
-		<div class="heading">${escapeHtml(name)}</div> ${
-			isSelected
-				? '<span class="pill pill--green small" style="margin-left:6px;">Selected</span>'
-				: ""
-		}
+		<div class="heading">${escapeHtml(name)}</div>
 		<div class="light" style="margin-top:4px;">${escapeHtml(url)}</div>
 		
+		`;
+
+		// Status column
+		const tdStatus = document.createElement("td");
+		tdStatus.innerHTML = `
+			<span class="pill small ${statusClass}">${statusLabel}</span>
 		`;
 
 		// primary column
 		const tdPrimary = document.createElement("td");
 		tdPrimary.className = "thin";
-		tdPrimary.innerHTML = `
-			<button class="btn small upsnap-set-primary" data-url="${escapeHtmlAttr(
-				url
-			)}">Set as Primary Monitor</button>
-		`;
+
+		if (isSelected) {
+			tdPrimary.innerHTML = `
+			<button class="btn small upsnap-set-primary disabled"
+					data-url="${escapeHtmlAttr(url)}">
+					Selected
+				</button>
+			`;
+		} else {
+			tdPrimary.innerHTML = `
+				<button class="btn small upsnap-set-primary"
+					data-url="${escapeHtmlAttr(url)}">
+					Set primary
+				</button>
+			`;
+		}
 
 		tr.appendChild(tdCheck);
 		tr.appendChild(tdMonitor);
+		tr.appendChild(tdStatus);
 		tr.appendChild(tdPrimary);
 
 		return tr;
@@ -94,9 +129,6 @@
 	}
 	function escapeId(s) {
 		return btoa(s || "").replace(/=/g, "");
-	}
-	function normalize(s) {
-		return (s || "").replace(/\/+$/, "").toLowerCase();
 	}
 
 	// Toggle menu dropdown simple
@@ -128,7 +160,6 @@
 	}
 
 	// Primary button handler
-	// Primary button handler (AJAX → Save → Refresh table)
 	async function handleSetPrimary(e) {
 		const btn = e.currentTarget;
 		const url = btn.dataset.url;
@@ -181,7 +212,6 @@
 	}
 
 	// Select-all checkbox logic
-	// Select-all checkbox logic
 	function wireSelectAll(tbody) {
 		const selectAll = document.querySelector(selectAllSelector);
 		if (!selectAll) return;
@@ -201,6 +231,14 @@
 		});
 	}
 
+	function disableAddMonitorBtn() {
+		const addMonitorButton = document.getElementById("add-monitor-btn");
+		if (addMonitorButton) {
+			addMonitorButton.classList.add("disabled");
+			addMonitorButton.disabled = true;
+		}
+	}
+
 	// Load monitors and render
 	async function loadAndRender() {
 		const wrap = document.querySelector(endpointSelector);
@@ -210,9 +248,16 @@
 		const endpoint = wrap.dataset.endpoint;
 		const selectedUrl =
 			wrap.dataset.selected || monitoringUrlField()?.value || "";
+		const primaryMonitorId = monitorIdField().value || ""
+
+		const isActiveApiToken = window?.Upsnap?.settings?.isActiveApiToken || "";
+		// 🔒 If API key is missing → disable dropdown and show saved URL only
+		if (!isActiveApiToken) {
+			disableAddMonitorBtn()
+		}
 
 		// show loading row
-		tbody.innerHTML = `<tr><td colspan="4">Loading monitors…</td></tr>`;
+		tbody.innerHTML = `<tr><td colspan="5">Loading monitors…</td></tr>`;
 
 		try {
 			const response = await fetch(endpoint, {
@@ -230,35 +275,18 @@
 
 			const monitors = json.data.monitors;
 
+			// -------------------------------
+			//  NO MONITORS → FALLBACK
+			// -------------------------------
 			if (monitors.length === 0) {
-				// fallback to showing selected/default url if provided
-				const url = selectedUrl || monitoringUrlField()?.value || "";
-				tbody.innerHTML = `
-            	<tr>
-                <td></td>
-                <td>
-                <div class="heading">${escapeHtml(
-					url || "No monitors available"
-				)}</div>
-                ${
-					url
-						? `<div class="light" style="margin-top:6px">${escapeHtml(
-								url
-						  )}</div><span class="pill pill--green small" style="margin-left:6px">Selected</span>`
-						: ""
-				}
-                </td>
-                <td></td>
-                <td></td>
-            	</tr>
-            `;
+				populateWithDefaultMonitor(tbody);
 				return;
 			}
 
 			// build rows
 			tbody.innerHTML = "";
 			monitors.forEach((m) => {
-				tbody.appendChild(buildRow(m, selectedUrl));
+				tbody.appendChild(buildRow(m, primaryMonitorId));
 			});
 			// run once initially
 			tbody.querySelectorAll(".upsnap-row-checkbox").forEach((cb) => {
@@ -273,15 +301,56 @@
 			tbody.querySelectorAll(".upsnap-set-primary").forEach((b) => {
 				b.addEventListener("click", handleSetPrimary);
 			});
+
 		} catch (err) {
 			tbody.innerHTML = `<tr><td colspan="4">Error loading monitors. See console for details.</td></tr>`;
 			console.error("Error loading monitors:", err);
+
+			// Fallback for API errors (including invalid key)
+			populateWithDefaultMonitor(tbody);
+			if (err.message === "Invalid authentication token") {
+				renderStatusContainer({
+					message: "There was a problem fetching data.",
+					error: err.message || "",
+				});
+			} else {
+				Craft.Upsnap.Monitor.notify(err.message, "error");
+			}
 		}
+	}
+
+	function populateWithDefaultMonitor(tbody) {
+		const url = monitoringUrlField()?.value || "";
+		console.log("default url", url)
+
+		tbody.innerHTML = `
+		<tr>
+			<td></td>
+
+			<td>
+				<div class="heading">Default Monitor</div>
+				<div class="light" style="margin-top:4px;">${escapeHtml(url)}</div>
+			</td>
+
+			<td>
+				<span class="pill small pill--gray">N/A</span>
+			</td>
+
+			<td class="thin">
+				<button class="btn small disabled">Selected</button>
+			</td>
+		</tr>
+		`;
 	}
 
 	function updateBulkMenuState() {
 		const checkboxes = document.querySelectorAll(".upsnap-row-checkbox");
 		const checked = [...checkboxes].filter((cb) => cb.checked);
+
+		const selectAll = document.querySelector("#upsnap-select-all");
+		if (selectAll) {
+			selectAll.checked = checked.length === checkboxes.length && checkboxes.length > 0;
+		}
 
 		const editBtn = document.getElementById("upsnap-edit-btn");
 		const deleteBtn = document.getElementById("upsnap-delete-btn");
@@ -302,6 +371,71 @@
 		if (checked.length > 1) {
 			deleteBtn.classList.remove("disabled");
 		}
+	}
+
+	function renderStatusContainer(data) {
+		const statusContainerWrapper = document.getElementById(
+			"status-container-wrapper"
+		);
+		if (!statusContainerWrapper) return;
+
+		const apiTokenStatus =
+			window.Upsnap?.settings?.apiTokenStatus || "unknown";
+		const apiTokenStatuses =
+			window.Upsnap?.settings?.apiTokenStatuses || {};
+
+		// Default warning setup
+		let statusClass = "warning";
+		let containerClass = "warning";
+		let icon = "!";
+		let title = data.message || "There are some issues!";
+		let error = data.error || "";
+
+		// Adjust title/error message automatically based on token status
+		switch (apiTokenStatus) {
+			case apiTokenStatuses.expired:
+				title = "Your API token has expired.";
+				error =
+					"Your current API token is invalid. Please provide a valid API token to create monitors, modify health check settings, and set up notification channels.";
+				break;
+			case apiTokenStatuses.suspended:
+				title = "Your API token is suspended.";
+				error =
+					"Your current API token is invalid. Please provide a valid API token to create monitors, modify health check settings, and set up notification channels.";
+				break;
+			case apiTokenStatuses.deleted:
+				title = "Your API token has been deleted.";
+				error =
+					"Your current API token is invalid. Please provide a valid API token to create monitors, modify health check settings, and set up notification channels.";
+				break;
+			case apiTokenStatuses.active:
+				// Only override if custom message isn’t passed
+				if (!data.message && !data.error) {
+					title = "An unexpected error occurred.";
+					error =
+						"Something went wrong while fetching monitors. Please try again.";
+				}
+				break;
+			default:
+				if (!data.message && !data.error) {
+					title = "There are some issues!";
+					error =
+						"Something went wrong while fetching monitors. Please try again.";
+				}
+				break;
+		}
+
+		const html = `
+      <div class="status-container ${containerClass}">
+        <div class="status-header">
+          <div class="status-icon ${statusClass}">${icon}</div>
+          <h3 class="status-title">${title}</h3>
+        </div>
+        ${error ? `<p class="status-message">${error}</p>` : ""}
+      </div>
+    `;
+
+		statusContainerWrapper.innerHTML = html;
 	}
 
 	function initBulkMenu() {

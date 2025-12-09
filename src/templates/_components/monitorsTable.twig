@@ -14,11 +14,17 @@
 			</ul>
 		</div>
 		{# Add Monitor Button #}
-		<a href="{{ url('upsnap/monitors/new') }}" class="btn submit add icon">
+		<button
+			type="button"
+			id="add-monitor-btn"
+			class="btn submit add icon"
+			onclick="window.location.href='{{ url('upsnap/monitors/new') }}'"
+		>
 			Add Monitor
-		</a>
+		</button>
+
 	</div>
-	<table class="data" id="upsnap-monitors-table" cellspacing="0" cellpadding="0" role="grid">
+	<table class="data" id="upsnap-monitors-table" cellspacing="0" cellpadding="0" role="grid" style="width: 100%;">
 		<thead>
 			<tr>
 				<td class="checkbox-cell selectallcontainer orderable" role="checkbox">
@@ -26,6 +32,7 @@
 					<label for="upsnap-select-all"></label>
 				</td>
 				<th>{{ 'Monitor'|t }}</th>
+				<th>{{ 'Status'|t }}</th>
 				<th>{{ 'Actions'|t }}</th>
 			</tr>
 		</thead>
@@ -40,6 +47,9 @@
 						<div class="heading">{{ savedUrl }}</div>
 						<div class="light">{{ savedUrl }}</div>
 						<span class="pill pill--green small">Selected</span>
+					</td>
+					<td>
+						N/A
 					</td>
 					<td style="text-align:right">
 						<button class="btn small" disabled>—</button>

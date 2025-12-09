@@ -79,6 +79,7 @@ class MonitorsController extends Controller
     {
         $this->requirePostRequest();
         $request = Craft::$app->getRequest();
+        $settingsService = Upsnap::$plugin->settingsService;
 
         try {
             // Incoming JSON (already a full payload from FE)
@@ -87,8 +88,6 @@ class MonitorsController extends Controller
             if (!$payload) {
                 throw new \Exception('Empty request payload.');
             }
-
-            Craft::info('Incoming monitor payload: ' . $payload, __METHOD__);
 
             // Decode for internal processing (optional)
             $payloadArray = json_decode($payload, true);
@@ -109,6 +108,13 @@ class MonitorsController extends Controller
 
             if (!isset($response['status']) || $response['status'] !== 'success') {
                 throw new \Exception($response['message'] ?? 'Failed to save monitor.');
+            }
+
+            // Sync primary monitor details to local database if this is the configured primary monitor
+            $primaryMonitor = $settingsService->getMonitorId();
+            if($primaryMonitor == $monitorId) {
+                $settingsService->setMonitorId($monitorId);
+                $settingsService->setMonitoringUrl($payloadArray['config']['meta']['url']);
             }
 
             return $this->asJson([
@@ -480,4 +486,34 @@ class MonitorsController extends Controller
     }
 
 
+    public function actionDetail(string $monitorId): Response
+    {
+        $this->requireCpRequest();
+        $variables = null;
+
+        // Fetch details from microservice
+        try {
+            $endpoint = Constants::MICROSERVICE_ENDPOINTS['monitors']['view'] . '/' . $monitorId;
+
+            $response = Upsnap::$plugin->apiService->get($endpoint);
+
+            if (!isset($response['status']) || $response['status'] !== 'success') {
+                throw new \Exception("Unable to fetch monitor details.");
+            }
+
+            $monitor = $response['data']['monitor'];
+
+            $variables['monitor'] = $monitor;
+
+        } catch (\Throwable $e) {
+            Craft::error("Monitor fetch failed: {$e->getMessage()}", __METHOD__);
+            throw new NotFoundHttpException("Monitor not found");
+        }
+
+        return $this->asJson([
+            'success' => true,
+            'message' => 'Monitor details fetched successfully.',
+            'data' => $variables,
+        ]);
+    }
 }

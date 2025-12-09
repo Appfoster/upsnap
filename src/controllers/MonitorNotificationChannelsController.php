@@ -119,17 +119,7 @@ class MonitorNotificationChannelsController extends Controller
 
     public function actionList(): Response
     {
-        $monitorId = $this->settingsService->getMonitorId();
-
-        if (!$monitorId) {
-            return $this->asJson([
-                'success' => false,
-                'message' => Craft::t('upsnap', 'Monitor ID is required to list notification channels.'),
-            ]);
-        }
-
-        $endpointTemplate = Constants::MICROSERVICE_ENDPOINTS['monitors']['integrations']['list'];
-        $endpoint = str_replace('{monitorId}', $monitorId, $endpointTemplate);
+        $endpoint = Constants::MICROSERVICE_ENDPOINTS['monitors']['integrations']['list'];
 
         try {
             $response = $this->apiService->get($endpoint);

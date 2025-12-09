@@ -401,9 +401,9 @@ class SettingsService extends Component
     /**
      * Get current user subscription type (defaults to 'free')
      */
-    public function getApiTokenStatus(): string
+    public function getApiTokenStatus(): string | null
     {
-        return $this->apiKeyStatus ?? Constants::API_KEY_STATUS['active'];
+        return $this->apiKeyStatus ?? null;
     }
 
     /**

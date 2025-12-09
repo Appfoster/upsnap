@@ -842,9 +842,8 @@
 
 			const html = `
                 <ul>
-                    <li data-action="edit">Edit</li>
                     <li data-action="test">Test Connection</li>
-                    <li class="menu-divider"></li>
+                    <li data-action="edit">Edit</li>
                     <li data-action="delete" class="error">Delete</li>
                 </ul>
             `;

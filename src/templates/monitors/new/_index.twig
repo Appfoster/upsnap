@@ -13,8 +13,6 @@
 			{{ hiddenInput('monitorId', monitor ? monitor.id : null) }}
 		{% endif %}
 
-		<h2>{{ mode == 'add' ? "Add Monitor" : "Edit Monitor" }}</h2>
-
 		<div class="flex">
 			<div class="flex-grow" style="margin-right: 20px;">
 				{{ forms.textField({
@@ -244,6 +242,10 @@
     
     <script>
         window.preSelectedChannelIds = {{ monitor ? monitor.channelIds|json_encode|raw : '[]' }};
+        window.CraftPageData = {
+            title: {{ title|json_encode|raw }},
+            monitorForm: true
+        };
     </script>
 {% endblock %}
 

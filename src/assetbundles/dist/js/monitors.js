@@ -619,7 +619,7 @@ Craft.Upsnap.Monitor = {
 		const accordionContent = document.querySelector(
 			"#advanced-settings-content"
 		);
-
+		if(!accordionBtn)  return
 		// Accordion toggle
 		accordionBtn.addEventListener("click", async () => {
 			const expanded =
@@ -631,6 +631,7 @@ Craft.Upsnap.Monitor = {
 
 	registerLoadIntegrations() {
 		const accordionBtn = document.querySelector("#integrations-trigger");
+		if(!accordionBtn)  return
 		const accordionContent = document.querySelector(
 			"#notification-channels-content"
 		);
@@ -753,6 +754,7 @@ Craft.Upsnap.Monitor = {
 	},
 	registerSubmitHandler() {
 		const btn = document.querySelector("#save-monitor");
+		if(!btn) return
 
 		btn.addEventListener("click", async () => {
 			// Validate fields
@@ -823,11 +825,11 @@ Craft.Upsnap.Monitor = {
 		const reachabilityEnabled = isEnabled("reachabilityEnabled");
 		const sslEnabled = isEnabled("sslEnabled");
 		const domainEnabled = isEnabled("domainEnabled");
+		const monitorEl = document.querySelector("[name='monitorId']");
 
 		// Advanced settings
 		return {
-			monitorId:
-				document.querySelector("[name='monitorId']").value ?? null,
+			monitorId: monitorEl && monitorEl.value ? monitorEl.value : null,
 			name: name,
 			service_type: "website",
 			channel_ids: channelIds,
@@ -943,5 +945,34 @@ Craft.Upsnap.Monitor = {
 
 // Initialize when DOM is ready
 document.addEventListener("DOMContentLoaded", () => {
-	Craft.Upsnap.Monitor.init();
+    Craft.Upsnap.Monitor.init();
+
+    if (window.CraftPageData && window.CraftPageData.title && window.CraftPageData.monitorForm) {
+        const { title } = window.CraftPageData;
+
+        const pageTitle = document.querySelector('#page-title');
+        const heading = document.querySelector('#page-title h1, #page-heading');
+
+        if (pageTitle && heading) {
+            // update title text
+            heading.textContent = title;
+
+            const html = `
+                <br>
+                <a href="${Craft.getUrl('upsnap/settings')}" class="back-link">← Back</a>
+            `;
+
+            // insert before #revision-indicators
+            const revisionEl = document.querySelector('#revision-indicators');
+
+            if (revisionEl) {
+                revisionEl.insertAdjacentHTML('beforebegin', html);
+            } else {
+                // fallback: insert at end of #page-title
+                pageTitle.insertAdjacentHTML('beforeend', html);
+            }
+        }
+    }
 });
+
+

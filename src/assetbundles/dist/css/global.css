@@ -761,7 +761,6 @@
 .pill {
     position: absolute;
     top: 10%;
-    left: 16%;
     display: inline-block;
     padding: 0.1rem 0.4rem;
     border-radius: 12px;
@@ -899,13 +898,13 @@
     display: flex;
     gap: 24px;
     min-height: 600px;
-    padding: 24px;
+    padding: .5rem;
 }
 
 /* Sidebar Styles */
 .integrations-sidebar {
     flex-shrink: 0;
-    width: 280px;
+    width: 12rem;
 }
 
 .integrations-nav {
@@ -945,6 +944,9 @@
 
 /* Header Styles */
 .integrations-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
     margin-bottom: 24px;
 }
 
@@ -952,8 +954,27 @@
     display: flex;
     align-items: center;
     gap: 12px;
-    margin-bottom: 16px;
+    margin-bottom: 0;
 }
+
+.integrations-search {
+    max-width: 400px;
+    width: 100%;
+}
+
+/* Responsive breakpoint */
+@media (max-width: 640px) {
+    .integrations-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .integrations-search {
+        width: 100%;
+        max-width: none;
+    }
+}
+
 
 .integrations-title {
     font-size: 28px;
@@ -969,10 +990,6 @@
     font-size: 14px;
     color: #6b7280;
     font-weight: 500;
-}
-
-.integrations-search {
-    max-width: 400px;
 }
 
 /* Loading & Empty States */
@@ -1278,4 +1295,10 @@
 	background: #e5e5e5;
 	height: 1px;
 	margin: 6px 0;
+}
+
+.back-link {
+    font-size: 14px;
+    color: #3b82f6;
+    text-decoration: none;
 }

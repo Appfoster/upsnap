@@ -41,10 +41,6 @@
 
 
 {% block content %}
-	{# Include modal component separately #}
-	{% include "upsnap/_components/addMonitorModal.twig" %}
-	{% include "upsnap/_components/deleteMonitorModal.twig" %}
-
 	{# inject server values for JS to consume - put this before monitor.js is loaded #}
 	<script>
 		window.Upsnap = window.Upsnap || {};
@@ -56,46 +52,43 @@
 		apiTokenStatuses: {{ (apiTokenStatuses ?? 'unknown')|json_encode|raw }}
 		};
 	</script>
-			{# ====================== GENERAL TAB ====================== #}
+		<div id="status-container-wrapper" data-page="reachability"></div>
+
+		{# ====================== GENERAL TAB ====================== #}
 		<div id="monitors-tab" class="tab-content">
-
-		
 		 	{% include "upsnap/_components/monitorsTable.twig" %}
-
 			<input type="hidden" id="monitorId" name="monitorId" value="{{ settings.monitorId ?? '' }}">
+			<input type="hidden" id="monitoringUrlInput" name="monitoringUrlInput" value="{{ settings.monitoringUrl ?? '' }}">
 		</div>
 		{% if settings.monitorId ?? false %}
 			{% include "upsnap/_components/notificationChannels.twig" %}
 		{% endif %}
-	<form id="settings-form" method="post" accept-charset="UTF-8" enctype="multipart/form-data">
-		{{ csrfInput() }}
-		{{ actionInput('upsnap/settings/save', { id: 'form-action-input' }) }}
-		{{ redirectInput('upsnap/settings') }}
-		<div id="status-container-wrapper" data-page="reachability"></div>
-		{# ====================== HEALTHCHECK TAB ====================== #}
+		<form id="settings-form" method="post" accept-charset="UTF-8" enctype="multipart/form-data">
+			{{ csrfInput() }}
+			{{ actionInput('upsnap/settings/save', { id: 'form-action-input' }) }}
+			{{ redirectInput('upsnap/settings') }}
+			{# <div id="status-container-wrapper" data-page="reachability"></div> #}
+			<div id="api-tab" class="tab-content hidden">
+				<div class="api-key-field-with-status">
+					{{ forms.textField({
+						label: "API Key"|t('upsnap'),
+						instructions: "Enter the Upsnap API Key and save to enable Healthcheck settings. To access the API key, please visit the <a href='#{upsnapDashboardUrl}' target='_blank' rel='noopener noreferrer'>Upsnap Dashboard<span class='sr-only' style='position:absolute;left:-10000px;'> (opens in a new tab)</span></a>"|t('upsnap')|raw,
+						id: 'apiKey',
+						name: 'apiKey',
+						type: 'text',
+						value: settings.apiKey ?? '',
+						placeholder: 'XXXX-XXXX-XXXX-XXXX',
+						errors: settings.getErrors('apiKey') ?? false
+					}) }}
 
-		<div id="api-tab" class="tab-content">
-			<div class="api-key-field-with-status">
-				{{ forms.textField({
-					label: "API Key"|t('upsnap'),
-					instructions: "Enter the Upsnap API Key and save to enable Healthcheck settings. To access the API key, please visit the <a href='#{upsnapDashboardUrl}' target='_blank' rel='noopener noreferrer'>Upsnap Dashboard<span class='sr-only' style='position:absolute;left:-10000px;'> (opens in a new tab)</span></a>"|t('upsnap')|raw,
-					id: 'apiKey',
-					name: 'apiKey',
-					type: 'text',
-					value: settings.apiKey ?? '',
-					placeholder: 'XXXX-XXXX-XXXX-XXXX',
-					errors: settings.getErrors('apiKey') ?? false
-				}) }}
-
-				{% if showHealthchecks %}
-					<span class="api-pill {{ statusColorClass }}">
-						{{ apiTokenStatus|capitalize }}
-					</span>
-				{% endif %}
+					{% if showHealthchecks %}
+						<span class="api-pill {{ statusColorClass }}">
+							{{ apiTokenStatus|capitalize }}
+						</span>
+					{% endif %}
+				</div>
 			</div>
-		</div>
-
-	</form>
+		</form>
 
 {% endblock %}
 
