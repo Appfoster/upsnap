@@ -184,6 +184,8 @@ Craft.Upsnap.Monitor = {
       } else {
         Craft.Upsnap.Monitor.notify(error.message, "error");
       }
+    } finally {
+      document.dispatchEvent(new CustomEvent('monitorsDropdownReady'));
     }
   },
 

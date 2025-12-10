@@ -3,13 +3,16 @@
 document.addEventListener("DOMContentLoaded", function () {
     const refreshBtn = document.getElementById("refresh-btn");
 
-    // Dashboard-specific initialization
+    // Initial dashboard load
     initializeDashboard();
 
     if (refreshBtn) {
-        runWithRefreshButton(refreshBtn, initializeDashboard);
+        refreshBtn.addEventListener("click", function () {
+            runWithRefreshButton(refreshBtn, initializeDashboard);
+        });
     }
 });
+
 
 function renderCard({ cardId, title, status, message, checkedAt, detailUrl }) {
     const card = document.getElementById(cardId);
