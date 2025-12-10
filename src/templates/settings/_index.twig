@@ -10,7 +10,7 @@
 
 {% if showHealthchecks %}
 	{% set tabs = tabs|merge([
-		(isActiveApiToken and (settings.monitorId ?? false))
+		(isActiveApiToken)
 			? { label: "Notification Channels"|t('upsnap'), url: '#notification-channels-tab' }
 			: { label: "Notification Channels"|t('upsnap'), url: '#notification-channels-tab', class: 'disabled-tab' }
 	]) %}
@@ -62,7 +62,7 @@
 			<input type="hidden" id="monitorId" name="monitorId" value="{{ settings.monitorId ?? '' }}">
 			<input type="hidden" id="monitoringUrlInput" name="monitoringUrlInput" value="{{ settings.monitoringUrl ?? '' }}">
 		</div>
-		{% if settings.monitorId ?? false %}
+		{% if isActiveApiToken ?? false %}
 			{% include "upsnap/_components/notificationChannels.twig" %}
 		{% endif %}
 		<form id="settings-form" method="post" accept-charset="UTF-8" enctype="multipart/form-data">
