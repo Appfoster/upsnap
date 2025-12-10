@@ -179,6 +179,9 @@ class Constants
                 'update' => 'user/integrations',
             ]
         ],
+        'user' => [
+            'details' => 'user/details'
+        ]
     ];
 
     public const LIGHTHOUSE_STRATEGY = [

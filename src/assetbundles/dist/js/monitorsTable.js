@@ -231,13 +231,26 @@
 		});
 	}
 
-	function disableAddMonitorBtn() {
+	/**
+	 * Disable the "Add Monitor" button, optionally showing a tooltip.
+	 * Used when the API token is inactive or when the monitor limit is reached.
+	 *
+	 * @param {string|null} message - Optional tooltip text to display on hover.
+	 */
+	function disableAddMonitorBtn(message = null) {
 		const addMonitorButton = document.getElementById("add-monitor-btn");
-		if (addMonitorButton) {
-			addMonitorButton.classList.add("disabled");
-			addMonitorButton.disabled = true;
+
+		if (!addMonitorButton) return;
+
+		addMonitorButton.classList.add("disabled");
+		addMonitorButton.disabled = true;
+
+		// If a message is passed, show a tooltip
+		if (message) {
+			addMonitorButton.setAttribute("title", message);
 		}
 	}
+
 
 	// Load monitors and render
 	async function loadAndRender() {
@@ -251,6 +264,9 @@
 		const primaryMonitorId = monitorIdField().value || ""
 
 		const isActiveApiToken = window?.Upsnap?.settings?.isActiveApiToken || "";
+		const userdetails = window?.Upsnap?.settings?.userDetails || {};
+		const maxMonitors = userdetails?.plan_limits?.max_monitors || 0;
+
 		// 🔒 If API key is missing → disable dropdown and show saved URL only
 		if (!isActiveApiToken) {
 			disableAddMonitorBtn()
@@ -274,6 +290,13 @@
 			}
 
 			const monitors = json.data.monitors;
+			const monitorCount = monitors.length;
+
+			if (monitorCount >= maxMonitors) {
+				disableAddMonitorBtn(
+					`Monitor limit reached (${monitorCount}/${maxMonitors})`
+				);
+			}
 
 			// -------------------------------
 			//  NO MONITORS → FALLBACK
@@ -525,6 +548,5 @@
 			loadAndRender();
 		});
 	}
-
 	init();
 })();

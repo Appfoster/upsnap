@@ -46,10 +46,12 @@
 		window.Upsnap = window.Upsnap || {};
 		window.Upsnap.settings = {
 		monitoringUrl: {{ (settings.monitoringUrl ?? '')|json_encode|raw }},
-		apiKey: {{ (showHealthchecks ?? '')|json_encode|raw }},
-		isActiveApiToken: {{ (isActiveApiToken ?? '')|json_encode|raw }},
-		apiTokenStatus: {{ (apiTokenStatus ?? 'unknown')|json_encode|raw }},
-		apiTokenStatuses: {{ (apiTokenStatuses ?? 'unknown')|json_encode|raw }}
+			apiKey: {{ (showHealthchecks ?? '')|json_encode|raw }},
+			isActiveApiToken: {{ (isActiveApiToken ?? '')|json_encode|raw }},
+			apiTokenStatus: {{ (apiTokenStatus ?? 'unknown')|json_encode|raw }},
+			apiTokenStatuses: {{ (apiTokenStatuses ?? 'unknown')|json_encode|raw }},
+			userDetails: {{ userDetails|json_encode|raw }},
+			subscriptionTypes : {{subscriptionTypes|json_encode|raw }}
 		};
 	</script>
 		<div id="status-container-wrapper" data-page="reachability"></div>

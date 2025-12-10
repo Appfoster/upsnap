@@ -469,6 +469,7 @@
 				"save-notification-channel-btn"
 			);
 			const overlay = modal.querySelector(".upsnap-modal__overlay");
+			const subscriptionTypes = window?.Upsnap?.settings?.subscriptionTypes || {}; // user details data
 
 			// Form fields
 			const typeField = document.getElementById("channelType");
@@ -484,6 +485,27 @@
 			let editMode = false;
 			let currentChannelId = null;
 			let currentChannelType = type ?? "email";
+
+			/**
+			 * Disable recipient email field when user is not on trial.
+			 */
+			function enforceEmailLock(recipientField, userEmail, subscriptionType) {
+				if (!recipientField) return;
+
+				const isTrial = subscriptionType === subscriptionTypes.trial;
+
+				// Only trial users can edit email → others get a locked, pre-filled field
+				if (isTrial) {
+					recipientField.value = userEmail || "";
+					recipientField.disabled = true;
+					recipientField.classList.add("disabled");
+					recipientField.setAttribute("title", "Email editing is available only on Trial plan");
+				} else {
+					recipientField.disabled = false;
+					recipientField.classList.remove("disabled");
+					recipientField.removeAttribute("title");
+				}
+			}
 
 			/**
 			 * Reset form to default state
@@ -567,6 +589,12 @@
 			 */
 			function openNotificationChannelModal(channelType) {
 				resetForm();
+				const userdetails = window?.Upsnap?.settings?.userDetails || {};
+				const subscriptionType = userdetails?.user?.subscription_type;
+				const userEmail = userdetails?.user?.email || "";
+
+				// Lock/Unlock email editing based on subscription type
+				enforceEmailLock(recipientField, userEmail, subscriptionType);
 
 				if (channelType && typeField) {
 					typeField.value = channelType;

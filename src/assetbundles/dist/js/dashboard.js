@@ -241,112 +241,12 @@ Craft.UpsnapDashboard = {
 		const card = document.getElementById("monitor-24h-card");
 		if (!card) return;
 
-		if (!data || !data.histogram || data.histogram.length === 0) {
+		if (!data || !data.histogram.data || data.histogram.data.length === 0) {
 			this.renderNoDataCard(card, "Last 24 hours");
 			return;
 		}
 
-	    //TODO - remove this
-		data.histogram = [
-			{
-				timestamp: 1764686481,
-				uptime: null,
-			},
-			{
-				timestamp: 1764690081,
-				uptime: 1,
-			},
-			{
-				timestamp: 1764693681,
-				uptime: 1,
-			},
-			{
-				timestamp: 1764697281,
-				uptime: 1,
-			},
-			{
-				timestamp: 1764700881,
-				uptime: 0,
-			},
-			{
-				timestamp: 1764704481,
-				uptime: 0.99,
-			},
-			{
-				timestamp: 1764708081,
-				uptime: 1,
-			},
-			{
-				timestamp: 1764711681,
-				uptime: 1,
-			},
-			{
-				timestamp: 1764715281,
-				uptime: 1,
-			},
-			{
-				timestamp: 1764718881,
-				uptime: 1,
-			},
-			{
-				timestamp: 1764722481,
-				uptime: 1,
-			},
-			{
-				timestamp: 1764726081,
-				uptime: 1,
-			},
-			{
-				timestamp: 1764729681,
-				uptime: 1,
-			},
-			{
-				timestamp: 1764733281,
-				uptime: 1,
-			},
-			{
-				timestamp: 1764736881,
-				uptime: 1,
-			},
-			{
-				timestamp: 1764740481,
-				uptime: 1,
-			},
-			{
-				timestamp: 1764744081,
-				uptime: 1,
-			},
-			{
-				timestamp: 1764747681,
-				uptime: 1,
-			},
-			{
-				timestamp: 1764751281,
-				uptime: 1,
-			},
-			{
-				timestamp: 1764754881,
-				uptime: 1,
-			},
-			{
-				timestamp: 1764758481,
-				uptime: 1,
-			},
-			{
-				timestamp: 1764762081,
-				uptime: 1,
-			},
-			{
-				timestamp: 1764765681,
-				uptime: 1,
-			},
-			{
-				timestamp: 1764769281,
-				uptime: 1,
-			},
-		];
-
-		const histogram = data?.histogram ?? [];
+		const histogram = data?.histogram?.data ?? [];
 		const lastStatus = data?.last_status;
 		const isEnabled = data?.is_enabled ?? true;
 
@@ -430,11 +330,14 @@ Craft.UpsnapDashboard = {
 			})
 			.join("");
 
+		const score = data.histogram.total_score; 
+		const percentage = (score * 100).toFixed(2) + '%';
+
 		// Render final card
 		card.classList.remove("skeleton");
 		card.innerHTML = `
             <div class="card-header">
-                Last 24 hours <span style="float:right;">0.00%</span>
+                Last 24 hours <span style="float:right;">${percentage}</span>
             </div>
             <div class="card-body">
                 <div class="histogram">${bars}</div>
@@ -468,83 +371,13 @@ Craft.UpsnapDashboard = {
         const card = document.getElementById("response-time-card");
         if (!card) return;
 
-		if (!data || !data.chart_data || data.chart_data.length === 0) {
+		if (!data || !data?.response_time?.chart_data || data?.response_time?.chart_data.length === 0) {
 			this.renderNoDataCard(card, "Response Time");
 			return;
 		}
-        data = {
-            chart_data: [
-                {
-                    timestamp: 1764688200,
-                    response_time: 320,
-                },
-                {
-                    timestamp: 1764690000,
-                    response_time: 603,
-                },
-                {
-                    timestamp: 1764691800,
-                    response_time: 232,
-                },
-                {
-                    timestamp: 1764693600,
-                    response_time: 249,
-                },
-                {
-                    timestamp: 1764695400,
-                    response_time: 237,
-                },
-                {
-                    timestamp: 1764697200,
-                    response_time: 225,
-                },
-                {
-                    timestamp: 1764699000,
-                    response_time: 293,
-                },
-                {
-                    timestamp: 1764700800,
-                    response_time: 246,
-                },
-                {
-                    timestamp: 1764688200,
-                    response_time: 320,
-                },
-                {
-                    timestamp: 1764690000,
-                    response_time: 603,
-                },
-                {
-                    timestamp: 1764691800,
-                    response_time: 232,
-                },
-                {
-                    timestamp: 1764693600,
-                    response_time: 249,
-                },
-                {
-                    timestamp: 1764695400,
-                    response_time: 237,
-                },
-                {
-                    timestamp: 1764697200,
-                    response_time: 225,
-                },
-                {
-                    timestamp: 1764699000,
-                    response_time: 293,
-                },
-                {
-                    timestamp: 1764700800,
-                    response_time: 246,
-                },
-            ],
-            avg_response_time: 275,
-            max_response_time: 300,
-            min_response_time: 250,
-        };
 
-        const points = data.chart_data || [];
+        const points = data.response_time?.chart_data || [];
+		const responseTime = data?.response_time
 
         // Prepare chart inputs
         const labels = points.map(p => {
@@ -570,15 +403,15 @@ Craft.UpsnapDashboard = {
 
             <div class="response-stats">
                 <div class="response-stat-box">
-                    <div class="stat-value">${data.avg_response_time}ms</div>
+                    <div class="stat-value">${responseTime.avg_response_time}ms</div>
                     <div class="stat-label">Avg. response time</div>
                 </div>
                 <div class="response-stat-box">
-                    <div class="stat-value">${data.max_response_time}ms</div>
+                    <div class="stat-value">${responseTime.max_response_time}ms</div>
                     <div class="stat-label">Max. response time</div>
                 </div>
                 <div class="response-stat-box">
-                    <div class="stat-value">${data.min_response_time}ms</div>
+                    <div class="stat-value">${responseTime.min_response_time}ms</div>
                     <div class="stat-label">Min. response time</div>
                 </div>
             </div>
@@ -682,14 +515,7 @@ Craft.UpsnapDashboard = {
 			console.warn("No monitor data found.");
 		}
 
-		// Fallback sample stats
-		const defaultStats = {
-			day: { uptime_percentage: 99.9, incident_count: 2 },
-			week: { uptime_percentage: 99.7, incident_count: 2 },
-			month: { uptime_percentage: 99.5, incident_count: 2 },
-		};
-
-		const stats = data?.uptime_stats ?? defaultStats;
+		const stats = data?.uptime_stats ?? {};
 
 		// Render primary cards
 		this.renderStatusCard(data);
@@ -697,11 +523,11 @@ Craft.UpsnapDashboard = {
 		this.render24hChartCard(data);
 
 		// Render uptime cards (second row)
-		this.renderUptimeStatCard("Last 24h", stats.day, "uptime-day-card");
-		this.renderUptimeStatCard("Last Week", stats.week, "uptime-week-card");
+		this.renderUptimeStatCard("Last 24h", stats?.day, "uptime-day-card");
+		this.renderUptimeStatCard("Last Week", stats?.week, "uptime-week-card");
 		this.renderUptimeStatCard(
 			"Last 30 Days",
-			stats.month,
+			stats?.month,
 			"uptime-month-card"
 		);
 
