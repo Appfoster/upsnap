@@ -196,6 +196,7 @@
 			}
 
 			craftNotice("Primary monitor updated.");
+			window.location.href = Craft.getCpUrl(`upsnap/settings`);
 
 			// Update hidden fields so page state matches
 			if (monitoringUrlField()) monitoringUrlField().value = url;

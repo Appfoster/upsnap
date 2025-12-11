@@ -67,7 +67,7 @@ Craft.UpsnapDashboard = {
         `;
 	},
 
-	fetchAndRenderCard({ action, cardId, getMessage, getStatus }) {
+	fetchAndRenderCard({ action, cardId, cardTitle, getMessage, getStatus }) {
 		return Craft.sendActionRequest("POST", action)
 			.then((response) => {
 				response = response?.data;
@@ -93,7 +93,7 @@ Craft.UpsnapDashboard = {
 
 				this.renderErrorCard({
 					cardId,
-					title: action,
+					title: cardTitle,
 					errorMsg: msg,
 				});
 			});
@@ -103,28 +103,34 @@ Craft.UpsnapDashboard = {
 		const calls = [
 			this.fetchAndRenderCard({
 				action: "upsnap/health-check/reachability",
+				cardTitle: "Reachability",
 				cardId: "reachability-card",
 			}),
 			this.fetchAndRenderCard({
 			    action: 'upsnap/health-check/security-certificates',
+				cardTitle: "Security Certificates",
 			    cardId: 'ssl-card',
 			}),
 			this.fetchAndRenderCard({
 			    action: 'upsnap/health-check/broken-links',
+			    cardTitle: "Broken Links",
 			    cardId: 'broken-links-card',
 			    getMessage: (data) =>
 			        data.status === 'false' ? data.error : data.message
 			}),
 			this.fetchAndRenderCard({
 			    action: 'upsnap/health-check/domain-check',
+			    cardTitle: "Domain Check",
 			    cardId: 'domain-check-card',
 			}),
 			this.fetchAndRenderCard({
 			    action: 'upsnap/health-check/mixed-content',
+			    cardTitle: "Mixed Content",
 			    cardId: 'mixed-content-card',
 			}),
 			this.fetchAndRenderCard({
 			    action: 'upsnap/health-check/lighthouse',
+			    cardTitle: "Lighthouse",
 			    cardId: 'lighthouse-card',
 			}),
 		];
