@@ -1,0 +1,588 @@
+// resources/js/monitorsTable.js
+(() => {
+	if (!window.Craft) {
+		console.error("Craft global missing.");
+		return;
+	}
+
+	const endpointSelector = "#upsnap-monitors-wrap";
+	const tbodySelector = "#upsnap-monitors-tbody";
+	const selectAllSelector = "#upsnap-select-all";
+	const monitorIdField = () => document.querySelector("#monitorId");
+	const monitoringUrlField = () =>
+		document.querySelector("#monitoringUrlInput");
+
+	const craftNotice = (msg) => {
+		if (Craft.cp && Craft.cp.displayNotice) Craft.cp.displayNotice(msg);
+		else alert(msg);
+	};
+	const craftError = (msg) => {
+		if (Craft.cp && Craft.cp.displayError) Craft.cp.displayError(msg);
+		else alert(msg);
+	};
+
+	const buildRow = (monitor, primaryMonitorId) => {
+		const url = monitor.config?.meta?.url || "";
+		const name = monitor.name || url || "Unnamed Monitor";
+		const isSelected =
+			primaryMonitorId && monitor?.id === primaryMonitorId;
+
+		// Determine status
+		let statusLabel = "";
+		let statusClass = "";
+
+		if (!monitor.is_enabled) {
+			statusLabel = "Paused";
+			statusClass = "pill--gray";
+		} else {
+			if (!monitor.last_status || monitor.last_status === null) {
+				statusLabel = "Checking";
+				statusClass = "pill--yellow";
+			} else if (monitor.last_status === "up") {
+				statusLabel = "Up";
+				statusClass = "pill--green";
+			} else if (monitor.last_status === "down") {
+				statusLabel = "Down";
+				statusClass = "pill--red";
+			}
+		}
+
+
+		const tr = document.createElement("tr");
+		tr.dataset.id = monitor.id ?? "";
+		tr.dataset.url = url;
+
+		// checkbox column
+		const tdCheck = document.createElement("td");
+		tdCheck.className = "checkbox-cell";
+
+		tdCheck.innerHTML = `
+        <input type="checkbox" class="upsnap-row-checkbox" 
+		data-id="${monitor.id ?? ""}"
+		id="upsnap-checkbox-${escapeId(url)}">
+		
+        <label for="upsnap-checkbox-${escapeId(url)}"></label>
+    `;
+
+		// monitor column: name + url + selected pill
+		const tdMonitor = document.createElement("td");
+		tdMonitor.innerHTML = `
+		<div class="heading">${escapeHtml(name)}</div>
+		<div class="light" style="margin-top:4px;">${escapeHtml(url)}</div>
+		
+		`;
+
+		// Status column
+		const tdStatus = document.createElement("td");
+		tdStatus.innerHTML = `
+			<span class="pill small ${statusClass}">${statusLabel}</span>
+		`;
+
+		// primary column
+		const tdPrimary = document.createElement("td");
+		tdPrimary.className = "thin";
+
+		if (isSelected) {
+			tdPrimary.innerHTML = `
+			<button class="btn small upsnap-set-primary disabled"
+					data-url="${escapeHtmlAttr(url)}">
+					Selected
+				</button>
+			`;
+		} else {
+			tdPrimary.innerHTML = `
+				<button class="btn small upsnap-set-primary"
+					data-url="${escapeHtmlAttr(url)}">
+					Set primary
+				</button>
+			`;
+		}
+
+		tr.appendChild(tdCheck);
+		tr.appendChild(tdMonitor);
+		tr.appendChild(tdStatus);
+		tr.appendChild(tdPrimary);
+
+		return tr;
+	};
+
+	// Helpers
+	function escapeHtml(str) {
+		if (!str && str !== 0) return "";
+		return String(str).replace(
+			/[&<>"'`=\/]/g,
+			(s) =>
+				({
+					"&": "&amp;",
+					"<": "&lt;",
+					">": "&gt;",
+					'"': "&quot;",
+					"'": "&#39;",
+					"/": "&#x2F;",
+					"`": "&#96;",
+					"=": "&#61;",
+				}[s])
+		);
+	}
+	function escapeHtmlAttr(s) {
+		return escapeHtml(s);
+	}
+	function escapeId(s) {
+		return btoa(s || "").replace(/=/g, "");
+	}
+
+	// Toggle menu dropdown simple
+	function wireMenuButtons(container) {
+		container.querySelectorAll(".menu").forEach((menu) => {
+			const btn = menu.querySelector(".menu-btn");
+			const dropdown = menu.querySelector(".menu-dropdown");
+			if (!btn || !dropdown) return;
+
+			btn.addEventListener("click", (e) => {
+				e.stopPropagation();
+				const isHidden = dropdown.classList.toggle("hidden")
+					? dropdown.classList.contains("hidden")
+					: false;
+				// close other open menus
+				document.querySelectorAll(".menu-dropdown").forEach((d) => {
+					if (d !== dropdown) d.classList.add("hidden");
+				});
+				dropdown.classList.toggle("hidden");
+			});
+		});
+
+		// close on document click
+		document.addEventListener("click", () => {
+			document
+				.querySelectorAll(".menu-dropdown")
+				.forEach((d) => d.classList.add("hidden"));
+		});
+	}
+
+	// Primary button handler
+	async function handleSetPrimary(e) {
+		const btn = e.currentTarget;
+		const url = btn.dataset.url;
+		const row = btn.closest("tr");
+		const monitorId = row ? row.dataset.id : null;
+
+		if (!url || !monitorId) {
+			craftError("Monitor data missing.");
+			return;
+		}
+
+		btn.classList.add("loading");
+
+		try {
+			const response = await fetch(
+				"/actions/upsnap/settings/set-primary-monitor",
+				{
+					method: "POST",
+					headers: {
+						"Content-Type": "application/json",
+						"X-CSRF-Token": Craft.csrfTokenValue,
+					},
+					body: JSON.stringify({
+						monitorId: monitorId,
+						monitoringUrl: url,
+					}),
+				}
+			);
+
+			const json = await response.json();
+
+			if (!json.success) {
+				throw new Error(json.message || "Failed to update monitor.");
+			}
+
+			craftNotice("Primary monitor updated.");
+			window.location.href = Craft.getCpUrl(`upsnap/settings`);
+
+			// Update hidden fields so page state matches
+			if (monitoringUrlField()) monitoringUrlField().value = url;
+			if (monitorIdField()) monitorIdField().value = monitorId;
+
+			// Refresh table so the "Selected" pill updates
+			await loadAndRender();
+		} catch (err) {
+			console.error(err);
+			craftError(err.message || "Error setting primary.");
+		} finally {
+			btn.classList.remove("loading");
+		}
+	}
+
+	// Select-all checkbox logic
+	function wireSelectAll(tbody) {
+		const selectAll = document.querySelector(selectAllSelector);
+		if (!selectAll) return;
+
+		selectAll.checked = false;
+
+		selectAll.addEventListener("change", () => {
+			const checked = selectAll.checked;
+
+			// toggle all checkboxes
+			tbody.querySelectorAll(".upsnap-row-checkbox").forEach((cb) => {
+				cb.checked = checked;
+			});
+
+			// update bulk button states
+			updateBulkMenuState();
+		});
+	}
+
+	/**
+	 * Disable the "Add Monitor" button, optionally showing a tooltip.
+	 * Used when the API token is inactive or when the monitor limit is reached.
+	 *
+	 * @param {string|null} message - Optional tooltip text to display on hover.
+	 */
+	function disableAddMonitorBtn(message = null) {
+		const addMonitorButton = document.getElementById("add-monitor-btn");
+
+		if (!addMonitorButton) return;
+
+		addMonitorButton.classList.add("disabled");
+		addMonitorButton.disabled = true;
+
+		// If a message is passed, show a tooltip
+		if (message) {
+			addMonitorButton.setAttribute("title", message);
+		}
+	}
+
+	function enableAddMonitorBtn() {
+		const addMonitorButton = document.getElementById("add-monitor-btn");
+		if (!addMonitorButton) return;
+
+		addMonitorButton.classList.remove("disabled");
+		addMonitorButton.disabled = false;
+		addMonitorButton.removeAttribute("title");
+	}
+
+	// Load monitors and render
+	async function loadAndRender() {
+		const wrap = document.querySelector(endpointSelector);
+		const tbody = document.querySelector(tbodySelector);
+		if (!wrap || !tbody) return;
+
+		const endpoint = wrap.dataset.endpoint;
+		const selectedUrl =
+			wrap.dataset.selected || monitoringUrlField()?.value || "";
+		const primaryMonitorId = monitorIdField().value || ""
+
+		const isActiveApiToken = window?.Upsnap?.settings?.isActiveApiToken || "";
+		const userdetails = window?.Upsnap?.settings?.userDetails || {};
+		const maxMonitors = userdetails?.plan_limits?.max_monitors || 0;
+
+		// show loading row
+		tbody.innerHTML = `<tr><td colspan="5">Loading monitors…</td></tr>`;
+
+		try {
+			const response = await fetch(endpoint, {
+				headers: { "X-CSRF-Token": Craft.csrfTokenValue },
+			});
+			const json = await response.json();
+
+			if (
+				!json.success ||
+				!json.data ||
+				!Array.isArray(json.data.monitors)
+			) {
+				throw new Error(json.message || "Failed to load monitors");
+			}
+
+			const monitors = json.data.monitors;
+			const monitorCount = monitors.length;
+
+			if (!isActiveApiToken) {
+				disableAddMonitorBtn();
+			} else {
+				if (monitorCount >= maxMonitors) {
+					disableAddMonitorBtn(
+						`Monitor limit reached (${monitorCount}/${maxMonitors})`
+					);
+				} else {
+					enableAddMonitorBtn();
+				}
+			}
+
+			// -------------------------------
+			//  NO MONITORS → FALLBACK
+			// -------------------------------
+			if (monitors.length === 0) {
+				populateWithDefaultMonitor(tbody);
+				return;
+			}
+
+			// build rows
+			tbody.innerHTML = "";
+			monitors.forEach((m) => {
+				tbody.appendChild(buildRow(m, primaryMonitorId));
+			});
+			// run once initially
+			tbody.querySelectorAll(".upsnap-row-checkbox").forEach((cb) => {
+				cb.addEventListener("change", updateBulkMenuState);
+			});
+			updateBulkMenuState();
+
+			wireMenuButtons(tbody);
+			wireSelectAll(tbody);
+
+			// set primary button handlers
+			tbody.querySelectorAll(".upsnap-set-primary").forEach((b) => {
+				b.addEventListener("click", handleSetPrimary);
+			});
+
+		} catch (err) {
+			tbody.innerHTML = `<tr><td colspan="4">Error loading monitors. See console for details.</td></tr>`;
+			console.error("Error loading monitors:", err);
+
+			// Fallback for API errors (including invalid key)
+			populateWithDefaultMonitor(tbody);
+			if (err.message === "Invalid authentication token") {
+				renderStatusContainer({
+					message: "There was a problem fetching data.",
+					error: err.message || "",
+				});
+			} else {
+				Craft.Upsnap.Monitor.notify(err.message, "error");
+			}
+		}
+	}
+
+	function populateWithDefaultMonitor(tbody) {
+		const url = monitoringUrlField()?.value || "";
+		tbody.innerHTML = `
+		<tr>
+			<td></td>
+
+			<td>
+				<div class="heading">Default Monitor</div>
+				<div class="light" style="margin-top:4px;">${escapeHtml(url)}</div>
+			</td>
+
+			<td>
+				<span class="pill small pill--gray">N/A</span>
+			</td>
+
+			<td class="thin">
+				<button class="btn small disabled">Selected</button>
+			</td>
+		</tr>
+		`;
+
+			// hide select-all checkbox
+			const selectAll = document.querySelector("#upsnap-select-all");
+			if (selectAll) {
+				selectAll.style.display = "none";
+			}
+
+			// hide bulk-actions menu
+			const menuBtn = document.querySelector("#upsnap-actions-menubtn");
+			const menuWrapper = document.querySelector("#upsnap-actions-menu-wrapper");
+			if (menuBtn) menuBtn.style.display = "none";
+			if (menuWrapper) menuWrapper.style.display = "none";
+	}
+
+	function updateBulkMenuState() {
+		const checkboxes = document.querySelectorAll(".upsnap-row-checkbox");
+		const checked = [...checkboxes].filter((cb) => cb.checked);
+
+		const selectAll = document.querySelector("#upsnap-select-all");
+		if (selectAll) {
+			selectAll.checked = checked.length === checkboxes.length && checkboxes.length > 0;
+		}
+
+		const editBtn = document.getElementById("upsnap-edit-btn");
+		const deleteBtn = document.getElementById("upsnap-delete-btn");
+
+		// If menu isn't rendered yet, bail out safely
+		if (!editBtn || !deleteBtn) {
+			return;
+		}
+
+		editBtn.classList.add("disabled");
+		deleteBtn.classList.add("disabled");
+
+		if (checked.length === 1) {
+			editBtn.classList.remove("disabled");
+			deleteBtn.classList.remove("disabled");
+		}
+
+		if (checked.length > 1) {
+			deleteBtn.classList.remove("disabled");
+		}
+	}
+
+	function renderStatusContainer(data) {
+		const statusContainerWrapper = document.getElementById(
+			"status-container-wrapper"
+		);
+		if (!statusContainerWrapper) return;
+
+		const apiTokenStatus =
+			window.Upsnap?.settings?.apiTokenStatus || "unknown";
+		const apiTokenStatuses =
+			window.Upsnap?.settings?.apiTokenStatuses || {};
+
+		// Default warning setup
+		let statusClass = "warning";
+		let containerClass = "warning";
+		let icon = "!";
+		let title = data.message || "There are some issues!";
+		let error = data.error || "";
+
+		// Adjust title/error message automatically based on token status
+		switch (apiTokenStatus) {
+			case apiTokenStatuses.expired:
+				title = "Your API token has expired.";
+				error =
+					"Your current API token is invalid. Please provide a valid API token to create monitors, modify health check settings, and set up notification channels.";
+				break;
+			case apiTokenStatuses.suspended:
+				title = "Your API token is suspended.";
+				error =
+					"Your current API token is invalid. Please provide a valid API token to create monitors, modify health check settings, and set up notification channels.";
+				break;
+			case apiTokenStatuses.deleted:
+				title = "Your API token has been deleted.";
+				error =
+					"Your current API token is invalid. Please provide a valid API token to create monitors, modify health check settings, and set up notification channels.";
+				break;
+			case apiTokenStatuses.active:
+				// Only override if custom message isn’t passed
+				if (!data.message && !data.error) {
+					title = "An unexpected error occurred.";
+					error =
+						"Something went wrong while fetching monitors. Please try again.";
+				}
+				break;
+			default:
+				if (!data.message && !data.error) {
+					title = "There are some issues!";
+					error =
+						"Something went wrong while fetching monitors. Please try again.";
+				}
+				break;
+		}
+
+		const html = `
+      <div class="status-container ${containerClass}">
+        <div class="status-header">
+          <div class="status-icon ${statusClass}">${icon}</div>
+          <h3 class="status-title">${title}</h3>
+        </div>
+        ${error ? `<p class="status-message">${error}</p>` : ""}
+      </div>
+    `;
+
+		statusContainerWrapper.innerHTML = html;
+	}
+
+	function initBulkMenu() {
+		const menuBtn = document.getElementById("upsnap-actions-menubtn");
+		const menu = document.getElementById("upsnap-actions-menu");
+		const editBtn = document.getElementById("upsnap-edit-btn");
+		const deleteBtn = document.getElementById("upsnap-delete-btn");
+
+		// If menu isn't rendered yet, stop and wait for loadAndRender to call it later
+		if (!menuBtn || !menu || !editBtn || !deleteBtn) {
+			console.warn("Bulk menu skipped – elements not found yet.");
+			return;
+		}
+
+		const menuBtnInstance = new Garnish.MenuBtn($(menuBtn), {
+			menu: $(menu)
+		});
+
+		menuBtn.addEventListener("click", () => {
+			updateBulkMenuState()
+
+			// Force Garnish.MenuBtn to rebuild the menu items
+			menuBtnInstance.menu.$container.find('li').each(function () {
+				const link = $(this).find('a');
+				if (link.hasClass('disabled')) {
+					$(this).addClass('disabled');
+				} else {
+					$(this).removeClass('disabled');
+				}
+			});
+		});
+
+		deleteBtn.addEventListener("click", async () => {
+			const deleteBtn = document.getElementById("upsnap-delete-btn");
+			if (!deleteBtn || deleteBtn.classList.contains("disabled")) return;
+
+			const rows = [...document.querySelectorAll(".upsnap-row-checkbox")]
+				.filter((cb) => cb.checked)
+				.map((cb) => cb.closest("tr"));
+
+			const ids = rows.map((r) => r.dataset.id).filter(Boolean);
+
+			if (!ids.length) {
+				craftNotice("No monitors selected.");
+				return;
+			}
+
+			if (!confirm("Delete selected monitors?")) return;
+
+			try {
+				const res = await fetch(
+					"/actions/upsnap/monitors/bulk-actions",
+					{
+						method: "POST",
+						headers: {
+							"Content-Type": "application/json",
+							"X-CSRF-Token": Craft.csrfTokenValue,
+						},
+						body: JSON.stringify({ ids, action: "delete" }),
+					}
+				);
+
+				const json = await res.json();
+
+				if (!res.ok || !json.success) {
+					throw new Error(json.message || "Bulk delete failed");
+				}
+
+				craftNotice(json.message || "Deleted");
+				window.location.href = Craft.getCpUrl(`upsnap/settings`);
+			} catch (err) {
+				console.error("Bulk delete error", err);
+				craftError(err.message || err);
+			}
+		});
+
+		editBtn.addEventListener("click", () => {
+			if (editBtn.classList.contains("disabled")) return;
+
+			const checked = [
+				...document.querySelectorAll(".upsnap-row-checkbox"),
+			].filter((cb) => cb.checked);
+
+			if (checked.length !== 1) return;
+
+			const monitorId = checked[0].dataset.id;
+			if (!monitorId) {
+				craftError("Monitor ID not found.");
+				return;
+			}
+
+			// Redirect to edit page
+			window.location.href = Craft.getUrl(
+				`upsnap/monitors/edit/${monitorId}`
+			);
+		});
+	}
+
+	// Init
+	function init() {
+		document.addEventListener("DOMContentLoaded", () => {
+			initBulkMenu();
+			loadAndRender();
+		});
+	}
+	init();
+})();

@@ -401,9 +401,9 @@ class SettingsService extends Component
     /**
      * Get current user subscription type (defaults to 'free')
      */
-    public function getApiTokenStatus(): string
+    public function getApiTokenStatus(): string | null
     {
-        return $this->apiKeyStatus ?? Constants::API_KEY_STATUS['active'];
+        return $this->apiKeyStatus ?? null;
     }
 
     /**
@@ -435,13 +435,31 @@ class SettingsService extends Component
         }
     }
 
+    public function getUserDetails(): ?array
+    {
+        $endpoint = Constants::MICROSERVICE_ENDPOINTS['user']['details'];
+
+        try {
+            $response = Upsnap::$plugin->apiService->get($endpoint);
+
+            if (!isset($response['status']) || $response['status'] !== 'success') {
+                $errorMsg = $response['message'] ?? Craft::t('upsnap', 'Failed to fetch user details.');
+                throw new \Exception($errorMsg);
+            }
+
+            return $response['data'];
+        } catch (\Throwable $e) {
+            Craft::error("User details fetch failed: {$e->getMessage()}", __METHOD__);
+            return null;
+        }
+    }
+
     public function getMonitorDetails(string $monitorId): ?array
     {
         $endpoint = Constants::MICROSERVICE_ENDPOINTS['monitors']['view'] . '/' . $monitorId;
 
         try {
             $response = Upsnap::$plugin->apiService->get($endpoint);
-            Craft::error("RESPONSE" . json_encode($response), __METHOD__);
 
             if (!isset($response['status']) || $response['status'] !== 'success') {
                 $errorMsg = $response['message'] ?? Craft::t('upsnap', 'Failed to fetch monitor details.');

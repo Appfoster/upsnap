@@ -26,11 +26,7 @@ class SettingsController extends BaseController
     {
         $plugin = Upsnap::getInstance();
         $service = $plugin->settingsService;
-        $monitorData = null;
         $monitorId = $service->getMonitorId();
-        if ($monitorId) {
-            $monitorData = $service->getMonitorDetails($monitorId);
-        }
 
 
         // Create a settings model with current database values
@@ -44,33 +40,9 @@ class SettingsController extends BaseController
         $settings->monitoringUrl = $monitoringUrl;
         $settings->monitorId = $monitorId;
         $apiKey = $service->getApiKey();
-
         $settings->apiKey = $service->maskApiKey($apiKey);
         $settings->monitoringInterval = $service->getMonitoringInterval();
-
-        $settings->notificationEmails = $service->getNotificationEmails();
-
-        $settings->enabled = $monitorData['is_enabled'] ?? true;
-        $settings->reachabilityEnabled = $monitorData['uptime_enabled'] ?? true;
-        $settings->reachabilityMonitoringInterval = $monitorData['uptime_interval'] ?? 3600;
-
-        $settings->securityCertificatesEnabled = $monitorData['ssl_enabled'] ?? true;
-        $settings->securityCertificatesMonitoringInterval = $monitorData['ssl_interval'] ?? 86400;
-        $settings->sslDaysBeforeExpiryAlert = $monitorData['ssl_notify_days_before_expiry'] ?? 7;
-
-        $settings->brokenLinksEnabled = $monitorData['broken_links_enabled'] ?? true;
-        $settings->brokenLinksMonitoringInterval = $monitorData['broken_links_interval']  ?? 3700;
-
-        $settings->domainEnabled = $monitorData['domain_enabled'] ?? true;
-        $settings->domainMonitoringInterval = $monitorData['domain_interval'] ?? 86400;
-        $settings->domainDaysBeforeExpiryAlert = $monitorData['domain_notify_days_before_expiry']  ?? 7;
-
-        $settings->lighthouseEnabled = $monitorData['lighthouse_enabled'] ?? true;
-        $settings->lighthouseMonitoringInterval = $monitorData['lighthouse_interval'] ?? 86400;
-        $settings->lighthouseStrategy = $monitorData['lighthouse_strategy'] ?? Constants::LIGHTHOUSE_STRATEGIES['desktop'];
-
-        $settings->mixedContentEnabled = $monitorData['mixed_content_enabled'] ?? true;
-        $settings->mixedContentMonitoringInterval = $monitorData['mixed_content_interval'] ?? 3600;
+        
 
         return $this->renderSettings($settings);
     }
@@ -97,10 +69,7 @@ class SettingsController extends BaseController
         }
 
         // Only update fields that are actually in the request
-        $this->updateIfExists($settings, $body, 'monitoringUrl');
-        $this->updateIfExists($settings, $body, 'monitorId');
         $this->updateIfExists($settings, $body, 'apiKey', 'trim');
-        $this->updateIfExists($settings, $body, 'notificationEmails', 'json');
 
         // Validate only updated fields
         if (!$settings->validate()) {
@@ -123,18 +92,6 @@ class SettingsController extends BaseController
             }
         }
 
-        // Save only what was updated
-        if (array_key_exists('monitoringUrl', $body)) {
-            $service->setMonitoringUrl($settings->monitoringUrl);
-        }
-
-        if (array_key_exists('monitorId', $body)) {
-            $service->setMonitorId($settings->monitorId);
-        }
-
-        if (array_key_exists('notificationEmails', $body)) {
-            $service->setNotificationEmails($settings->notificationEmails);
-        }
 
         Craft::$app->getSession()->setNotice(Craft::t('upsnap', 'Settings saved.'));
         return $this->redirectToPostedUrl();
@@ -147,6 +104,10 @@ class SettingsController extends BaseController
     {
         $service = Upsnap::getInstance()->settingsService;
         $service->validateApiKey();
+        $userDetails = null;
+        if($service->getApiKey()) {
+            $userDetails = $service->getUserDetails();
+        }
         return $this->healthCheckService->sendResponse(
             [
                 'settings' => $settings,
@@ -157,6 +118,7 @@ class SettingsController extends BaseController
                 'apiTokenStatus' => $service->getApiTokenStatus(),
                 'subscriptionTypes' => Constants::SUBSCRIPTION_TYPES,
                 'apiTokenStatuses' => Constants::API_KEY_STATUS,
+                'userDetails' => $userDetails,
                 'intervalOptions' => $service->formatOptions(Constants::MONITOR_INTERVALS, true),
                 'strategyOptions' => $service->formatOptions(Constants::LIGHTHOUSE_STRATEGIES),
                 'expiryDayOptions' => $service->formatOptions(Constants::EXPIRY_DAYS),
@@ -201,4 +163,46 @@ class SettingsController extends BaseController
 
         $settings->$key = $value;
     }
+
+
+    public function actionSetPrimaryMonitor(): \yii\web\Response
+    {
+        $this->requirePostRequest();
+
+        $request = Craft::$app->getRequest();
+        $plugin = Upsnap::getInstance();
+        $service = $plugin->settingsService;
+
+        $monitorId = $request->getBodyParam('monitorId');
+        $monitoringUrl = $request->getBodyParam('monitoringUrl');
+
+        if (!$monitorId || !$monitoringUrl) {
+            return $this->asJson([
+                'success' => false,
+                'message' => 'Missing monitorId or monitoringUrl.'
+            ]);
+        }
+
+        try {
+            // Save values
+            $service->setMonitorId($monitorId);
+            $service->setMonitoringUrl($monitoringUrl);
+
+            return $this->asJson([
+                'success' => true,
+                'message' => 'Primary monitor updated.',
+                'data' => [
+                    'monitorId' => $monitorId,
+                    'monitoringUrl' => $monitoringUrl,
+                ]
+            ]);
+
+        } catch (\Throwable $e) {
+            return $this->asJson([
+                'success' => false,
+                'message' => 'Error saving monitor: ' . $e->getMessage()
+            ]);
+        }
+    }
+
 }
