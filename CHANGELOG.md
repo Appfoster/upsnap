@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.6] - 2025-12-11
+
+### Added 
+- New monitor listing and actions.
+- New notification channels listing and actions.
+
+### Updated
+- Dashboard UI/UX
+
+### Chores
+- Minor bug fixes.
 
 ## [1.0.5] - 2025-11-13
 
@@ -91,7 +102,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Asset minification and optimization
 - Background processing for monitoring tasks
 
-[Unreleased]: https://github.com/Appfoster/upsnap/compare/1.0.4...HEAD
+[Unreleased]: https://github.com/Appfoster/upsnap/compare/1.0.6...HEAD
+[1.0.6]: https://github.com/Appfoster/upsnap/releases/tag/1.0.6
+[1.0.5]: https://github.com/Appfoster/upsnap/releases/tag/1.0.5
 [1.0.4]: https://github.com/Appfoster/upsnap/releases/tag/1.0.4
 [1.0.3]: https://github.com/Appfoster/upsnap/releases/tag/1.0.3
 [1.0.2]: https://github.com/Appfoster/upsnap/releases/tag/1.0.2
