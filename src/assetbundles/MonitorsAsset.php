@@ -1,7 +1,8 @@
 <?php
+
 namespace appfoster\upsnap\assetbundles;
 
-class SettingsAsset extends BaseAsset
+class MonitorsAsset extends BaseAsset
 {
     public function init()
     {
@@ -12,8 +13,6 @@ class SettingsAsset extends BaseAsset
         $this->js[] = 'js/settings.js';
         $this->js[] = 'js/monitors.js';
         $this->js[] = 'js/monitorsTable.js';
-        $this->js[] = 'js/notificationChannels.js';
         $this->css[] = 'css/addMonitorModal.css';
-        $this->css[] = 'css/notificationChannels.css';
     }
 }

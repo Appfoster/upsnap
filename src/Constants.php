@@ -105,6 +105,7 @@ class Constants
         'template' => 'upsnap/_index'
     ];
 
+
     const SUBNAV_ITEM_LIST = [
         self::SUBNAV_ITEM_DASHBOARD['key'] => [
             'label' => self::SUBNAV_ITEM_DASHBOARD['label'],
@@ -166,12 +167,21 @@ class Constants
             'view' => 'user/monitors',
             'delete' => 'user/monitors',
             'update' => 'user/monitors',
+            'bulk_actions' => 'user/monitors',
+            'integrations' => [
+                'list' => 'user/integrations',
+                'create' => 'user/integrations',
+                'delete' => 'user/integrations/',
+            ],
             'notification_channels' => [
-                'list' => 'user/monitors/{monitorId}/notification-channels',
-                'create' => 'user/monitors/{monitorId}/notification-channels',
-                'update' => 'user/monitors/{monitorId}/notification-channels/{channelId}',
+                'list' => 'user/integrations',
+                'create' => 'user/integrations',
+                'update' => 'user/integrations',
             ]
         ],
+        'user' => [
+            'details' => 'user/details'
+        ]
     ];
 
     public const LIGHTHOUSE_STRATEGY = [

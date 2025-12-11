@@ -200,14 +200,6 @@
 												<span>{{ record.ip }}</span>
 											</div>
 
-											{# {% if record.details.contentLength %}
-												<div class="detail-item">
-													<strong>{{ 'Content Length'|t('upsnap') }}:</strong>
-													<span>{{ (record.details.contentLength / 1024)|round(1) }}
-														KB</span>
-												</div>
-											{% endif %} #}
-
 											{% if record.details.sslValid is defined %}
 												<div class="detail-item">
 													<strong>{{ 'SSL Status'|t('upsnap') }}:</strong>
@@ -224,20 +216,7 @@
 												<p>{{ record.details.message }}</p>
 											</div>
 										{% endif %}
-{# 
-										{% if record.details.error %}
-											<div class="detail-error">
-												<strong>{{ 'Error'|t('upsnap') }}:</strong>
-												<p class="error-text">{{ record.details.error }}</p>
-											</div>
-										{% endif %} #}
 
-										{# {% if record.details.warning %}
-											<div class="detail-warning">
-												<strong>{{ 'Warning'|t('upsnap') }}:</strong>
-												<p class="warning-text">{{ record.details.warning }}</p>
-											</div>
-										{% endif %} #}
 									</div>
 								</td>
 							</tr>

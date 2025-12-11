@@ -1,37 +1,63 @@
 {% include "upsnap/_components/addNotificationChannelModal.twig" %}
 
 <div id="notification-channels-tab" class="tab-content hidden">
-	<div class="flex notification-channel-header">
-		<div class="flex-grow">
-			<h2>{{ "Notification Channels"|t('upsnap') }}</h2>
-			<p class="light">{{ "Manage where notifications from your monitors are sent."|t('upsnap') }}</p>
-		</div>
-		<div class="align-right">
-			<button type="button" class="btn add icon" id="add-notification-channel-btn">
-				{{ "Add Channel"|t('upsnap') }}
-			</button>
-		</div>
-	</div>
+	<div
+		id="integrations-page" class="integrations-container">
+		{# Left Sidebar - Categories #}
+		<aside class="integrations-sidebar">
+			<nav class="integrations-nav">
+				<button class="integrations-nav-item active" data-filter="all">
+					All
+				</button>
+				<button class="integrations-nav-item" data-filter="email">
+					Email
+				</button>
+				<button class="integrations-nav-item" data-filter="chat">
+					Chat platforms
+				</button>
+			</nav>
+		</aside>
 
-	<table class="data fullwidth">
-		<thead>
-			<tr>
-				<th>{{ "Name"|t('upsnap') }}</th>
-				<th>{{ "Type"|t('upsnap') }}</th>
-				<th>{{ "Destination"|t('upsnap') }}</th>
-				<th>{{ "Actions"|t('upsnap') }}</th>
-			</tr>
-		</thead>
-		<tbody
-			id="notification-channels-table-body">
-			<tr>
-				<td></td>
-				<td></td>
-				<td></td>
-				<td>
-					<button type="button" class="btn small icon edit" title="Edit Channel"></button>
-				</td>
-			</tr>
-		</tbody>
-	</table>
+		{# Main Content Area #}
+		<main
+			class="integrations-main">
+			{# Header with Search #}
+			<header class="integrations-header">
+				<div class="integrations-title-wrapper">
+					<h1 class="integrations-title">Integrations</h1>
+					<span class="integrations-usage" id="integration-usage">0/0 used</span>
+				</div>
+
+				<div class="integrations-search">
+					<input type="text" class="text fullwidth" id="integration-search" placeholder="Search by integration type..." autocomplete="off">
+				</div>
+			</header>
+
+			{# Integrations List #}
+			<div
+				class="integrations-list" id="integrations-list">
+				{# Loading State #}
+				<div class="integrations-loading" id="integrations-loading">
+					<div class="spinner"></div>
+					<p>Loading integrations...</p>
+				</div>
+
+				{# Empty State #}
+				<div class="integrations-empty hidden" id="integrations-empty">
+					<p>No integrations found.</p>
+				</div>
+
+				{# Integration items will be inserted here dynamically #}
+			</div>
+		</main>
+	</div>
 </div>
+
+{# Include JavaScript #}
+{% js %}
+document.addEventListener('DOMContentLoaded', function() {
+        if (typeof window.IntegrationsManager !== 'undefined') {
+            window.integrationsManager = new window.IntegrationsManager();
+        }
+    });
+{% endjs %}

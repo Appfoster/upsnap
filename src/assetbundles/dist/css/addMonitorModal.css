@@ -90,3 +90,56 @@
   background: #da5a47;
   color: white;
 }
+
+/* Arrow */
+.accordion-arrow {
+    display: inline-block;
+    margin-left: 6px;
+    width: 10px;
+    height: 10px;
+    border-right: 2px solid #596673;
+    border-bottom: 2px solid #596673;
+    transform: rotate(45deg);
+    transition: transform 0.2s ease;
+}
+
+/* Rotate arrow when expanded */
+.accordion-trigger[aria-expanded="true"] .accordion-arrow {
+    transform: rotate(-135deg);
+}
+
+/* Trigger styling */
+.accordion-trigger {
+    background: transparent;
+    border: 0;
+    padding: 6px 0;
+    cursor: pointer;
+    font-size: 15px;
+    font-weight: 600;
+    width: 100%;
+    display: flex;
+    gap: 2%;
+    align-items: center;
+}
+
+/* Hover effect */
+.accordion-trigger:hover {
+    color: #0d78f2;
+}
+
+/* Smooth open/close */
+.accordion-content {
+    padding-top: 10px;
+}
+
+#notification-channels-accordion {
+    padding: 1rem;
+    border: 1px solid #e3e5e8;
+    border-radius: 16px;
+}
+
+#advanced-settings-accordion {
+    padding: 1rem;
+    border: 1px solid #e3e5e8;
+    border-radius: 16px;
+}
