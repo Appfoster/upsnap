@@ -196,6 +196,7 @@
 			}
 
 			craftNotice("Primary monitor updated.");
+			window.location.href = Craft.getCpUrl(`upsnap/settings`);
 
 			// Update hidden fields so page state matches
 			if (monitoringUrlField()) monitoringUrlField().value = url;
@@ -251,6 +252,14 @@
 		}
 	}
 
+	function enableAddMonitorBtn() {
+		const addMonitorButton = document.getElementById("add-monitor-btn");
+		if (!addMonitorButton) return;
+
+		addMonitorButton.classList.remove("disabled");
+		addMonitorButton.disabled = false;
+		addMonitorButton.removeAttribute("title");
+	}
 
 	// Load monitors and render
 	async function loadAndRender() {
@@ -266,11 +275,6 @@
 		const isActiveApiToken = window?.Upsnap?.settings?.isActiveApiToken || "";
 		const userdetails = window?.Upsnap?.settings?.userDetails || {};
 		const maxMonitors = userdetails?.plan_limits?.max_monitors || 0;
-
-		// 🔒 If API key is missing → disable dropdown and show saved URL only
-		if (!isActiveApiToken) {
-			disableAddMonitorBtn()
-		}
 
 		// show loading row
 		tbody.innerHTML = `<tr><td colspan="5">Loading monitors…</td></tr>`;
@@ -292,10 +296,16 @@
 			const monitors = json.data.monitors;
 			const monitorCount = monitors.length;
 
-			if (monitorCount >= maxMonitors) {
-				disableAddMonitorBtn(
-					`Monitor limit reached (${monitorCount}/${maxMonitors})`
-				);
+			if (!isActiveApiToken) {
+				disableAddMonitorBtn();
+			} else {
+				if (monitorCount >= maxMonitors) {
+					disableAddMonitorBtn(
+						`Monitor limit reached (${monitorCount}/${maxMonitors})`
+					);
+				} else {
+					enableAddMonitorBtn();
+				}
 			}
 
 			// -------------------------------
@@ -344,8 +354,6 @@
 
 	function populateWithDefaultMonitor(tbody) {
 		const url = monitoringUrlField()?.value || "";
-		console.log("default url", url)
-
 		tbody.innerHTML = `
 		<tr>
 			<td></td>
@@ -364,6 +372,18 @@
 			</td>
 		</tr>
 		`;
+
+			// hide select-all checkbox
+			const selectAll = document.querySelector("#upsnap-select-all");
+			if (selectAll) {
+				selectAll.style.display = "none";
+			}
+
+			// hide bulk-actions menu
+			const menuBtn = document.querySelector("#upsnap-actions-menubtn");
+			const menuWrapper = document.querySelector("#upsnap-actions-menu-wrapper");
+			if (menuBtn) menuBtn.style.display = "none";
+			if (menuWrapper) menuWrapper.style.display = "none";
 	}
 
 	function updateBulkMenuState() {
@@ -473,7 +493,23 @@
 			return;
 		}
 
-		new Garnish.MenuBtn($(menuBtn), { menu: $(menu) });
+		const menuBtnInstance = new Garnish.MenuBtn($(menuBtn), {
+			menu: $(menu)
+		});
+
+		menuBtn.addEventListener("click", () => {
+			updateBulkMenuState()
+
+			// Force Garnish.MenuBtn to rebuild the menu items
+			menuBtnInstance.menu.$container.find('li').each(function () {
+				const link = $(this).find('a');
+				if (link.hasClass('disabled')) {
+					$(this).addClass('disabled');
+				} else {
+					$(this).removeClass('disabled');
+				}
+			});
+		});
 
 		deleteBtn.addEventListener("click", async () => {
 			const deleteBtn = document.getElementById("upsnap-delete-btn");
@@ -512,7 +548,7 @@
 				}
 
 				craftNotice(json.message || "Deleted");
-				loadAndRender();
+				window.location.href = Craft.getCpUrl(`upsnap/settings`);
 			} catch (err) {
 				console.error("Bulk delete error", err);
 				craftError(err.message || err);

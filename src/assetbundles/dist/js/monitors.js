@@ -679,6 +679,13 @@ Craft.Upsnap.Monitor = {
 		function renderTable(channels) {
 			tbody.innerHTML = "";
 
+			if (!channels.length) {
+				const noMsg = document.querySelector("#no-channels-msg");
+				table.style.display = "none";
+				noMsg.classList.remove("hidden");
+				return;
+			}
+
 			channels.forEach((c) => {
 				const row = document.createElement("tr");
 				row.innerHTML = `
@@ -947,30 +954,26 @@ Craft.Upsnap.Monitor = {
 document.addEventListener("DOMContentLoaded", () => {
     Craft.Upsnap.Monitor.init();
 
-    if (window.CraftPageData && window.CraftPageData.title && window.CraftPageData.monitorForm) {
+ if (window.CraftPageData && window.CraftPageData.title && window.CraftPageData.monitorForm) {
         const { title } = window.CraftPageData;
 
         const pageTitle = document.querySelector('#page-title');
         const heading = document.querySelector('#page-title h1, #page-heading');
 
         if (pageTitle && heading) {
-            // update title text
+            // Update title text
             heading.textContent = title;
 
-            const html = `
-                <br>
-                <a href="${Craft.getUrl('upsnap/settings')}" class="back-link">← Back</a>
-            `;
+            // Create back link
+            const backLink = document.createElement("a");
+            backLink.href = Craft.getUrl("upsnap/settings");
+            backLink.className = "back-link";
+            backLink.textContent = "← Back";
+            backLink.style.marginRight = "10px";
 
-            // insert before #revision-indicators
-            const revisionEl = document.querySelector('#revision-indicators');
-
-            if (revisionEl) {
-                revisionEl.insertAdjacentHTML('beforebegin', html);
-            } else {
-                // fallback: insert at end of #page-title
-                pageTitle.insertAdjacentHTML('beforeend', html);
-            }
+            // Insert BEFORE the title, in the same row
+            heading.parentNode.insertBefore(backLink, heading);
+			heading.style.whiteSpace = "nowrap";
         }
     }
 });

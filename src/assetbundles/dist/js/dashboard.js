@@ -67,7 +67,7 @@ Craft.UpsnapDashboard = {
         `;
 	},
 
-	fetchAndRenderCard({ action, cardId, getMessage, getStatus }) {
+	fetchAndRenderCard({ action, cardId, cardTitle, getMessage, getStatus }) {
 		return Craft.sendActionRequest("POST", action)
 			.then((response) => {
 				response = response?.data;
@@ -93,7 +93,7 @@ Craft.UpsnapDashboard = {
 
 				this.renderErrorCard({
 					cardId,
-					title: action,
+					title: cardTitle,
 					errorMsg: msg,
 				});
 			});
@@ -103,28 +103,34 @@ Craft.UpsnapDashboard = {
 		const calls = [
 			this.fetchAndRenderCard({
 				action: "upsnap/health-check/reachability",
+				cardTitle: "Reachability",
 				cardId: "reachability-card",
 			}),
 			this.fetchAndRenderCard({
 			    action: 'upsnap/health-check/security-certificates',
+				cardTitle: "Security Certificates",
 			    cardId: 'ssl-card',
 			}),
 			this.fetchAndRenderCard({
 			    action: 'upsnap/health-check/broken-links',
+			    cardTitle: "Broken Links",
 			    cardId: 'broken-links-card',
 			    getMessage: (data) =>
 			        data.status === 'false' ? data.error : data.message
 			}),
 			this.fetchAndRenderCard({
 			    action: 'upsnap/health-check/domain-check',
+			    cardTitle: "Domain Check",
 			    cardId: 'domain-check-card',
 			}),
 			this.fetchAndRenderCard({
 			    action: 'upsnap/health-check/mixed-content',
+			    cardTitle: "Mixed Content",
 			    cardId: 'mixed-content-card',
 			}),
 			this.fetchAndRenderCard({
 			    action: 'upsnap/health-check/lighthouse',
+			    cardTitle: "Lighthouse",
 			    cardId: 'lighthouse-card',
 			}),
 		];
@@ -364,6 +370,14 @@ Craft.UpsnapDashboard = {
 			});
 		});
 	},
+
+	formatMsToSecs(ms) {
+		if (ms >= 1000) {
+			return (ms / 1000).toFixed(2) + "s";
+		}
+		return ms + "ms";
+	},
+
     // ===========================================================
     // Response Time Area Chart Renderer
     // ===========================================================
@@ -403,15 +417,15 @@ Craft.UpsnapDashboard = {
 
             <div class="response-stats">
                 <div class="response-stat-box">
-                    <div class="stat-value">${responseTime.avg_response_time}ms</div>
+                    <div class="stat-value">${this.formatMsToSecs(responseTime.avg_response_time)}</div>
                     <div class="stat-label">Avg. response time</div>
                 </div>
                 <div class="response-stat-box">
-                    <div class="stat-value">${responseTime.max_response_time}ms</div>
+                    <div class="stat-value">${this.formatMsToSecs(responseTime.max_response_time)}</div>
                     <div class="stat-label">Max. response time</div>
                 </div>
                 <div class="response-stat-box">
-                    <div class="stat-value">${responseTime.min_response_time}ms</div>
+                    <div class="stat-value">${this.formatMsToSecs(responseTime.min_response_time)}</div>
                     <div class="stat-label">Min. response time</div>
                 </div>
             </div>
