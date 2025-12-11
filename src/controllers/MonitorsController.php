@@ -362,9 +362,9 @@ class MonitorsController extends Controller
                 'monitor_interval' => (int)$request->getBodyParam('mixedContentMonitoringInterval', 3600),
             ],
             'ssl' => [
-                'enabled' => (bool)$request->getBodyParam('domainEnabled', true),
-                'monitor_interval' => (int)$request->getBodyParam('domainMonitoringInterval', 3600),
-                'notify_days_before_expiry' => (int)$request->getBodyParam('domainDaysBeforeExpiryAlert', 7),
+                'enabled' => (bool)$request->getBodyParam('securityCertificatesEnabled', true),
+                'monitor_interval' => (int)$request->getBodyParam('securityCertificatesMonitoringInterval', 3600),
+                'notify_days_before_expiry' => (int)$request->getBodyParam('sslDaysBeforeExpiryAlert', 7),
             ],
             'uptime' => [
                 'enabled' => (bool)$request->getBodyParam('reachabilityEnabled', true),
