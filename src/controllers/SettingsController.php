@@ -50,7 +50,7 @@ class SettingsController extends BaseController
     /**
      * Save settings
      */
-    public function actionSave()
+    public function actionSave(): \yii\web\Response
     {
         $this->requirePostRequest();
 
@@ -100,7 +100,7 @@ class SettingsController extends BaseController
     /**
      * Render the settings page with validation errors.
      */
-    private function renderSettings($settings)
+    private function renderSettings($settings): \yii\web\Response
     {
         $service = Upsnap::getInstance()->settingsService;
         $service->validateApiKey();

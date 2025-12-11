@@ -113,7 +113,6 @@ class MonitorsController extends Controller
             // Sync primary monitor details to local database if this is the configured primary monitor
             $primaryMonitorId = $settingsService->getMonitorId();
             if($primaryMonitorId !== null && $primaryMonitorId === $monitorId) {
-                Craft::error($monitorId, "primary monitor");
                 $settingsService->setMonitorId($monitorId);
                 $settingsService->setMonitoringUrl($payloadArray['config']['meta']['url']);
             }
