@@ -50,7 +50,7 @@ class SettingsController extends BaseController
     /**
      * Save settings
      */
-    public function actionSave(): \yii\web\Response
+    public function actionSave()
     {
         $this->requirePostRequest();
 
@@ -69,10 +69,7 @@ class SettingsController extends BaseController
         }
 
         // Only update fields that are actually in the request
-        $this->updateIfExists($settings, $body, 'monitoringUrl');
-        $this->updateIfExists($settings, $body, 'monitorId');
         $this->updateIfExists($settings, $body, 'apiKey', 'trim');
-        $this->updateIfExists($settings, $body, 'notificationEmails', 'json');
 
         // Validate only updated fields
         if (!$settings->validate()) {
@@ -95,18 +92,6 @@ class SettingsController extends BaseController
             }
         }
 
-        // Save only what was updated
-        if (array_key_exists('monitoringUrl', $body)) {
-            $service->setMonitoringUrl($settings->monitoringUrl);
-        }
-
-        if (array_key_exists('monitorId', $body)) {
-            $service->setMonitorId($settings->monitorId);
-        }
-
-        if (array_key_exists('notificationEmails', $body)) {
-            $service->setNotificationEmails($settings->notificationEmails);
-        }
 
         Craft::$app->getSession()->setNotice(Craft::t('upsnap', 'Settings saved.'));
         return $this->redirectToPostedUrl();
@@ -115,7 +100,7 @@ class SettingsController extends BaseController
     /**
      * Render the settings page with validation errors.
      */
-    private function renderSettings($settings): \yii\web\Response
+    private function renderSettings($settings)
     {
         $service = Upsnap::getInstance()->settingsService;
         $service->validateApiKey();
