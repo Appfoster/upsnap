@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.7] - 2025-12-19
+
+### Added
+- Dynamic minimum monitoring interval based on subscription plan.
+
+### Updated
+- Dashboard uptime percentage formatting.
+- UI improvements for integrations and monitor forms.
+- Improved handling when monitoring is paused.
+
+### Fixed
+- Removed monitor dependency from Test Integration.
+- Fixed validation issues for Google Chat and Discord integrations.
+
+### Chore
+- Minor bug fixes and UI cleanups.
+
 ## [1.0.6] - 2025-12-11
 
 ### Added 
@@ -102,7 +119,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Asset minification and optimization
 - Background processing for monitoring tasks
 
-[Unreleased]: https://github.com/Appfoster/upsnap/compare/1.0.6...HEAD
+[Unreleased]: https://github.com/Appfoster/upsnap/compare/1.0.7...HEAD
+[1.0.7]: https://github.com/Appfoster/upsnap/releases/tag/1.0.7
 [1.0.6]: https://github.com/Appfoster/upsnap/releases/tag/1.0.6
 [1.0.5]: https://github.com/Appfoster/upsnap/releases/tag/1.0.5
 [1.0.4]: https://github.com/Appfoster/upsnap/releases/tag/1.0.4

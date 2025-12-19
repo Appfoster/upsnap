@@ -280,15 +280,15 @@
                             </svg>
                             Add
                         </button>
-                        ${
-							hasChannels
-								? `
-                            <svg class="integration-expand-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <polyline points="6 9 12 15 18 9"></polyline>
-                            </svg>
-                        `
-								: ""
-						}
+                        <svg
+							class="integration-expand-icon ${!hasChannels ? 'is-placeholder' : ''}"
+							viewBox="0 0 24 24"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="2"
+						>
+							<polyline points="6 9 12 15 18 9"></polyline>
+						</svg>
                     </div>
                 </div>
                 ${
@@ -838,10 +838,10 @@
 			};
 
 			// Event listeners
-			if (closeBtn) closeBtn.addEventListener("click", hideModal);
-			if (cancelBtn) cancelBtn.addEventListener("click", hideModal);
-			if (overlay) overlay.addEventListener("click", hideModal);
-			if (saveBtn) saveBtn.addEventListener("click", saveChannel);
+			if (closeBtn) closeBtn.onclick = hideModal;
+			if (cancelBtn) cancelBtn.onclick = hideModal;
+			if (overlay) overlay.onclick = hideModal;
+			if (saveBtn) saveBtn.onclick = saveChannel;
 
 			// Close modal on ESC key
 			document.addEventListener("keydown", (e) => {
