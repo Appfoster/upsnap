@@ -511,16 +511,30 @@ class SettingsService extends Component
         }
     }
 
-    public function formatOptions(array $constants, ?bool $isMonitoringOptions = false): array
-    {
+    /**
+     * Format an array of constants as an array of options, with optional restrictions
+     */
+    public function formatOptions(
+        array $constants,
+        ?bool $applyRestrictions = false,
+        ?int $userPlanMonitoringInterval = null
+    ): array {
         $options = [];
+
         foreach ($constants as $value => $label) {
+            $disabled = false;
+
+            if ($applyRestrictions === true && $userPlanMonitoringInterval !== null) {
+                $disabled = $value < $userPlanMonitoringInterval;
+            }
+
             $options[] = [
                 'label' => Craft::t('upsnap', $label),
-                'value' => (string)$value,
-                'disabled' => $isMonitoringOptions ? ($value === 60) : false,
+                'value' => (string) $value,
+                'disabled' => $disabled, // always boolean
             ];
         }
+
         return $options;
     }
 }

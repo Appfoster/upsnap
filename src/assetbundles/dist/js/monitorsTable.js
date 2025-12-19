@@ -24,8 +24,7 @@
 	const buildRow = (monitor, primaryMonitorId) => {
 		const url = monitor.config?.meta?.url || "";
 		const name = monitor.name || url || "Unnamed Monitor";
-		const isSelected =
-			primaryMonitorId && monitor?.id === primaryMonitorId;
+		const isSelected = primaryMonitorId && monitor?.id === primaryMonitorId;
 
 		// Determine status
 		let statusLabel = "";
@@ -46,7 +45,6 @@
 				statusClass = "pill--red";
 			}
 		}
-
 
 		const tr = document.createElement("tr");
 		tr.dataset.id = monitor.id ?? "";
@@ -263,6 +261,7 @@
 
 	// Load monitors and render
 	async function loadAndRender() {
+		const apiKey = window.Upsnap?.settings?.apiKey;
 		const wrap = document.querySelector(endpointSelector);
 		const tbody = document.querySelector(tbodySelector);
 		if (!wrap || !tbody) return;
@@ -270,9 +269,10 @@
 		const endpoint = wrap.dataset.endpoint;
 		const selectedUrl =
 			wrap.dataset.selected || monitoringUrlField()?.value || "";
-		const primaryMonitorId = monitorIdField().value || ""
+		const primaryMonitorId = monitorIdField().value || "";
 
-		const isActiveApiToken = window?.Upsnap?.settings?.isActiveApiToken || "";
+		const isActiveApiToken =
+			window?.Upsnap?.settings?.isActiveApiToken || "";
 		const userdetails = window?.Upsnap?.settings?.userDetails || {};
 		const maxMonitors = userdetails?.plan_limits?.max_monitors || 0;
 
@@ -280,20 +280,23 @@
 		tbody.innerHTML = `<tr><td colspan="5">Loading monitors…</td></tr>`;
 
 		try {
-			const response = await fetch(endpoint, {
-				headers: { "X-CSRF-Token": Craft.csrfTokenValue },
-			});
-			const json = await response.json();
+			const monitors = [];
+			if (apiKey) {
+				const response = await fetch(endpoint, {
+					headers: { "X-CSRF-Token": Craft.csrfTokenValue },
+				});
+				const json = await response.json();
 
-			if (
-				!json.success ||
-				!json.data ||
-				!Array.isArray(json.data.monitors)
-			) {
-				throw new Error(json.message || "Failed to load monitors");
+				if (
+					!json.success ||
+					!json.data ||
+					!Array.isArray(json.data.monitors)
+				) {
+					throw new Error(json.message || "Failed to load monitors");
+				}
+				monitors.push(...json.data.monitors);
 			}
 
-			const monitors = json.data.monitors;
 			const monitorCount = monitors.length;
 
 			if (!isActiveApiToken) {
@@ -334,7 +337,6 @@
 			tbody.querySelectorAll(".upsnap-set-primary").forEach((b) => {
 				b.addEventListener("click", handleSetPrimary);
 			});
-
 		} catch (err) {
 			tbody.innerHTML = `<tr><td colspan="4">Error loading monitors. See console for details.</td></tr>`;
 			console.error("Error loading monitors:", err);
@@ -373,17 +375,19 @@
 		</tr>
 		`;
 
-			// hide select-all checkbox
-			const selectAll = document.querySelector("#upsnap-select-all");
-			if (selectAll) {
-				selectAll.style.display = "none";
-			}
+		// hide select-all checkbox
+		const selectAll = document.querySelector("#upsnap-select-all");
+		if (selectAll) {
+			selectAll.style.display = "none";
+		}
 
-			// hide bulk-actions menu
-			const menuBtn = document.querySelector("#upsnap-actions-menubtn");
-			const menuWrapper = document.querySelector("#upsnap-actions-menu-wrapper");
-			if (menuBtn) menuBtn.style.display = "none";
-			if (menuWrapper) menuWrapper.style.display = "none";
+		// hide bulk-actions menu
+		const menuBtn = document.querySelector("#upsnap-actions-menubtn");
+		const menuWrapper = document.querySelector(
+			"#upsnap-actions-menu-wrapper"
+		);
+		if (menuBtn) menuBtn.style.display = "none";
+		if (menuWrapper) menuWrapper.style.display = "none";
 	}
 
 	function updateBulkMenuState() {
@@ -392,7 +396,8 @@
 
 		const selectAll = document.querySelector("#upsnap-select-all");
 		if (selectAll) {
-			selectAll.checked = checked.length === checkboxes.length && checkboxes.length > 0;
+			selectAll.checked =
+				checked.length === checkboxes.length && checkboxes.length > 0;
 		}
 
 		const editBtn = document.getElementById("upsnap-edit-btn");
@@ -494,19 +499,19 @@
 		}
 
 		const menuBtnInstance = new Garnish.MenuBtn($(menuBtn), {
-			menu: $(menu)
+			menu: $(menu),
 		});
 
 		menuBtn.addEventListener("click", () => {
-			updateBulkMenuState()
+			updateBulkMenuState();
 
 			// Force Garnish.MenuBtn to rebuild the menu items
-			menuBtnInstance.menu.$container.find('li').each(function () {
-				const link = $(this).find('a');
-				if (link.hasClass('disabled')) {
-					$(this).addClass('disabled');
+			menuBtnInstance.menu.$container.find("li").each(function () {
+				const link = $(this).find("a");
+				if (link.hasClass("disabled")) {
+					$(this).addClass("disabled");
 				} else {
-					$(this).removeClass('disabled');
+					$(this).removeClass("disabled");
 				}
 			});
 		});

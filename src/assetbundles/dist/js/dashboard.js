@@ -175,6 +175,24 @@ Craft.UpsnapDashboard = {
 		`;
 	},
 
+	formatUptime(value) {
+		if (value === null || value === undefined) return "N/A";
+
+		// Convert to percentage
+		let pct = value * 100;
+
+		// Round to max 2 decimals
+		pct = Math.round(pct * 100) / 100;
+
+		// Remove trailing .0 if whole number
+		if (pct % 1 === 0) {
+			return pct.toString();
+		}
+
+		return pct.toString();
+	},
+
+
 	// ===========================================================
 	// 1. Current Status Card
 	// ===========================================================
@@ -234,7 +252,7 @@ Craft.UpsnapDashboard = {
 		card.innerHTML = `
         <div class="card-header">Last check</div>
         <div class="card-body">
-            <strong>${lastCheck}</strong><br>
+            ${lastCheck}<br>
             ${intervalMinutes ? `Checked every ${intervalMinutes}m` : ""}
         </div>
     `;
@@ -311,9 +329,7 @@ Craft.UpsnapDashboard = {
 				} else {
 					tooltip = `
                     <div class="tooltip-date">${formatted}</div>
-                    <div class="tooltip-text green">Up ${(
-						bucket.uptime * 100
-					).toFixed(3)}%</div>
+                    <div class="tooltip-text green">Up ${this.formatUptime(bucket.uptime)}%</div>
                 `;
 				}
 
@@ -336,8 +352,8 @@ Craft.UpsnapDashboard = {
 			})
 			.join("");
 
-		const score = data.histogram.total_score; 
-		const percentage = (score * 100).toFixed(2) + '%';
+		const score = data?.histogram?.total_score || 0; 
+		const percentage = this.formatUptime(score) + '%';
 
 		// Render final card
 		card.classList.remove("skeleton");
@@ -512,7 +528,7 @@ Craft.UpsnapDashboard = {
 		card.innerHTML = `
         <div class="card-header">${label}</div>
         <div class="card-body ${color}">
-            ${pct !== null ? pct.toFixed(1) + "%" : "N/A"}
+            ${pct !== null ? pct + "%" : "N/A"}
         </div>
         <div class="card-footer">
             ${incidents} incident${incidents === 1 ? "" : "s"}

@@ -775,7 +775,6 @@ Craft.Upsnap.Monitor = {
 			);
 
 			if (!validName || !validUrl) {
-				Craft.cp.displayError("Please fix the highlighted fields.");
 				return;
 			}
 			try {

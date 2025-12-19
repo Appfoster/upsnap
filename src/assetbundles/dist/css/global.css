@@ -1107,6 +1107,9 @@
 .integration-item.expanded .integration-expand-icon {
     transform: rotate(180deg);
 }
+.integration-expand-icon.is-placeholder {
+    visibility: hidden;
+}
 
 /* Channel List (Accordion Content) */
 .integration-channels {
@@ -1301,4 +1304,10 @@
     font-size: 14px;
     color: #3b82f6;
     text-decoration: none;
+}
+
+.monitor-form-actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 24px;
 }
