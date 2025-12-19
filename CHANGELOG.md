@@ -11,13 +11,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Dynamic minimum monitoring interval based on subscription plan.
 
 ### Updated
-
 - Dashboard uptime percentage formatting.
 - UI improvements for integrations and monitor forms.
 - Improved handling when monitoring is paused.
 
 ### Fixed
-
 - Removed monitor dependency from Test Integration.
 - Fixed validation issues for Google Chat and Discord integrations.
 
