@@ -1107,6 +1107,9 @@
 .integration-item.expanded .integration-expand-icon {
     transform: rotate(180deg);
 }
+.integration-expand-icon.is-placeholder {
+    visibility: hidden;
+}
 
 /* Channel List (Accordion Content) */
 .integration-channels {

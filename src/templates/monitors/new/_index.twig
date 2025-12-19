@@ -82,9 +82,9 @@
                     on: monitor ? (monitor.enabled ?? true) : true
                 }) }}
 
-				<h3 class="heading">Healthcheck Settings</h3>
 
 				<div id="advanced-settings" style="{% if not (monitor ? (monitor.enabled ?? false) : false) %}display:none;{% endif %}">
+				    <h3 id="healthcheck-settings-title" class="heading">Healthcheck Settings</h3>
 					<hr>
 
 					{# ------------ ROW 1 ------------ #}

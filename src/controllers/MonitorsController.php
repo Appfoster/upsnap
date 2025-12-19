@@ -389,11 +389,15 @@ class MonitorsController extends Controller
     {
         $this->requireCpRequest();
         $service = Upsnap::getInstance()->settingsService;
-
+        $userDetails = null;
+        if($service->getApiKey()) {
+            $userDetails = $service->getUserDetails();
+        }
+        $userPlanMonitoringInterval = ($userDetails['plan_limits']['min_monitoring_interval'] ?? 5) * 60;
         $variables = [
             'subscriptionTypes' => Constants::SUBSCRIPTION_TYPES,
             'apiTokenStatuses' => Constants::API_KEY_STATUS,
-            'intervalOptions' => $service->formatOptions(Constants::MONITOR_INTERVALS, true),
+            'intervalOptions' => $service->formatOptions(Constants::MONITOR_INTERVALS, true, $userPlanMonitoringInterval),
             'strategyOptions' => $service->formatOptions(Constants::LIGHTHOUSE_STRATEGIES),
             'expiryDayOptions' => $service->formatOptions(Constants::EXPIRY_DAYS),
         ];

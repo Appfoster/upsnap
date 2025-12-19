@@ -198,13 +198,12 @@ class MonitorNotificationChannelsController extends Controller
         $this->requirePostRequest();
         $request = Craft::$app->getRequest();
 
-        $monitorId = $this->settingsService->getMonitorId();
         $channelId = $request->getBodyParam('channelId');
 
-        if (!$monitorId || !$channelId) {
+        if (!$channelId) {
             return $this->asJson([
                 'success' => false,
-                'message' => Craft::t('upsnap', 'Monitor ID and Channel ID are required.'),
+                'message' => Craft::t('upsnap', 'Channel ID is required.'),
             ]);
         }
 
