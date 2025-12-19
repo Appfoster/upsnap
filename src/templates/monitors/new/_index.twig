@@ -241,7 +241,11 @@
 			</div>
 		</div>
 	</form>
-	<button class="btn submit " id="save-monitor">{{ mode == 'add' ? "Create Monitor" : "Save Changes" }}</button>
+    <div class="monitor-form-actions">
+        <button class="btn submit" id="save-monitor">
+            {{ mode == 'add' ? "Create Monitor" : "Save Changes" }}
+        </button>
+    </div>
     
     <script>
         window.preSelectedChannelIds = {{ monitor ? monitor.channelIds|json_encode|raw : '[]' }};

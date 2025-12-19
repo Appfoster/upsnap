@@ -1305,3 +1305,9 @@
     color: #3b82f6;
     text-decoration: none;
 }
+
+.monitor-form-actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 24px;
+}

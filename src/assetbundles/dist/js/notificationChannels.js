@@ -838,10 +838,10 @@
 			};
 
 			// Event listeners
-			if (closeBtn) closeBtn.addEventListener("click", hideModal);
-			if (cancelBtn) cancelBtn.addEventListener("click", hideModal);
-			if (overlay) overlay.addEventListener("click", hideModal);
-			if (saveBtn) saveBtn.addEventListener("click", saveChannel);
+			if (closeBtn) closeBtn.onclick = hideModal;
+			if (cancelBtn) cancelBtn.onclick = hideModal;
+			if (overlay) overlay.onclick = hideModal;
+			if (saveBtn) saveBtn.onclick = saveChannel;
 
 			// Close modal on ESC key
 			document.addEventListener("keydown", (e) => {
