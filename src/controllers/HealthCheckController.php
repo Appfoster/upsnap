@@ -23,8 +23,11 @@ class HealthCheckController extends BaseController
 
     public function actionBrokenLinks(): Response
     {
-        $isAjax = Craft::$app->getRequest()->getIsAjax();
+        $request = Craft::$app->getRequest();
+        $isAjax = $request->getIsAjax();
         $url = Upsnap::getMonitoringUrl();
+        $forceFetch = $request->getBodyParam('force_fetch', false);
+
 
         if (!$url) {
             return $this->service->handleMissingMonitoringUrl(Constants::SUBNAV_ITEM_REACHABILITY);
@@ -39,7 +42,7 @@ class HealthCheckController extends BaseController
         if( $isAjax ) {
             try {
                 $paramName = Constants::SUBNAV_ITEM_BROKEN_LINKS['apiLabel'];
-                $response = $this->service->getHealthcheck($url, [$paramName]);
+                $response = $this->service->getHealthcheck($url, [$paramName], $forceFetch);
     
                 if (isset($response['result']['details'][$paramName]['error'])) {
                     $errorMsg = $response['result']['details'][$paramName]['error'];
@@ -118,8 +121,11 @@ class HealthCheckController extends BaseController
 
     public function actionDomainCheck(): Response
     {
+
+        $request = Craft::$app->getRequest();
+        $isAjax = $request->getIsAjax();
         $url = Upsnap::getMonitoringUrl();
-        $isAjax = Craft::$app->getRequest()->getIsAjax();
+        $forceFetch = $request->getBodyParam('force_fetch', false); 
 
         if (!$url) {
             return $this->service->handleMissingMonitoringUrl(Constants::SUBNAV_ITEM_DOMAIN_CHECK);
@@ -134,7 +140,7 @@ class HealthCheckController extends BaseController
         if ($isAjax) {
             try {
                 $paramName = Constants::SUBNAV_ITEM_DOMAIN_CHECK['apiLabel'];
-                $response = $this->service->getHealthcheck($url, [$paramName]);
+                $response = $this->service->getHealthcheck($url, [$paramName], $forceFetch);
                 if (isset($response['result']['details'][$paramName]['meta']['errors'])) {
                     $errors = $response['result']['details'][$paramName]['meta']['errors'][0];
                     throw new \Exception($errors);
@@ -198,12 +204,14 @@ class HealthCheckController extends BaseController
     
     public function actionLighthouse(): Response
     {
+        $request = Craft::$app->getRequest();
+        $isAjax = $request->getIsAjax();
         $url = Upsnap::getMonitoringUrl();
+        $forceFetch = $request->getBodyParam('force_fetch', false);
 
         if (!$url) {
             return $this->service->handleMissingMonitoringUrl(Constants::SUBNAV_ITEM_LIGHTHOUSE);
         }
-        $isAjax = Craft::$app->getRequest()->getIsAjax();
 
         $data = [
             'data' => [
@@ -215,7 +223,7 @@ class HealthCheckController extends BaseController
             try {
                 $paramName = Constants::SUBNAV_ITEM_LIGHTHOUSE['apiLabel'];
     
-                $response = $this->service->getHealthcheck($url, [$paramName], Craft::$app->getRequest()->getParam('device', 'desktop'));
+                $response = $this->service->getHealthcheck($url, [$paramName],$forceFetch, Craft::$app->getRequest()->getParam('device', 'desktop'));
     
                 if (isset($response['result']['details'][$paramName]['error'])) {
                     throw new \Exception($response['result']['details'][$paramName]['error']);
@@ -268,8 +276,10 @@ class HealthCheckController extends BaseController
 
     public function actionMixedContent(): Response
     {
+        $request = Craft::$app->getRequest();
+        $isAjax = $request->getIsAjax();
         $url = Upsnap::getMonitoringUrl();
-        $isAjax = Craft::$app->getRequest()->getIsAjax();
+        $forceFetch = $request->getBodyParam('force_fetch', false);
         
         if (!$url) {
             return $this->service->handleMissingMonitoringUrl(Constants::SUBNAV_ITEM_MIXED_CONTENT);
@@ -284,7 +294,7 @@ class HealthCheckController extends BaseController
         if ($isAjax) {
             try {
                 $paramName = Constants::SUBNAV_ITEM_MIXED_CONTENT['apiLabel'];
-                $response = $this->service->getHealthcheck($url, [$paramName]);
+                $response = $this->service->getHealthcheck($url, [$paramName], $forceFetch);
     
                 if (isset($response['result']['details'][$paramName]['error'])) {
                     $errorMsg = $response['result']['details'][$paramName]['error'];
@@ -334,7 +344,11 @@ class HealthCheckController extends BaseController
     public function actionReachability(): Response
     {
         $data = [];
+        $request = Craft::$app->getRequest();
+        $isAjax = $request->getIsAjax();
         $url = Upsnap::getMonitoringUrl();
+        $forceFetch = $request->getBodyParam('force_fetch', false);
+        Craft::error("reahcability force fetch", $forceFetch);
 
         if (!$url) {
             return $this->service->handleMissingMonitoringUrl(Constants::SUBNAV_ITEM_REACHABILITY);
@@ -342,7 +356,7 @@ class HealthCheckController extends BaseController
 
         try {
             $paramName = Constants::SUBNAV_ITEM_REACHABILITY['apiLabel'];
-            $response = $this->service->getHealthcheck($url, [$paramName]);
+            $response = $this->service->getHealthcheck($url, [$paramName], $forceFetch);
 
             if (isset($response['result']['details'][$paramName]['error'])) {
                 throw new \Exception($response['result']['details'][$paramName]['error']);
@@ -387,7 +401,6 @@ class HealthCheckController extends BaseController
             ];
         }
 
-        $isAjax = Craft::$app->getRequest()->getIsAjax();
         $data = $this->service->prepareData($data, Constants::SUBNAV_ITEM_REACHABILITY, $isAjax);
 
         if ($isAjax) {
@@ -399,7 +412,10 @@ class HealthCheckController extends BaseController
     public function actionSecurityCertificates(): Response
     {
         $data = [];
+        $request = Craft::$app->getRequest();
+        $isAjax = $request->getIsAjax();
         $url = Upsnap::getMonitoringUrl();
+        $forceFetch = $request->getBodyParam('force_fetch', false);
 
         if (!$url) {
             return $this->service->handleMissingMonitoringUrl(Constants::SUBNAV_ITEM_REACHABILITY);
@@ -407,7 +423,7 @@ class HealthCheckController extends BaseController
 
         try {
             $paramName = Constants::SUBNAV_ITEM_SECURITY_CERTIFICATES['apiLabel'];
-            $response = $this->service->getHealthcheck($url, [$paramName]);
+            $response = $this->service->getHealthcheck($url, [$paramName], $forceFetch);
 
             if (isset($response['result']['details'][$paramName]['error'])) {
                 throw new \Exception($response['result']['details'][$paramName]['error']);
@@ -455,7 +471,6 @@ class HealthCheckController extends BaseController
             ];
         }
 
-        $isAjax = Craft::$app->getRequest()->getIsAjax();
         $data = $this->service->prepareData($data, Constants::SUBNAV_ITEM_SECURITY_CERTIFICATES, $isAjax);
 
         if ($isAjax) {

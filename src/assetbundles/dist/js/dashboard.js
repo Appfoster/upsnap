@@ -14,11 +14,16 @@ Craft.UpsnapDashboard = {
 		}
 	},
 
-	renderCard({ cardId, title, status, message, checkedAt, detailUrl }) {
+	renderCard({ cardId, title, status, message, checkedAt, detailUrl, action, cardTitle }) {
 		const card = document.getElementById(cardId);
 		if (!card) return;
 
+		const content = card.querySelector(".card-content");
+		const skeleton = card.querySelector(".card-skeleton");
+
 		card.classList.remove("skeleton");
+		skeleton.hidden = true;
+		content.hidden = false;
 
 		const statusClass =
 			status === "ok"
@@ -33,42 +38,75 @@ Craft.UpsnapDashboard = {
 			? new Date(checkedAt).toLocaleString()
 			: "N/A";
 
-		card.innerHTML = `
-            <div class="card-header">
-                <h3>${title}</h3>
-                <hr>
-            </div>
-            <div class="card-body">
-                <p class="status-message">
-                    <span class="status-icon ${statusClass}">${icon}</span>
-                    ${message ?? "Something Went Wrong!"}
-                </p>
-                <p><strong>Last checked at:</strong> ${formattedCheckedAt}</p>
-            </div>
-            <div class="card-footer">
-                <a href="${detailUrl}" class="detail-link" target="_blank" rel="noopener">View Details →</a>
-            </div>
-        `;
+		content.innerHTML = `
+			<div class="card-body">
+				<p class="status-message">
+					<span class="status-icon ${statusClass}">${icon}</span>
+					${message ?? "Something Went Wrong!"}
+				</p>
+				<p><strong>Last checked at:</strong> ${formattedCheckedAt}</p>
+			</div>
+			<div class="card-footer">
+				<button class="fetch-recent-btn" type="button">
+					Fetch Recent
+				</button>
+				<a href="${detailUrl}" class="detail-link" target="_blank" rel="noopener">
+					View Details →
+				</a>
+			</div>
+		`;
+
+		content.querySelector(".fetch-recent-btn").addEventListener("click", () => {
+			this.showSkeleton(cardId);
+
+			this.fetchAndRenderCard({
+				action,
+				cardId,
+				cardTitle,
+				forceFetch: true,
+			});
+		});
+	},
+
+	showSkeleton(cardId) {
+		const card = document.getElementById(cardId);
+		if (!card) return;
+
+		card.classList.add("skeleton");
+
+		card.querySelector(".card-skeleton").hidden = false;
+		card.querySelector(".card-content").hidden = true;
 	},
 
 	renderErrorCard({ cardId, title, errorMsg }) {
 		const card = document.getElementById(cardId);
 		if (!card) return;
 
+		const content = card.querySelector(".card-content");
+		const skeleton = card.querySelector(".card-skeleton");
+
 		card.classList.remove("skeleton");
-		card.innerHTML = `
-            <div class="card-header">
-                <h3>${title}</h3>
-                <hr>
-            </div>
-            <div class="card-body">
-                <p class="error">✗ Failed to load ${title.toLowerCase()}: ${errorMsg}</p>
-            </div>
-        `;
+		skeleton.hidden = true;
+		content.hidden = false;
+
+		content.innerHTML = `
+			<div class="card-header">
+				<h3>${title}</h3>
+				<hr>
+			</div>
+			<div class="card-body">
+				<p class="error">✗ Failed to load ${title.toLowerCase()}: ${errorMsg}</p>
+			</div>
+		`;
 	},
 
-	fetchAndRenderCard({ action, cardId, cardTitle, getMessage, getStatus }) {
-		return Craft.sendActionRequest("POST", action)
+
+	fetchAndRenderCard({ action, cardId, cardTitle, getMessage, getStatus, forceFetch = false, }) {
+		return Craft.sendActionRequest("POST", action, {
+				data: {
+					force_fetch: forceFetch,
+				},
+			})
 			.then((response) => {
 				response = response?.data;
 				const data = response?.data;
@@ -84,6 +122,8 @@ Craft.UpsnapDashboard = {
 						: data.error,
 					checkedAt: data.checkedAt,
 					detailUrl: response?.url,
+					action,
+					cardTitle,
 				});
 			})
 			.catch((error) => {

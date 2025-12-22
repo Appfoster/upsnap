@@ -20,13 +20,11 @@
     box-shadow: 0 2px 6px rgba(0,0,0,0.08);
     display: flex;
     flex-direction: column;
-    justify-content: space-between;
     min-height: 180px;
 }
 
 /* Header */
 .card-header h3 {
-    margin: 0;
     font-size: 14px;
     font-weight: 600;
     color: #677486;
@@ -52,7 +50,21 @@
 
 /* Footer */
 .card-footer {
-    text-align: right;
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+}
+
+.fetch-recent-btn {
+	padding: 6px 12px;
+	font-size: 13px;
+	cursor: pointer;
+    color: #0073e6;
+    text-decoration: none;
+
+}
+.detail-link:hover {
+    text-decoration: underline;
 }
 .detail-link {
     font-size: 13px;
