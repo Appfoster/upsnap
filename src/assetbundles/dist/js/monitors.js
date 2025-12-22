@@ -911,6 +911,44 @@ Craft.Upsnap.Monitor = {
 		}
 		return errorList;
 	},
+
+	isValidHttpUrl(value) {
+		if (!value) return false;
+
+		try {
+			const url = new URL(value);
+
+			// Allow only http/https
+			if (!["http:", "https:"].includes(url.protocol)) {
+				return false;
+			}
+
+			const hostname = url.hostname;
+
+			// Must contain at least one dot (.)
+			if (!hostname.includes(".")) {
+				return false;
+			}
+
+			// TLD must be at least 2 characters
+			const tld = hostname.split(".").pop();
+			if (tld.length < 2) {
+				return false;
+			}
+
+			// Hostname regex (no underscores, no spaces, valid chars)
+			const hostnameRegex =
+				/^(?!-)[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)*$/;
+
+			if (!hostnameRegex.test(hostname)) {
+				return false;
+			}
+
+			return true;
+		} catch (e) {
+			return false;
+		}
+	},
 	validateField(id, message) {
 		const field = document.querySelector(`#${id}-field`);
 		const input = document.querySelector(`#${id}`);
@@ -920,17 +958,26 @@ Craft.Upsnap.Monitor = {
 			return false;
 		}
 
-		// Ensure the .errors UL exists
 		const errorList = this.ensureErrorContainer(field);
 
 		// Reset
 		field.classList.remove("has-errors");
 		errorList.innerHTML = "";
 
-		// Validate
-		if (!input.value.trim()) {
+		const value = input.value.trim();
+
+		// Required check
+		if (!value) {
 			field.classList.add("has-errors");
 			errorList.innerHTML = `<li>${message}</li>`;
+			return false;
+		}
+
+		// URL-specific validation
+		if (id === "url" && !this.isValidHttpUrl(value)) {
+			field.classList.add("has-errors");
+			errorList.innerHTML =
+				"<li>Please enter a valid URL starting with http:// or https://</li>";
 			return false;
 		}
 
