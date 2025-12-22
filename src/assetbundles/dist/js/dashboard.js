@@ -111,6 +111,19 @@ Craft.UpsnapDashboard = {
 				response = response?.data;
 				const data = response?.data;
 
+				// cache reachability response for paused monitor logic
+				if (action === "upsnap/health-check/reachability") {
+					window.CraftPageData = window.CraftPageData || {};
+					window.CraftPageData.reachabilityData = data;
+
+					// notify dashboard that reachability is ready
+					document.dispatchEvent(
+						new CustomEvent("upsnap:reachability:loaded", {
+							detail: data,
+						})
+					);
+				}
+
 				this.renderCard({
 					cardId,
 					title: response?.title,
@@ -205,13 +218,13 @@ Craft.UpsnapDashboard = {
 		return "red";
 	},
 
-	renderNoDataCard(card, title) {
+	renderNoDataCard(card, title, message) {
 		if (!card) return;
 
 		card.classList.remove("skeleton");
 		card.innerHTML = `
 			<div class="card-header">${title}</div>
-			<div class="card-body gray">No data available</div>
+			<div class="card-body gray">${message || 'No data available'}</div>
 		`;
 	},
 
@@ -240,12 +253,51 @@ Craft.UpsnapDashboard = {
 		const card = document.getElementById("monitor-status-card");
 		if (!card) return;
 
-		if (!data || !data.last_status) {
-			this.renderNoDataCard(card, "Current Status");
-			return;
+		const reachability = window.CraftPageData?.reachabilityData;
+		const isDisabled = data?.is_enabled === false;
+
+		let status = null;
+		let message = "No data available";
+
+		// --------------------------------------------------
+		// 1. NO MONITOR DATA → FALLBACK TO REACHABILITY
+		// --------------------------------------------------
+		if (!data) {
+			if (!reachability) {
+				this.renderNoDataCard(card, "Current Status", message);
+				return;
+			}
+
+			status = reachability.status === "ok" ? "up" : "down";
+		}
+		// --------------------------------------------------
+		// 2. MONITOR DISABLED → USE REACHABILITY
+		// --------------------------------------------------
+		else if (isDisabled) {
+			message = "Monitoring Paused";
+
+			if (!reachability) {
+				this.renderNoDataCard(card, "Current Status", message);
+				return;
+			}
+
+			status = reachability.status === "ok" ? "up" : "down";
+		}
+		// --------------------------------------------------
+		// 3. MONITOR ENABLED → USE MONITOR STATUS
+		// --------------------------------------------------
+		else {
+			if (!data.last_status) {
+				this.renderNoDataCard(card, "Current Status", message);
+				return;
+			}
+
+			status = data.last_status;
 		}
 
-		let status = data.last_status;
+		// --------------------------------------------------
+		// FINAL RENDER
+		// --------------------------------------------------
 		let label, colorClass;
 
 		if (status === "up") {
@@ -261,9 +313,9 @@ Craft.UpsnapDashboard = {
 
 		card.classList.remove("skeleton");
 		card.innerHTML = `
-        <div class="card-header">Current Status</div>
-        <div class="card-body ${colorClass}">${label}</div>
-    `;
+			<div class="card-header">Current Status</div>
+			<div class="card-body ${colorClass}">${label}</div>
+		`;
 	},
 
 	// ===========================================================
@@ -273,29 +325,68 @@ Craft.UpsnapDashboard = {
 		const card = document.getElementById("monitor-last-check-card");
 		if (!card) return;
 
+		const reachability = window.CraftPageData?.reachabilityData;
+		const isDisabled = data?.is_enabled === false;
+
+		let timestamp = null;
+		let message = "No data available";
+
+		// --------------------------------------------------
+		// 1. NO MONITOR DATA → FALLBACK TO REACHABILITY
+		// --------------------------------------------------
 		if (!data) {
-			this.renderNoDataCard(card, "Last check");
-			return;
+			if (!reachability?.checkedAt) {
+				this.renderNoDataCard(card, "Last check", message);
+				return;
+			}
+
+			timestamp = reachability.checkedAt;
+		}
+		// --------------------------------------------------
+		// 2. MONITOR DISABLED → USE REACHABILITY
+		// --------------------------------------------------
+		else if (isDisabled) {
+			message = "Monitoring Paused";
+
+			if (!reachability?.checkedAt) {
+				this.renderNoDataCard(card, "Last check", message);
+				return;
+			}
+
+			timestamp = reachability.checkedAt;
+		}
+		// --------------------------------------------------
+		// 3. MONITOR ENABLED → USE MONITOR TIMESTAMP
+		// --------------------------------------------------
+		else {
+			if (!data.last_check_at) {
+				this.renderNoDataCard(card, "Last check", message);
+				return;
+			}
+
+			timestamp = data.last_check_at;
 		}
 
-		const lastCheck = data.last_check_at
-			? new Date(data.last_check_at).toLocaleString()
-			: "N/A";
+		// --------------------------------------------------
+		// FINAL RENDER
+		// --------------------------------------------------
+		const lastCheck = new Date(timestamp).toLocaleString();
 
 		const intervalSeconds =
 			data?.config?.services?.uptime?.monitor_interval;
+
 		const intervalMinutes = intervalSeconds
 			? Math.round(intervalSeconds / 60)
 			: null;
 
 		card.classList.remove("skeleton");
 		card.innerHTML = `
-        <div class="card-header">Last check</div>
-        <div class="card-body">
-            ${lastCheck}<br>
-            ${intervalMinutes ? `Checked every ${intervalMinutes}m` : ""}
-        </div>
-    `;
+			<div class="card-header">Last check</div>
+			<div class="card-body">
+				${lastCheck}<br>
+				${!isDisabled && intervalMinutes ? `Checked every ${intervalMinutes}m` : ""}
+			</div>
+		`;
 	},
 
 	// ===========================================================
@@ -304,9 +395,11 @@ Craft.UpsnapDashboard = {
 	render24hChartCard(data) {
 		const card = document.getElementById("monitor-24h-card");
 		if (!card) return;
+		const isDisabled = data?.is_enabled === false;
 
 		if (!data || !data.histogram.data || data.histogram.data.length === 0) {
-			this.renderNoDataCard(card, "Last 24 hours");
+			message = isDisabled ? "Monitoring paused" : "No data available"
+			this.renderNoDataCard(card, "Last 24 hours",message);
 			return;
 		}
 
@@ -570,7 +663,7 @@ Craft.UpsnapDashboard = {
         <div class="card-body ${color}">
             ${pct !== null ? pct + "%" : "N/A"}
         </div>
-        <div class="card-footer">
+        <div class="card-footer-incidents">
             ${incidents} incident${incidents === 1 ? "" : "s"}
         </div>
     `;
@@ -624,4 +717,16 @@ $(document).on("ajaxComplete", () => {
 // 3) Craft element index reloads / partial reinitialization
 $(document).on("pjax:end", () => {
 	Craft.UpsnapDashboard.init();
+});
+
+// ===========================================================
+// Reachability Ready → Re-render dependent cards
+// ===========================================================
+document.addEventListener("upsnap:reachability:loaded", () => {
+	const data = window.CraftPageData?.monitorData;
+
+	if (!window.CraftPageData?.reachabilityData) return;
+
+	Craft.UpsnapDashboard.renderStatusCard(data);
+	Craft.UpsnapDashboard.renderLastCheckCard(data);
 });
