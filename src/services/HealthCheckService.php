@@ -47,12 +47,12 @@ class HealthCheckService
 	 * @param array $params possible values one of: ["uptime", "broken-links", "domain-check"]
 	 * @return array|mixed
 	 */
-	public function getHealthcheck($url, $params, $forceFetch=false, $seoStretegy = null)
+	public function getHealthcheck($url, $params, $forceFetch=false, $seoStrategy = null)
 	{
 		return Upsnap::$plugin->apiService->post('healthcheck', [
 			'url' => $url,
 			"checks" => $params,
-			'strategy' => $seoStretegy,
+			'strategy' => $seoStrategy,
 			'force_fetch' => $forceFetch
 		]);
 	}
