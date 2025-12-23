@@ -511,32 +511,37 @@ class MonitorsController extends Controller
 
     public function actionDetail(string $monitorId): Response
     {
-        $this->requireCpRequest();
-        $variables = null;
+        // $this->requireCpRequest();
 
-        // Fetch details from microservice
+        $request = Craft::$app->getRequest();
+
+        // Collect all incoming params (GET, POST, JSON body)
+        $params = array_merge(
+            $request->getQueryParams(),
+            $request->getBodyParams()
+        );
+
         try {
             $endpoint = Constants::MICROSERVICE_ENDPOINTS['monitors']['view'] . '/' . $monitorId;
 
-            $response = Upsnap::$plugin->apiService->get($endpoint);
+            // Pass all params to the service
+            $response = Upsnap::$plugin->apiService->get($endpoint, $params);
 
             if (!isset($response['status']) || $response['status'] !== 'success') {
-                throw new \Exception("Unable to fetch monitor details.");
+                throw new \Exception('Unable to fetch monitor details.');
             }
 
-            $monitor = $response['data']['monitor'];
-
-            $variables['monitor'] = $monitor;
+            return $this->asJson([
+                'success' => true,
+                'message' => 'Monitor details fetched successfully.',
+                'data' => [
+                    'monitor' => $response['data']['monitor'] ?? null,
+                ],
+            ]);
 
         } catch (\Throwable $e) {
             Craft::error("Monitor fetch failed: {$e->getMessage()}", __METHOD__);
-            throw new NotFoundHttpException("Monitor not found");
+            throw new NotFoundHttpException('Monitor not found');
         }
-
-        return $this->asJson([
-            'success' => true,
-            'message' => 'Monitor details fetched successfully.',
-            'data' => $variables,
-        ]);
     }
 }
