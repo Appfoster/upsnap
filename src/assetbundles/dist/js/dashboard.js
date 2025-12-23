@@ -46,7 +46,7 @@ Craft.UpsnapDashboard = {
 			<div class="card-body">
 				<p class="status-message">
 					<span class="status-icon ${statusClass}">${icon}</span>
-					${message ?? "Something Went Wrong!"}
+					${message ?? "Something Went Wrongs!"}
 				</p>
 				<p><strong>Last checked at:</strong> ${formattedCheckedAt}</p>
 			</div>
@@ -113,6 +113,7 @@ Craft.UpsnapDashboard = {
 			})
 			.then((response) => {
 				response = response?.data;
+				console.log("fetched data for", cardTitle, response);
 				const data = response?.data;
 
 				// cache reachability response for paused monitor logic
@@ -172,8 +173,6 @@ Craft.UpsnapDashboard = {
 			    action: 'upsnap/health-check/broken-links',
 			    cardTitle: "Broken Links",
 			    cardId: 'broken-links-card',
-			    getMessage: (data) =>
-			        data.status === 'false' ? data.error : data.message
 			}),
 			this.fetchAndRenderCard({
 			    action: 'upsnap/health-check/domain-check',
@@ -539,7 +538,7 @@ Craft.UpsnapDashboard = {
         if (!card) return;
 
 		if (!data || !data?.response_time?.chart_data || data?.response_time?.chart_data.length === 0) {
-			this.renderNoDataCard(card, "Response Time");
+			card.classList.add("hidden");
 			return;
 		}
 
