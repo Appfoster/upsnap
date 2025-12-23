@@ -38,6 +38,93 @@ Craft.Upsnap.Monitor = {
 		this.registerLoadIntegrations();
 		this.registerAdvancedSettingsAccordion();
 		this.registerSubmitHandler();
+		this.initIntervalSlider();
+	},
+
+	initIntervalSlider() {
+		const sliders = document.querySelectorAll("[data-interval-slider]");
+
+		if (!sliders.length) return;
+
+		const MIN_SECONDS = 30;
+		const MAX_SECONDS = 86400;
+		const PLAN_MIN_SECONDS = 300; // static for now
+
+		const logMin = Math.log(MIN_SECONDS);
+		const logMax = Math.log(MAX_SECONDS);
+
+		const secondsToSlider = (seconds) => {
+			const logV = Math.log(seconds);
+			return ((logV - logMin) / (logMax - logMin)) * 100;
+		};
+
+		const sliderToSeconds = (percent) => {
+			const logValue = logMin + (percent / 100) * (logMax - logMin);
+			return Math.round(Math.exp(logValue));
+		};
+
+		const format = (s) => {
+			if (s < 60) return `${s}s`;
+			if (s < 3600) return `${Math.round(s / 60)}m`;
+			if (s < 86400) return `${Math.round(s / 3600)}h`;
+			return `${Math.round(s / 86400)}d`;
+		};
+
+		sliders.forEach((slider) => {
+			const hiddenInputId = slider.dataset.targetInput;
+			const labelId = slider.dataset.label;
+
+			const hiddenInput = document.getElementById(hiddenInputId);
+			const label = document.getElementById(labelId);
+
+			if (!hiddenInput || !label) return;
+
+			let currentSeconds = Math.max(
+				Number(hiddenInput.value || PLAN_MIN_SECONDS),
+				PLAN_MIN_SECONDS
+			);
+
+			slider.value = secondsToSlider(currentSeconds);
+			hiddenInput.value = currentSeconds;
+			label.textContent = format(currentSeconds);
+
+			slider.style.background = `linear-gradient(
+            to right,
+            #3b82f6 0%,
+            #3b82f6 ${slider.value}%,
+            #e5e7eb ${slider.value}%,
+            #e5e7eb 100%
+        )`;
+
+			slider.addEventListener("input", (e) => {
+				let seconds = sliderToSeconds(Number(e.target.value));
+
+				if (seconds < PLAN_MIN_SECONDS) {
+					seconds = PLAN_MIN_SECONDS;
+				}
+
+				hiddenInput.value = seconds;
+				label.textContent = format(seconds);
+
+				slider.style.background = `linear-gradient(
+                to right,
+                #3b82f6 0%,
+                #3b82f6 ${slider.value}%,
+                #e5e7eb ${slider.value}%,
+                #e5e7eb 100%
+            )`;
+			});
+
+			// Position ticks relative to this slider
+			slider
+				.closest(".field")
+				?.querySelectorAll(".upsnap-range-tick")
+				.forEach((tick) => {
+					const seconds = Number(tick.dataset.seconds);
+					const pos = secondsToSlider(seconds);
+					tick.style.left = `${pos}%`;
+				});
+		});
 	},
 
 	// =============================
@@ -619,7 +706,7 @@ Craft.Upsnap.Monitor = {
 		const accordionContent = document.querySelector(
 			"#advanced-settings-content"
 		);
-		if(!accordionBtn)  return
+		if (!accordionBtn) return;
 		// Accordion toggle
 		accordionBtn.addEventListener("click", async () => {
 			const expanded =
@@ -631,7 +718,7 @@ Craft.Upsnap.Monitor = {
 
 	registerLoadIntegrations() {
 		const accordionBtn = document.querySelector("#integrations-trigger");
-		if(!accordionBtn)  return
+		if (!accordionBtn) return;
 		const accordionContent = document.querySelector(
 			"#notification-channels-content"
 		);
@@ -738,9 +825,9 @@ Craft.Upsnap.Monitor = {
 			// 👉 After selecting saved ones, update "select all"
 			const checkboxes = document.querySelectorAll(".channel-checkbox");
 			const all = checkboxes.length;
-			const checked = [...checkboxes].filter(cb => cb.checked).length;
+			const checked = [...checkboxes].filter((cb) => cb.checked).length;
 
-			selectAll.checked = (checked === all);
+			selectAll.checked = checked === all;
 		}
 
 		// Format channel type
@@ -761,7 +848,7 @@ Craft.Upsnap.Monitor = {
 	},
 	registerSubmitHandler() {
 		const btn = document.querySelector("#save-monitor");
-		if(!btn) return
+		if (!btn) return;
 
 		btn.addEventListener("click", async () => {
 			// Validate fields
@@ -792,7 +879,9 @@ Craft.Upsnap.Monitor = {
 				const data = await response.json();
 
 				if (data.success) {
-					Craft.cp.displayNotice(data.message || "Monitor saved successfully.");
+					Craft.cp.displayNotice(
+						data.message || "Monitor saved successfully."
+					);
 					window.location.href = Craft.getCpUrl(`upsnap/settings`);
 				} else {
 					Craft.cp.displayError(data.message || "Failed.");
@@ -937,8 +1026,7 @@ Craft.Upsnap.Monitor = {
 			}
 
 			// Hostname regex (no underscores, no spaces, valid chars)
-			const hostnameRegex =
-				/^(?!-)[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)*$/;
+			const hostnameRegex = /^(?!-)[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)*$/;
 
 			if (!hostnameRegex.test(hostname)) {
 				return false;
@@ -998,30 +1086,5 @@ Craft.Upsnap.Monitor = {
 
 // Initialize when DOM is ready
 document.addEventListener("DOMContentLoaded", () => {
-    Craft.Upsnap.Monitor.init();
-
- if (window.CraftPageData && window.CraftPageData.title && window.CraftPageData.monitorForm) {
-        const { title } = window.CraftPageData;
-
-        const pageTitle = document.querySelector('#page-title');
-        const heading = document.querySelector('#page-title h1, #page-heading');
-
-        if (pageTitle && heading) {
-            // Update title text
-            heading.textContent = title;
-
-            // Create back link
-            const backLink = document.createElement("a");
-            backLink.href = Craft.getUrl("upsnap/settings");
-            backLink.className = "back-link";
-            backLink.textContent = "← Back";
-            backLink.style.marginRight = "10px";
-
-            // Insert BEFORE the title, in the same row
-            heading.parentNode.insertBefore(backLink, heading);
-			heading.style.whiteSpace = "nowrap";
-        }
-    }
+	Craft.Upsnap.Monitor.init();
 });
-
-

@@ -400,6 +400,7 @@ class MonitorsController extends Controller
             'intervalOptions' => $service->formatOptions(Constants::MONITOR_INTERVALS, true, $userPlanMonitoringInterval),
             'strategyOptions' => $service->formatOptions(Constants::LIGHTHOUSE_STRATEGIES),
             'expiryDayOptions' => $service->formatOptions(Constants::EXPIRY_DAYS),
+            'userDetails' => $userDetails,
         ];
 
         if ($monitorId) {
@@ -428,6 +429,12 @@ class MonitorsController extends Controller
         $this->requireCpRequest();
 
         $service = Upsnap::getInstance()->settingsService;
+
+        $userDetails = null;
+        if($service->getApiKey()) {
+            $userDetails = $service->getUserDetails();
+        }
+
         $variables = [
             'subscriptionTypes' => Constants::SUBSCRIPTION_TYPES,
             'apiTokenStatuses' => Constants::API_KEY_STATUS,
@@ -436,6 +443,7 @@ class MonitorsController extends Controller
             'expiryDayOptions' => $service->formatOptions(Constants::EXPIRY_DAYS),
             'mode' => 'edit',
             'title' => 'Edit Monitor',
+            'userDetails' => $userDetails,
         ];
 
         // Fetch details from microservice
@@ -475,7 +483,10 @@ class MonitorsController extends Controller
 
             // Health checks
             'brokenLinksEnabled' => $services['broken_links']['enabled'] ?? false,
+            'brokenLinksMonitoringInterval' => $services['broken_links']['monitor_interval'] ?? "1m",
+
             'mixedContentEnabled' => $services['mixed_content']['enabled'] ?? false,
+            'mixedContentMonitoringInterval' => $services['mixed_content']['monitor_interval'] ?? "1m",
 
             'lighthouseEnabled' => $services['lighthouse']['enabled'] ?? false,
             'lighthouseMonitoringInterval' => $services['lighthouse']['monitor_interval'] ?? "1m",
@@ -483,6 +494,14 @@ class MonitorsController extends Controller
 
             'reachabilityEnabled' => $services['uptime']['enabled'] ?? false,
             'reachabilityMonitoringInterval' => $services['uptime']['monitor_interval'] ?? "1m",
+
+            'domainEnabled' => $services['domain']['enabled'] ?? false,
+            'domainMonitoringInterval' => $services['domain']['monitor_interval'] ?? "1m",
+            'domainDaysBeforeExpiryAlert' => $services['domain']['notify_days_before_expiry'] ?? 7,
+
+            'securityCertificatesEnabled' => $services['ssl']['enabled'] ?? false,
+            'securityCertificatesMonitoringInterval' => $services['ssl']['monitor_interval'] ?? "1m",
+            'sslDaysBeforeExpiryAlert' => $services['ssl']['notify_days_before_expiry'] ?? 7,
 
             // Channels
             'channelIds' => $m['channel_ids'] ?? [],
