@@ -1217,7 +1217,9 @@
     background: #e5e7eb;
     color: #1f2937;
 }
-
+.card-footer-incidents {
+    text-align: right;
+}
 /* Responsive Design */
 @media (max-width: 1024px) {
     .integrations-container {
