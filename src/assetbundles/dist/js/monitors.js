@@ -45,7 +45,8 @@ Craft.Upsnap.Monitor = {
 
 		const MIN_SECONDS = 30;
 		const MAX_SECONDS = 86400;
-		const PLAN_MIN_SECONDS = window.CraftPageData.minMonitorIntervalSeconds || 300;
+		const PLAN_MIN_SECONDS =
+			window.CraftPageData.minMonitorIntervalSeconds || 300;
 
 		const logMin = Math.log(MIN_SECONDS);
 		const logMax = Math.log(MAX_SECONDS);
@@ -98,6 +99,8 @@ Craft.Upsnap.Monitor = {
 
 				if (seconds < PLAN_MIN_SECONDS) {
 					seconds = PLAN_MIN_SECONDS;
+					// Update slider position to match the minimum
+					e.target.value = secondsToSlider(PLAN_MIN_SECONDS);
 				}
 
 				hiddenInput.value = seconds;
@@ -106,8 +109,8 @@ Craft.Upsnap.Monitor = {
 				slider.style.background = `linear-gradient(
                 to right,
                 #3b82f6 0%,
-                #3b82f6 ${slider.value}%,
-                #e5e7eb ${slider.value}%,
+                #3b82f6 ${e.target.value}%,
+                #e5e7eb ${e.target.value}%,
                 #e5e7eb 100%
             )`;
 			});
@@ -434,7 +437,8 @@ Craft.Upsnap.Monitor = {
 					);
 					// 🔔 Notify monitors-list.js
 					this.pushMonitorChange({
-						monitorId: data.data?.monitorId || payload.monitorId || null,
+						monitorId:
+							data.data?.monitorId || payload.monitorId || null,
 						action: payload.monitorId ? "updated" : "created",
 					});
 
@@ -466,9 +470,6 @@ Craft.Upsnap.Monitor = {
 			action: change.action,
 			ts: Date.now(),
 		});
-
-		console.log("Pushing monitor change:", queue);
-
 		sessionStorage.setItem(key, JSON.stringify(queue));
 	},
 	// --------------------------
