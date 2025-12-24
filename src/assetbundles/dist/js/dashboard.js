@@ -51,8 +51,8 @@ Craft.UpsnapDashboard = {
 				<p><strong>Last checked at:</strong> ${formattedCheckedAt}</p>
 			</div>
 			<div class="card-footer">
-				<button class="fetch-recent-btn" type="button">
-					Fetch Recent
+				<button class="fetch-recent-btn" type="button" data-icon="refresh">
+					Check Now
 				</button>
 				<a href="${detailUrl}" class="detail-link" target="_blank" rel="noopener">
 					View Details →

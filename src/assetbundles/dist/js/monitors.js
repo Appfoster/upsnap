@@ -435,12 +435,17 @@ Craft.Upsnap.Monitor = {
 					Craft.cp.displayNotice(
 						data.message || "Monitor saved successfully."
 					);
+
 					// 🔔 Notify monitors-list.js
-					this.pushMonitorChange({
-						monitorId:
-							data.data?.monitorId || payload.monitorId || null,
-						action: payload.monitorId ? "updated" : "created",
-					});
+					const isCreate = !payload.monitorId;
+					const shouldQueue = isCreate || this.hasCriticalChanges(payload);
+
+					if (shouldQueue) {
+						this.pushMonitorChange({
+							monitorId: data.data?.id || null,
+							action: isCreate ? "created" : "updated",
+						});
+					}
 
 					window.location.href = Craft.getCpUrl(`upsnap/settings`);
 				} else {
@@ -472,6 +477,27 @@ Craft.Upsnap.Monitor = {
 		});
 		sessionStorage.setItem(key, JSON.stringify(queue));
 	},
+	// checks if there are critical changes between original and updated monitor data
+	hasCriticalChanges(payload) {
+		const original = window.CraftPageData.monitorData;
+
+		// New monitor → always queue
+		if (!payload.monitorId || !original) {
+			return true;
+		}
+
+		const originalEnabled = Boolean(original.enabled);
+		const updatedEnabled = Boolean(payload.is_enabled);
+
+		const originalUrl = (original.url || "").trim();
+		const updatedUrl = (payload.config?.meta?.url || "").trim();
+
+		return (
+			originalEnabled !== updatedEnabled ||
+			originalUrl !== updatedUrl
+		);
+	},
+
 	// --------------------------
 	// Build Complete Payload
 	// --------------------------

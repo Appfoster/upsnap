@@ -120,6 +120,7 @@ class MonitorsController extends Controller
             return $this->asJson([
                 'success' => true,
                 'message' => $monitorId ? 'Monitor updated successfully.' : 'Monitor created successfully.',
+                'data' => $response['data']['monitor'] ?? [],
             ]);
         } catch (\Throwable $e) {
             Craft::error("Monitor save failed: {$e->getMessage()}", __METHOD__);
