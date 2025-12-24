@@ -634,8 +634,6 @@
 
 		// Mark as completed
 		Polling.completedMonitors.add(monitorId);
-
-		console.log("[Upsnap] Stop monitor polling:", monitorId);
 	}
 
 
