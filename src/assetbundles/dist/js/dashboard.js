@@ -1,4 +1,8 @@
 Craft.UpsnapDashboard = {
+	// response time filter state
+	currentResponseTimeFilter: "last_24_hours",
+	responseChartInstance: null,
+
 	init() {
 		this.refreshBtn = document.getElementById("refresh-btn");
 
@@ -128,11 +132,7 @@ Craft.UpsnapDashboard = {
 					cardId,
 					title: response?.title,
 					status: getStatus ? getStatus(data) : data.status,
-					message: getMessage
-						? getMessage(data)
-						: data.status === "ok"
-						? data.message
-						: data.error,
+					message: data.message === "ok" ? data.message : (data.error ? data.error : data.message),
 					checkedAt: data.checkedAt,
 					detailUrl: response?.url,
 					action,
@@ -168,8 +168,6 @@ Craft.UpsnapDashboard = {
 			    action: 'upsnap/health-check/broken-links',
 			    cardTitle: "Broken Links",
 			    cardId: 'broken-links-card',
-			    getMessage: (data) =>
-			        data.status === 'false' ? data.error : data.message
 			}),
 			this.fetchAndRenderCard({
 			    action: 'upsnap/health-check/domain-check',
@@ -535,7 +533,7 @@ Craft.UpsnapDashboard = {
         if (!card) return;
 
 		if (!data || !data?.response_time?.chart_data || data?.response_time?.chart_data.length === 0) {
-			this.renderNoDataCard(card, "Response Time");
+			card.classList.add("hidden");
 			return;
 		}
 
@@ -558,9 +556,19 @@ Craft.UpsnapDashboard = {
 
         card.classList.remove("skeleton");
         card.innerHTML = `
-            <div class="card-header">Response Time</div>
+			<div class="card-header response-card-header">
+				<span>Response Time</span>
+				<select id="responseTimeFilter" class="response-time-filter">
+					<option value="last_hour" ${this.currentResponseTimeFilter === "last_hour" ? "selected" : ""}>Last hour</option>
+					<option value="last_24_hours" ${this.currentResponseTimeFilter === "last_24_hours" ? "selected" : ""}>Last 24 hours</option>
+					<option value="last_7_days" ${this.currentResponseTimeFilter === "last_7_days" ? "selected" : ""}>Last 7 days</option>
+					<option value="last_30_days" ${this.currentResponseTimeFilter === "last_30_days" ? "selected" : ""}>Last 30 days</option>
+					<option value="last_90_days" ${this.currentResponseTimeFilter === "last_90_days" ? "selected" : ""}>Last 90 days</option>
+				</select>
+			</div>
 
             <div class="response-chart-container">
+				<div class="chart-loader hidden" id="responseChartLoader"></div>
                 <canvas id="responseChart"></canvas>
             </div>
 
@@ -579,6 +587,40 @@ Craft.UpsnapDashboard = {
                 </div>
             </div>
         `;
+
+		// Attach filter change listener AFTER DOM is rendered
+		const filterEl = document.getElementById("responseTimeFilter");
+
+		if (filterEl) {
+			filterEl.addEventListener("change", async (e) => {
+				const filter = e.target.value;
+				this.currentResponseTimeFilter = filter;
+				const range = this.getResponseTimeRange(filter);
+				this.showResponseChartLoader();
+				try {
+					const res = await fetch(
+						`/admin/upsnap/monitors/detail/${data?.id}?` +
+						new URLSearchParams(range),
+						{
+							headers: {
+								"X-Requested-With": "XMLHttpRequest",
+							},
+						}
+					);
+
+					const json = await res.json();
+
+					if (json.success && json.data?.monitor) {
+						// Re-render ONLY the response time card
+						this.renderResponseTimeCard(json.data.monitor);
+					}
+				} catch (err) {
+					console.error("Failed to refresh response time chart", err);
+				} finally {
+					this.hideResponseChartLoader();
+				}
+			});
+		}
 
         // Build the Chart.js area chart
         const ctx = document.getElementById("responseChart").getContext("2d");
@@ -698,6 +740,35 @@ Craft.UpsnapDashboard = {
         this.renderResponseTimeCard(data)
 
 	},
+
+	getResponseTimeRange(filter) {
+		const now = Math.floor(Date.now() / 1000);
+
+		const map = {
+			last_hour: 3600,
+			last_24_hours: 86400,
+			last_7_days: 604800,
+			last_30_days: 2592000,
+			last_90_days: 7776000,
+		};
+
+		return {
+			response_time_start: now - map[filter],
+			response_time_end: now,
+			'response_time'  : 'true',
+		};
+	},
+
+	showResponseChartLoader() {
+		const loader = document.getElementById("responseChartLoader");
+		if (loader) loader.classList.remove("hidden");
+	},
+
+	hideResponseChartLoader() {
+		const loader = document.getElementById("responseChartLoader");
+		if (loader) loader.classList.add("hidden");
+	},
+
 };
 
 // ---------------------------

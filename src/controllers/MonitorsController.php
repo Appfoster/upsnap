@@ -400,6 +400,7 @@ class MonitorsController extends Controller
             'intervalOptions' => $service->formatOptions(Constants::MONITOR_INTERVALS, true, $userPlanMonitoringInterval),
             'strategyOptions' => $service->formatOptions(Constants::LIGHTHOUSE_STRATEGIES),
             'expiryDayOptions' => $service->formatOptions(Constants::EXPIRY_DAYS),
+            'userDetails' => $userDetails,
         ];
 
         if ($monitorId) {
@@ -428,6 +429,12 @@ class MonitorsController extends Controller
         $this->requireCpRequest();
 
         $service = Upsnap::getInstance()->settingsService;
+
+        $userDetails = null;
+        if ($service->getApiKey()) {
+            $userDetails = $service->getUserDetails();
+        }
+
         $variables = [
             'subscriptionTypes' => Constants::SUBSCRIPTION_TYPES,
             'apiTokenStatuses' => Constants::API_KEY_STATUS,
@@ -436,6 +443,7 @@ class MonitorsController extends Controller
             'expiryDayOptions' => $service->formatOptions(Constants::EXPIRY_DAYS),
             'mode' => 'edit',
             'title' => 'Edit Monitor',
+            'userDetails' => $userDetails,
         ];
 
         // Fetch details from microservice
@@ -475,14 +483,25 @@ class MonitorsController extends Controller
 
             // Health checks
             'brokenLinksEnabled' => $services['broken_links']['enabled'] ?? false,
+            'brokenLinksMonitoringInterval' => $services['broken_links']['monitor_interval'] ?? "300",
+
             'mixedContentEnabled' => $services['mixed_content']['enabled'] ?? false,
+            'mixedContentMonitoringInterval' => $services['mixed_content']['monitor_interval'] ?? "300",
 
             'lighthouseEnabled' => $services['lighthouse']['enabled'] ?? false,
-            'lighthouseMonitoringInterval' => $services['lighthouse']['monitor_interval'] ?? "1m",
+            'lighthouseMonitoringInterval' => $services['lighthouse']['monitor_interval'] ?? "300",
             'lighthouseStrategy' => $services['lighthouse']['strategy'] ?? 'desktop',
 
             'reachabilityEnabled' => $services['uptime']['enabled'] ?? false,
-            'reachabilityMonitoringInterval' => $services['uptime']['monitor_interval'] ?? "1m",
+            'reachabilityMonitoringInterval' => $services['uptime']['monitor_interval'] ?? "300",
+
+            'domainEnabled' => $services['domain']['enabled'] ?? false,
+            'domainMonitoringInterval' => $services['domain']['monitor_interval'] ?? "300",
+            'domainDaysBeforeExpiryAlert' => $services['domain']['notify_days_before_expiry'] ?? 7,
+
+            'securityCertificatesEnabled' => $services['ssl']['enabled'] ?? false,
+            'securityCertificatesMonitoringInterval' => $services['ssl']['monitor_interval'] ?? "300",
+            'sslDaysBeforeExpiryAlert' => $services['ssl']['notify_days_before_expiry'] ?? 7,
 
             // Channels
             'channelIds' => $m['channel_ids'] ?? [],
@@ -492,32 +511,35 @@ class MonitorsController extends Controller
 
     public function actionDetail(string $monitorId): Response
     {
-        $this->requireCpRequest();
-        $variables = null;
+        $request = Craft::$app->getRequest();
 
-        // Fetch details from microservice
+        // Collect all incoming params (GET, POST, JSON body)
+        $params = array_merge(
+            $request->getQueryParams(),
+            $request->getBodyParams()
+        );
+
         try {
             $endpoint = Constants::MICROSERVICE_ENDPOINTS['monitors']['view'] . '/' . $monitorId;
 
-            $response = Upsnap::$plugin->apiService->get($endpoint);
+            // Pass all params to the service
+            $response = Upsnap::$plugin->apiService->get($endpoint, $params);
 
             if (!isset($response['status']) || $response['status'] !== 'success') {
-                throw new \Exception("Unable to fetch monitor details.");
+                throw new \Exception('Unable to fetch monitor details.');
             }
 
-            $monitor = $response['data']['monitor'];
-
-            $variables['monitor'] = $monitor;
+            return $this->asJson([
+                'success' => true,
+                'message' => 'Monitor details fetched successfully.',
+                'data' => [
+                    'monitor' => $response['data']['monitor'] ?? null,
+                ],
+            ]);
 
         } catch (\Throwable $e) {
             Craft::error("Monitor fetch failed: {$e->getMessage()}", __METHOD__);
-            throw new NotFoundHttpException("Monitor not found");
+            throw new NotFoundHttpException('Monitor not found');
         }
-
-        return $this->asJson([
-            'success' => true,
-            'message' => 'Monitor details fetched successfully.',
-            'data' => $variables,
-        ]);
     }
 }

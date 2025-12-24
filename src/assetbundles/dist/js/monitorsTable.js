@@ -5,6 +5,13 @@
 		return;
 	}
 
+	const Polling = {
+		generalInterval: null,
+		monitorIntervals: new Map(),
+		completedMonitors: new Set(),
+	};
+
+
 	const endpointSelector = "#upsnap-monitors-wrap";
 	const tbodySelector = "#upsnap-monitors-tbody";
 	const selectAllSelector = "#upsnap-select-all";
@@ -582,11 +589,91 @@
 		});
 	}
 
+	function startGeneralPolling() {
+		stopGeneralPolling();
+
+		Polling.generalInterval = setInterval(() => {
+			loadAndRender();
+		}, 5 * 60 * 1000); // 5 minutes
+	}
+
+	function stopGeneralPolling() {
+		if (Polling.generalInterval) {
+			clearInterval(Polling.generalInterval);
+			Polling.generalInterval = null;
+		}
+	}
+
+	function startMonitorSpecificPolling(monitorId) {
+		if (!monitorId) return;
+
+		// Already completed
+		if (Polling.completedMonitors.has(monitorId)) {
+			return;
+		}
+
+		// Already running
+		if (Polling.monitorIntervals.has(monitorId)) return;
+
+		const intervalId = setInterval(async () => {
+			await loadAndRender();
+
+			stopMonitorSpecificPolling(monitorId);
+		}, 10 * 1000);
+
+		Polling.monitorIntervals.set(monitorId, intervalId);
+	}
+
+
+	function stopMonitorSpecificPolling(monitorId) {
+		const intervalId = Polling.monitorIntervals.get(monitorId);
+		if (!intervalId) return;
+
+		clearInterval(intervalId);
+		Polling.monitorIntervals.delete(monitorId);
+
+		// Mark as completed
+		Polling.completedMonitors.add(monitorId);
+
+		console.log("[Upsnap] Stop monitor polling:", monitorId);
+	}
+
+
+	function consumeMonitorChangeQueue() {
+		const key = "upsnap:monitor-changes";
+		const raw = sessionStorage.getItem(key);
+		if (!raw) return;
+
+		let queue = [];
+		try {
+			queue = JSON.parse(raw) || [];
+		} catch (e) {
+			queue = [];
+		}
+
+		sessionStorage.removeItem(key);
+
+		if (!queue.length) return;
+
+		loadAndRender();
+
+		queue.forEach(({ monitorId }) => {
+			if (
+				monitorId &&
+				!Polling.completedMonitors.has(monitorId)
+			) {
+				startMonitorSpecificPolling(monitorId);
+			}
+		});
+	}
+
 	// Init
 	function init() {
 		document.addEventListener("DOMContentLoaded", () => {
 			initBulkMenu();
 			loadAndRender();
+			startGeneralPolling();
+			consumeMonitorChangeQueue();
 		});
 	}
 	init();

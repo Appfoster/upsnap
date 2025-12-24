@@ -1,5 +1,8 @@
 {% extends '_layouts/cp' %}
 {% import '_includes/forms' as forms %}
+{% set crumbs = [
+    { label: 'Dashboard', url: url('upsnap') },
+] %}
 
 {% block actionButton %}
 	<div class="buttons">

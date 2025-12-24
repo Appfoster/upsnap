@@ -141,8 +141,8 @@ class HealthCheckController extends BaseController
             try {
                 $paramName = Constants::SUBNAV_ITEM_DOMAIN_CHECK['apiLabel'];
                 $response = $this->service->getHealthcheck($url, [$paramName], $forceFetch);
-                if (isset($response['result']['details'][$paramName]['meta']['errors'])) {
-                    $errors = $response['result']['details'][$paramName]['meta']['errors'][0];
+                if (isset($response['result']['details'][$paramName]['error'])) {
+                    $errors = $response['result']['details'][$paramName]['error'];
                     throw new \Exception($errors);
                 }
     

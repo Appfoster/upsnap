@@ -797,13 +797,16 @@
 .healthcheck-row-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 7rem;
+  gap: 2rem;
   margin-bottom: 1.5rem;
 }
 
 .healthcheck-section {
-  display: flex;
-  flex-direction: column;
+    display: flex;
+    flex-direction: column;
+    border-width: 1px;
+    padding: 1rem;
+    border-radius: .75rem;
 }
 
 .nested-settings-inline {
@@ -1217,7 +1220,9 @@
     background: #e5e7eb;
     color: #1f2937;
 }
-
+.card-footer-incidents {
+    text-align: right;
+}
 /* Responsive Design */
 @media (max-width: 1024px) {
     .integrations-container {
@@ -1310,4 +1315,29 @@
     display: flex;
     justify-content: flex-end;
     margin-top: 24px;
+}
+
+/* Slider styles */
+.upsnap-range {
+    width: 100%;
+    margin-top: 10px;
+}
+
+.upsnap-range-labels {
+    position: relative;
+    height: 20px;
+    margin-top: 6px;
+}
+
+.upsnap-range-tick {
+    position: absolute;
+    font-size: 11px;
+    color: #6b7280;
+    transform: translateX(-50%);
+    white-space: nowrap;
+}
+
+.upsnap-range-tick.disabled {
+    color: #d1d5db;
+    cursor: not-allowed;
 }
