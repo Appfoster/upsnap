@@ -5,6 +5,16 @@
 		return;
 	}
 
+	const Polling = {
+		generalInterval: null,
+		monitorIntervals: new Map(),
+		completedMonitors: new Set(),
+		monitorAttempts: new Map(),
+		lastKnownStatus: new Map(),
+		activeMonitorIds: new Set()
+	};
+
+
 	const endpointSelector = "#upsnap-monitors-wrap";
 	const tbodySelector = "#upsnap-monitors-tbody";
 	const selectAllSelector = "#upsnap-select-all";
@@ -25,6 +35,8 @@
 		const url = monitor.config?.meta?.url || "";
 		const name = monitor.name || url || "Unnamed Monitor";
 		const isSelected = primaryMonitorId && monitor?.id === primaryMonitorId;
+		const isPollingRelevant = Polling.activeMonitorIds.has(monitor.id);
+		const recentlyChecked = isPollingRelevant && isRecentlyChecked(monitor.last_check_at);
 
 		// Determine status
 		let statusLabel = "";
@@ -33,17 +45,19 @@
 		if (!monitor.is_enabled) {
 			statusLabel = "Paused";
 			statusClass = "pill--gray";
-		} else {
-			if (!monitor.last_status || monitor.last_status === null) {
-				statusLabel = "Checking";
-				statusClass = "pill--yellow";
-			} else if (monitor.last_status === "up") {
-				statusLabel = "Up";
-				statusClass = "pill--green";
-			} else if (monitor.last_status === "down") {
-				statusLabel = "Down";
-				statusClass = "pill--red";
-			}
+		} else if (recentlyChecked) {
+			// 👇 override only for polling monitors
+			statusLabel = "Checking";
+			statusClass = "pill--yellow";
+		} else if (!monitor.last_status) {
+			statusLabel = "Checking";
+			statusClass = "pill--yellow";
+		} else if (monitor.last_status === "up") {
+			statusLabel = "Up";
+			statusClass = "pill--green";
+		} else if (monitor.last_status === "down") {
+			statusLabel = "Down";
+			statusClass = "pill--red";
 		}
 
 		const tr = document.createElement("tr");
@@ -260,7 +274,7 @@
 	}
 
 	// Load monitors and render
-	async function loadAndRender() {
+	async function loadAndRender(showLoading = false) {
 		const apiKey = window.Upsnap?.settings?.apiKey;
 		const wrap = document.querySelector(endpointSelector);
 		const tbody = document.querySelector(tbodySelector);
@@ -277,7 +291,9 @@
 		const maxMonitors = userdetails?.plan_limits?.max_monitors || 0;
 
 		// show loading row
+		if (showLoading)
 		tbody.innerHTML = `<tr><td colspan="5">Loading monitors…</td></tr>`;
+		// return
 
 		try {
 			const monitors = [];
@@ -582,11 +598,170 @@
 		});
 	}
 
+	async function fetchSingleMonitor(monitorId) {
+		const endpoint = `/admin/upsnap/monitors/detail/${monitorId}?`;
+
+		const response = await fetch(endpoint, {
+			headers: { "X-CSRF-Token": Craft.csrfTokenValue },
+		});
+
+		const json = await response.json();
+		if (!json.success) return null;
+
+		return json.data.monitor;
+	}
+
+	function startGeneralPolling() {
+		stopGeneralPolling();
+
+		Polling.generalInterval = setInterval(() => {
+			loadAndRender();
+		}, 500 * 1000); // 5 minutes
+	}
+
+	function stopGeneralPolling() {
+		if (Polling.generalInterval) {
+			clearInterval(Polling.generalInterval);
+			Polling.generalInterval = null;
+		}
+	}
+	const MAX_ATTEMPTS = 5;
+	const POLL_INTERVAL = 30 * 1000;
+
+	function startMonitorSpecificPolling(monitorId) {
+		if (!monitorId) return;
+
+		if (Polling.completedMonitors.has(monitorId)) return;
+		if (Polling.monitorIntervals.has(monitorId)) return;
+
+		Polling.monitorAttempts.set(monitorId, 0);
+		Polling.activeMonitorIds.add(monitorId);
+
+		const intervalId = setInterval(async () => {
+			const attempts =
+				(Polling.monitorAttempts.get(monitorId) || 0) + 1;
+
+			Polling.monitorAttempts.set(monitorId, attempts);
+
+			try {
+				const updatedMonitor = await fetchSingleMonitor(monitorId);
+				if (!updatedMonitor) return;
+
+				const previousStatus =
+					Polling.lastKnownStatus.get(monitorId);
+
+				const currentStatus = updatedMonitor.last_status;
+
+				// First run → store baseline
+				if (previousStatus === undefined) {
+					Polling.lastKnownStatus.set(monitorId, currentStatus);
+				}
+
+				// ✅ Status changed → stop immediately
+				if (
+					previousStatus !== undefined &&
+					currentStatus !== previousStatus
+				) {
+					stopMonitorSpecificPolling(monitorId);
+					updateMonitorRow(updatedMonitor);
+					return;
+				}
+
+				// Update DOM without loader
+				updateMonitorRow(updatedMonitor);
+
+				// ❌ Max attempts reached
+				if (attempts >= MAX_ATTEMPTS) {
+					stopMonitorSpecificPolling(monitorId);
+				}
+			} catch (e) {
+				console.error("Monitor polling failed", e);
+				stopMonitorSpecificPolling(monitorId);
+			}
+		}, POLL_INTERVAL);
+
+		Polling.monitorIntervals.set(monitorId, intervalId);
+	}
+
+
+	function isRecentlyChecked(lastCheckAt, thresholdMs = 2 * 60 * 1000) {
+		if (!lastCheckAt) return false;
+
+		const lastCheckTime = new Date(lastCheckAt).getTime();
+		if (isNaN(lastCheckTime)) return false;
+
+		return Date.now() - lastCheckTime < thresholdMs;
+	}
+
+	function stopMonitorSpecificPolling(monitorId) {
+		const intervalId = Polling.monitorIntervals.get(monitorId);
+		if (!intervalId) return;
+
+		clearInterval(intervalId);
+
+		Polling.monitorIntervals.delete(monitorId);
+		Polling.monitorAttempts.delete(monitorId);
+		Polling.lastKnownStatus.delete(monitorId);
+		Polling.activeMonitorIds.delete(monitorId);
+
+		Polling.completedMonitors.add(monitorId);
+	}
+
+	function updateMonitorRow(monitor) {
+		const row = document.querySelector(
+			`tr[data-id="${monitor.id}"]`
+		);
+
+		if (!row) return;
+
+		const newRow = buildRow(monitor);
+		row.replaceWith(newRow);
+
+		// Re-wire row events
+		newRow
+			.querySelector(".upsnap-row-checkbox")
+			?.addEventListener("change", updateBulkMenuState);
+
+		wireMenuButtons(newRow);
+	}
+
+
+	function consumeMonitorChangeQueue() {
+		const key = "upsnap:monitor-changes";
+		const raw = sessionStorage.getItem(key);
+		if (!raw) return;
+
+		let queue = [];
+		try {
+			queue = JSON.parse(raw) || [];
+		} catch (e) {
+			queue = [];
+		}
+
+		sessionStorage.removeItem(key);
+
+		if (!queue.length) return;
+
+		loadAndRender();
+
+		queue.forEach(({ monitorId }) => {
+			if (
+				monitorId &&
+				!Polling.completedMonitors.has(monitorId)
+			) {
+				Polling.activeMonitorIds.add(monitorId);
+				startMonitorSpecificPolling(monitorId);
+			}
+		});
+	}
+
 	// Init
 	function init() {
 		document.addEventListener("DOMContentLoaded", () => {
 			initBulkMenu();
-			loadAndRender();
+			loadAndRender(true);
+			startGeneralPolling();
+			consumeMonitorChangeQueue();
 		});
 	}
 	init();

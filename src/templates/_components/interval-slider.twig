@@ -1,0 +1,41 @@
+<div class="field" style="width: 200%;">
+    <div class="heading">
+        <label>Monitoring Interval</label>
+    </div>
+
+    <div class="instructions">
+        Your monitor will be checked every
+        <strong>
+            <span id="{{ id }}IntervalLabel"></span>
+        </strong>
+    </div>
+
+    <input
+        type="range"
+        class="upsnap-range"
+        min="0"
+        max="100"
+        step="1"
+        data-interval-slider
+        data-target-input="{{ id }}MonitoringInterval"
+        data-label="{{ id }}IntervalLabel"
+    />
+
+    <input
+        type="hidden"
+        id="{{ id }}MonitoringInterval"
+        name="{{ name }}"
+        value="{{ value }}"
+    />
+
+    <div class="upsnap-range-labels">
+        {% for p in INTERVAL_PARTITIONS %}
+            <span
+                class="upsnap-range-tick {% if p.seconds < MIN_MONITOR_INTERVAL_SECONDS %}disabled{% endif %}"
+                data-seconds="{{ p.seconds }}"
+            >
+                {{ p.label }}
+            </span>
+        {% endfor %}
+    </div>
+</div>
