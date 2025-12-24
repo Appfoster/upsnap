@@ -45,7 +45,7 @@ Craft.Upsnap.Monitor = {
 
 		const MIN_SECONDS = 30;
 		const MAX_SECONDS = 86400;
-		const PLAN_MIN_SECONDS = 300; // static for now
+		const PLAN_MIN_SECONDS = window.CraftPageData.minMonitorIntervalSeconds || 300;
 
 		const logMin = Math.log(MIN_SECONDS);
 		const logMax = Math.log(MAX_SECONDS);

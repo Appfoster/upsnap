@@ -797,13 +797,16 @@
 .healthcheck-row-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 7rem;
+  gap: 2rem;
   margin-bottom: 1.5rem;
 }
 
 .healthcheck-section {
-  display: flex;
-  flex-direction: column;
+    display: flex;
+    flex-direction: column;
+    border-width: 1px;
+    padding: 1rem;
+    border-radius: .75rem;
 }
 
 .nested-settings-inline {

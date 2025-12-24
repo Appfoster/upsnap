@@ -9,7 +9,6 @@
 ] %}
 
 
-
 {% set INTERVAL_PARTITIONS = [
     { label: '30s', seconds: 30 },
     { label: '1m', seconds: 60 },
@@ -25,7 +24,7 @@
     and userDetails.plan_limits is defined
     and userDetails.plan_limits.min_monitoring_interval is defined
     and userDetails.plan_limits.min_monitoring_interval > 0
-        ? userDetails.plan_limits.min_monitoring_interval
+        ? userDetails.plan_limits.min_monitoring_interval * 60
         : 300
 %}
 
@@ -120,6 +119,24 @@
 					<div class="healthcheck-row-grid">
 						<div class="healthcheck-section">
 							{{ forms.lightswitchField({
+                                label: "Reachability Check"|t('upsnap'),
+                                instructions: "Monitor if the site is reachable"|t('upsnap'),
+                                id: 'reachabilityEnabled',
+                                name: 'reachabilityEnabled',
+                                on: monitor ? (monitor.reachabilityEnabled ?? true) : true,
+                            }) }}
+
+							<div class="nested-settings-inline" id="reachability-settings">
+								{% include 'upsnap/_components/interval-slider.twig' with {
+                                    id: 'reachability',
+                                    name: 'reachabilityMonitoringInterval',
+                                    value: monitor ? (monitor.reachabilityMonitoringInterval ?? 300) : 300
+                                } %}
+							</div>
+						</div>
+
+						<div class="healthcheck-section">
+							{{ forms.lightswitchField({
                                 label: "Broken Links Check"|t('upsnap'),
                                 instructions: "Monitor for broken links on your site"|t('upsnap'),
                                 id: 'brokenLinksEnabled',
@@ -128,14 +145,17 @@
                             }) }}
 
 							<div class="nested-settings-inline" id="brokenLinks-settings">
-                                {% include 'upsnap/_components/interval-slider.twig' with {
+								{% include 'upsnap/_components/interval-slider.twig' with {
                                     id: 'brokenLinks',
                                     name: 'brokenLinksMonitoringInterval',
                                     value: monitor ? (monitor.brokenLinksMonitoringInterval ?? 300) : 300
                                 } %}
 							</div>
 						</div>
+					</div>
 
+					{# ------------ ROW 2 ------------ #}
+					<div class="healthcheck-row-grid">
 						<div class="healthcheck-section">
 							{{ forms.lightswitchField({
                                 label: "Mixed Content Check"|t('upsnap'),
@@ -145,7 +165,7 @@
                                 on: monitor ? (monitor.mixedContentEnabled ?? true) : true,
                             }) }}
 							<div class="nested-settings-inline" id="mixedContent-settings" {% if not (monitor ? (monitor.mixedContentEnabled ?? true) : true) %} style="display:none;" {% endif %}>
-                                {% include 'upsnap/_components/interval-slider.twig' with {
+								{% include 'upsnap/_components/interval-slider.twig' with {
                                     id: 'mixedContent',
                                     name: 'mixedContentMonitoringInterval',
                                     value: monitor ? (monitor.mixedContentMonitoringInterval ?? 300) : 300
@@ -153,52 +173,29 @@
 							</div>
 
 						</div>
-					</div>
 
-					{# ------------ ROW 2 ------------ #}
-					<div class="healthcheck-row-grid">
 						<div class="healthcheck-section">
 							{{ forms.lightswitchField({
-                                label: "Lighthouse Performance Check"|t('upsnap'),
-                                instructions: "Monitor site performance"|t('upsnap'),
-                                id: 'lighthouseEnabled',
-                                name: 'lighthouseEnabled',
-                                on: monitor ? (monitor.lighthouseEnabled ?? false) : true,
+                                label: "Domain Expiry Check"|t('upsnap'),
+                                id: 'domainEnabled',
+                                name: 'domainEnabled',
+                                on: monitor ? (monitor.domainEnabled ?? true) : true,
                             }) }}
 
-							<div class="nested-settings-inline" id="lighthouse-settings">
-
-                                {% include 'upsnap/_components/interval-slider.twig' with {
-                                    id: 'lighthouse',
-                                    name: 'lighthouseMonitoringInterval',
-                                    value: monitor ? (monitor.lighthouseMonitoringInterval ?? 300) : 300
+							<div class="nested-settings-inline" id="domain-settings">
+								{% include 'upsnap/_components/interval-slider.twig' with {
+                                    id: 'domain',
+                                    name: 'domainMonitoringInterval',
+                                    value: monitor ? (monitor.domainMonitoringInterval ?? 300) : 300
                                 } %}
-
 								{{ forms.selectField({
-                                    label: "Strategy Type"|t('upsnap'),
-                                    id: 'lighthouseStrategy',
-                                    name: 'lighthouseStrategy',
-                                    options: strategyOptions,
-                                    value: monitor ? (monitor.lighthouseStrategy ?? 'desktop') : 'desktop',
+                                    label: "Days Before Expiry"|t('upsnap'),
+                                    id: 'domainExpiryDays',
+                                    name: 'domainDaysBeforeExpiryAlert',
+                                    options: expiryDayOptions,
+                                    value: monitor ? (monitor.domainDaysBeforeExpiryAlert ?? "30") : "30"
                                 }) }}
-							</div>
-						</div>
 
-						<div class="healthcheck-section">
-							{{ forms.lightswitchField({
-                                label: "Reachability Check"|t('upsnap'),
-                                instructions: "Monitor if the site is reachable"|t('upsnap'),
-                                id: 'reachabilityEnabled',
-                                name: 'reachabilityEnabled',
-                                on: monitor ? (monitor.reachabilityEnabled ?? true) : true,
-                            }) }}
-
-							<div class="nested-settings-inline" id="reachability-settings">
-                                {% include 'upsnap/_components/interval-slider.twig' with {
-                                    id: 'reachability',
-                                    name: 'reachabilityMonitoringInterval',
-                                    value: monitor ? (monitor.reachabilityMonitoringInterval ?? 300) : 300
-                                } %}
 							</div>
 						</div>
 					</div>
@@ -214,7 +211,7 @@
                             }) }}
 
 							<div class="nested-settings-inline" id="ssl-settings">
-                                {% include 'upsnap/_components/interval-slider.twig' with {
+								{% include 'upsnap/_components/interval-slider.twig' with {
                                     id: 'securityCertificates',
                                     name: 'securityCertificatesMonitoringInterval',
                                     value: monitor ? (monitor.securityCertificatesMonitoringInterval ?? 300) : 300
@@ -232,26 +229,28 @@
 
 						<div class="healthcheck-section">
 							{{ forms.lightswitchField({
-                                label: "Domain Expiry Check"|t('upsnap'),
-                                id: 'domainEnabled',
-                                name: 'domainEnabled',
-                                on: monitor ? (monitor.domainEnabled ?? true) : true,
+                                label: "Lighthouse Performance Check"|t('upsnap'),
+                                instructions: "Monitor site performance"|t('upsnap'),
+                                id: 'lighthouseEnabled',
+                                name: 'lighthouseEnabled',
+                                on: monitor ? (monitor.lighthouseEnabled ?? false) : true,
                             }) }}
 
-							<div class="nested-settings-inline" id="domain-settings">
-                                {% include 'upsnap/_components/interval-slider.twig' with {
-                                    id: 'domain',
-                                    name: 'domainMonitoringInterval',
-                                    value: monitor ? (monitor.domainMonitoringInterval ?? 300) : 300
-                                } %}
-								{{ forms.selectField({
-                                    label: "Days Before Expiry"|t('upsnap'),
-                                    id: 'domainExpiryDays',
-                                    name: 'domainDaysBeforeExpiryAlert',
-                                    options: expiryDayOptions,
-                                    value: monitor ? (monitor.domainDaysBeforeExpiryAlert ?? "30") : "30"
-                                }) }}
+							<div class="nested-settings-inline" id="lighthouse-settings">
 
+								{% include 'upsnap/_components/interval-slider.twig' with {
+                                    id: 'lighthouse',
+                                    name: 'lighthouseMonitoringInterval',
+                                    value: monitor ? (monitor.lighthouseMonitoringInterval ?? 300) : 300
+                                } %}
+
+								{{ forms.selectField({
+                                    label: "Strategy Type"|t('upsnap'),
+                                    id: 'lighthouseStrategy',
+                                    name: 'lighthouseStrategy',
+                                    options: strategyOptions,
+                                    value: monitor ? (monitor.lighthouseStrategy ?? 'desktop') : 'desktop',
+                                }) }}
 							</div>
 						</div>
 					</div>
@@ -267,9 +266,10 @@
 
 	<script>
 		window.preSelectedChannelIds = {{ monitor ? monitor.channelIds|json_encode|raw : '[]' }};
-            window.CraftPageData = {
-            title: {{ title|json_encode|raw }},
-            monitorForm: true
-        };
+window.CraftPageData = {
+title: {{ title|json_encode|raw }},
+monitorForm: true,
+minMonitorIntervalSeconds: {{ MIN_MONITOR_INTERVAL_SECONDS }}
+};
 	</script>
 {% endblock %}

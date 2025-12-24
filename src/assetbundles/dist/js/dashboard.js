@@ -46,7 +46,7 @@ Craft.UpsnapDashboard = {
 			<div class="card-body">
 				<p class="status-message">
 					<span class="status-icon ${statusClass}">${icon}</span>
-					${message ?? "Something Went Wrongs!"}
+					${message ?? "Something Went Wrong!"}
 				</p>
 				<p><strong>Last checked at:</strong> ${formattedCheckedAt}</p>
 			</div>
@@ -113,7 +113,6 @@ Craft.UpsnapDashboard = {
 			})
 			.then((response) => {
 				response = response?.data;
-				console.log("fetched data for", cardTitle, response);
 				const data = response?.data;
 
 				// cache reachability response for paused monitor logic
@@ -133,11 +132,7 @@ Craft.UpsnapDashboard = {
 					cardId,
 					title: response?.title,
 					status: getStatus ? getStatus(data) : data.status,
-					message: getMessage
-						? getMessage(data)
-						: data.status === "ok"
-						? data.message
-						: data.error,
+					message: data.message === "ok" ? data.message : (data.error ? data.error : data.message),
 					checkedAt: data.checkedAt,
 					detailUrl: response?.url,
 					action,
