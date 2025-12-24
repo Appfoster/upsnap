@@ -368,11 +368,38 @@
 
 			switch (channel.channel_type) {
 				case "email":
-					return config.recipients?.to || "No recipient configured";
-				case "google_chat":
+					return config.recipients?.to || "No email configured";
+
 				case "discord":
+					if (config.webhook_url) {
+						try {
+							const url = new URL(config.webhook_url);
+							const pathParts = url.pathname.split("/");
+							// Expected: /api/webhooks/{id}/{name}
+							if (pathParts.length >= 4 && pathParts[3]) {
+								return `Discord Webhook (${pathParts[3]})`;
+							}
+						} catch (e) {
+							return "Discord Webhook";
+						}
+					}
+					return "No webhook configured";
+
+				case "google_chat":
+					if (config.webhook_url) {
+						try {
+							const url = new URL(config.webhook_url);
+							const spaceMatch = url.pathname.match(/\/spaces\/([^\/]+)/);
+							if (spaceMatch && spaceMatch[1]) {
+								return `Google Chat Space (${spaceMatch[1]})`;
+							}
+						} catch (e) {
+							return "Google Chat Webhook";
+						}
+					}
+					return "No webhook configured";
 				default:
-					return "Configuration available";
+					return "Configured";
 			}
 		}
 

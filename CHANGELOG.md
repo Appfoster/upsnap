@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.8] - 2025-12-24
+
+### Added
+- Response time interval selector in the plugin response time chart.
+- Display of Space ID for Google Chat and Discord integrations.
+- Breadcrumbs added to pages.
+
+### Updated
+- Monitoring interval controls replaced with sliders in the monitor add/edit forms to support custom values and align with WebApp behavior, respecting subscription plan limits.
+- Improved URL validation to accept only valid URLs.
+- Enhanced polling mechanism for monitors, including periodic general polling and targeted polling for recently added or updated monitors.
+- Forced status and last check updates for paused monitors using the Reachability API.
+- Fetch recent button added on health check cards to fetch the latest monitoring data.
+- Time filter dropdown added in the response time chart on dashboard.
+
+### Fixed
+- Improved error handling to display accurate backend error messages instead of generic failures.
+- Correct status display for paused monitors across statistics and dashboard cards.
+
+### Chore
+- Minor bug fixes and UI cleanups.
+
 ## [1.0.7] - 2025-12-19
 
 ### Added
@@ -119,7 +141,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Asset minification and optimization
 - Background processing for monitoring tasks
 
-[Unreleased]: https://github.com/Appfoster/upsnap/compare/1.0.7...HEAD
+[Unreleased]: https://github.com/Appfoster/upsnap/compare/1.0.8...HEAD
+[1.0.8]: https://github.com/Appfoster/upsnap/releases/tag/1.0.8
 [1.0.7]: https://github.com/Appfoster/upsnap/releases/tag/1.0.7
 [1.0.6]: https://github.com/Appfoster/upsnap/releases/tag/1.0.6
 [1.0.5]: https://github.com/Appfoster/upsnap/releases/tag/1.0.5
