@@ -374,6 +374,7 @@ class HealthCheckController extends BaseController
                         'message' => $isOk ? 'Website is reachable' : 'Website reachability issues detected!',
                         'url' => $url ?? '',
                         'checkedAt' => $response['checkedAt'] ?? '',
+                        'duration' => isset($result['durationMs']) ? $result['durationMs'] . ' ms' : 'Unknown',
                         'details' => [
                             'duration' => isset($result['durationMs']) ? $result['durationMs'] . ' ms' : 'Unknown',
                             'httpStatus' => $meta['statusCode'] ?? 0,

@@ -873,7 +873,6 @@ function registerReachabilityJs() {
                         <td class="details-label">Monitored from</td>
                         <td class="details-value">
                             ${details?.monitoredFrom?.location ?? 'Unknown'}
-                            ${details?.monitoredFrom?.ip ? `<span style="color: #999; margin-left: 16px;">${details.monitoredFrom.ip}</span>` : ''}
                         </td>
                     </tr>
                     ` : ''}
