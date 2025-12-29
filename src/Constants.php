@@ -177,7 +177,10 @@ class Constants
                 'list' => 'user/integrations',
                 'create' => 'user/integrations',
                 'update' => 'user/integrations',
-            ]
+            ],
+            'histogram' => 'user/monitors/{monitorId}/histogram',
+            'response_time' => 'user/monitors/{monitorId}/response-time',
+            'uptime_stats' => 'user/monitors/{monitorId}/uptime-stats'
         ],
         'user' => [
             'details' => 'user/details'

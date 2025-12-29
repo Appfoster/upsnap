@@ -114,6 +114,9 @@ class Upsnap extends Plugin
                     'upsnap/monitors/new' => 'upsnap/monitors/new',
                     'upsnap/monitors/edit/<monitorId:[0-9a-fA-F\-]+>' => 'upsnap/monitors/edit',
                     'upsnap/monitors/detail/<monitorId:[0-9a-fA-F\-]+>' => 'upsnap/monitors/detail',
+                    'upsnap/monitors/histogram/<monitorId:[0-9a-fA-F\-]+>' => 'upsnap/monitors/histogram-data',
+                    'upsnap/monitors/response-time/<monitorId:[0-9a-fA-F\-]+>' => 'upsnap/monitors/response-time-data',
+                    'upsnap/monitors/uptime-stats/<monitorId:[0-9a-fA-F\-]+>' => 'upsnap/monitors/uptime-stats-data'
                 ]);
             }
         );

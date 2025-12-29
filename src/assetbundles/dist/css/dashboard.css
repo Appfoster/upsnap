@@ -334,6 +334,12 @@
     align-items: center;
 }
 
+.response-time-chart .card-header {
+    font-size: 14px;
+    color: #6b7280;
+    font-weight: 500;
+}
+
 .response-time-filter {
     padding: 4px 8px;
     font-size: 13px;
