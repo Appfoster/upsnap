@@ -28,6 +28,7 @@ class DashboardController extends BaseController
     {
         $url = Upsnap::getMonitoringUrl();
         $settingsService = Upsnap::$plugin->settingsService;
+        $settingsService->validateApiKey();
 
         $monitorId = $settingsService->getMonitorId();
         $monitorData = null; // default
@@ -47,6 +48,7 @@ class DashboardController extends BaseController
                 Craft::error("Monitor fetch failed: {$e->getMessage()}", __METHOD__);
             }
         }
+        Craft::error($settingsService->getApiKey(), "api key");
 
         $variables = [
             'success' => true,
@@ -55,6 +57,10 @@ class DashboardController extends BaseController
             'url' => $url,
             'monitorId' => $monitorId,
             'monitorData' => $monitorData,
+            'apiKey' => $settingsService->getApiKey(),
+            'apiTokenStatus' => $settingsService->getApiTokenStatus(),
+            'apiTokenStatuses' => Constants::API_KEY_STATUS,
+            'upsnapDashboardUrl' => Constants::UPSNAP_DASHBOARD_URL,
         ];
 
         if (!$url) {

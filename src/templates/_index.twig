@@ -20,9 +20,14 @@
 			title: {{ title|json_encode|raw }},
 			monitorUrl: {{ url|json_encode|raw }},
 			monitorId: {{ monitorId|json_encode|raw }},
-			monitorData: {{ monitorData|json_encode|raw }}
+			monitorData: {{ monitorData|json_encode|raw }},
+			apiKey : {{ apiKey|json_encode|raw }},
+			apiTokenStatus: {{ (apiTokenStatus ?? 'unknown')|json_encode|raw }},
+			apiTokenStatuses: {{ (apiTokenStatuses ?? 'unknown')|json_encode|raw }},
+			upsnapDashboardUrl: {{ (upsnapDashboardUrl ?? 'unknown')|json_encode|raw }},
 		};
 	</script>
+	<div id="status-container-wrapper" data-page="dashboard"></div>
 	{% if success == false %}
 
 		{% set statusClass = 'warning' %}

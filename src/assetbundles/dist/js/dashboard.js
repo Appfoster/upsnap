@@ -13,6 +13,12 @@ Craft.UpsnapDashboard = {
 		this.initializeDashboard();
 		this.renderMonitorCards();
 
+		const apiKey = window.CraftPageData?.apiKey
+		if(!apiKey) {
+			this.renderStatusContainer();
+		}
+		
+
 		if (this.refreshBtn) {
 			this.refreshBtn.addEventListener("click", () => {
 				this.runWithRefreshButton(this.refreshBtn, () =>
@@ -185,31 +191,31 @@ Craft.UpsnapDashboard = {
 				cardTitle: "Reachability",
 				cardId: "reachability-card",
 			}),
-			this.fetchAndRenderCard({
-				action: "upsnap/health-check/security-certificates",
-				cardTitle: "Security Certificates",
-				cardId: "ssl-card",
-			}),
-			this.fetchAndRenderCard({
-				action: "upsnap/health-check/broken-links",
-				cardTitle: "Broken Links",
-				cardId: "broken-links-card",
-			}),
-			this.fetchAndRenderCard({
-				action: "upsnap/health-check/domain-check",
-				cardTitle: "Domain Check",
-				cardId: "domain-check-card",
-			}),
-			this.fetchAndRenderCard({
-				action: "upsnap/health-check/mixed-content",
-				cardTitle: "Mixed Content",
-				cardId: "mixed-content-card",
-			}),
-			this.fetchAndRenderCard({
-				action: "upsnap/health-check/lighthouse",
-				cardTitle: "Lighthouse",
-				cardId: "lighthouse-card",
-			}),
+			// this.fetchAndRenderCard({
+			// 	action: "upsnap/health-check/security-certificates",
+			// 	cardTitle: "Security Certificates",
+			// 	cardId: "ssl-card",
+			// }),
+			// this.fetchAndRenderCard({
+			// 	action: "upsnap/health-check/broken-links",
+			// 	cardTitle: "Broken Links",
+			// 	cardId: "broken-links-card",
+			// }),
+			// this.fetchAndRenderCard({
+			// 	action: "upsnap/health-check/domain-check",
+			// 	cardTitle: "Domain Check",
+			// 	cardId: "domain-check-card",
+			// }),
+			// this.fetchAndRenderCard({
+			// 	action: "upsnap/health-check/mixed-content",
+			// 	cardTitle: "Mixed Content",
+			// 	cardId: "mixed-content-card",
+			// }),
+			// this.fetchAndRenderCard({
+			// 	action: "upsnap/health-check/lighthouse",
+			// 	cardTitle: "Lighthouse",
+			// 	cardId: "lighthouse-card",
+			// }),
 		];
 
 		return Promise.allSettled(calls);
@@ -919,6 +925,31 @@ Craft.UpsnapDashboard = {
 	hideResponseChartLoader() {
 		const loader = document.getElementById("responseChartLoader");
 		if (loader) loader.classList.add("hidden");
+	},
+	
+	renderStatusContainer() {
+		const statusContainerWrapper = document.getElementById(
+			"status-container-wrapper"
+		);
+		const upsnapDashboardUrl = window.CraftPageData?.upsnapDashboardUrl
+		if (!statusContainerWrapper) return;
+
+		let icon = "!";
+
+		const html = `
+			<div class="status-container warning">
+				<div class="status-header">
+					<div class="status-icon warning">${icon}</div>
+					<h3 class="status-title">Unlock Full Monitoring Insights</h3>
+				</div>
+				<p class="status-message-dashboard">
+					Register to access complete monitoring data including the last 24-hour histogram,
+					uptime statistics, and response time charts.
+					<a href=${upsnapDashboardUrl} class="status-link">Go to your dashboard</a> to register and unlock the full potential.
+				</p>
+			</div>
+		`;
+		statusContainerWrapper.innerHTML = html;
 	},
 };
 
