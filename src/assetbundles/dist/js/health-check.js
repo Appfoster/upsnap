@@ -47,14 +47,22 @@ function registerBrokenLinksJs() {
     const contentContainer = document.querySelector("#broken-links-section");
     contentContainer.style.display = "grid";
     if (refreshBtn) {
-        refreshBtn.addEventListener("click", loadBrokenLinks);
+        refreshBtn.addEventListener('click', function () {
+            loadBrokenLinks(true);
+            showSkeletons(statusContainerWrapper, detailsContainerWrapper, contentContainer)
+            refreshBtn.disabled = true;
+        });
     }
 
     loadBrokenLinks();
     let brokenLinksData = {};
 
-    function loadBrokenLinks() {
-        Craft.sendActionRequest('POST', 'upsnap/health-check/broken-links', {})
+    function loadBrokenLinks(forceFetch = false) {
+        Craft.sendActionRequest('POST', 'upsnap/health-check/broken-links', {
+            data: {
+				force_fetch: forceFetch
+			}
+        })
             .then(response => {
                 brokenLinksData = response?.data?.data || {};
                 if (response?.data?.success) {
@@ -125,6 +133,7 @@ function registerBrokenLinksJs() {
 
     // === Render Table + Filters ===
     function renderBrokenLinksUI(data) {
+        contentContainer.style.display = "grid";
         contentContainer.innerHTML = `
             <div class="filter-controls">
                 <div class="filter-row">
@@ -287,9 +296,12 @@ function registerDomainCheckJs() {
     let domainData = {};
 
     // Function to fetch domain check data
-    function fetchDomainData() {
-
-        return Craft.sendActionRequest('POST', 'upsnap/health-check/domain-check', {})
+    function fetchDomainData(forceFetch = false) {
+        return Craft.sendActionRequest('POST', 'upsnap/health-check/domain-check', {
+            data: {
+				force_fetch: forceFetch
+			}
+        })
             .then(response => {
                 if (response?.data?.success === 'ok') {
                     domainData = response.data.data;
@@ -332,17 +344,10 @@ function registerDomainCheckJs() {
 
     // Refresh button
     if (refreshBtn) {
-        const originalText = refreshBtn.innerHTML;
         refreshBtn.addEventListener('click', function () {
-            // Add loading state to button
+            fetchDomainData(true);
+            showSkeletons(statusContainerWrapper, detailsContainerWrapper, domainDetailsSection)
             refreshBtn.disabled = true;
-            refreshBtn.innerHTML = '<span class="spinner"></span> Refreshing...';
-
-            fetchDomainData().finally(() => {
-                // Reset button state
-                refreshBtn.disabled = false;
-                refreshBtn.innerHTML = originalText;
-            });
         });
     }
 
@@ -447,9 +452,9 @@ function registerLighthouseJs() {
     let lighthouseData = {};
 
     // Function to fetch lighthouse data
-    function fetchLighthouseData(device = 'desktop') {
+    function fetchLighthouseData(device = 'desktop', forceFetch = false) {
         return Craft.sendActionRequest('POST', 'upsnap/health-check/lighthouse', {
-            data: { device: device }
+            data: { device: device, force_fetch: forceFetch }
         })
             .then(response => {
                 if (response?.data?.success === 'ok') {
@@ -504,17 +509,10 @@ function registerLighthouseJs() {
 
     // Refresh button
     if (refreshBtn) {
-        const originalText = refreshBtn.innerHTML;
         refreshBtn.addEventListener('click', function () {
-            // Add loading state to button
+            fetchLighthouseData(currentDevice, true);
+            showLoaderSkeleton()
             refreshBtn.disabled = true;
-            refreshBtn.innerHTML = '<span class="spinner"></span> Refreshing...';
-            showLoaderSkeleton();
-            fetchLighthouseData(currentDevice).finally(() => {
-                // Reset button state
-                refreshBtn.disabled = false;
-                refreshBtn.innerHTML = originalText;
-            });
         });
     }
 
@@ -694,8 +692,12 @@ function registerMixedContentJs() {
     let mixedContentData = {};
 
     // Function to fetch mixed content data
-    function fetchMixedContentData() {
-        return Craft.sendActionRequest('POST', 'upsnap/health-check/mixed-content', {})
+    function fetchMixedContentData(forceFetch = false) {
+        return Craft.sendActionRequest('POST', 'upsnap/health-check/mixed-content', {
+            data: {
+				force_fetch: forceFetch
+			}
+        })
             .then(response => {
                 if (response?.data?.success === 'ok') {
                     mixedContentData = response.data.data;
@@ -737,17 +739,10 @@ function registerMixedContentJs() {
 
     // Refresh button
     if (refreshBtn) {
-        const originalText = refreshBtn.innerHTML;
         refreshBtn.addEventListener('click', function () {
-            // Add loading state to button
+            fetchMixedContentData(true);
+            showSkeletons(statusContainerWrapper, detailsContainerWrapper,mixedContentSection)
             refreshBtn.disabled = true;
-            refreshBtn.innerHTML = '<span class="spinner"></span> Refreshing...';
-
-            fetchMixedContentData().finally(() => {
-                // Reset button state
-                refreshBtn.disabled = false;
-                refreshBtn.innerHTML = originalText;
-            });
         });
     }
 
@@ -783,7 +778,50 @@ function registerMixedContentJs() {
     // Initial fetch on page load (no loader, skeleton is already visible)
     fetchMixedContentData();
 }
+function showSkeletons(statusContainerWrapper, detailsContainerWrapper, dataContainer) {
+	if (statusContainerWrapper) {
+		statusContainerWrapper.innerHTML = `
+			<div class="skeleton-card">
+				<div class="skeleton-card-header">
+					<div class="skeleton-line skeleton-line-medium"></div>
+				</div>
+				<div class="skeleton-card-body">
+					<div class="skeleton-line skeleton-line-long"></div>
+					<div class="skeleton-line skeleton-line-short"></div>
+				</div>
+			</div>
+		`;
+	}
 
+	if (detailsContainerWrapper) {
+		detailsContainerWrapper.innerHTML = `
+			<div class="skeleton-card">
+				<div class="skeleton-card-header">
+					<div class="skeleton-line skeleton-line-short"></div>
+				</div>
+				<div class="skeleton-card-body">
+					<div class="skeleton-field">
+						<div class="skeleton-line skeleton-line-short"></div>
+						<div class="skeleton-line skeleton-line-long"></div>
+					</div>
+					<div class="skeleton-field">
+						<div class="skeleton-line skeleton-line-short"></div>
+						<div class="skeleton-line skeleton-line-medium"></div>
+					</div>
+					<div class="skeleton-field">
+						<div class="skeleton-line skeleton-line-short"></div>
+						<div class="skeleton-line skeleton-line-short"></div>
+					</div>
+				</div>
+			</div>
+		`;
+	}
+
+	if (dataContainer) {
+		dataContainer.style.display = 'none';
+		dataContainer.innerHTML = '';
+	}
+}
 
 function registerReachabilityJs() {
     const refreshBtn = document.getElementById("refresh-btn");
@@ -801,8 +839,11 @@ function registerReachabilityJs() {
     let reachabilityData = {};
 
     // Function to fetch reachability data
-    function fetchReachabilityData() {
-        return Craft.sendActionRequest('POST', 'upsnap/health-check/reachability', {})
+    function fetchReachabilityData(forceFetch = false) {
+        return Craft.sendActionRequest('POST', 'upsnap/health-check/reachability', {			
+            data: {
+				force_fetch: forceFetch
+			}})
                 .then(response => {
                     if (response?.data?.success === 'ok') {
                         reachabilityData = response.data.data;
@@ -838,12 +879,6 @@ function registerReachabilityJs() {
             });
     }
 
-    // Add event listener for refresh button
-    if (refreshBtn) {
-        refreshBtn.addEventListener('click', function () {
-            fetchReachabilityData();
-        });
-    }
 
     // Render Reachability details
     function renderReachabilityDetails(details) {
@@ -983,7 +1018,9 @@ function registerReachabilityJs() {
     // Add event listener for refresh button
     if (refreshBtn) {
         refreshBtn.addEventListener('click', function () {
-            fetchReachabilityData();
+            fetchReachabilityData(true);
+            showSkeletons(statusContainerWrapper, detailsContainerWrapper, reachabilitySection)
+            refreshBtn.disabled = true;
         });
     }
 }
@@ -992,6 +1029,7 @@ function registerSecurityCertificatesJs() {
     const refreshBtn = document.getElementById("refresh-btn");
     const statusContainerWrapper = document.getElementById("status-container-wrapper");
     const detailsContainerWrapper = document.getElementById("details-container-wrapper");
+    const dataContainer = document.getElementById("security-certificates-section");
 
     if (refreshBtn) refreshBtn.disabled = true;
 
@@ -1003,8 +1041,12 @@ function registerSecurityCertificatesJs() {
     let securityCertificatesData = {};
 
     // Function to fetch security certificates data
-    function fetchSecurityCertificatesData() {
-        return Craft.sendActionRequest('POST', 'upsnap/health-check/security-certificates', {})
+    function fetchSecurityCertificatesData(forceFetch = false) {
+        return Craft.sendActionRequest('POST', 'upsnap/health-check/security-certificates', {
+            data: {
+				force_fetch: forceFetch
+			}
+        })
             .then(response => {
                 if (response?.data?.success === 'ok') {
                     securityCertificatesData = response.data.data;
@@ -1037,13 +1079,6 @@ function registerSecurityCertificatesJs() {
             }).finally(() => {
                 refreshBtn.disabled = false;
             });
-    }
-
-    // Add event listener for refresh button
-    if (refreshBtn) {
-        refreshBtn.addEventListener('click', function () {
-            fetchSecurityCertificatesData();
-        });
     }
 
     // Render Security Certificates details
@@ -1196,28 +1231,11 @@ function registerSecurityCertificatesJs() {
 
         // Insert after details container
         const detailsContainer = document.getElementById("details-container-wrapper");
-        if (detailsContainer && detailsContainer.nextSibling) {
-            const existingSection = detailsContainer.nextSibling;
-            if (existingSection.id === 'security-certificates-section') {
-                existingSection.innerHTML = html;
-                existingSection.style.display = 'block';
-                // Bind show more / less
-                toggleShowDetails(existingSection);
-            } else {
-                const section = document.createElement('div');
-                section.id = 'security-certificates-section';
-                section.innerHTML = html;
-                detailsContainer.parentNode.insertBefore(section, existingSection);
-                // Bind show more / less
-                toggleShowDetails(section);
-            }
-        } else if (detailsContainer) {
-            const section = document.createElement('div');
-            section.id = 'security-certificates-section';
-            section.innerHTML = html;
-            detailsContainer.parentNode.appendChild(section);
-            // Bind show more / less
-            toggleShowDetails(section);
+        if (dataContainer) {
+            dataContainer.style.display = 'block';
+            dataContainer.innerHTML = html;
+            detailsContainer.parentNode.appendChild(dataContainer);
+            toggleShowDetails(dataContainer);
         }
     }
 
@@ -1261,7 +1279,9 @@ function registerSecurityCertificatesJs() {
     // Add event listener for refresh button
     if (refreshBtn) {
         refreshBtn.addEventListener('click', function () {
-            fetchSecurityCertificatesData();
+            fetchSecurityCertificatesData(true);
+            showSkeletons(statusContainerWrapper, detailsContainerWrapper, dataContainer)
+            refreshBtn.disabled = true;
         });
     }
 }
