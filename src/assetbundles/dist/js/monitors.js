@@ -40,42 +40,36 @@ Craft.Upsnap.Monitor = {
 
 	initIntervalSlider() {
 		const sliders = document.querySelectorAll("[data-interval-slider]");
-
 		if (!sliders.length) return;
 
-		const MIN_SECONDS = 30;
-		const MAX_SECONDS = 86400;
 		const PLAN_MIN_SECONDS =
 			window.CraftPageData.minMonitorIntervalSeconds || 300;
 
-		const logMin = Math.log(MIN_SECONDS);
-		const logMax = Math.log(MAX_SECONDS);
-
-		const secondsToSlider = (seconds) => {
-			const logV = Math.log(seconds);
-			return ((logV - logMin) / (logMax - logMin)) * 100;
-		};
-
-		const sliderToSeconds = (percent) => {
-			const logValue = logMin + (percent / 100) * (logMax - logMin);
-			return Math.round(Math.exp(logValue));
-		};
-
 		const format = (s) => {
-			if (s < 60) return `${s}s`;
 			if (s < 3600) return `${Math.round(s / 60)}m`;
 			if (s < 86400) return `${Math.round(s / 3600)}h`;
 			return `${Math.round(s / 86400)}d`;
 		};
 
 		sliders.forEach((slider) => {
-			const hiddenInputId = slider.dataset.targetInput;
-			const labelId = slider.dataset.label;
-
-			const hiddenInput = document.getElementById(hiddenInputId);
-			const label = document.getElementById(labelId);
-
+			const hiddenInput = document.getElementById(slider.dataset.targetInput);
+			const label = document.getElementById(slider.dataset.label);
 			if (!hiddenInput || !label) return;
+
+			const partitions = JSON.parse(slider.dataset.partitions);
+
+			const secondsList = partitions.map(p => p.seconds);
+			const minSeconds = Math.min(...secondsList);
+			const maxSeconds = Math.max(...secondsList);
+
+			const logMin = Math.log(minSeconds);
+			const logMax = Math.log(maxSeconds);
+
+			const secondsToSlider = (s) =>
+				((Math.log(s) - logMin) / (logMax - logMin)) * 100;
+
+			const sliderToSeconds = (p) =>
+				Math.round(Math.exp(logMin + (p / 100) * (logMax - logMin)));
 
 			let currentSeconds = Math.max(
 				Number(hiddenInput.value || PLAN_MIN_SECONDS),
@@ -83,45 +77,40 @@ Craft.Upsnap.Monitor = {
 			);
 
 			slider.value = secondsToSlider(currentSeconds);
-			hiddenInput.value = currentSeconds;
 			label.textContent = format(currentSeconds);
+			hiddenInput.value = currentSeconds;
 
-			slider.style.background = `linear-gradient(
-            to right,
-            #3b82f6 0%,
-            #3b82f6 ${slider.value}%,
-            #e5e7eb ${slider.value}%,
-            #e5e7eb 100%
-        )`;
+			const paint = (v) => {
+				slider.style.background = `linear-gradient(
+					to right,
+					#3b82f6 0%,
+					#3b82f6 ${v}%,
+					#e5e7eb ${v}%,
+					#e5e7eb 100%
+				)`;
+			};
+
+			paint(slider.value);
 
 			slider.addEventListener("input", (e) => {
-				let seconds = sliderToSeconds(Number(e.target.value));
+				let secs = sliderToSeconds(Number(e.target.value));
 
-				if (seconds < PLAN_MIN_SECONDS) {
-					seconds = PLAN_MIN_SECONDS;
-					// Update slider position to match the minimum
+				if (secs < PLAN_MIN_SECONDS) {
+					secs = PLAN_MIN_SECONDS;
 					e.target.value = secondsToSlider(PLAN_MIN_SECONDS);
 				}
 
-				hiddenInput.value = seconds;
-				label.textContent = format(seconds);
-
-				slider.style.background = `linear-gradient(
-                to right,
-                #3b82f6 0%,
-                #3b82f6 ${e.target.value}%,
-                #e5e7eb ${e.target.value}%,
-                #e5e7eb 100%
-            )`;
+				hiddenInput.value = secs;
+				label.textContent = format(secs);
+				paint(e.target.value);
 			});
 
-			// Position ticks relative to this slider
+			// Tick positioning
 			slider
 				.closest(".field")
 				?.querySelectorAll(".upsnap-range-tick")
 				.forEach((tick) => {
-					const seconds = Number(tick.dataset.seconds);
-					const pos = secondsToSlider(seconds);
+					const pos = secondsToSlider(Number(tick.dataset.seconds));
 					tick.style.left = `${pos}%`;
 				});
 		});

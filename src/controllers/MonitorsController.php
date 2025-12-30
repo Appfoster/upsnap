@@ -512,7 +512,6 @@ class MonitorsController extends Controller
     {
         $request = Craft::$app->getRequest();
 
-        // Collect all incoming params (GET, POST, JSON body)
         $params = array_merge(
             $request->getQueryParams(),
             $request->getBodyParams()
@@ -571,19 +570,16 @@ class MonitorsController extends Controller
     {
         $request = Craft::$app->getRequest();
 
-        // Collect all incoming params (GET, POST, JSON body)
         $params = array_merge(
             $request->getQueryParams(),
             $request->getBodyParams()
         );
 
-         // Collect all incoming params (GET, POST, JSON body)
         try {
             $endpoint = str_replace('{monitorId}', $monitorId, 
             Constants::MICROSERVICE_ENDPOINTS['monitors']['response_time']);
 
             // Pass all params to the service
-            Craft::error("Fetching response time data with params: " . print_r($params, true), __METHOD__);
             $response = Upsnap::$plugin->apiService->get($endpoint, $params);
 
             if (!isset($response['status']) || $response['status'] !== 'success') {

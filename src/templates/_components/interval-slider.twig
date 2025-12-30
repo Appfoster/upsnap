@@ -1,3 +1,17 @@
+{% set unitToSeconds = {
+    minute: 60,
+    hour: 3600,
+    day: 86400
+} %}
+
+{% set normalized = [] %}
+{% for p in partitions %}
+    {% set normalized = normalized|merge([{
+        label: p.label,
+        seconds: p.value * unitToSeconds[p.unit]
+    }]) %}
+{% endfor %}
+
 <div class="field" style="width: 200%;">
     <div class="heading">
         <label>Monitoring Interval</label>
@@ -19,6 +33,7 @@
         data-interval-slider
         data-target-input="{{ id }}MonitoringInterval"
         data-label="{{ id }}IntervalLabel"
+        data-partitions='{{ normalized|json_encode|raw }}'
     />
 
     <input
@@ -29,9 +44,9 @@
     />
 
     <div class="upsnap-range-labels">
-        {% for p in INTERVAL_PARTITIONS %}
+        {% for p in normalized %}
             <span
-                class="upsnap-range-tick {% if p.seconds < MIN_MONITOR_INTERVAL_SECONDS %}disabled{% endif %}"
+                class="upsnap-range-tick {% if p.seconds < minMonitorIntervalSeconds %}disabled{% endif %}"
                 data-seconds="{{ p.seconds }}"
             >
                 {{ p.label }}
