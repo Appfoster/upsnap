@@ -36,13 +36,7 @@ class DashboardController extends BaseController
         if ($monitorId) {
             try {
                 $endpoint = Constants::MICROSERVICE_ENDPOINTS['monitors']['view'] . '/' . $monitorId;
-                $response = Upsnap::$plugin->apiService->get($endpoint,  [
-                    'uptime_stats' => 'true',
-                    'uptime_stats_time_frames' => 'day,month,week',
-                    'response_time'    => 'true',
-                    'histogram'  => 'true',
-                    'histogram_time_frame' => 'last_day'
-                ]);
+                $response = Upsnap::$plugin->apiService->get($endpoint);
 
                 if (isset($response['status']) && $response['status'] === 'success') {
                     $monitorData = $response['data']['monitor'] ?? null;

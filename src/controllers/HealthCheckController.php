@@ -241,6 +241,7 @@ class HealthCheckController extends BaseController
                             'message' => $isOk ? 'All checks completed' : 'Some issues detected',
                             'url' => $url ?? '',
                             'checkedAt' => $response['checkedAt'] ?? '',
+                            'duration' => isset($result['durationMs']) ? $result['durationMs'] . ' ms' : 'Unknown',
                             "result" => [
                                 "summary" => [
                                     "ok" => $result['summary']['ok'] ?? true,
@@ -348,7 +349,6 @@ class HealthCheckController extends BaseController
         $isAjax = $request->getIsAjax();
         $url = Upsnap::getMonitoringUrl();
         $forceFetch = $request->getBodyParam('force_fetch', false);
-
         if (!$url) {
             return $this->service->handleMissingMonitoringUrl(Constants::SUBNAV_ITEM_REACHABILITY);
         }
@@ -374,6 +374,7 @@ class HealthCheckController extends BaseController
                         'message' => $isOk ? 'Website is reachable' : 'Website reachability issues detected!',
                         'url' => $url ?? '',
                         'checkedAt' => $response['checkedAt'] ?? '',
+                        'duration' => isset($result['durationMs']) ? $result['durationMs'] . ' ms' : 'Unknown',
                         'details' => [
                             'duration' => isset($result['durationMs']) ? $result['durationMs'] . ' ms' : 'Unknown',
                             'httpStatus' => $meta['statusCode'] ?? 0,

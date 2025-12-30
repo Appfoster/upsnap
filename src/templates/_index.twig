@@ -17,11 +17,11 @@
 	<script>
 
 		window.CraftPageData = {
-        title: {{ title|json_encode|raw }},
-        monitorUrl: {{ url|json_encode|raw }},
-        monitorId: {{ monitorId|json_encode|raw }},
-        monitorData: {{ monitorData|json_encode|raw }}
-        };
+			title: {{ title|json_encode|raw }},
+			monitorUrl: {{ url|json_encode|raw }},
+			monitorId: {{ monitorId|json_encode|raw }},
+			monitorData: {{ monitorData|json_encode|raw }}
+		};
 	</script>
 	{% if success == false %}
 
@@ -37,17 +37,54 @@
 				<div class="monitor-grid">
 					<div id="monitor-status-card" class="monitor-card skeleton"></div>
 					<div id="monitor-last-check-card" class="monitor-card skeleton"></div>
-					<div id="monitor-24h-card" class="monitor-card skeleton"></div>
+					<div id="monitor-24h-card" class="monitor-card skeleton">
+						<div class="card-header">Last 24 hours</div>
+						<div class="card-skeleton">
+							<div class="skeleton-line"></div>
+						</div>
+					</div>
 				</div>
 
 				<!-- ROW 2 (Uptime Stats) -->
 				<div class="monitor-grid">
-					<div id="uptime-day-card" class="monitor-card skeleton"></div>
-					<div id="uptime-week-card" class="monitor-card skeleton"></div>
-					<div id="uptime-month-card" class="monitor-card skeleton"></div>
+					<div id="uptime-day-card" class="monitor-card skeleton">
+						<div class="card-header">Last 24h</div>
+						<div class="card-skeleton">
+							<div class="skeleton-line"></div>
+							<div class="skeleton-line"></div>
+						</div>
+					</div>
+					<div id="uptime-week-card" class="monitor-card skeleton">
+						<div class="card-header">Last Week</div>
+						<div class="card-skeleton">
+							<div class="skeleton-line"></div>
+							<div class="skeleton-line"></div>
+						</div>
+					</div>
+					<div id="uptime-month-card" class="monitor-card skeleton">
+						<div class="card-header">Last 30 Days</div>
+						<div class="card-skeleton">
+							<div class="skeleton-line"></div>
+							<div class="skeleton-line"></div>
+						</div>
+					</div>
 				</div>
 				<!-- ROW 3 (Response Time Chart) -->
-				<div id="response-time-card" class="response-time-chart"></div>
+				<div id="response-time-card" class="response-time-chart">
+					<div class="card-header response-card-header">
+						<span>Response Time</span>
+						<select id="responseTimeFilter" class="response-time-filter">
+							<option value="last_hour">Last Hour</option>
+							<option value="last_day">Last 24 Hours</option>
+							<option value="last_week">Last 7 Days</option>
+							<option value="last_month">Last 30 Days</option>
+						</select>
+					</div>
+					<div class="response-chart-container">
+						<div class="chart-loader" id="responseChartLoader"></div>
+						<canvas id="responseChart"></canvas>
+					</div>
+				</div>
 			</div>
 
 			<div class="dashboard-right">

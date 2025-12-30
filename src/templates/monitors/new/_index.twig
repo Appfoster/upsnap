@@ -9,16 +9,24 @@
     { label: 'Settings', url: url('upsnap/settings')}
 ] %}
 
-
-{% set INTERVAL_PARTITIONS = [
-    { label: '30s', seconds: 30 },
-    { label: '1m', seconds: 60 },
-    { label: '5m', seconds: 300 },
-    { label: '30m', seconds: 1800 },
-    { label: '1h', seconds: 3600 },
-    { label: '12h', seconds: 43200 },
-    { label: '24h', seconds: 86400 },
+{% set defaultIntervals = [
+    { label: '1m', value: 1, unit: 'minute' },
+    { label: '5m', value: 5, unit: 'minute' },
+    { label: '30m', value: 30, unit: 'minute' },
+    { label: '1h', value: 1, unit: 'hour' },
+    { label: '12h', value: 12, unit: 'hour' },
+    { label: '24h', value: 24, unit: 'hour' }
 ] %}
+
+
+{% set lighthouseIntervals = [
+    { label: '1d', value: 1, unit: 'day' },
+    { label: '2d', value: 2, unit: 'day' },
+    { label: '5d', value: 5, unit: 'day' },
+    { label: '7d', value: 7, unit: 'day' },
+    { label: '10d', value: 10, unit: 'day' }
+] %}
+
 
 {% set MIN_MONITOR_INTERVAL_SECONDS =
     userDetails
@@ -131,7 +139,9 @@
 								{% include 'upsnap/_components/interval-slider.twig' with {
                                     id: 'reachability',
                                     name: 'reachabilityMonitoringInterval',
-                                    value: monitor ? (monitor.reachabilityMonitoringInterval ?? 300) : 300
+                                    value: monitor ? (monitor.reachabilityMonitoringInterval ?? 300) : 300,
+                                    partitions: defaultIntervals,
+                                    minMonitorIntervalSeconds: MIN_MONITOR_INTERVAL_SECONDS
                                 } %}
 							</div>
 						</div>
@@ -149,7 +159,9 @@
 								{% include 'upsnap/_components/interval-slider.twig' with {
                                     id: 'brokenLinks',
                                     name: 'brokenLinksMonitoringInterval',
-                                    value: monitor ? (monitor.brokenLinksMonitoringInterval ?? 300) : 300
+                                    value: monitor ? (monitor.brokenLinksMonitoringInterval ?? 300) : 300,
+                                    partitions: defaultIntervals,
+                                    minMonitorIntervalSeconds: MIN_MONITOR_INTERVAL_SECONDS
                                 } %}
 							</div>
 						</div>
@@ -169,7 +181,9 @@
 								{% include 'upsnap/_components/interval-slider.twig' with {
                                     id: 'mixedContent',
                                     name: 'mixedContentMonitoringInterval',
-                                    value: monitor ? (monitor.mixedContentMonitoringInterval ?? 300) : 300
+                                    value: monitor ? (monitor.mixedContentMonitoringInterval ?? 300) : 300,
+                                    partitions: defaultIntervals,
+                                    minMonitorIntervalSeconds: MIN_MONITOR_INTERVAL_SECONDS
                                 } %}
 							</div>
 
@@ -187,7 +201,9 @@
 								{% include 'upsnap/_components/interval-slider.twig' with {
                                     id: 'domain',
                                     name: 'domainMonitoringInterval',
-                                    value: monitor ? (monitor.domainMonitoringInterval ?? 300) : 300
+                                    value: monitor ? (monitor.domainMonitoringInterval ?? 300) : 300,
+                                    partitions: defaultIntervals,
+                                    minMonitorIntervalSeconds: MIN_MONITOR_INTERVAL_SECONDS
                                 } %}
 								{{ forms.selectField({
                                     label: "Days Before Expiry"|t('upsnap'),
@@ -212,10 +228,12 @@
                             }) }}
 
 							<div class="nested-settings-inline" id="ssl-settings">
-								{% include 'upsnap/_components/interval-slider.twig' with {
+                                {% include 'upsnap/_components/interval-slider.twig' with {
                                     id: 'securityCertificates',
                                     name: 'securityCertificatesMonitoringInterval',
-                                    value: monitor ? (monitor.securityCertificatesMonitoringInterval ?? 300) : 300
+                                    value: monitor ? (monitor.securityCertificatesMonitoringInterval ?? 300) : 300,
+                                    partitions: defaultIntervals,
+                                    minMonitorIntervalSeconds: MIN_MONITOR_INTERVAL_SECONDS
                                 } %}
 								{{ forms.selectField({
                                     label: "Days Before Expiry"|t('upsnap'),
@@ -239,10 +257,12 @@
 
 							<div class="nested-settings-inline" id="lighthouse-settings">
 
-								{% include 'upsnap/_components/interval-slider.twig' with {
+                                {% include 'upsnap/_components/interval-slider.twig' with {
                                     id: 'lighthouse',
                                     name: 'lighthouseMonitoringInterval',
-                                    value: monitor ? (monitor.lighthouseMonitoringInterval ?? 300) : 300
+                                    value: monitor ? (monitor.lighthouseMonitoringInterval ?? 86400) : 7 * 86400,
+                                    partitions: lighthouseIntervals,
+                                    minMonitorIntervalSeconds: 86400
                                 } %}
 
 								{{ forms.selectField({
@@ -267,11 +287,11 @@
 
 	<script>
 		window.preSelectedChannelIds = {{ monitor ? monitor.channelIds|json_encode|raw : '[]' }};
-window.CraftPageData = {
-title: {{ title|json_encode|raw }},
-monitorForm: true,
-monitorData: {{ monitor ? monitor|json_encode|raw : 'null' }},
-minMonitorIntervalSeconds: {{ MIN_MONITOR_INTERVAL_SECONDS }}
-};
+        window.CraftPageData = {
+            title: {{ title|json_encode|raw }},
+            monitorForm: true,
+            monitorData: {{ monitor ? monitor|json_encode|raw : 'null' }},
+            minMonitorIntervalSeconds: {{ MIN_MONITOR_INTERVAL_SECONDS }}
+        };
 	</script>
 {% endblock %}

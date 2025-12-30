@@ -112,7 +112,7 @@ class MonitorsController extends Controller
 
             // Sync primary monitor details to local database if this is the configured primary monitor
             $primaryMonitorId = $settingsService->getMonitorId();
-            if($primaryMonitorId !== null && $primaryMonitorId === $monitorId) {
+            if ($primaryMonitorId !== null && $primaryMonitorId === $monitorId) {
                 $settingsService->setMonitorId($monitorId);
                 $settingsService->setMonitoringUrl($payloadArray['config']['meta']['url']);
             }
@@ -250,7 +250,7 @@ class MonitorsController extends Controller
 
             $primaryMonitor = $settingsService->getMonitorId();
 
-            if($primaryMonitor == $id) {
+            if ($primaryMonitor == $id) {
                 $settingsService->setMonitorId(null);
                 $settingsService->setMonitoringUrl(null);
             }
@@ -323,13 +323,12 @@ class MonitorsController extends Controller
                 'success' => true,
                 'message' => Craft::t('upsnap', 'Bulk action completed successfully.'),
             ]);
-
         } catch (\Throwable $e) {
             Craft::error("Bulk monitor action failed: {$e->getMessage()}", __METHOD__);
 
             return $this->asJson([
                 'success' => false,
-                'message'=> $e->getMessage()
+                'message' => $e->getMessage()
             ]);
         }
     }
@@ -461,7 +460,7 @@ class MonitorsController extends Controller
 
             // Format monitor for FE use (IMPORTANT)
             $variables['monitor'] = $this->formatMonitorForFrontend($monitor);
-
+            Craft::error($variables, "This is the variable");
         } catch (\Throwable $e) {
             Craft::error("Monitor fetch failed: {$e->getMessage()}", __METHOD__);
             throw new NotFoundHttpException("Monitor not found");
@@ -490,7 +489,7 @@ class MonitorsController extends Controller
             'mixedContentMonitoringInterval' => $services['mixed_content']['monitor_interval'] ?? "300",
 
             'lighthouseEnabled' => $services['lighthouse']['enabled'] ?? false,
-            'lighthouseMonitoringInterval' => $services['lighthouse']['monitor_interval'] ?? "300",
+            'lighthouseMonitoringInterval' => $services['lighthouse']['monitor_interval'] ?? "86400",
             'lighthouseStrategy' => $services['lighthouse']['strategy'] ?? 'desktop',
 
             'reachabilityEnabled' => $services['uptime']['enabled'] ?? false,
@@ -514,7 +513,6 @@ class MonitorsController extends Controller
     {
         $request = Craft::$app->getRequest();
 
-        // Collect all incoming params (GET, POST, JSON body)
         $params = array_merge(
             $request->getQueryParams(),
             $request->getBodyParams()
@@ -537,10 +535,94 @@ class MonitorsController extends Controller
                     'monitor' => $response['data']['monitor'] ?? null,
                 ],
             ]);
-
         } catch (\Throwable $e) {
             Craft::error("Monitor fetch failed: {$e->getMessage()}", __METHOD__);
             throw new NotFoundHttpException('Monitor not found');
+        }
+    }
+
+    public function actionHistogramData(string $monitorId): Response
+    {
+        try {
+            $endpoint = str_replace('{monitorId}', $monitorId, 
+            Constants::MICROSERVICE_ENDPOINTS['monitors']['histogram']);
+
+            // Pass all params to the service
+            $response = Upsnap::$plugin->apiService->get($endpoint);
+
+            if (!isset($response['status']) || $response['status'] !== 'success') {
+                throw new \Exception('Unable to fetch histogram data.');
+            }
+
+            return $this->asJson([
+                'success' => true,
+                'message' => 'Histogram data fetched successfully.',
+                'data' => [
+                    'histogram' => $response['data']['histogram'] ?? null,
+                ],
+            ]);
+        } catch (\Throwable $e) {
+            Craft::error("Histogram data fetch failed: {$e->getMessage()}", __METHOD__);
+            throw new NotFoundHttpException('Histogram data not found');
+        }
+    }
+
+    public function actionResponseTimeData(string $monitorId): Response
+    {
+        $request = Craft::$app->getRequest();
+
+        $params = array_merge(
+            $request->getQueryParams(),
+            $request->getBodyParams()
+        );
+
+        try {
+            $endpoint = str_replace('{monitorId}', $monitorId, 
+            Constants::MICROSERVICE_ENDPOINTS['monitors']['response_time']);
+
+            // Pass all params to the service
+            $response = Upsnap::$plugin->apiService->get($endpoint, $params);
+
+            if (!isset($response['status']) || $response['status'] !== 'success') {
+                throw new \Exception('Unable to fetch response time data.');
+            }
+
+            return $this->asJson([
+                'success' => true,
+                'message' => 'Response time data fetched successfully.',
+                'data' => [
+                    'response_time_data' => $response['data']['response_time'] ?? null,
+                ],
+            ]);
+        } catch (\Throwable $e) {
+            Craft::error("Response time data fetch failed: {$e->getMessage()}", __METHOD__);
+            throw new NotFoundHttpException('Response time data not found');
+        }
+    }
+
+    public function actionUptimeStatsData(string $monitorId): Response
+    {
+        try {
+            $endpoint = str_replace('{monitorId}', $monitorId, 
+            Constants::MICROSERVICE_ENDPOINTS['monitors']['uptime_stats']);
+
+            // Pass all params to the service
+            $response = Upsnap::$plugin->apiService->get($endpoint, ["uptime_stats_time_frames" => "day,week,month,year"]);
+
+            if (!isset($response['status']) || $response['status'] !== 'success') {
+                throw new \Exception('Unable to fetch uptime stats data.');
+            }
+
+            return $this->asJson([
+                'success' => true,
+                'message' => 'Uptime stats data fetched successfully.',
+                'data' => [
+                    'uptime_stats' => $response['data']['uptime_stats'] ?? null,
+                ],
+            ]);
+        } catch (\Throwable $e) {
+            Craft::error("Uptime stats data fetch failed: {$e->getMessage()}", __METHOD__);
+            throw new NotFoundHttpException('Uptime stats data not found');
         }
     }
 }

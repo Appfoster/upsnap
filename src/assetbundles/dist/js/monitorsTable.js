@@ -36,7 +36,7 @@
 		const name = monitor.name || url || "Unnamed Monitor";
 		const isSelected = primaryMonitorId && monitor?.id === primaryMonitorId;
 		const isPollingRelevant = Polling.activeMonitorIds.has(monitor.id);
-		const recentlyChecked = isPollingRelevant && isRecentlyChecked(monitor.last_check_at);
+		const inPollingState = isPollingRelevant && isRecentlyChecked(monitor.last_check_at, monitor.updated_at);
 
 		// Determine status
 		let statusLabel = "";
@@ -45,7 +45,7 @@
 		if (!monitor.is_enabled) {
 			statusLabel = "Paused";
 			statusClass = "pill--gray";
-		} else if (recentlyChecked) {
+		} else if (inPollingState) {
 			// 👇 override only for polling monitors
 			statusLabel = "Checking";
 			statusClass = "pill--yellow";
@@ -510,7 +510,6 @@
 
 		// If menu isn't rendered yet, stop and wait for loadAndRender to call it later
 		if (!menuBtn || !menu || !editBtn || !deleteBtn) {
-			console.warn("Bulk menu skipped – elements not found yet.");
 			return;
 		}
 
@@ -684,14 +683,37 @@
 	}
 
 
-	function isRecentlyChecked(lastCheckAt, thresholdMs = 2 * 60 * 1000) {
-		if (!lastCheckAt) return false;
+	function isRecentlyChecked(
+		lastCheckAt,
+		lastUpdatedAt,
+		thresholdMs = 2 * 60 * 1000
+	) {
+		if (!lastCheckAt) return true;
+
+		const now = Date.now();
 
 		const lastCheckTime = new Date(lastCheckAt).getTime();
-		if (isNaN(lastCheckTime)) return false;
+		if (isNaN(lastCheckTime)) return true;
 
-		return Date.now() - lastCheckTime < thresholdMs;
+		// Case 1: recently checked
+		if (now - lastCheckTime < thresholdMs) {
+			return true;
+		}
+
+		// Case 2: recently updated after last check
+		if (lastUpdatedAt) {
+			const lastUpdatedTime = new Date(lastUpdatedAt).getTime();
+			if (!isNaN(lastUpdatedTime)) {
+				return (
+					lastUpdatedTime > lastCheckTime &&
+					now - lastUpdatedTime < thresholdMs
+				);
+			}
+		}
+
+		return false;
 	}
+
 
 	function stopMonitorSpecificPolling(monitorId) {
 		const intervalId = Polling.monitorIntervals.get(monitorId);

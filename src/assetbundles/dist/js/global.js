@@ -1,14 +1,6 @@
 // Global JavaScript functionality used across multiple pages
 
 document.addEventListener("DOMContentLoaded", function () {
-    // Global refresh button functionality
-    const refreshBtn = document.getElementById("refresh-btn");
-    if (refreshBtn) {
-        refreshBtn.addEventListener("click", function () {
-            window.location.reload(); // reloads the current page
-        });
-    }
-
     // Global show-details functionality
     const moreDetails = document.getElementById('more-details');
     const showDetailsBtn = document.querySelector('.show-details');
