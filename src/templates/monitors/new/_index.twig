@@ -260,7 +260,7 @@
                                 {% include 'upsnap/_components/interval-slider.twig' with {
                                     id: 'lighthouse',
                                     name: 'lighthouseMonitoringInterval',
-                                    value: monitor ? (monitor.lighthouseMonitoringInterval ?? 7 * 86400) : 7 * 86400,
+                                    value: monitor ? (monitor.lighthouseMonitoringInterval ?? 86400) : 7 * 86400,
                                     partitions: lighthouseIntervals,
                                     minMonitorIntervalSeconds: 86400
                                 } %}

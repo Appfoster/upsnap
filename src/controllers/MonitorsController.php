@@ -460,6 +460,7 @@ class MonitorsController extends Controller
 
             // Format monitor for FE use (IMPORTANT)
             $variables['monitor'] = $this->formatMonitorForFrontend($monitor);
+            Craft::error($variables, "This is the variable");
         } catch (\Throwable $e) {
             Craft::error("Monitor fetch failed: {$e->getMessage()}", __METHOD__);
             throw new NotFoundHttpException("Monitor not found");
@@ -488,7 +489,7 @@ class MonitorsController extends Controller
             'mixedContentMonitoringInterval' => $services['mixed_content']['monitor_interval'] ?? "300",
 
             'lighthouseEnabled' => $services['lighthouse']['enabled'] ?? false,
-            'lighthouseMonitoringInterval' => $services['lighthouse']['monitor_interval'] ?? "300",
+            'lighthouseMonitoringInterval' => $services['lighthouse']['monitor_interval'] ?? "86400",
             'lighthouseStrategy' => $services['lighthouse']['strategy'] ?? 'desktop',
 
             'reachabilityEnabled' => $services['uptime']['enabled'] ?? false,
