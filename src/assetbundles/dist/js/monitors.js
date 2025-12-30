@@ -605,40 +605,52 @@ Craft.Upsnap.Monitor = {
 		}
 		return errorList;
 	},
-
 	isValidHttpUrl(value) {
 		if (!value) return false;
 
 		try {
 			const url = new URL(value);
 
-			// Allow only http/https
 			if (!["http:", "https:"].includes(url.protocol)) {
 				return false;
 			}
 
-			const hostname = url.hostname;
+			const hostname = url.hostname.toLowerCase();
+			const labels = hostname.split(".");
 
-			// Must contain at least one dot (.)
-			if (!hostname.includes(".")) {
+			// Must have at least 2 labels
+			if (labels.length < 2) {
 				return false;
 			}
 
-			// TLD must be at least 2 characters
-			const tld = hostname.split(".").pop();
-			if (tld.length < 2) {
+			if (labels.length === 2 && labels[0] === "www") {
 				return false;
 			}
 
-			// Hostname regex (no underscores, no spaces, valid chars)
-			const hostnameRegex = /^(?!-)[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)*$/;
+			// Hostname length
+			if (hostname.length > 253) {
+				return false;
+			}
 
-			if (!hostnameRegex.test(hostname)) {
+			// Validate labels
+			for (const label of labels) {
+				if (label.length < 1 || label.length > 63) {
+					return false;
+				}
+
+				if (!/^[a-z0-9]([a-z0-9-]*[a-z0-9])?$/.test(label)) {
+					return false;
+				}
+			}
+
+			// TLD: letters only, future-proof
+			const tld = labels[labels.length - 1];
+			if (!/^[a-z]{2,63}$/.test(tld)) {
 				return false;
 			}
 
 			return true;
-		} catch (e) {
+		} catch {
 			return false;
 		}
 	},
