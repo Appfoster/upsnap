@@ -349,7 +349,6 @@ class HealthCheckController extends BaseController
         $isAjax = $request->getIsAjax();
         $url = Upsnap::getMonitoringUrl();
         $forceFetch = $request->getBodyParam('force_fetch', false);
-        Craft::error($forceFetch, "Force FEtch");
         if (!$url) {
             return $this->service->handleMissingMonitoringUrl(Constants::SUBNAV_ITEM_REACHABILITY);
         }
