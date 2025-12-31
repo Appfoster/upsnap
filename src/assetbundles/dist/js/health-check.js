@@ -35,12 +35,11 @@ function showCraftMessage(type, message) {
 function registerBrokenLinksJs() {
     const refreshBtn = document.getElementById("refresh-btn");
     const statusContainerWrapper = document.getElementById("status-container-wrapper");
-    const detailsContainerWrapper = document.getElementById("details-container-wrapper");
 
     if (refreshBtn) refreshBtn.disabled = true;
 
     // Only run on security certificates page - check for unique element
-    if (!statusContainerWrapper || !detailsContainerWrapper || !document.querySelector('[data-page="broken-links"]')) {
+    if (!statusContainerWrapper || !document.querySelector('[data-page="broken-links"]')) {
         return;
     }
 
@@ -49,7 +48,7 @@ function registerBrokenLinksJs() {
     if (refreshBtn) {
         refreshBtn.addEventListener('click', function () {
             loadBrokenLinks(true);
-            showSkeletons(statusContainerWrapper, detailsContainerWrapper, contentContainer)
+            showSkeletons(statusContainerWrapper, contentContainer)
             refreshBtn.disabled = true;
         });
     }
@@ -90,7 +89,6 @@ function registerBrokenLinksJs() {
                 };
                 showCraftMessage('error', errorData.error)
                 renderStatusContainer(errorData);
-                renderDetailsContainer(errorData); // This will hide details since status !== 'ok'
             }).finally(() => {
                 refreshBtn.disabled = false;
             });
@@ -120,10 +118,6 @@ function registerBrokenLinksJs() {
                         <div class="field">
                             <div class="heading">Broken Links</div>
                             <div>${errorsCount}</div>
-                        </div>
-                        <div class="field">
-                            <div class="heading">Last Checked</div>
-                            <div>${formatDate(metaData?.checkedAt)}</div>
                         </div>
                     </div>
                 </div>
@@ -283,13 +277,12 @@ function registerBrokenLinksJs() {
 function registerDomainCheckJs() {
     const refreshBtn = document.getElementById("refresh-btn");
     const statusContainerWrapper = document.getElementById("status-container-wrapper");
-    const detailsContainerWrapper = document.getElementById("details-container-wrapper");
     const domainDetailsSection = document.getElementById("domain-details-section");
 
     if (refreshBtn) refreshBtn.disabled = true;
 
     // Only run on domain check page - check for unique element
-    if (!statusContainerWrapper || !detailsContainerWrapper || !domainDetailsSection || !document.querySelector('[data-page="domain-check"]')) {
+    if (!statusContainerWrapper || !domainDetailsSection || !document.querySelector('[data-page="domain-check"]')) {
         return;
     }
 
@@ -308,14 +301,12 @@ function registerDomainCheckJs() {
 
                     // Render status and details containers
                     renderStatusContainer(domainData);
-                    renderDetailsContainer(domainData);
 
                     // Render general info / more details
                     renderDomainDetails(domainData.details || {});
 
                     // Show containers
                     statusContainerWrapper.style.display = "block";
-                    detailsContainerWrapper.style.display = "block";
                     domainDetailsSection.style.display = "block";
                 } else {
                     const errorMessage = response?.data?.error || 'Failed to fetch domain data';
@@ -331,7 +322,6 @@ function registerDomainCheckJs() {
                 };
                 showCraftMessage('error', errorData.error)
                 renderStatusContainer(errorData);
-                renderDetailsContainer(errorData); // This will hide details since status !== 'ok'
 
                 // Hide domain details section
                 if (domainDetailsSection) {
@@ -346,7 +336,7 @@ function registerDomainCheckJs() {
     if (refreshBtn) {
         refreshBtn.addEventListener('click', function () {
             fetchDomainData(true);
-            showSkeletons(statusContainerWrapper, detailsContainerWrapper, domainDetailsSection)
+            showSkeletons(statusContainerWrapper, domainDetailsSection)
             refreshBtn.disabled = true;
         });
     }
@@ -463,7 +453,6 @@ function registerLighthouseJs() {
                     // Update the hidden data element
                     lighthouseDataElement.textContent = JSON.stringify(lighthouseData);
                     renderStatusContainer(lighthouseData);
-                    renderDetailsContainer(lighthouseData);
 
                     renderLighthouseData();
 
@@ -486,7 +475,6 @@ function registerLighthouseJs() {
                 };
                 showCraftMessage('error', errorData.error);
                 renderStatusContainer(errorData);
-                renderDetailsContainer(errorData); // This will hide details since status !== 'ok'
 
                 // Hide scores and performance containers
                 scoresContainer.style.display = 'none';
@@ -679,13 +667,12 @@ function registerLighthouseJs() {
 function registerMixedContentJs() {
     const refreshBtn = document.getElementById("refresh-btn");
     const statusContainerWrapper = document.getElementById("status-container-wrapper");
-    const detailsContainerWrapper = document.getElementById("details-container-wrapper");
     const mixedContentSection = document.getElementById("mixed-content-section");
 
     if (refreshBtn) refreshBtn.disabled = true;
 
     // Only run on mixed content page - check for unique element
-    if (!statusContainerWrapper || !detailsContainerWrapper || !mixedContentSection || !document.querySelector('[data-page="mixed-content"]')) {
+    if (!statusContainerWrapper || !mixedContentSection || !document.querySelector('[data-page="mixed-content"]')) {
         return;
     }
 
@@ -705,9 +692,6 @@ function registerMixedContentJs() {
                     // Render status
                     renderStatusContainer(mixedContentData);
 
-                    // Render details
-                    renderDetailsContainer(mixedContentData);
-
                     // Render mixed content list
                     renderMixedContentItems(mixedContentData.details || {});
                 } else {
@@ -726,7 +710,6 @@ function registerMixedContentJs() {
                 };
                 showCraftMessage('error', errorData.error);
                 renderStatusContainer(errorData);
-                renderDetailsContainer(errorData); // This will hide details since status !== 'ok'
 
                 // Hide mixed content section
                 if (mixedContentSection) {
@@ -741,7 +724,7 @@ function registerMixedContentJs() {
     if (refreshBtn) {
         refreshBtn.addEventListener('click', function () {
             fetchMixedContentData(true);
-            showSkeletons(statusContainerWrapper, detailsContainerWrapper,mixedContentSection)
+            showSkeletons(statusContainerWrapper,mixedContentSection)
             refreshBtn.disabled = true;
         });
     }
@@ -778,7 +761,7 @@ function registerMixedContentJs() {
     // Initial fetch on page load (no loader, skeleton is already visible)
     fetchMixedContentData();
 }
-function showSkeletons(statusContainerWrapper, detailsContainerWrapper, dataContainer) {
+function showSkeletons(statusContainerWrapper, dataContainer) {
 	if (statusContainerWrapper) {
 		statusContainerWrapper.innerHTML = `
 			<div class="skeleton-card">
@@ -793,30 +776,6 @@ function showSkeletons(statusContainerWrapper, detailsContainerWrapper, dataCont
 		`;
 	}
 
-	if (detailsContainerWrapper) {
-		detailsContainerWrapper.innerHTML = `
-			<div class="skeleton-card">
-				<div class="skeleton-card-header">
-					<div class="skeleton-line skeleton-line-short"></div>
-				</div>
-				<div class="skeleton-card-body">
-					<div class="skeleton-field">
-						<div class="skeleton-line skeleton-line-short"></div>
-						<div class="skeleton-line skeleton-line-long"></div>
-					</div>
-					<div class="skeleton-field">
-						<div class="skeleton-line skeleton-line-short"></div>
-						<div class="skeleton-line skeleton-line-medium"></div>
-					</div>
-					<div class="skeleton-field">
-						<div class="skeleton-line skeleton-line-short"></div>
-						<div class="skeleton-line skeleton-line-short"></div>
-					</div>
-				</div>
-			</div>
-		`;
-	}
-
 	if (dataContainer) {
 		dataContainer.style.display = 'none';
 		dataContainer.innerHTML = '';
@@ -826,13 +785,12 @@ function showSkeletons(statusContainerWrapper, detailsContainerWrapper, dataCont
 function registerReachabilityJs() {
     const refreshBtn = document.getElementById("refresh-btn");
     const statusContainerWrapper = document.getElementById("status-container-wrapper");
-    const detailsContainerWrapper = document.getElementById("details-container-wrapper");
     const reachabilitySection = document.getElementById("reachability-section");
 
     if (refreshBtn) refreshBtn.disabled = true;
 
     // Only run on reachability page - check for unique element
-    if (!statusContainerWrapper || !detailsContainerWrapper || !reachabilitySection || !document.querySelector('[data-page="reachability"]')) {
+    if (!statusContainerWrapper || !reachabilitySection || !document.querySelector('[data-page="reachability"]')) {
         return;
     }
 
@@ -850,7 +808,6 @@ function registerReachabilityJs() {
 
                         // Render containers
                         renderStatusContainer(reachabilityData);
-                        renderDetailsContainer(reachabilityData);
                         renderReachabilityDetails(reachabilityData.details || {});
                     } else {
                         const errorMessage = response?.data?.error || 'Failed to fetch reachability data';
@@ -868,7 +825,6 @@ function registerReachabilityJs() {
                 };
                 showCraftMessage('error', errorData.error);
                 renderStatusContainer(errorData);
-                renderDetailsContainer(errorData); // This will hide details since status !== 'ok'
 
                 // Hide reachability section
                 if (reachabilitySection) {
@@ -895,14 +851,6 @@ function registerReachabilityJs() {
                 <h3 class="details-title">Check details</h3>
 
                 <table class="details-table">
-                    <tr>
-                        <td class="details-label">Duration</td>
-                        <td class="details-value">
-                            ${details?.duration ?? 'Unknown'}
-                            ${details?.startedAt ? `<span style="color: #999; margin-left: 16px;">Started at ${details.startedAt}</span>` : ''}
-                        </td>
-                    </tr>
-
                     ${details?.monitoredFrom ? `
                     <tr>
                         <td class="details-label">Monitored from</td>
@@ -911,20 +859,9 @@ function registerReachabilityJs() {
                         </td>
                     </tr>
                     ` : ''}
-
-                    ${details?.httpStatus ? `
-                    <tr>
-                        <td class="details-label">HTTP Response Code</td>
-                        <td class="details-value">
-                            <span class="http-status ${getHttpStatusClass(details.httpStatus)}">
-                                ${details.httpStatus}
-                            </span>
-                        </td>
-                    </tr>
-                    ` : ''}
                 </table>
 
-                <div id="more-details" class="hidden">
+                <div id="more-details">
                     <h3 class="pt-2rem details-title">HTTP Details</h3>
                     <table class="details-table">
                         <tr>
@@ -988,8 +925,8 @@ function registerReachabilityJs() {
                     ` : ''}
                 </div>
 
-                <a href="#" class="show-less hidden">Show less</a>
-                <a href="#" class="show-details">Show more</a>
+                <a href="#" class="show-less">Show less</a>
+                <a href="#" class="show-details hidden">Show more</a>
             </div>
         `;
 
@@ -1019,7 +956,7 @@ function registerReachabilityJs() {
     if (refreshBtn) {
         refreshBtn.addEventListener('click', function () {
             fetchReachabilityData(true);
-            showSkeletons(statusContainerWrapper, detailsContainerWrapper, reachabilitySection)
+            showSkeletons(statusContainerWrapper, reachabilitySection)
             refreshBtn.disabled = true;
         });
     }
@@ -1028,13 +965,12 @@ function registerReachabilityJs() {
 function registerSecurityCertificatesJs() {
     const refreshBtn = document.getElementById("refresh-btn");
     const statusContainerWrapper = document.getElementById("status-container-wrapper");
-    const detailsContainerWrapper = document.getElementById("details-container-wrapper");
     const dataContainer = document.getElementById("security-certificates-section");
 
     if (refreshBtn) refreshBtn.disabled = true;
 
     // Only run on security certificates page - check for unique element
-    if (!statusContainerWrapper || !detailsContainerWrapper || !document.querySelector('[data-page="security-certificates"]')) {
+    if (!statusContainerWrapper || !document.querySelector('[data-page="security-certificates"]')) {
         return;
     }
 
@@ -1054,9 +990,6 @@ function registerSecurityCertificatesJs() {
                     // Render status
                     renderStatusContainer(securityCertificatesData);
 
-                    // Render details
-                    renderDetailsContainer(securityCertificatesData);
-
                     // Render security certificates details
                     renderSecurityCertificatesDetails(securityCertificatesData.details || {});
                 } else {
@@ -1075,7 +1008,6 @@ function registerSecurityCertificatesJs() {
                 };
                 showCraftMessage('error', errorData.error);
                 renderStatusContainer(errorData);
-                renderDetailsContainer(errorData); // This will hide details since status !== 'ok'
             }).finally(() => {
                 refreshBtn.disabled = false;
             });
@@ -1230,11 +1162,9 @@ function registerSecurityCertificatesJs() {
         `;
 
         // Insert after details container
-        const detailsContainer = document.getElementById("details-container-wrapper");
         if (dataContainer) {
             dataContainer.style.display = 'block';
             dataContainer.innerHTML = html;
-            detailsContainer.parentNode.appendChild(dataContainer);
             toggleShowDetails(dataContainer);
         }
     }
@@ -1280,7 +1210,7 @@ function registerSecurityCertificatesJs() {
     if (refreshBtn) {
         refreshBtn.addEventListener('click', function () {
             fetchSecurityCertificatesData(true);
-            showSkeletons(statusContainerWrapper, detailsContainerWrapper, dataContainer)
+            showSkeletons(statusContainerWrapper, dataContainer)
             refreshBtn.disabled = true;
         });
     }
@@ -1292,6 +1222,13 @@ function renderStatusContainer(data) {
     const status = data.status || 'warning';
     const message = data.message || '';
     const error = data.error || '';
+    const checkedAt = data.checkedAt || '';
+
+    let formattedDate = '';
+    if (checkedAt) {
+        const date = new Date(checkedAt);
+        formattedDate = date.toLocaleString();
+    }
 
     let statusClass = 'warning';
     let containerClass = 'warning';
@@ -1310,15 +1247,24 @@ function renderStatusContainer(data) {
         title = message || 'Server is experiencing issues!';
     }
 
-    let html = `
-            <div class="status-container ${containerClass}">
-                <div class="status-header">
+    const html = `
+        <div class="status-container ${containerClass}">
+            <div class="status-header">
+                <div class="status-left">
                     <div class="status-icon ${statusClass}">${icon}</div>
                     <h3 class="status-title">${title}</h3>
                 </div>
-                ${error ? `<p class="status-message">${error}</p>` : ''}
+
+                ${formattedDate ? `
+                    <div class="status-checked-at">
+                        Last checked: ${formattedDate}
+                    </div>
+                ` : ''}
             </div>
-        `;
+
+            ${error ? `<p class="status-message">${error}</p>` : ''}
+        </div>
+    `;
 
     statusContainerWrapper.innerHTML = html;
 }

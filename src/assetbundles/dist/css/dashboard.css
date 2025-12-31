@@ -121,6 +121,12 @@
     margin: 4px 0;
 }
 
+.status-message-dashboard {
+    align-items: center;
+    gap: 8px;
+    margin: 4px 0;
+}
+
 .dashboard-wrapper {
     display: flex;
     width: 100%;

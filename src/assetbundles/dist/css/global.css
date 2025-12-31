@@ -267,6 +267,13 @@
     align-items: center;
     margin-bottom: 8px;
 }
+/* Left column */
+.status-left {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    flex: 1; /* takes remaining space */
+}
 
 .status-title {
     font-weight: 600;

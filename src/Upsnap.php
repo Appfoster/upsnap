@@ -108,6 +108,8 @@ class Upsnap extends Plugin
                     Constants::SUBNAV_ITEM_LIGHTHOUSE['url'] => 'upsnap/health-check/lighthouse',
                     Constants::SUBNAV_ITEM_DOMAIN_CHECK['url'] => 'upsnap/health-check/domain-check',
                     Constants::SUBNAV_ITEM_MIXED_CONTENT['url'] => 'upsnap/health-check/mixed-content',
+                    Constants::SUBNAV_ITEM_STATUS_PAGE['url'] => 'upsnap/status-page/index',
+
 
                     // Setting Route
                     Constants::SUBNAV_ITEM_SETTINGS['url'] => 'upsnap/settings/index',
@@ -116,7 +118,11 @@ class Upsnap extends Plugin
                     'upsnap/monitors/detail/<monitorId:[0-9a-fA-F\-]+>' => 'upsnap/monitors/detail',
                     'upsnap/monitors/histogram/<monitorId:[0-9a-fA-F\-]+>' => 'upsnap/monitors/histogram-data',
                     'upsnap/monitors/response-time/<monitorId:[0-9a-fA-F\-]+>' => 'upsnap/monitors/response-time-data',
-                    'upsnap/monitors/uptime-stats/<monitorId:[0-9a-fA-F\-]+>' => 'upsnap/monitors/uptime-stats-data'
+                    'upsnap/monitors/uptime-stats/<monitorId:[0-9a-fA-F\-]+>' => 'upsnap/monitors/uptime-stats-data',
+
+                    'upsnap/status-page/edit/<statusPageId:[0-9a-fA-F\-]+>' => 'upsnap/status-page/new',
+                    'upsnap/status-page/new' => 'upsnap/status-page/new'
+
                 ]);
             }
         );
