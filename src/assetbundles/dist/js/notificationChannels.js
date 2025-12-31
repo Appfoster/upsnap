@@ -974,7 +974,6 @@
 			const newState = !channel.is_enabled;
 
 			try {
-				console.log("dhajska", channel)
 				const response = await Craft.sendActionRequest(
 					"POST",
 					"upsnap/monitor-notification-channels/update",
