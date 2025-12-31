@@ -191,31 +191,31 @@ Craft.UpsnapDashboard = {
 				cardTitle: "Reachability",
 				cardId: "reachability-card",
 			}),
-			// this.fetchAndRenderCard({
-			// 	action: "upsnap/health-check/security-certificates",
-			// 	cardTitle: "Security Certificates",
-			// 	cardId: "ssl-card",
-			// }),
-			// this.fetchAndRenderCard({
-			// 	action: "upsnap/health-check/broken-links",
-			// 	cardTitle: "Broken Links",
-			// 	cardId: "broken-links-card",
-			// }),
-			// this.fetchAndRenderCard({
-			// 	action: "upsnap/health-check/domain-check",
-			// 	cardTitle: "Domain Check",
-			// 	cardId: "domain-check-card",
-			// }),
-			// this.fetchAndRenderCard({
-			// 	action: "upsnap/health-check/mixed-content",
-			// 	cardTitle: "Mixed Content",
-			// 	cardId: "mixed-content-card",
-			// }),
-			// this.fetchAndRenderCard({
-			// 	action: "upsnap/health-check/lighthouse",
-			// 	cardTitle: "Lighthouse",
-			// 	cardId: "lighthouse-card",
-			// }),
+			this.fetchAndRenderCard({
+				action: "upsnap/health-check/security-certificates",
+				cardTitle: "Security Certificates",
+				cardId: "ssl-card",
+			}),
+			this.fetchAndRenderCard({
+				action: "upsnap/health-check/broken-links",
+				cardTitle: "Broken Links",
+				cardId: "broken-links-card",
+			}),
+			this.fetchAndRenderCard({
+				action: "upsnap/health-check/domain-check",
+				cardTitle: "Domain Check",
+				cardId: "domain-check-card",
+			}),
+			this.fetchAndRenderCard({
+				action: "upsnap/health-check/mixed-content",
+				cardTitle: "Mixed Content",
+				cardId: "mixed-content-card",
+			}),
+			this.fetchAndRenderCard({
+				action: "upsnap/health-check/lighthouse",
+				cardTitle: "Lighthouse",
+				cardId: "lighthouse-card",
+			}),
 		];
 
 		return Promise.allSettled(calls);
