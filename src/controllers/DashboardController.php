@@ -48,7 +48,6 @@ class DashboardController extends BaseController
                 Craft::error("Monitor fetch failed: {$e->getMessage()}", __METHOD__);
             }
         }
-        Craft::error($settingsService->getApiKey(), "api key");
 
         $variables = [
             'success' => true,

@@ -91,6 +91,12 @@ class Constants
         'template' => 'upsnap/healthcheck/mixed-content',
         'apiLabel' => 'mixed_content'
     ];
+    const SUBNAV_ITEM_STATUS_PAGE = [
+        'label' => 'Status Page',
+        'key' => 'status-page',
+        'url' => 'upsnap/status-page',
+        'template' => 'upsnap/status-page/_index'
+    ];
     const SUBNAV_ITEM_SETTINGS = [
         'label' => 'Settings',
         'key' => 'settings',
@@ -134,6 +140,10 @@ class Constants
         self::SUBNAV_ITEM_MIXED_CONTENT['key'] => [
             'label' => self::SUBNAV_ITEM_MIXED_CONTENT['label'],
             'url' => self::SUBNAV_ITEM_MIXED_CONTENT['url']
+        ],
+        self::SUBNAV_ITEM_STATUS_PAGE['key'] => [
+            'label' => self::SUBNAV_ITEM_STATUS_PAGE['label'],
+            'url' => self::SUBNAV_ITEM_STATUS_PAGE['url']
         ],
         self::SUBNAV_ITEM_SETTINGS['key'] => [
             'label' => self::SUBNAV_ITEM_SETTINGS['label'],
@@ -180,7 +190,14 @@ class Constants
             ],
             'histogram' => 'user/monitors/{monitorId}/histogram',
             'response_time' => 'user/monitors/{monitorId}/response-time',
-            'uptime_stats' => 'user/monitors/{monitorId}/uptime-stats'
+            'uptime_stats' => 'user/monitors/{monitorId}/uptime-stats',
+            'status-page' => [
+                'list' => 'user/status-pages',
+                'detail' => 'user/status-pages',
+                'create' => 'user/status-pages',
+                'update' => 'user/status-pages',
+                'delete' => 'user/status-pages',
+            ]
         ],
         'user' => [
             'details' => 'user/details'
