@@ -120,12 +120,12 @@ Detect HTTP resources on HTTPS pages.
 #### Monitors Listing
 Manage you monitors from one place.
 
-![Mixed Content Detection](assets/images/monitors.png)
+![Monitors Listing](assets/images/monitors.png)
 
 #### Status Pages Listing
 Shareable Status Pages to track the monitors across teams.
 
-![Mixed Content Detection](assets/images/status-page.png)
+![Status Pages Listing](assets/images/status-page.png)
 
 ## Troubleshooting
 
