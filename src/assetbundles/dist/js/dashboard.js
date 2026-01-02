@@ -944,8 +944,8 @@ Craft.UpsnapDashboard = {
 				</div>
 				<p class="status-message-dashboard">
 					Register to access complete monitoring data including the last 24-hour histogram,
-					uptime statistics, and response time charts.
-					<a href=${upsnapDashboardUrl} class="status-link">Go to your dashboard</a> to register and unlock the full potential.
+					uptime statistics, and response time charts.Go to
+					<a href=${upsnapDashboardUrl} class="status-link">dashboard</a> to register and unlock the full potential.
 				</p>
 			</div>
 		`;
