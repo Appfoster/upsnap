@@ -62,7 +62,6 @@ class StatusPageController extends BaseController
             }
 
             if (!isset($response['status']) || $response['status'] !== 'success') {
-                Craft::error("error message" . $response['message'], __METHOD__);
                 $errorMsg = $response['message'] ?? Craft::t('upsnap', 'Failed to fetch status page.');
 
                 throw new \Exception($errorMsg);

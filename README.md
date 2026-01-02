@@ -118,7 +118,7 @@ Detect HTTP resources on HTTPS pages.
 ![Mixed Content Detection](assets/images/mixed-content.png)
 
 #### Monitors Listing
-Manage you monitors from one place.
+Manage your monitors from one place.
 
 ![Monitors Listing](assets/images/monitors.png)
 

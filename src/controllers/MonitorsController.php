@@ -544,8 +544,7 @@ class MonitorsController extends Controller
     public function actionHistogramData(string $monitorId): Response
     {
         try {
-            $endpoint = str_replace('{monitorId}', $monitorId, 
-            Constants::MICROSERVICE_ENDPOINTS['monitors']['histogram']);
+            $endpoint = $this->buildMicroserviceEndpoint(Constants::MICROSERVICE_ENDPOINTS['monitors']['histogram'],$monitorId);
 
             // Pass all params to the service
             $response = Upsnap::$plugin->apiService->get($endpoint);
@@ -577,8 +576,7 @@ class MonitorsController extends Controller
         );
 
         try {
-            $endpoint = str_replace('{monitorId}', $monitorId, 
-            Constants::MICROSERVICE_ENDPOINTS['monitors']['response_time']);
+            $endpoint = $this->buildMicroserviceEndpoint(Constants::MICROSERVICE_ENDPOINTS['monitors']['response_time'],$monitorId);
 
             // Pass all params to the service
             $response = Upsnap::$plugin->apiService->get($endpoint, $params);
@@ -603,8 +601,7 @@ class MonitorsController extends Controller
     public function actionUptimeStatsData(string $monitorId): Response
     {
         try {
-            $endpoint = str_replace('{monitorId}', $monitorId, 
-            Constants::MICROSERVICE_ENDPOINTS['monitors']['uptime_stats']);
+            $endpoint = $this->buildMicroserviceEndpoint(Constants::MICROSERVICE_ENDPOINTS['monitors']['uptime_stats'],$monitorId);
 
             // Pass all params to the service
             $response = Upsnap::$plugin->apiService->get($endpoint, ["uptime_stats_time_frames" => "day,week,month,year"]);
@@ -624,5 +621,13 @@ class MonitorsController extends Controller
             Craft::error("Uptime stats data fetch failed: {$e->getMessage()}", __METHOD__);
             throw new NotFoundHttpException('Uptime stats data not found');
         }
+    }
+
+    /**
+     * Build a monitor endpoint by replacing the `{monitorId}` placeholder in the route template.
+     */
+    private function buildMicroserviceEndpoint(string $microserviceUrl, string $monitorId): string
+    {
+        return str_replace('{monitorId}', $monitorId, $microserviceUrl);
     }
 }
