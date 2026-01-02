@@ -997,9 +997,7 @@ Craft.UpsnapDashboard = {
 					<h3 class="status-title">Unlock Full Monitoring Insights</h3>
 				</div>
 				<p class="status-message-dashboard">
-					Register to access complete monitoring data including the last 24-hour histogram,
-					uptime statistics, and response time charts.Go to
-					<a href=${upsnapDashboardUrl} class="status-link">dashboard</a> to register and unlock the full potential.
+					<a href="${upsnapDashboardUrl}/signup" class="status-link">Register</a>  to unlock complete monitoring insights - last 24-hour histograms, uptime statistics, response time charts, live incident notifications, a public status page, and more.
 				</p>
 			</div>
 		`;

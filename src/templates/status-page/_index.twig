@@ -36,11 +36,11 @@ userDetails: {{ userDetails|json_encode|raw }}
 				</h3>
 			</div>
 			<p class="status-message-dashboard">
-				{{ 'Go to'|t('upsnap') }}
-				<a href="{{ upsnapDashboardUrl }}" class="status-link">dashboard</a>
-				{{ 'to register and unlock the full potential.'|t('upsnap') }}
+				<a href="{{ upsnapDashboardUrl }}/signup" class="status-link">Register</a>
+				{{ 'to activate this feature and get a public status page accessible via a shareable link.'|t('upsnap') }}
 			</p>
 		</div>
+		<p>Example Status Page</p>
 		<div class="zilch register-message">
 			<img class="status-page-image" src="{{ view.getAssetManager().getPublishedUrl( '@appfoster/upsnap/../resources/images/status-page-placeholder.png', true ) }}" alt="Status page placeholder"/>
 			<img class="status-page-image" src="{{ view.getAssetManager().getPublishedUrl( '@appfoster/upsnap/../resources/images/status-detail-page-placeholder.png', true ) }}" alt="Status page placeholder"/>
