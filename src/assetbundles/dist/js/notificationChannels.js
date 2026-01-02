@@ -894,9 +894,11 @@
 
 			const channel = this.channels.find((ch) => ch.id === channelId);
 			if (!channel) return;
+			const toggleLabel = channel.is_enabled ? "Disable" : "Enable";
 
 			const html = `
                 <ul>
+                    <li data-action="toggle">${toggleLabel}</li>
                     <li data-action="test">Test Connection</li>
                     <li data-action="edit">Edit</li>
                     <li data-action="delete" class="error">Delete</li>
@@ -929,6 +931,9 @@
 			if (!channel) return;
 
 			switch (action) {
+				case "toggle":
+					await this.toggleChannel(channel);
+					break;
 				case "edit":
 					this.editChannel(channelId);
 					break;
@@ -964,6 +969,45 @@
 
             this.openEditModal(channel);
         }
+
+		async toggleChannel(channel) {
+			const newState = !channel.is_enabled;
+
+			try {
+				const response = await Craft.sendActionRequest(
+					"POST",
+					"upsnap/monitor-notification-channels/update",
+					{
+						data: {
+							channelId: channel.id,
+							label: channel.name,
+							is_enabled: newState,
+							config: channel.config
+						},
+					}
+				);
+
+				const data = response?.data;
+
+				if (!data?.success) {
+					throw new Error(data?.message || "Failed to update channel status");
+				}
+
+				this.showCraftMessage(
+					"success",
+					`Channel ${newState ? "enabled" : "disabled"} successfully`
+				);
+
+				channel.is_enabled = newState;
+				this.renderIntegrations();
+			} catch (error) {
+				console.error("Toggle failed:", error);
+				this.showCraftMessage(
+					"error",
+					error?.response?.data?.message || error.message || "Failed to update channel"
+				);
+			}
+		}
 
 		/**
 		 * Test channel connection

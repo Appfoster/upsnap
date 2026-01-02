@@ -267,6 +267,13 @@
     align-items: center;
     margin-bottom: 8px;
 }
+/* Left column */
+.status-left {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    flex: 1; /* takes remaining space */
+}
 
 .status-title {
     font-weight: 600;
@@ -1340,4 +1347,19 @@
 .upsnap-range-tick.disabled {
     color: #d1d5db;
     cursor: not-allowed;
+}
+
+.is-disabled {
+	opacity: 0.45;
+	cursor: not-allowed;
+	position: relative;
+}
+
+.is-disabled * {
+	pointer-events: none;
+}
+
+.is-disabled::after {
+	position: absolute;
+	inset: 0;
 }

@@ -219,53 +219,55 @@ Craft.Upsnap.Settings = {
 		// -------------------------------
 		// Intercept form submission for Healthcheck tab
 		const form = this.elements.settingsForm;
-
-		form.addEventListener("submit", function (e) {
-			const activeTab = document.querySelector(
-				".tab-content:not(.hidden)"
-			);
-			if (!activeTab || activeTab.id !== "healthchecks-tab") {
-				return; // Normal submit for other tabs
-			}
-
-			e.preventDefault(); // Stop full page reload
-
-			const url = Craft.getActionUrl("upsnap/monitors/update");
-			const formData = new FormData(form);
-
-			// Optional: show spinner or disable save button
-			const saveBtn = document.getElementById("save-button");
-			saveBtn.disabled = true;
-			saveBtn.classList.add("disabled");
-
-			fetch(url, {
-				method: "POST",
-				headers: {
-					"X-CSRF-Token": Craft.csrfTokenValue,
-				},
-				body: formData,
-			})
-				.then((response) => response.json())
-				.then((data) => {
-					if (data.success) {
-						Craft.cp.displayNotice(
-							data.message || "Monitor updated successfully."
-						);
-					} else {
-						Craft.cp.displayError(
-							data.message || "Failed to update monitor."
-						);
-					}
+		if(form) {
+			form.addEventListener("submit", function (e) {
+				const activeTab = document.querySelector(
+					".tab-content:not(.hidden)"
+				);
+				if (!activeTab || activeTab.id !== "healthchecks-tab") {
+					return; // Normal submit for other tabs
+				}
+	
+				e.preventDefault(); // Stop full page reload
+	
+				const url = Craft.getActionUrl("upsnap/monitors/update");
+				const formData = new FormData(form);
+	
+				// Optional: show spinner or disable save button
+				const saveBtn = document.getElementById("save-button");
+				saveBtn.disabled = true;
+				saveBtn.classList.add("disabled");
+	
+				fetch(url, {
+					method: "POST",
+					headers: {
+						"X-CSRF-Token": Craft.csrfTokenValue,
+					},
+					body: formData,
 				})
-				.catch((err) => {
-					console.error("Healthcheck update failed:", err);
-					Craft.cp.displayError("An unexpected error occurred.");
-				})
-				.finally(() => {
-					saveBtn.disabled = false;
-					saveBtn.classList.remove("disabled");
-				});
-		});
+					.then((response) => response.json())
+					.then((data) => {
+						if (data.success) {
+							Craft.cp.displayNotice(
+								data.message || "Monitor updated successfully."
+							);
+						} else {
+							Craft.cp.displayError(
+								data.message || "Failed to update monitor."
+							);
+						}
+					})
+					.catch((err) => {
+						console.error("Healthcheck update failed:", err);
+						Craft.cp.displayError("An unexpected error occurred.");
+					})
+					.finally(() => {
+						saveBtn.disabled = false;
+						saveBtn.classList.remove("disabled");
+					});
+			});
+		}
+
 	},
 };
 

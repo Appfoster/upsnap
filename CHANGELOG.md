@@ -4,6 +4,24 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [1.0.9] - 2026-01-02
+
+### Added
+- Skeleton loaders across dashboard cards to provide visual feedback while data is loading.
+- Registration banner on the dashboard for unregistered users.
+- Option to enable or disable notification channels and integrations.
+- Status pages listing with actions support.
+
+### Updated
+- Dashboard cards to fetch their data independently via AJAX calls.
+- URL validation logic to support a wider range of monitoring URLs with strict validation rules.
+- Lighthouse check monitoring interval slider with updated interval options.
+- Health check detail pages to replace the refresh button with a **Fetch Now** button for retrieving recent data.
+- Health check pages cleaned up to remove unnecessary data and align behavior with the WebApp.
+- Monitor polling logic with state updates and internal improvements.
+
+### Chore
+- Minor bug fixes and UI refinements.
 
 ## [1.0.8] - 2025-12-24
 
@@ -141,7 +159,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Asset minification and optimization
 - Background processing for monitoring tasks
 
-[Unreleased]: https://github.com/Appfoster/upsnap/compare/1.0.8...HEAD
+[Unreleased]: https://github.com/Appfoster/upsnap/compare/1.0.9...HEAD
+[1.0.9]: https://github.com/Appfoster/upsnap/releases/tag/1.0.9
 [1.0.8]: https://github.com/Appfoster/upsnap/releases/tag/1.0.8
 [1.0.7]: https://github.com/Appfoster/upsnap/releases/tag/1.0.7
 [1.0.6]: https://github.com/Appfoster/upsnap/releases/tag/1.0.6

@@ -28,6 +28,7 @@ class DashboardController extends BaseController
     {
         $url = Upsnap::getMonitoringUrl();
         $settingsService = Upsnap::$plugin->settingsService;
+        $settingsService->validateApiKey();
 
         $monitorId = $settingsService->getMonitorId();
         $monitorData = null; // default
@@ -36,13 +37,7 @@ class DashboardController extends BaseController
         if ($monitorId) {
             try {
                 $endpoint = Constants::MICROSERVICE_ENDPOINTS['monitors']['view'] . '/' . $monitorId;
-                $response = Upsnap::$plugin->apiService->get($endpoint,  [
-                    'uptime_stats' => 'true',
-                    'uptime_stats_time_frames' => 'day,month,week',
-                    'response_time'    => 'true',
-                    'histogram'  => 'true',
-                    'histogram_time_frame' => 'last_day'
-                ]);
+                $response = Upsnap::$plugin->apiService->get($endpoint);
 
                 if (isset($response['status']) && $response['status'] === 'success') {
                     $monitorData = $response['data']['monitor'] ?? null;
@@ -61,6 +56,10 @@ class DashboardController extends BaseController
             'url' => $url,
             'monitorId' => $monitorId,
             'monitorData' => $monitorData,
+            'apiKey' => $settingsService->getApiKey(),
+            'apiTokenStatus' => $settingsService->getApiTokenStatus(),
+            'apiTokenStatuses' => Constants::API_KEY_STATUS,
+            'upsnapDashboardUrl' => Constants::UPSNAP_DASHBOARD_URL,
         ];
 
         if (!$url) {

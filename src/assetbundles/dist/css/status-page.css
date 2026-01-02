@@ -1,0 +1,141 @@
+.multiselect {
+	position: relative;
+	max-width: 100%;
+	font-size: 14px;
+}
+
+.multiselect-input {
+	padding-right: 36px;
+	min-height: 38px;
+	padding: 6px 30px 6px 8px;
+	border: 1px solid #cdd8e4;
+	border-radius: 4px;
+	background: #fff;
+	cursor: pointer;
+
+	display: flex;
+	align-items: center;
+	gap: 6px;
+}
+
+.multiselect-input:focus-within {
+	border-color: #0d99ff;
+	box-shadow: 0 0 0 1px rgba(13, 153, 255, 0.4);
+}
+
+.multiselect-input .pills {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+
+	flex: 1; /* 👈 CRITICAL */
+	min-width: 0;
+}
+
+.multiselect-input .pill {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+
+	background: #e6f4ff;
+	border: 1px solid #b6ddff;
+	color: #0b69a3;
+
+	padding: 3px 8px;
+	border-radius: 14px;
+	font-size: 13px;
+	white-space: nowrap;
+}
+
+.multiselect-input .pill button {
+	background: none;
+	border: none;
+	cursor: pointer;
+	color: #0b69a3;
+	font-size: 14px;
+	line-height: 1;
+	padding: 0;
+}
+
+.multiselect-input .pill button:hover {
+	color: #d0021b;
+}
+
+.multiselect-input .caret {
+	position: absolute;
+	right: 10px;
+	top: 50%;
+	width: 8px;
+	height: 8px;
+	border-right: 2px solid #7b8794;
+	border-bottom: 2px solid #7b8794;
+	transform: translateY(-50%) rotate(45deg);
+	pointer-events: none;
+}
+.multiselect-menu {
+	position: absolute;
+	z-index: 100;
+	top: calc(100% + 4px);
+	left: 0;
+	right: 0;
+
+	background: #fff;
+	border: 1px solid #cdd8e4;
+	border-radius: 4px;
+	box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+
+	max-height: 260px;
+	overflow-y: auto;
+}
+
+.multiselect-option {
+	padding: 8px 10px;
+}
+
+.multiselect-option label {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	cursor: pointer;
+}
+
+.multiselect-option:hover {
+	background: #f3f7fc;
+}
+
+.multiselect-option input[type="checkbox"] {
+	margin: 0;
+}
+
+.hidden {
+	display: none !important;
+}
+
+.pill {
+	position: relative !important;
+}
+
+.register-message {
+	padding: 0px;
+}
+.status-page-image {
+	opacity: 50%;
+}
+
+#status-pages-loaders {
+	position: fixed;
+	margin: auto;
+	width: 48px;
+	height: 48px;
+}
+.loader-overlay {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+.status-pages-wrapper {
+	min-height: 50rem;
+}
+.menu-btn {
+	padding-bottom: 2px !important;
+}

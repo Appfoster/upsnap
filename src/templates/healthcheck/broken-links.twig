@@ -7,7 +7,7 @@
 {% block actionButton %}
 	<div class="buttons">
 		<button type="button" class="btn submit" data-icon="refresh" id="refresh-btn">
-			{{ 'Refresh'|t('upsnap') }}
+			{{ 'Check Now'|t('upsnap') }}
 		</button>
 	</div>
 {% endblock %}
@@ -33,7 +33,6 @@
 				</div>
 			</div>
 		</div>
-
 		<div id="details-container-wrapper">
 			<div class="skeleton-card">
 				<div class="skeleton-card-header">
@@ -58,10 +57,10 @@
 {% endblock %}
 
 {% block foot %}
-    <script>
-        window.CraftPageData = {
-            title: {{ title|json_encode|raw }},
-            monitorUrl: {{ data.url|json_encode|raw }}
-        };
-    </script>
+	<script>
+		window.CraftPageData = {
+title: {{ title|json_encode|raw }},
+monitorUrl: {{ data.url|json_encode|raw }}
+};
+	</script>
 {% endblock %}

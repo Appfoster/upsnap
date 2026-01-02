@@ -13,7 +13,7 @@ use appfoster\upsnap\services\HealthCheckService;
 class HealthCheckController extends BaseController
 {
     public $service;
-    
+
     public function __construct($id, $module = null)
     {
         parent::__construct($id, $module);
@@ -32,34 +32,34 @@ class HealthCheckController extends BaseController
         if (!$url) {
             return $this->service->handleMissingMonitoringUrl(Constants::SUBNAV_ITEM_REACHABILITY);
         }
- 
+
         $data = [
             'data' => [
                 'url' => $url
             ]
         ];
 
-        if( $isAjax ) {
+        if ($isAjax) {
             try {
                 $paramName = Constants::SUBNAV_ITEM_BROKEN_LINKS['apiLabel'];
                 $response = $this->service->getHealthcheck($url, [$paramName], $forceFetch);
-    
+
                 if (isset($response['result']['details'][$paramName]['error'])) {
                     $errorMsg = $response['result']['details'][$paramName]['error'];
                     throw new \Exception($errorMsg);
                 }
-    
+
                 $brokenLinksMeta = $response['result']['details'][$paramName]['meta'] ?? [];
                 $isOk = $response['result']['details'][$paramName]['ok'] ?? true;
                 $errorsCount = $brokenLinksMeta['broken'] ?? 0;
-    
+
                 // If there are broken links, consider it an error even if API says ok
                 if ($errorsCount > 0) {
                     $isOk = false;
                 }
-    
+
                 $brokenLinks = [];
-    
+
                 // Extract broken links if present
                 if (!empty($brokenLinksMeta['brokenLinks'])) {
                     foreach ($brokenLinksMeta['brokenLinks'] as $page) {
@@ -83,7 +83,7 @@ class HealthCheckController extends BaseController
                         }
                     }
                 }
-    
+
                 $data = [
                     'data' => [
                         'status' => $isOk ? 'ok' : 'error',
@@ -98,7 +98,6 @@ class HealthCheckController extends BaseController
                         ],
                     ]
                 ];
-    
             } catch (\Throwable $e) {
                 $data = [
                     'data' => [
@@ -145,14 +144,14 @@ class HealthCheckController extends BaseController
                     $errors = $response['result']['details'][$paramName]['error'];
                     throw new \Exception($errors);
                 }
-    
+
                 // Transform API response to our expected format
                 if (isset($response['result'])) {
                     $result = $response['result'];
                     $domain = $result['details'][$paramName] ?? null;
                     $meta = $domain['meta'] ?? [];
                     $isOk = $response['result']['details'][$paramName]['ok'] ?? true;
-    
+
                     $data = [
                         'data' => [
                             'status' => $isOk ? 'ok' : 'error',
@@ -201,7 +200,7 @@ class HealthCheckController extends BaseController
 
         return $this->service->sendResponse($data, Constants::SUBNAV_ITEM_DOMAIN_CHECK['template']);
     }
-    
+
     public function actionLighthouse(): Response
     {
         $request = Craft::$app->getRequest();
@@ -220,49 +219,63 @@ class HealthCheckController extends BaseController
         ];
 
         if ($isAjax) {
-            try {
-                $paramName = Constants::SUBNAV_ITEM_LIGHTHOUSE['apiLabel'];
-    
-                $response = $this->service->getHealthcheck($url, [$paramName],$forceFetch, Craft::$app->getRequest()->getParam('device', 'desktop'));
-    
-                if (isset($response['result']['details'][$paramName]['error'])) {
-                    throw new \Exception($response['result']['details'][$paramName]['error']);
-                }
-    
-                $isOk = $response['result']['details'][$paramName]['ok'] ?? true;
-    
-                if (isset($response['result'])) {
-                    $result = $response['result'];
-                    $lh = $result['details']['lighthouse'] ?? [];
-    
-                    $data = [
-                        'data' => [
-                            'status' => $isOk ? 'ok' : 'error',
-                            'message' => $isOk ? 'All checks completed' : 'Some issues detected',
-                            'url' => $url ?? '',
-                            'checkedAt' => $response['checkedAt'] ?? '',
-                            "result" => [
-                                "summary" => [
-                                    "ok" => $result['summary']['ok'] ?? true,
-                                    "score" => $result['summary']['score'] ?? 100,
-                                    "message" => $result['summary']['message'] ?? 'checks completed',
-                                ],
-                                "details" => [
-                                    "lighthouse" => $lh,
-                                ],
-                                "durationMs" => $result['durationMs'] ?? 0,
-                            ],
-                        ]
-                    ];
-                }
-            } catch (\Throwable $e) {
+            if (!$this->isHttpsUrl($url)) {
                 $data = [
                     'data' => [
-                        'status' => 'error',
-                        'error' => $e->getMessage(),
+                        'status' => 'warning',
+                        'error' => Craft::t(
+                            'upsnap',
+                            'This check is only allowed for HTTPS URLs.'
+                        ),
                         'url' => $url,
                     ]
                 ];
+            } else {
+                try {
+                    $paramName = Constants::SUBNAV_ITEM_LIGHTHOUSE['apiLabel'];
+
+                    $response = $this->service->getHealthcheck($url, [$paramName], $forceFetch, Craft::$app->getRequest()->getParam('device', 'desktop'));
+
+                    if (isset($response['result']['details'][$paramName]['error'])) {
+                        throw new \Exception($response['result']['details'][$paramName]['error']);
+                    }
+
+                    $isOk = $response['result']['details'][$paramName]['ok'] ?? true;
+
+                    if (isset($response['result'])) {
+                        $result = $response['result'];
+                        $lh = $result['details']['lighthouse'] ?? [];
+
+                        $data = [
+                            'data' => [
+                                'status' => $isOk ? 'ok' : 'error',
+                                'message' => $isOk ? 'All checks completed' : 'Some issues detected',
+                                'url' => $url ?? '',
+                                'checkedAt' => $response['checkedAt'] ?? '',
+                                'duration' => isset($result['durationMs']) ? $result['durationMs'] . ' ms' : 'Unknown',
+                                "result" => [
+                                    "summary" => [
+                                        "ok" => $result['summary']['ok'] ?? true,
+                                        "score" => $result['summary']['score'] ?? 100,
+                                        "message" => $result['summary']['message'] ?? 'checks completed',
+                                    ],
+                                    "details" => [
+                                        "lighthouse" => $lh,
+                                    ],
+                                    "durationMs" => $result['durationMs'] ?? 0,
+                                ],
+                            ]
+                        ];
+                    }
+                } catch (\Throwable $e) {
+                    $data = [
+                        'data' => [
+                            'status' => 'error',
+                            'error' => $e->getMessage(),
+                            'url' => $url,
+                        ]
+                    ];
+                }
             }
         }
 
@@ -280,7 +293,7 @@ class HealthCheckController extends BaseController
         $isAjax = $request->getIsAjax();
         $url = Upsnap::getMonitoringUrl();
         $forceFetch = $request->getBodyParam('force_fetch', false);
-        
+
         if (!$url) {
             return $this->service->handleMissingMonitoringUrl(Constants::SUBNAV_ITEM_MIXED_CONTENT);
         }
@@ -292,44 +305,56 @@ class HealthCheckController extends BaseController
         ];
 
         if ($isAjax) {
-            try {
-                $paramName = Constants::SUBNAV_ITEM_MIXED_CONTENT['apiLabel'];
-                $response = $this->service->getHealthcheck($url, [$paramName], $forceFetch);
-    
-                if (isset($response['result']['details'][$paramName]['error'])) {
-                    $errorMsg = $response['result']['details'][$paramName]['error'];
-                    throw new \Exception($errorMsg);
-                }
-    
-                // Transform API response to our expected format
-                if (isset($response['result'])) {
-                    $result = $response['result'];
-                    $mixedContent = $result['details'][$paramName] ?? null;
-                    $meta = $mixedContent['meta'] ?? [];
-                    $isOk = $response['result']['details'][$paramName]['ok'] ?? true;
-    
+            if (!$this->isHttpsUrl($url)) {
+                $data = [
+                    'data' => [
+                        'status' => 'warning',
+                        'error' => Craft::t(
+                            'upsnap',
+                            'This check is only allowed for HTTPS URLs.'
+                        ),
+                    ]
+                ];
+            } else {
+                try {
+                    $paramName = Constants::SUBNAV_ITEM_MIXED_CONTENT['apiLabel'];
+                    $response = $this->service->getHealthcheck($url, [$paramName], $forceFetch);
+
+                    if (isset($response['result']['details'][$paramName]['error'])) {
+                        $errorMsg = $response['result']['details'][$paramName]['error'];
+                        throw new \Exception($errorMsg);
+                    }
+
+                    // Transform API response to our expected format
+                    if (isset($response['result'])) {
+                        $result = $response['result'];
+                        $mixedContent = $result['details'][$paramName] ?? null;
+                        $meta = $mixedContent['meta'] ?? [];
+                        $isOk = $response['result']['details'][$paramName]['ok'] ?? true;
+
+                        $data = [
+                            'data' => [
+                                'status' => $isOk ? 'ok' : 'error',
+                                'message' => $isOk ? 'No mixed content found!' : 'Mixed content detected!',
+                                'url' => $url ?? '',
+                                'checkedAt' => $response['checkedAt'] ?? '',
+                                'duration' => isset($result['durationMs']) ? $result['durationMs'] . ' ms' : 'Unknown',
+                                'details' => [
+                                    'mixedCount' => $meta['mixedCount'] ?? 0,
+                                    'mixedContentItems' => $meta['mixedContentItems'] ?? [],
+                                ]
+                            ]
+                        ];
+                    }
+                } catch (\Throwable $e) {
                     $data = [
                         'data' => [
-                            'status' => $isOk ? 'ok' : 'error',
-                            'message' => $isOk ? 'No mixed content found!' : 'Mixed content detected!',
-                            'url' => $url ?? '',
-                            'checkedAt' => $response['checkedAt'] ?? '',
-                            'duration' => isset($result['durationMs']) ? $result['durationMs'] . ' ms' : 'Unknown',
-                            'details' => [
-                                'mixedCount' => $meta['mixedCount'] ?? 0,
-                                'mixedContentItems' => $meta['mixedContentItems'] ?? [],
-                            ]
+                            'status' => 'error',
+                            'error' => $e->getMessage(),
+                            'url' => $url,
                         ]
                     ];
                 }
-            } catch (\Throwable $e) {
-                $data = [
-                    'data' => [
-                        'status' => 'error',
-                        'error' => $e->getMessage(),
-                        'url' => $url,
-                    ]
-                ];
             }
         }
 
@@ -348,7 +373,6 @@ class HealthCheckController extends BaseController
         $isAjax = $request->getIsAjax();
         $url = Upsnap::getMonitoringUrl();
         $forceFetch = $request->getBodyParam('force_fetch', false);
-
         if (!$url) {
             return $this->service->handleMissingMonitoringUrl(Constants::SUBNAV_ITEM_REACHABILITY);
         }
@@ -374,6 +398,7 @@ class HealthCheckController extends BaseController
                         'message' => $isOk ? 'Website is reachable' : 'Website reachability issues detected!',
                         'url' => $url ?? '',
                         'checkedAt' => $response['checkedAt'] ?? '',
+                        'duration' => isset($result['durationMs']) ? $result['durationMs'] . ' ms' : 'Unknown',
                         'details' => [
                             'duration' => isset($result['durationMs']) ? $result['durationMs'] . ' ms' : 'Unknown',
                             'httpStatus' => $meta['statusCode'] ?? 0,
@@ -420,54 +445,68 @@ class HealthCheckController extends BaseController
             return $this->service->handleMissingMonitoringUrl(Constants::SUBNAV_ITEM_REACHABILITY);
         }
 
-        try {
-            $paramName = Constants::SUBNAV_ITEM_SECURITY_CERTIFICATES['apiLabel'];
-            $response = $this->service->getHealthcheck($url, [$paramName], $forceFetch);
-
-            if (isset($response['result']['details'][$paramName]['error'])) {
-                throw new \Exception($response['result']['details'][$paramName]['error']);
-            }
-
-            // Transform API response to our expected format for SSL certificate
-            if (isset($response['result'])) {
-                $result = $response['result'];
-                $ssl = $result['details'][$paramName] ?? null;
-                $meta = $ssl['meta'] ?? [];
-                $isOk = $response['result']['details'][$paramName]['ok'] ?? true;
-
-                $leafCertificate = null;
-                if (isset($meta['chain']) && is_array($meta['chain'])) {
-                    foreach ($meta['chain'] as $cert) {
-                        if (($cert['depth'] ?? null) === 0 && ($cert['type'] ?? null) === 'leaf') {
-                            $leafCertificate = $cert['info'] ?? null;
-                            break;
-                        }
-                    }
-                }
-
-                $data = [
-                   'data' => [
-                        'status' => $isOk ? 'ok' : 'error',
-                        'message' => $isOk ? 'Website SSL checks are valid' : 'Website SSL issues detected!',
-                        'url' => $url ?? '',
-                        'checkedAt' => $response['checkedAt'] ?? '',
-                        'duration' => isset($result['durationMs']) ? $result['durationMs'] . ' ms' : 'Unknown',
-                        'details' => [
-                            'leafCertificate' => $leafCertificate,
-                            'domainCoverage' => $meta['domainCoverage'] ?? [],
-                            'chain' => $meta['chain'] ?? [],
-                        ]
-                   ]
-                ];
-            }
-        } catch (\Throwable $e) {
+        if (!$this->isHttpsUrl($url)) {
             $data = [
                 'data' => [
-                    'status' => 'error',
-                    'error' => $e->getMessage(),
+                    'status' => 'warning',
+                    'error' => Craft::t(
+                        'upsnap',
+                        'This check is only allowed for HTTPS URLs.'
+                    ),
                     'url' => $url,
                 ]
             ];
+        } else {
+
+            try {
+                $paramName = Constants::SUBNAV_ITEM_SECURITY_CERTIFICATES['apiLabel'];
+                $response = $this->service->getHealthcheck($url, [$paramName], $forceFetch);
+
+                if (isset($response['result']['details'][$paramName]['error'])) {
+                    throw new \Exception($response['result']['details'][$paramName]['error']);
+                }
+
+                // Transform API response to our expected format for SSL certificate
+                if (isset($response['result'])) {
+                    $result = $response['result'];
+                    $ssl = $result['details'][$paramName] ?? null;
+                    $meta = $ssl['meta'] ?? [];
+                    $isOk = $response['result']['details'][$paramName]['ok'] ?? true;
+
+                    $leafCertificate = null;
+                    if (isset($meta['chain']) && is_array($meta['chain'])) {
+                        foreach ($meta['chain'] as $cert) {
+                            if (($cert['depth'] ?? null) === 0 && ($cert['type'] ?? null) === 'leaf') {
+                                $leafCertificate = $cert['info'] ?? null;
+                                break;
+                            }
+                        }
+                    }
+
+                    $data = [
+                        'data' => [
+                            'status' => $isOk ? 'ok' : 'error',
+                            'message' => $isOk ? 'Website SSL checks are valid' : 'Website SSL issues detected!',
+                            'url' => $url ?? '',
+                            'checkedAt' => $response['checkedAt'] ?? '',
+                            'duration' => isset($result['durationMs']) ? $result['durationMs'] . ' ms' : 'Unknown',
+                            'details' => [
+                                'leafCertificate' => $leafCertificate,
+                                'domainCoverage' => $meta['domainCoverage'] ?? [],
+                                'chain' => $meta['chain'] ?? [],
+                            ]
+                        ]
+                    ];
+                }
+            } catch (\Throwable $e) {
+                $data = [
+                    'data' => [
+                        'status' => 'error',
+                        'error' => $e->getMessage(),
+                        'url' => $url,
+                    ]
+                ];
+            }
         }
 
         $data = $this->service->prepareData($data, Constants::SUBNAV_ITEM_SECURITY_CERTIFICATES, $isAjax);
@@ -552,5 +591,14 @@ class HealthCheckController extends BaseController
         ];
 
         return $this->renderTemplate('upsnap/healthcheck/reachability-history', $variables);
+    }
+
+    private function isHttpsUrl(?string $url): bool
+    {
+        if (!$url) {
+            return false;
+        }
+
+        return str_starts_with(strtolower(trim($url)), 'https://');
     }
 }

@@ -36,46 +36,100 @@ Craft.Upsnap.Monitor = {
 		this.registerAdvancedSettingsAccordion();
 		this.registerSubmitHandler();
 		this.initIntervalSlider();
+		this.bindMonitorUrlListener();
+	},
+	bindMonitorUrlListener() {
+		const field =
+			document.getElementById("url") ||
+			document.querySelector('input[name="url"]');
+		if (!field) return;
+		this.enforceHttpsHealthchecks();
+
+		field.addEventListener("input", () => {
+			this.enforceHttpsHealthchecks();
+		});
+	},
+	getMonitorUrl() {
+		const field =
+			document.getElementById("url") ||
+			document.querySelector('input[name="url"]');
+
+		return field ? field.value.trim() : "";
+	},
+	isHttpsUrl(url) {
+		if (!url) return false;
+
+		return url.trim().toLowerCase().startsWith("https://");
+	},
+
+	enforceHttpsHealthchecks() {
+		const url = this.getMonitorUrl();
+		const isHttps = this.isHttpsUrl(url);
+
+		if (!isHttps) {
+			// Disable whole cards
+			this.disableHttpCards();
+		} else {
+			this.enableHttpCards();
+		}
+	},
+	disableHttpCards() {
+		document
+			.querySelectorAll(".healthcheck-section.http-disabled")
+			.forEach((card) => {
+				card.classList.add("is-disabled");
+				card.setAttribute(
+					"title",
+					Craft.t(
+						"upsnap",
+						"These checks are not enabled for non HTTPS URLs."
+					)
+				);
+			});
+	},
+	enableHttpCards() {
+		document
+			.querySelectorAll(".healthcheck-section.http-disabled")
+			.forEach((card) => {
+				card.classList.remove("is-disabled");
+				card.removeAttribute("title");
+			});
 	},
 
 	initIntervalSlider() {
 		const sliders = document.querySelectorAll("[data-interval-slider]");
-
 		if (!sliders.length) return;
 
-		const MIN_SECONDS = 30;
-		const MAX_SECONDS = 86400;
 		const PLAN_MIN_SECONDS =
 			window.CraftPageData.minMonitorIntervalSeconds || 300;
 
-		const logMin = Math.log(MIN_SECONDS);
-		const logMax = Math.log(MAX_SECONDS);
-
-		const secondsToSlider = (seconds) => {
-			const logV = Math.log(seconds);
-			return ((logV - logMin) / (logMax - logMin)) * 100;
-		};
-
-		const sliderToSeconds = (percent) => {
-			const logValue = logMin + (percent / 100) * (logMax - logMin);
-			return Math.round(Math.exp(logValue));
-		};
-
 		const format = (s) => {
-			if (s < 60) return `${s}s`;
 			if (s < 3600) return `${Math.round(s / 60)}m`;
 			if (s < 86400) return `${Math.round(s / 3600)}h`;
 			return `${Math.round(s / 86400)}d`;
 		};
 
 		sliders.forEach((slider) => {
-			const hiddenInputId = slider.dataset.targetInput;
-			const labelId = slider.dataset.label;
-
-			const hiddenInput = document.getElementById(hiddenInputId);
-			const label = document.getElementById(labelId);
-
+			const hiddenInput = document.getElementById(
+				slider.dataset.targetInput
+			);
+			const label = document.getElementById(slider.dataset.label);
 			if (!hiddenInput || !label) return;
+
+			const partitions = JSON.parse(slider.dataset.partitions);
+
+			const secondsList = partitions.map((p) => p.seconds);
+			const minSeconds = Math.min(...secondsList);
+			const maxSeconds = Math.max(...secondsList);
+
+			const logMin = Math.log(minSeconds);
+			const logMax = Math.log(maxSeconds);
+
+			const secondsToSlider = (s) =>
+				((Math.log(s) - logMin) / (logMax - logMin)) * 100;
+
+			const sliderToSeconds = (p) =>
+				Math.round(Math.exp(logMin + (p / 100) * (logMax - logMin)));
 
 			let currentSeconds = Math.max(
 				Number(hiddenInput.value || PLAN_MIN_SECONDS),
@@ -83,45 +137,40 @@ Craft.Upsnap.Monitor = {
 			);
 
 			slider.value = secondsToSlider(currentSeconds);
-			hiddenInput.value = currentSeconds;
 			label.textContent = format(currentSeconds);
+			hiddenInput.value = currentSeconds;
 
-			slider.style.background = `linear-gradient(
-            to right,
-            #3b82f6 0%,
-            #3b82f6 ${slider.value}%,
-            #e5e7eb ${slider.value}%,
-            #e5e7eb 100%
-        )`;
+			const paint = (v) => {
+				slider.style.background = `linear-gradient(
+					to right,
+					#3b82f6 0%,
+					#3b82f6 ${v}%,
+					#e5e7eb ${v}%,
+					#e5e7eb 100%
+				)`;
+			};
+
+			paint(slider.value);
 
 			slider.addEventListener("input", (e) => {
-				let seconds = sliderToSeconds(Number(e.target.value));
+				let secs = sliderToSeconds(Number(e.target.value));
 
-				if (seconds < PLAN_MIN_SECONDS) {
-					seconds = PLAN_MIN_SECONDS;
-					// Update slider position to match the minimum
+				if (secs < PLAN_MIN_SECONDS) {
+					secs = PLAN_MIN_SECONDS;
 					e.target.value = secondsToSlider(PLAN_MIN_SECONDS);
 				}
 
-				hiddenInput.value = seconds;
-				label.textContent = format(seconds);
-
-				slider.style.background = `linear-gradient(
-                to right,
-                #3b82f6 0%,
-                #3b82f6 ${e.target.value}%,
-                #e5e7eb ${e.target.value}%,
-                #e5e7eb 100%
-            )`;
+				hiddenInput.value = secs;
+				label.textContent = format(secs);
+				paint(e.target.value);
 			});
 
-			// Position ticks relative to this slider
+			// Tick positioning
 			slider
 				.closest(".field")
 				?.querySelectorAll(".upsnap-range-tick")
 				.forEach((tick) => {
-					const seconds = Number(tick.dataset.seconds);
-					const pos = secondsToSlider(seconds);
+					const pos = secondsToSlider(Number(tick.dataset.seconds));
 					tick.style.left = `${pos}%`;
 				});
 		});
@@ -174,71 +223,6 @@ Craft.Upsnap.Monitor = {
 		if (parentTabList) {
 			parentTabList.style.cursor = "pointer";
 		}
-	},
-
-	renderStatusContainer(data) {
-		const statusContainerWrapper = document.getElementById(
-			"status-container-wrapper"
-		);
-		if (!statusContainerWrapper) return;
-
-		const apiTokenStatus =
-			window.Upsnap?.settings?.apiTokenStatus || "unknown";
-		const apiTokenStatuses =
-			window.Upsnap?.settings?.apiTokenStatuses || {};
-
-		// Default warning setup
-		let statusClass = "warning";
-		let containerClass = "warning";
-		let icon = "!";
-		let title = data.message || "There are some issues!";
-		let error = data.error || "";
-
-		// Adjust title/error message automatically based on token status
-		switch (apiTokenStatus) {
-			case apiTokenStatuses.expired:
-				title = "Your API token has expired.";
-				error =
-					"Your current API token is invalid. Please provide a valid API token to create monitors, modify health check settings, and set up notification channels.";
-				break;
-			case apiTokenStatuses.suspended:
-				title = "Your API token is suspended.";
-				error =
-					"Your current API token is invalid. Please provide a valid API token to create monitors, modify health check settings, and set up notification channels.";
-				break;
-			case apiTokenStatuses.deleted:
-				title = "Your API token has been deleted.";
-				error =
-					"Your current API token is invalid. Please provide a valid API token to create monitors, modify health check settings, and set up notification channels.";
-				break;
-			case apiTokenStatuses.active:
-				// Only override if custom message isn’t passed
-				if (!data.message && !data.error) {
-					title = "An unexpected error occurred.";
-					error =
-						"Something went wrong while fetching monitors. Please try again.";
-				}
-				break;
-			default:
-				if (!data.message && !data.error) {
-					title = "There are some issues!";
-					error =
-						"Something went wrong while fetching monitors. Please try again.";
-				}
-				break;
-		}
-
-		const html = `
-      <div class="status-container ${containerClass}">
-        <div class="status-header">
-          <div class="status-icon ${statusClass}">${icon}</div>
-          <h3 class="status-title">${title}</h3>
-        </div>
-        ${error ? `<p class="status-message">${error}</p>` : ""}
-      </div>
-    `;
-
-		statusContainerWrapper.innerHTML = html;
 	},
 
 	// ----------------------------
@@ -438,7 +422,8 @@ Craft.Upsnap.Monitor = {
 
 					// 🔔 Notify monitors-list.js
 					const isCreate = !payload.monitorId;
-					const shouldQueue = isCreate || this.hasCriticalChanges(payload);
+					const shouldQueue =
+						isCreate || this.hasCriticalChanges(payload);
 
 					if (shouldQueue) {
 						this.pushMonitorChange({
@@ -492,10 +477,7 @@ Craft.Upsnap.Monitor = {
 		const originalUrl = (original.url || "").trim();
 		const updatedUrl = (payload.config?.meta?.url || "").trim();
 
-		return (
-			originalEnabled !== updatedEnabled ||
-			originalUrl !== updatedUrl
-		);
+		return originalEnabled !== updatedEnabled || originalUrl !== updatedUrl;
 	},
 
 	// --------------------------
@@ -605,40 +587,52 @@ Craft.Upsnap.Monitor = {
 		}
 		return errorList;
 	},
-
 	isValidHttpUrl(value) {
 		if (!value) return false;
 
 		try {
 			const url = new URL(value);
 
-			// Allow only http/https
 			if (!["http:", "https:"].includes(url.protocol)) {
 				return false;
 			}
 
-			const hostname = url.hostname;
+			const hostname = url.hostname.toLowerCase();
+			const labels = hostname.split(".");
 
-			// Must contain at least one dot (.)
-			if (!hostname.includes(".")) {
+			// Must have at least 2 labels
+			if (labels.length < 2) {
 				return false;
 			}
 
-			// TLD must be at least 2 characters
-			const tld = hostname.split(".").pop();
-			if (tld.length < 2) {
+			if (labels.length === 2 && labels[0] === "www") {
 				return false;
 			}
 
-			// Hostname regex (no underscores, no spaces, valid chars)
-			const hostnameRegex = /^(?!-)[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)*$/;
+			// Hostname length
+			if (hostname.length > 253) {
+				return false;
+			}
 
-			if (!hostnameRegex.test(hostname)) {
+			// Validate labels
+			for (const label of labels) {
+				if (label.length < 1 || label.length > 63) {
+					return false;
+				}
+
+				if (!/^[a-z0-9]([a-z0-9-]*[a-z0-9])?$/.test(label)) {
+					return false;
+				}
+			}
+
+			// TLD: letters only, future-proof
+			const tld = labels[labels.length - 1];
+			if (!/^[a-z]{2,63}$/.test(tld)) {
 				return false;
 			}
 
 			return true;
-		} catch (e) {
+		} catch {
 			return false;
 		}
 	},

@@ -35,26 +35,33 @@ function showCraftMessage(type, message) {
 function registerBrokenLinksJs() {
     const refreshBtn = document.getElementById("refresh-btn");
     const statusContainerWrapper = document.getElementById("status-container-wrapper");
-    const detailsContainerWrapper = document.getElementById("details-container-wrapper");
 
     if (refreshBtn) refreshBtn.disabled = true;
 
     // Only run on security certificates page - check for unique element
-    if (!statusContainerWrapper || !detailsContainerWrapper || !document.querySelector('[data-page="broken-links"]')) {
+    if (!statusContainerWrapper || !document.querySelector('[data-page="broken-links"]')) {
         return;
     }
 
     const contentContainer = document.querySelector("#broken-links-section");
     contentContainer.style.display = "grid";
     if (refreshBtn) {
-        refreshBtn.addEventListener("click", loadBrokenLinks);
+        refreshBtn.addEventListener('click', function () {
+            loadBrokenLinks(true);
+            showSkeletons(statusContainerWrapper, contentContainer)
+            refreshBtn.disabled = true;
+        });
     }
 
     loadBrokenLinks();
     let brokenLinksData = {};
 
-    function loadBrokenLinks() {
-        Craft.sendActionRequest('POST', 'upsnap/health-check/broken-links', {})
+    function loadBrokenLinks(forceFetch = false) {
+        Craft.sendActionRequest('POST', 'upsnap/health-check/broken-links', {
+            data: {
+				force_fetch: forceFetch
+			}
+        })
             .then(response => {
                 brokenLinksData = response?.data?.data || {};
                 if (response?.data?.success) {
@@ -82,7 +89,6 @@ function registerBrokenLinksJs() {
                 };
                 showCraftMessage('error', errorData.error)
                 renderStatusContainer(errorData);
-                renderDetailsContainer(errorData); // This will hide details since status !== 'ok'
             }).finally(() => {
                 refreshBtn.disabled = false;
             });
@@ -113,10 +119,6 @@ function registerBrokenLinksJs() {
                             <div class="heading">Broken Links</div>
                             <div>${errorsCount}</div>
                         </div>
-                        <div class="field">
-                            <div class="heading">Last Checked</div>
-                            <div>${formatDate(metaData?.checkedAt)}</div>
-                        </div>
                     </div>
                 </div>
             </div>
@@ -125,6 +127,7 @@ function registerBrokenLinksJs() {
 
     // === Render Table + Filters ===
     function renderBrokenLinksUI(data) {
+        contentContainer.style.display = "grid";
         contentContainer.innerHTML = `
             <div class="filter-controls">
                 <div class="filter-row">
@@ -274,36 +277,36 @@ function registerBrokenLinksJs() {
 function registerDomainCheckJs() {
     const refreshBtn = document.getElementById("refresh-btn");
     const statusContainerWrapper = document.getElementById("status-container-wrapper");
-    const detailsContainerWrapper = document.getElementById("details-container-wrapper");
     const domainDetailsSection = document.getElementById("domain-details-section");
 
     if (refreshBtn) refreshBtn.disabled = true;
 
     // Only run on domain check page - check for unique element
-    if (!statusContainerWrapper || !detailsContainerWrapper || !domainDetailsSection || !document.querySelector('[data-page="domain-check"]')) {
+    if (!statusContainerWrapper || !domainDetailsSection || !document.querySelector('[data-page="domain-check"]')) {
         return;
     }
 
     let domainData = {};
 
     // Function to fetch domain check data
-    function fetchDomainData() {
-
-        return Craft.sendActionRequest('POST', 'upsnap/health-check/domain-check', {})
+    function fetchDomainData(forceFetch = false) {
+        return Craft.sendActionRequest('POST', 'upsnap/health-check/domain-check', {
+            data: {
+				force_fetch: forceFetch
+			}
+        })
             .then(response => {
                 if (response?.data?.success === 'ok') {
                     domainData = response.data.data;
 
                     // Render status and details containers
                     renderStatusContainer(domainData);
-                    renderDetailsContainer(domainData);
 
                     // Render general info / more details
                     renderDomainDetails(domainData.details || {});
 
                     // Show containers
                     statusContainerWrapper.style.display = "block";
-                    detailsContainerWrapper.style.display = "block";
                     domainDetailsSection.style.display = "block";
                 } else {
                     const errorMessage = response?.data?.error || 'Failed to fetch domain data';
@@ -319,7 +322,6 @@ function registerDomainCheckJs() {
                 };
                 showCraftMessage('error', errorData.error)
                 renderStatusContainer(errorData);
-                renderDetailsContainer(errorData); // This will hide details since status !== 'ok'
 
                 // Hide domain details section
                 if (domainDetailsSection) {
@@ -332,17 +334,10 @@ function registerDomainCheckJs() {
 
     // Refresh button
     if (refreshBtn) {
-        const originalText = refreshBtn.innerHTML;
         refreshBtn.addEventListener('click', function () {
-            // Add loading state to button
+            fetchDomainData(true);
+            showSkeletons(statusContainerWrapper, domainDetailsSection)
             refreshBtn.disabled = true;
-            refreshBtn.innerHTML = '<span class="spinner"></span> Refreshing...';
-
-            fetchDomainData().finally(() => {
-                // Reset button state
-                refreshBtn.disabled = false;
-                refreshBtn.innerHTML = originalText;
-            });
         });
     }
 
@@ -362,7 +357,7 @@ function registerDomainCheckJs() {
                     <tr><td class="details-label">Supported</td><td class="details-value">${details.supported ? 'Yes' : 'No'}</td></tr>
                 </table>
 
-                <div id="more-details" class="hidden">
+                <div id="more-details">
                     <h3 class="pt-2rem details-title">DNS Records</h3>
                     <table class="details-table">
                         <tr><td class="details-label">IPv4</td><td class="details-value">${details.ipv4?.length ? details.ipv4.join(", ") : '–'}</td></tr>
@@ -391,8 +386,8 @@ function registerDomainCheckJs() {
                     </table>
                 </div>
 
-                <a href="#" class="show-less hidden">Show less</a>
-                <a href="#" class="show-details">Show more</a>
+                <a href="#" class="show-less">Show less</a>
+                <a href="#" class="show-details hidden">Show more</a>
             </div>
         `;
 
@@ -447,9 +442,9 @@ function registerLighthouseJs() {
     let lighthouseData = {};
 
     // Function to fetch lighthouse data
-    function fetchLighthouseData(device = 'desktop') {
+    function fetchLighthouseData(device = 'desktop', forceFetch = false) {
         return Craft.sendActionRequest('POST', 'upsnap/health-check/lighthouse', {
-            data: { device: device }
+            data: { device: device, force_fetch: forceFetch }
         })
             .then(response => {
                 if (response?.data?.success === 'ok') {
@@ -458,7 +453,6 @@ function registerLighthouseJs() {
                     // Update the hidden data element
                     lighthouseDataElement.textContent = JSON.stringify(lighthouseData);
                     renderStatusContainer(lighthouseData);
-                    renderDetailsContainer(lighthouseData);
 
                     renderLighthouseData();
 
@@ -481,7 +475,6 @@ function registerLighthouseJs() {
                 };
                 showCraftMessage('error', errorData.error);
                 renderStatusContainer(errorData);
-                renderDetailsContainer(errorData); // This will hide details since status !== 'ok'
 
                 // Hide scores and performance containers
                 scoresContainer.style.display = 'none';
@@ -504,17 +497,10 @@ function registerLighthouseJs() {
 
     // Refresh button
     if (refreshBtn) {
-        const originalText = refreshBtn.innerHTML;
         refreshBtn.addEventListener('click', function () {
-            // Add loading state to button
+            fetchLighthouseData(currentDevice, true);
+            showLoaderSkeleton()
             refreshBtn.disabled = true;
-            refreshBtn.innerHTML = '<span class="spinner"></span> Refreshing...';
-            showLoaderSkeleton();
-            fetchLighthouseData(currentDevice).finally(() => {
-                // Reset button state
-                refreshBtn.disabled = false;
-                refreshBtn.innerHTML = originalText;
-            });
         });
     }
 
@@ -681,30 +667,30 @@ function registerLighthouseJs() {
 function registerMixedContentJs() {
     const refreshBtn = document.getElementById("refresh-btn");
     const statusContainerWrapper = document.getElementById("status-container-wrapper");
-    const detailsContainerWrapper = document.getElementById("details-container-wrapper");
     const mixedContentSection = document.getElementById("mixed-content-section");
 
     if (refreshBtn) refreshBtn.disabled = true;
 
     // Only run on mixed content page - check for unique element
-    if (!statusContainerWrapper || !detailsContainerWrapper || !mixedContentSection || !document.querySelector('[data-page="mixed-content"]')) {
+    if (!statusContainerWrapper || !mixedContentSection || !document.querySelector('[data-page="mixed-content"]')) {
         return;
     }
 
     let mixedContentData = {};
 
     // Function to fetch mixed content data
-    function fetchMixedContentData() {
-        return Craft.sendActionRequest('POST', 'upsnap/health-check/mixed-content', {})
+    function fetchMixedContentData(forceFetch = false) {
+        return Craft.sendActionRequest('POST', 'upsnap/health-check/mixed-content', {
+            data: {
+				force_fetch: forceFetch
+			}
+        })
             .then(response => {
                 if (response?.data?.success === 'ok') {
                     mixedContentData = response.data.data;
 
                     // Render status
                     renderStatusContainer(mixedContentData);
-
-                    // Render details
-                    renderDetailsContainer(mixedContentData);
 
                     // Render mixed content list
                     renderMixedContentItems(mixedContentData.details || {});
@@ -724,7 +710,6 @@ function registerMixedContentJs() {
                 };
                 showCraftMessage('error', errorData.error);
                 renderStatusContainer(errorData);
-                renderDetailsContainer(errorData); // This will hide details since status !== 'ok'
 
                 // Hide mixed content section
                 if (mixedContentSection) {
@@ -737,17 +722,10 @@ function registerMixedContentJs() {
 
     // Refresh button
     if (refreshBtn) {
-        const originalText = refreshBtn.innerHTML;
         refreshBtn.addEventListener('click', function () {
-            // Add loading state to button
+            fetchMixedContentData(true);
+            showSkeletons(statusContainerWrapper,mixedContentSection)
             refreshBtn.disabled = true;
-            refreshBtn.innerHTML = '<span class="spinner"></span> Refreshing...';
-
-            fetchMixedContentData().finally(() => {
-                // Reset button state
-                refreshBtn.disabled = false;
-                refreshBtn.innerHTML = originalText;
-            });
         });
     }
 
@@ -783,33 +761,53 @@ function registerMixedContentJs() {
     // Initial fetch on page load (no loader, skeleton is already visible)
     fetchMixedContentData();
 }
+function showSkeletons(statusContainerWrapper, dataContainer) {
+	if (statusContainerWrapper) {
+		statusContainerWrapper.innerHTML = `
+			<div class="skeleton-card">
+				<div class="skeleton-card-header">
+					<div class="skeleton-line skeleton-line-medium"></div>
+				</div>
+				<div class="skeleton-card-body">
+					<div class="skeleton-line skeleton-line-long"></div>
+					<div class="skeleton-line skeleton-line-short"></div>
+				</div>
+			</div>
+		`;
+	}
 
+	if (dataContainer) {
+		dataContainer.style.display = 'none';
+		dataContainer.innerHTML = '';
+	}
+}
 
 function registerReachabilityJs() {
     const refreshBtn = document.getElementById("refresh-btn");
     const statusContainerWrapper = document.getElementById("status-container-wrapper");
-    const detailsContainerWrapper = document.getElementById("details-container-wrapper");
     const reachabilitySection = document.getElementById("reachability-section");
 
     if (refreshBtn) refreshBtn.disabled = true;
 
     // Only run on reachability page - check for unique element
-    if (!statusContainerWrapper || !detailsContainerWrapper || !reachabilitySection || !document.querySelector('[data-page="reachability"]')) {
+    if (!statusContainerWrapper || !reachabilitySection || !document.querySelector('[data-page="reachability"]')) {
         return;
     }
 
     let reachabilityData = {};
 
     // Function to fetch reachability data
-    function fetchReachabilityData() {
-        return Craft.sendActionRequest('POST', 'upsnap/health-check/reachability', {})
+    function fetchReachabilityData(forceFetch = false) {
+        return Craft.sendActionRequest('POST', 'upsnap/health-check/reachability', {			
+            data: {
+				force_fetch: forceFetch
+			}})
                 .then(response => {
                     if (response?.data?.success === 'ok') {
                         reachabilityData = response.data.data;
 
                         // Render containers
                         renderStatusContainer(reachabilityData);
-                        renderDetailsContainer(reachabilityData);
                         renderReachabilityDetails(reachabilityData.details || {});
                     } else {
                         const errorMessage = response?.data?.error || 'Failed to fetch reachability data';
@@ -827,7 +825,6 @@ function registerReachabilityJs() {
                 };
                 showCraftMessage('error', errorData.error);
                 renderStatusContainer(errorData);
-                renderDetailsContainer(errorData); // This will hide details since status !== 'ok'
 
                 // Hide reachability section
                 if (reachabilitySection) {
@@ -838,12 +835,6 @@ function registerReachabilityJs() {
             });
     }
 
-    // Add event listener for refresh button
-    if (refreshBtn) {
-        refreshBtn.addEventListener('click', function () {
-            fetchReachabilityData();
-        });
-    }
 
     // Render Reachability details
     function renderReachabilityDetails(details) {
@@ -860,37 +851,17 @@ function registerReachabilityJs() {
                 <h3 class="details-title">Check details</h3>
 
                 <table class="details-table">
-                    <tr>
-                        <td class="details-label">Duration</td>
-                        <td class="details-value">
-                            ${details?.duration ?? 'Unknown'}
-                            ${details?.startedAt ? `<span style="color: #999; margin-left: 16px;">Started at ${details.startedAt}</span>` : ''}
-                        </td>
-                    </tr>
-
                     ${details?.monitoredFrom ? `
                     <tr>
                         <td class="details-label">Monitored from</td>
                         <td class="details-value">
                             ${details?.monitoredFrom?.location ?? 'Unknown'}
-                            ${details?.monitoredFrom?.ip ? `<span style="color: #999; margin-left: 16px;">${details.monitoredFrom.ip}</span>` : ''}
-                        </td>
-                    </tr>
-                    ` : ''}
-
-                    ${details?.httpStatus ? `
-                    <tr>
-                        <td class="details-label">HTTP Response Code</td>
-                        <td class="details-value">
-                            <span class="http-status ${getHttpStatusClass(details.httpStatus)}">
-                                ${details.httpStatus}
-                            </span>
                         </td>
                     </tr>
                     ` : ''}
                 </table>
 
-                <div id="more-details" class="hidden">
+                <div id="more-details">
                     <h3 class="pt-2rem details-title">HTTP Details</h3>
                     <table class="details-table">
                         <tr>
@@ -954,8 +925,8 @@ function registerReachabilityJs() {
                     ` : ''}
                 </div>
 
-                <a href="#" class="show-less hidden">Show less</a>
-                <a href="#" class="show-details">Show more</a>
+                <a href="#" class="show-less">Show less</a>
+                <a href="#" class="show-details hidden">Show more</a>
             </div>
         `;
 
@@ -984,7 +955,9 @@ function registerReachabilityJs() {
     // Add event listener for refresh button
     if (refreshBtn) {
         refreshBtn.addEventListener('click', function () {
-            fetchReachabilityData();
+            fetchReachabilityData(true);
+            showSkeletons(statusContainerWrapper, reachabilitySection)
+            refreshBtn.disabled = true;
         });
     }
 }
@@ -992,29 +965,30 @@ function registerReachabilityJs() {
 function registerSecurityCertificatesJs() {
     const refreshBtn = document.getElementById("refresh-btn");
     const statusContainerWrapper = document.getElementById("status-container-wrapper");
-    const detailsContainerWrapper = document.getElementById("details-container-wrapper");
+    const dataContainer = document.getElementById("security-certificates-section");
 
     if (refreshBtn) refreshBtn.disabled = true;
 
     // Only run on security certificates page - check for unique element
-    if (!statusContainerWrapper || !detailsContainerWrapper || !document.querySelector('[data-page="security-certificates"]')) {
+    if (!statusContainerWrapper || !document.querySelector('[data-page="security-certificates"]')) {
         return;
     }
 
     let securityCertificatesData = {};
 
     // Function to fetch security certificates data
-    function fetchSecurityCertificatesData() {
-        return Craft.sendActionRequest('POST', 'upsnap/health-check/security-certificates', {})
+    function fetchSecurityCertificatesData(forceFetch = false) {
+        return Craft.sendActionRequest('POST', 'upsnap/health-check/security-certificates', {
+            data: {
+				force_fetch: forceFetch
+			}
+        })
             .then(response => {
                 if (response?.data?.success === 'ok') {
                     securityCertificatesData = response.data.data;
 
                     // Render status
                     renderStatusContainer(securityCertificatesData);
-
-                    // Render details
-                    renderDetailsContainer(securityCertificatesData);
 
                     // Render security certificates details
                     renderSecurityCertificatesDetails(securityCertificatesData.details || {});
@@ -1034,17 +1008,9 @@ function registerSecurityCertificatesJs() {
                 };
                 showCraftMessage('error', errorData.error);
                 renderStatusContainer(errorData);
-                renderDetailsContainer(errorData); // This will hide details since status !== 'ok'
             }).finally(() => {
                 refreshBtn.disabled = false;
             });
-    }
-
-    // Add event listener for refresh button
-    if (refreshBtn) {
-        refreshBtn.addEventListener('click', function () {
-            fetchSecurityCertificatesData();
-        });
     }
 
     // Render Security Certificates details
@@ -1108,7 +1074,9 @@ function registerSecurityCertificatesJs() {
                         <tr>
                             <td class="details-label">Domains Covered</td>
                             <td class="details-value">
+                            <div class="domain-coverage">
                                 ${details.domainCoverage?.sans?.join(', ') || '–'}
+                            </div>
                             </td>
                         </tr>
                         <tr>
@@ -1196,29 +1164,10 @@ function registerSecurityCertificatesJs() {
         `;
 
         // Insert after details container
-        const detailsContainer = document.getElementById("details-container-wrapper");
-        if (detailsContainer && detailsContainer.nextSibling) {
-            const existingSection = detailsContainer.nextSibling;
-            if (existingSection.id === 'security-certificates-section') {
-                existingSection.innerHTML = html;
-                existingSection.style.display = 'block';
-                // Bind show more / less
-                toggleShowDetails(existingSection);
-            } else {
-                const section = document.createElement('div');
-                section.id = 'security-certificates-section';
-                section.innerHTML = html;
-                detailsContainer.parentNode.insertBefore(section, existingSection);
-                // Bind show more / less
-                toggleShowDetails(section);
-            }
-        } else if (detailsContainer) {
-            const section = document.createElement('div');
-            section.id = 'security-certificates-section';
-            section.innerHTML = html;
-            detailsContainer.parentNode.appendChild(section);
-            // Bind show more / less
-            toggleShowDetails(section);
+        if (dataContainer) {
+            dataContainer.style.display = 'block';
+            dataContainer.innerHTML = html;
+            toggleShowDetails(dataContainer);
         }
     }
 
@@ -1262,7 +1211,9 @@ function registerSecurityCertificatesJs() {
     // Add event listener for refresh button
     if (refreshBtn) {
         refreshBtn.addEventListener('click', function () {
-            fetchSecurityCertificatesData();
+            fetchSecurityCertificatesData(true);
+            showSkeletons(statusContainerWrapper, dataContainer)
+            refreshBtn.disabled = true;
         });
     }
 }
@@ -1273,6 +1224,13 @@ function renderStatusContainer(data) {
     const status = data.status || 'warning';
     const message = data.message || '';
     const error = data.error || '';
+    const checkedAt = data.checkedAt || '';
+
+    let formattedDate = '';
+    if (checkedAt) {
+        const date = new Date(checkedAt);
+        formattedDate = date.toLocaleString();
+    }
 
     let statusClass = 'warning';
     let containerClass = 'warning';
@@ -1291,15 +1249,24 @@ function renderStatusContainer(data) {
         title = message || 'Server is experiencing issues!';
     }
 
-    let html = `
-            <div class="status-container ${containerClass}">
-                <div class="status-header">
+    const html = `
+        <div class="status-container ${containerClass}">
+            <div class="status-header">
+                <div class="status-left">
                     <div class="status-icon ${statusClass}">${icon}</div>
                     <h3 class="status-title">${title}</h3>
                 </div>
-                ${error ? `<p class="status-message">${error}</p>` : ''}
+
+                ${formattedDate ? `
+                    <div class="status-checked-at">
+                        Last checked: ${formattedDate}
+                    </div>
+                ` : ''}
             </div>
-        `;
+
+            ${error ? `<p class="status-message">${error}</p>` : ''}
+        </div>
+    `;
 
     statusContainerWrapper.innerHTML = html;
 }
