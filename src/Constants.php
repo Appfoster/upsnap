@@ -92,8 +92,8 @@ class Constants
         'apiLabel' => 'mixed_content'
     ];
     const SUBNAV_ITEM_STATUS_PAGE = [
-        'label' => 'Status Page',
-        'key' => 'status-page',
+        'label' => 'Status Pages',
+        'key' => 'status-pages',
         'url' => 'upsnap/status-page',
         'template' => 'upsnap/status-page/_index'
     ];

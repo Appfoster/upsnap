@@ -117,6 +117,16 @@ Detect HTTP resources on HTTPS pages.
 
 ![Mixed Content Detection](assets/images/mixed-content.png)
 
+#### Monitors Listing
+Manage you monitors from one place.
+
+![Mixed Content Detection](assets/images/monitors.png)
+
+#### Status Pages Listing
+Shareable Status Pages to track the monitors across teams.
+
+![Mixed Content Detection](assets/images/status-page.png)
+
 
 ## Troubleshooting
 

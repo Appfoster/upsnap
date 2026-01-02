@@ -830,3 +830,8 @@
 #details-container-wrapper {
     margin-bottom: 14px;
 }
+
+.domain-coverage {
+    max-height: 4rem;
+    overflow-y: scroll;
+}

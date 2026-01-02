@@ -73,6 +73,7 @@ Craft.Upsnap.StatusPages = {
 	renderRow(page) {
 		const tr = document.createElement("tr");
 		tr.dataset.id = page.id;
+		const monitorsCount = Array.isArray(page.monitor_ids) ? page.monitor_ids.length : 0;
 
 		const viewIcon = page.is_published
 			? `
@@ -96,6 +97,9 @@ Craft.Upsnap.StatusPages = {
 		tr.innerHTML = `
         <td>
             <strong>${Craft.escapeHtml(page.name)}</strong>
+			 <div class="light smalltext">
+            ${monitorsCount} monitor${monitorsCount === 1 ? "" : "s"}
+        </div>
         </td>
         <td>
             ${this.statusBadge(page.is_published)}

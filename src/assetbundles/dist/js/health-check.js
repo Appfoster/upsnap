@@ -357,7 +357,7 @@ function registerDomainCheckJs() {
                     <tr><td class="details-label">Supported</td><td class="details-value">${details.supported ? 'Yes' : 'No'}</td></tr>
                 </table>
 
-                <div id="more-details" class="hidden">
+                <div id="more-details">
                     <h3 class="pt-2rem details-title">DNS Records</h3>
                     <table class="details-table">
                         <tr><td class="details-label">IPv4</td><td class="details-value">${details.ipv4?.length ? details.ipv4.join(", ") : '–'}</td></tr>
@@ -386,8 +386,8 @@ function registerDomainCheckJs() {
                     </table>
                 </div>
 
-                <a href="#" class="show-less hidden">Show less</a>
-                <a href="#" class="show-details">Show more</a>
+                <a href="#" class="show-less">Show less</a>
+                <a href="#" class="show-details hidden">Show more</a>
             </div>
         `;
 
@@ -1074,7 +1074,9 @@ function registerSecurityCertificatesJs() {
                         <tr>
                             <td class="details-label">Domains Covered</td>
                             <td class="details-value">
+                            <div class="domain-coverage">
                                 ${details.domainCoverage?.sans?.join(', ') || '–'}
+                            </div>
                             </td>
                         </tr>
                         <tr>
