@@ -460,7 +460,6 @@ class MonitorsController extends Controller
 
             // Format monitor for FE use (IMPORTANT)
             $variables['monitor'] = $this->formatMonitorForFrontend($monitor);
-            Craft::error($variables, "This is the variable");
         } catch (\Throwable $e) {
             Craft::error("Monitor fetch failed: {$e->getMessage()}", __METHOD__);
             throw new NotFoundHttpException("Monitor not found");
