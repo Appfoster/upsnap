@@ -127,7 +127,6 @@ Shareable Status Pages to track the monitors across teams.
 
 ![Mixed Content Detection](assets/images/status-page.png)
 
-
 ## Troubleshooting
 
 ### Common Issues
