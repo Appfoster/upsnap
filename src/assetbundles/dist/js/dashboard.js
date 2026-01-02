@@ -13,11 +13,10 @@ Craft.UpsnapDashboard = {
 		this.initializeDashboard();
 		this.renderMonitorCards();
 
-		const apiKey = window.CraftPageData?.apiKey
-		if(!apiKey) {
+		const apiKey = window.CraftPageData?.apiKey;
+		if (!apiKey) {
 			this.renderStatusContainer();
 		}
-		
 
 		if (this.refreshBtn) {
 			this.refreshBtn.addEventListener("click", () => {
@@ -26,6 +25,38 @@ Craft.UpsnapDashboard = {
 				);
 			});
 		}
+	},
+	isHttpsMonitor() {
+		const url = window.CraftPageData?.monitorUrl;
+
+		if (!url) return false;
+
+		try {
+			return new URL(url).protocol === "https:";
+		} catch (e) {
+			return false;
+		}
+	},
+
+	renderHttpsOnlyCard({ cardId, cardTitle }) {
+		const card = document.getElementById(cardId);
+		if (!card) return;
+
+		const content = card.querySelector(".card-content");
+		const skeleton = card.querySelector(".card-skeleton");
+
+		card.classList.remove("skeleton");
+		skeleton.hidden = true;
+		content.hidden = false;
+
+		content.innerHTML = `
+			<div class="card-body">
+				<p class="status-message">
+					<span class="status-icon warning">!</span>
+					This check is only enabled for https urls
+				</p>
+			</div>
+		`;
 	},
 
 	renderCard({
@@ -185,17 +216,24 @@ Craft.UpsnapDashboard = {
 	},
 
 	initializeDashboard() {
+		const isHttps = this.isHttpsMonitor();
 		const calls = [
 			this.fetchAndRenderCard({
 				action: "upsnap/health-check/reachability",
 				cardTitle: "Reachability",
 				cardId: "reachability-card",
 			}),
-			this.fetchAndRenderCard({
-				action: "upsnap/health-check/security-certificates",
-				cardTitle: "Security Certificates",
-				cardId: "ssl-card",
-			}),
+			// SSL
+			isHttps
+				? this.fetchAndRenderCard({
+						action: "upsnap/health-check/security-certificates",
+						cardTitle: "Security Certificates",
+						cardId: "ssl-card",
+				  })
+				: this.renderHttpsOnlyCard({
+						cardId: "ssl-card",
+						cardTitle: "Security Certificates",
+				  }),
 			this.fetchAndRenderCard({
 				action: "upsnap/health-check/broken-links",
 				cardTitle: "Broken Links",
@@ -206,16 +244,28 @@ Craft.UpsnapDashboard = {
 				cardTitle: "Domain Check",
 				cardId: "domain-check-card",
 			}),
-			this.fetchAndRenderCard({
-				action: "upsnap/health-check/mixed-content",
-				cardTitle: "Mixed Content",
-				cardId: "mixed-content-card",
-			}),
-			this.fetchAndRenderCard({
-				action: "upsnap/health-check/lighthouse",
-				cardTitle: "Lighthouse",
-				cardId: "lighthouse-card",
-			}),
+			// Mixed Content
+			isHttps
+				? this.fetchAndRenderCard({
+						action: "upsnap/health-check/mixed-content",
+						cardTitle: "Mixed Content",
+						cardId: "mixed-content-card",
+				  })
+				: this.renderHttpsOnlyCard({
+						cardId: "mixed-content-card",
+						cardTitle: "Mixed Content",
+				  }),
+			// Lighthouse
+			isHttps
+				? this.fetchAndRenderCard({
+						action: "upsnap/health-check/lighthouse",
+						cardTitle: "Lighthouse",
+						cardId: "lighthouse-card",
+				  })
+				: this.renderHttpsOnlyCard({
+						cardId: "lighthouse-card",
+						cardTitle: "Lighthouse",
+				  }),
 		];
 
 		return Promise.allSettled(calls);
@@ -414,7 +464,11 @@ Craft.UpsnapDashboard = {
 			<div class="card-header">Last check</div>
 			<div class="card-body">
 				${lastCheck}<br>
-				${!isDisabled && intervalMinutes ? `<span class="gray">Checked Every ${intervalMinutes}m</span>` : ""}
+				${
+					!isDisabled && intervalMinutes
+						? `<span class="gray">Checked Every ${intervalMinutes}m</span>`
+						: ""
+				}
 			</div>
 		`;
 	},
@@ -926,12 +980,12 @@ Craft.UpsnapDashboard = {
 		const loader = document.getElementById("responseChartLoader");
 		if (loader) loader.classList.add("hidden");
 	},
-	
+
 	renderStatusContainer() {
 		const statusContainerWrapper = document.getElementById(
 			"status-container-wrapper"
 		);
-		const upsnapDashboardUrl = window.CraftPageData?.upsnapDashboardUrl
+		const upsnapDashboardUrl = window.CraftPageData?.upsnapDashboardUrl;
 		if (!statusContainerWrapper) return;
 
 		let icon = "!";
