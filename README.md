@@ -126,6 +126,8 @@ Manage your monitors from one place.
 Shareable Status Pages to track the monitors across teams.
 
 ![Status Pages Listing](assets/images/status-page.png)
+![Shareable Status Page](assets/images/status-page-placeholder.png)
+![Shareable Status Detail Page](assets/images/status-detail-page-placeholder.png)
 
 ## Troubleshooting
 
