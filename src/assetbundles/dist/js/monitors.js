@@ -36,6 +36,64 @@ Craft.Upsnap.Monitor = {
 		this.registerAdvancedSettingsAccordion();
 		this.registerSubmitHandler();
 		this.initIntervalSlider();
+		this.bindMonitorUrlListener();
+	},
+	bindMonitorUrlListener() {
+		const field =
+			document.getElementById("url") ||
+			document.querySelector('input[name="url"]');
+		if (!field) return;
+		this.enforceHttpsHealthchecks();
+
+		field.addEventListener("input", () => {
+			this.enforceHttpsHealthchecks();
+		});
+	},
+	getMonitorUrl() {
+		const field =
+			document.getElementById("url") ||
+			document.querySelector('input[name="url"]');
+
+		return field ? field.value.trim() : "";
+	},
+	isHttpsUrl(url) {
+		if (!url) return false;
+
+		return url.trim().toLowerCase().startsWith("https://");
+	},
+
+	enforceHttpsHealthchecks() {
+		const url = this.getMonitorUrl();
+		const isHttps = this.isHttpsUrl(url);
+
+		if (!isHttps) {
+			// Disable whole cards
+			this.disableHttpCards();
+		} else {
+			this.enableHttpCards();
+		}
+	},
+	disableHttpCards() {
+		document
+			.querySelectorAll(".healthcheck-section.http-disabled")
+			.forEach((card) => {
+				card.classList.add("is-disabled");
+				card.setAttribute(
+					"title",
+					Craft.t(
+						"upsnap",
+						"These checks are not enabled for non HTTPS URLs."
+					)
+				);
+			});
+	},
+	enableHttpCards() {
+		document
+			.querySelectorAll(".healthcheck-section.http-disabled")
+			.forEach((card) => {
+				card.classList.remove("is-disabled");
+				card.removeAttribute("title");
+			});
 	},
 
 	initIntervalSlider() {
@@ -52,13 +110,15 @@ Craft.Upsnap.Monitor = {
 		};
 
 		sliders.forEach((slider) => {
-			const hiddenInput = document.getElementById(slider.dataset.targetInput);
+			const hiddenInput = document.getElementById(
+				slider.dataset.targetInput
+			);
 			const label = document.getElementById(slider.dataset.label);
 			if (!hiddenInput || !label) return;
 
 			const partitions = JSON.parse(slider.dataset.partitions);
 
-			const secondsList = partitions.map(p => p.seconds);
+			const secondsList = partitions.map((p) => p.seconds);
 			const minSeconds = Math.min(...secondsList);
 			const maxSeconds = Math.max(...secondsList);
 
@@ -362,7 +422,8 @@ Craft.Upsnap.Monitor = {
 
 					// 🔔 Notify monitors-list.js
 					const isCreate = !payload.monitorId;
-					const shouldQueue = isCreate || this.hasCriticalChanges(payload);
+					const shouldQueue =
+						isCreate || this.hasCriticalChanges(payload);
 
 					if (shouldQueue) {
 						this.pushMonitorChange({
@@ -416,10 +477,7 @@ Craft.Upsnap.Monitor = {
 		const originalUrl = (original.url || "").trim();
 		const updatedUrl = (payload.config?.meta?.url || "").trim();
 
-		return (
-			originalEnabled !== updatedEnabled ||
-			originalUrl !== updatedUrl
-		);
+		return originalEnabled !== updatedEnabled || originalUrl !== updatedUrl;
 	},
 
 	// --------------------------

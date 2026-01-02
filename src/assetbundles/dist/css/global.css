@@ -1348,3 +1348,18 @@
     color: #d1d5db;
     cursor: not-allowed;
 }
+
+.is-disabled {
+	opacity: 0.45;
+	cursor: not-allowed;
+	position: relative;
+}
+
+.is-disabled * {
+	pointer-events: none;
+}
+
+.is-disabled::after {
+	position: absolute;
+	inset: 0;
+}

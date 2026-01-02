@@ -169,7 +169,7 @@
 
 					{# ------------ ROW 2 ------------ #}
 					<div class="healthcheck-row-grid">
-						<div class="healthcheck-section">
+						<div class="healthcheck-section http-disabled">
 							{{ forms.lightswitchField({
                                 label: "Mixed Content Check"|t('upsnap'),
                                 instructions: "Monitor for mixed content issues"|t('upsnap'),
@@ -219,7 +219,7 @@
 
 					{# ------------ ROW 3 ------------ #}
 					<div class="healthcheck-row-grid">
-						<div class="healthcheck-section">
+						<div class="healthcheck-section  http-disabled">
 							{{ forms.lightswitchField({
                                 label: "SSL Certificate Check"|t('upsnap'),
                                 id: 'sslEnabled',
@@ -246,7 +246,9 @@
 							</div>
 						</div>
 
-						<div class="healthcheck-section">
+						<div class="healthcheck-section http-disabled"
+                        	data-disabled-reason="{{ 'These checks are not available for non HTTPS URLs.'|t('upsnap') }}"
+>
 							{{ forms.lightswitchField({
                                 label: "Lighthouse Performance Check"|t('upsnap'),
                                 instructions: "Monitor site performance"|t('upsnap'),
