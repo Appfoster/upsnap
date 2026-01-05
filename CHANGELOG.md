@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [1.0.10] - 2026-01-05
+
+### Added
+- Support for a “My Integrations” tab in the integrations listing.
+
+### Chore
+- Minor bug fixes and UI refinements.
+
 ## [1.0.9] - 2026-01-02
 
 ### Added
@@ -159,7 +167,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Asset minification and optimization
 - Background processing for monitoring tasks
 
-[Unreleased]: https://github.com/Appfoster/upsnap/compare/1.0.9...HEAD
+[Unreleased]: https://github.com/Appfoster/upsnap/compare/1.0.10...HEAD
+[1.0.10]: https://github.com/Appfoster/upsnap/releases/tag/1.0.10
 [1.0.9]: https://github.com/Appfoster/upsnap/releases/tag/1.0.9
 [1.0.8]: https://github.com/Appfoster/upsnap/releases/tag/1.0.8
 [1.0.7]: https://github.com/Appfoster/upsnap/releases/tag/1.0.7
