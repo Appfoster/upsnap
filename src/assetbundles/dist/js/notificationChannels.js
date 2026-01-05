@@ -62,7 +62,7 @@
 		constructor() {
 			this.channels = [];
 			this.planLimits = null;
-			this.currentFilter = "all";
+			this.currentFilter = "my-integrations";
 			this.searchQuery = "";
 
 			this.init();
@@ -258,6 +258,8 @@
 
 			const canAdd = this.canAddMoreIntegrations();
 			const hasChannels = channels.length > 0;
+			$item.dataset.hasChannels = hasChannels ? "true" : "false";
+
 
 			$item.innerHTML = `
                 <div class="integration-header">
@@ -453,12 +455,16 @@
 				const type = $item.dataset.type;
 				const config = INTEGRATION_TYPES[type];
 
-				// Check category filter
-				const matchesFilter =
-					this.currentFilter === "all" ||
-					category === this.currentFilter;
+				let matchesFilter = false;
 
-				// Check search query
+				if (this.currentFilter === "all") {
+					matchesFilter = true;
+				} else if (this.currentFilter === "my-integrations") {
+					matchesFilter = $item.dataset.hasChannels === "true";
+				} else {
+					matchesFilter = category === this.currentFilter;
+				}
+
 				const matchesSearch =
 					!this.searchQuery ||
 					config.name.toLowerCase().includes(this.searchQuery) ||
@@ -472,7 +478,6 @@
 					$item.classList.remove("expanded");
 				}
 			});
-
 			this.showEmpty(visibleCount === 0);
 		}
 

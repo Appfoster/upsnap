@@ -6,7 +6,10 @@
 		{# Left Sidebar - Categories #}
 		<aside class="integrations-sidebar">
 			<nav class="integrations-nav">
-				<button class="integrations-nav-item active" data-filter="all">
+				<button class="integrations-nav-item active" data-filter="my-integrations">
+					My integrations
+				</button>
+				<button class="integrations-nav-item" data-filter="all">
 					All
 				</button>
 				<button class="integrations-nav-item" data-filter="email">
@@ -41,13 +44,12 @@
 					<div class="spinner"></div>
 					<p>Loading integrations...</p>
 				</div>
-
-				{# Empty State #}
-				<div class="integrations-empty hidden" id="integrations-empty">
-					<p>No integrations found.</p>
-				</div>
-
 				{# Integration items will be inserted here dynamically #}
+			</div>
+			{# Empty State #}
+			<div class="integrations-empty hidden" id="integrations-empty">
+				<h3>No integrations found.</h3>
+				<p>Please add an integration to get started</p>
 			</div>
 		</main>
 	</div>
