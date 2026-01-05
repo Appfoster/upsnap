@@ -1363,3 +1363,7 @@
 	position: absolute;
 	inset: 0;
 }
+
+.table-empty-state {
+    text-align: center;
+}
