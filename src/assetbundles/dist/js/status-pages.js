@@ -73,7 +73,9 @@ Craft.Upsnap.StatusPages = {
 	renderRow(page) {
 		const tr = document.createElement("tr");
 		tr.dataset.id = page.id;
-		const monitorsCount = Array.isArray(page.monitor_ids) ? page.monitor_ids.length : 0;
+		const monitorsCount = Array.isArray(page.monitor_ids)
+			? page.monitor_ids.length
+			: 0;
 
 		const viewIcon = page.is_published
 			? `
@@ -247,6 +249,22 @@ Craft.Upsnap.StatusPages = {
 			}
 		});
 	},
+
+	disableSavebtn() {
+		const saveBtn = document.getElementById("status-page-btn");
+		if (!saveBtn) return;
+
+		saveBtn.disabled = true;
+		saveBtn.classList.add("disabled");
+	},
+
+	enableSavebtn() {
+		const saveBtn = document.getElementById("status-page-btn");
+		if (!saveBtn) return;
+
+		saveBtn.disabled = false;
+		saveBtn.classList.remove("disabled");
+	},
 	registerFormSubmit() {
 		this.form.addEventListener("submit", (e) => {
 			e.preventDefault();
@@ -270,7 +288,9 @@ Craft.Upsnap.StatusPages = {
 				is_published: true,
 			};
 
+			this.disableSavebtn();
 			this.saveStatusPage(payload);
+			this.enableSavebtn();
 		});
 	},
 

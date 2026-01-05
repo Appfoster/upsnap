@@ -383,6 +383,21 @@ Craft.Upsnap.Monitor = {
 			});
 		});
 	},
+	disableSavebtn() {
+		const saveBtn = document.getElementById("save-monitor");
+		if (!saveBtn) return;
+
+		saveBtn.disabled = true;
+		saveBtn.classList.add("disabled");
+	},
+
+	enableSavebtn() {
+		const saveBtn = document.getElementById("save-monitor");
+		if (!saveBtn) return;
+
+		saveBtn.disabled = false;
+		saveBtn.classList.remove("disabled");
+	},
 	registerSubmitHandler() {
 		const btn = document.querySelector("#save-monitor");
 		if (!btn) return;
@@ -402,6 +417,7 @@ Craft.Upsnap.Monitor = {
 				return;
 			}
 			try {
+				this.disableSavebtn()
 				const payload = this.buildPayload();
 
 				const response = await fetch("/actions/upsnap/monitors/save", {
@@ -439,6 +455,8 @@ Craft.Upsnap.Monitor = {
 			} catch (e) {
 				console.error(e);
 				Craft.cp.displayError("Failed to create monitor.");
+			} finally {
+				this.enableSavebtn()
 			}
 		});
 	},

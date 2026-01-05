@@ -292,8 +292,7 @@
 
 		// show loading row
 		if (showLoading)
-		tbody.innerHTML = `<tr><td colspan="5">Loading monitors…</td></tr>`;
-		// return
+		tbody.innerHTML = `<tr><td colspan="5" class="table-empty-state">Loading monitors…</td></tr>`;
 
 		try {
 			const monitors = [];
