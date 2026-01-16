@@ -197,7 +197,8 @@ class Constants
                 'create' => 'user/status-pages',
                 'update' => 'user/status-pages',
                 'delete' => 'user/status-pages',
-            ]
+            ],
+            'monitors_stats' => 'user/monitors/uptime-stats',
         ],
         'user' => [
             'details' => 'user/details'

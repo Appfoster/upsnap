@@ -37,6 +37,7 @@
 		const isSelected = primaryMonitorId && monitor?.id === primaryMonitorId;
 		const isPollingRelevant = Polling.activeMonitorIds.has(monitor.id);
 		const inPollingState = isPollingRelevant && isRecentlyChecked(monitor.last_check_at, monitor.updated_at);
+		const incidentCount = monitor.incident_count ?? 0;
 
 		// Determine status
 		let statusLabel = "";
@@ -79,9 +80,20 @@
 		// monitor column: name + url + selected pill
 		const tdMonitor = document.createElement("td");
 		tdMonitor.innerHTML = `
-		<div class="heading">${escapeHtml(name)}</div>
-		<div class="light" style="margin-top:4px;">${escapeHtml(url)}</div>
-		
+			<div class="heading">${escapeHtml(name)}</div>
+			<div class="light" style="margin-top:4px;">
+				${escapeHtml(url)}
+				${
+					incidentCount > 0
+						? `<span
+								class="monitor-incidents-link"
+								data-monitor-id="${monitor.id}"
+							>
+								• ${incidentCount} incident${incidentCount === 1 ? "" : "s"}
+						</span>`
+						: ""
+				}
+			</div>
 		`;
 
 		// Status column
@@ -295,7 +307,7 @@
 		tbody.innerHTML = `<tr><td colspan="5" class="table-empty-state">Loading monitors…</td></tr>`;
 
 		try {
-			const monitors = [];
+			let monitors = [];
 			if (apiKey) {
 				const response = await fetch(endpoint, {
 					headers: { "X-CSRF-Token": Craft.csrfTokenValue },
@@ -310,6 +322,19 @@
 					throw new Error(json.message || "Failed to load monitors");
 				}
 				monitors.push(...json.data.monitors);
+
+				// ------------------------------------
+				// FETCH + MERGE UPTIME STATS
+				// ------------------------------------
+				let uptimeStats = [];
+				try {
+					uptimeStats = await fetchUptimeStats();
+				} catch (e) {
+					console.warn('Failed to load uptime stats:', e);
+				}
+
+				// enrich monitors
+				monitors = mergeUptimeStats(monitors, uptimeStats);
 			}
 
 			const monitorCount = monitors.length;
@@ -352,6 +377,24 @@
 			tbody.querySelectorAll(".upsnap-set-primary").forEach((b) => {
 				b.addEventListener("click", handleSetPrimary);
 			});
+
+			// set incidents button handlers
+			tbody.querySelectorAll(".monitor-incidents-link").forEach((el) => {
+				el.addEventListener("click", (e) => {
+					e.stopPropagation();
+
+					const monitorId = el.dataset.monitorId;
+					if (!monitorId) return;
+
+					const url = Craft.getCpUrl("upsnap/incidents", {
+						monitor_id: monitorId,
+						timeframe: "24_hours",
+					});
+
+					window.location.href = url;
+				});
+			});
+
 		} catch (err) {
 			tbody.innerHTML = `<tr><td colspan="4">Error loading monitors. See console for details.</td></tr>`;
 			console.error("Error loading monitors:", err);
@@ -367,6 +410,55 @@
 				Craft.Upsnap.Monitor.notify(err.message, "error");
 			}
 		}
+	}
+
+	/**
+	 * Fetches the uptime stats for the current monitor.
+	 *
+	 * @return {Promise<Array<object>>} A promise that resolves to an array of uptime stats objects.
+	 */
+	async function fetchUptimeStats() {
+		const res = await fetch(
+			Craft.getCpUrl('upsnap/monitors/uptime-stats'),
+			{
+				headers: {
+					'X-CSRF-Token': Craft.csrfTokenValue,
+					'X-Requested-With': 'XMLHttpRequest',
+				},
+			}
+		);
+
+		const json = await res.json();
+
+		if (!json.success) {
+			throw new Error(json.message || 'Failed to fetch uptime stats');
+		}
+
+		return json.data?.uptime_stats || [];
+	}
+
+	/**
+	 * Merges an array of monitors with an array of uptime stats.
+	 *
+	 * @param {Array<Object>} monitors - An array of monitor objects.
+	 * @param {Array<Object>} uptimeStats - An array of uptime stats objects.
+	 * @returns {Array<Object>} - A new array of monitors with the incident count merged.
+	 */
+	function mergeUptimeStats(monitors, uptimeStats) {
+		return monitors.map((monitor) => {
+			const stat = uptimeStats.find(
+				(u) => u.monitor_id === monitor.id
+			);
+
+			if (stat?.stats) {
+				return {
+					...monitor,
+					incident_count: stat.stats?.day?.incident_count ?? 0,
+				};
+			}
+
+			return monitor;
+		});
 	}
 
 	function populateWithDefaultMonitor(tbody) {

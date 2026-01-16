@@ -543,7 +543,7 @@ class MonitorsController extends Controller
     public function actionHistogramData(string $monitorId): Response
     {
         try {
-            $endpoint = $this->buildMicroserviceEndpoint(Constants::MICROSERVICE_ENDPOINTS['monitors']['histogram'],$monitorId);
+            $endpoint = $this->buildMicroserviceEndpoint(Constants::MICROSERVICE_ENDPOINTS['monitors']['histogram'], $monitorId);
 
             // Pass all params to the service
             $response = Upsnap::$plugin->apiService->get($endpoint);
@@ -575,7 +575,7 @@ class MonitorsController extends Controller
         );
 
         try {
-            $endpoint = $this->buildMicroserviceEndpoint(Constants::MICROSERVICE_ENDPOINTS['monitors']['response_time'],$monitorId);
+            $endpoint = $this->buildMicroserviceEndpoint(Constants::MICROSERVICE_ENDPOINTS['monitors']['response_time'], $monitorId);
 
             // Pass all params to the service
             $response = Upsnap::$plugin->apiService->get($endpoint, $params);
@@ -600,7 +600,7 @@ class MonitorsController extends Controller
     public function actionUptimeStatsData(string $monitorId): Response
     {
         try {
-            $endpoint = $this->buildMicroserviceEndpoint(Constants::MICROSERVICE_ENDPOINTS['monitors']['uptime_stats'],$monitorId);
+            $endpoint = $this->buildMicroserviceEndpoint(Constants::MICROSERVICE_ENDPOINTS['monitors']['uptime_stats'], $monitorId);
 
             // Pass all params to the service
             $response = Upsnap::$plugin->apiService->get($endpoint, ["uptime_stats_time_frames" => "day,week,month,year"]);
@@ -628,5 +628,45 @@ class MonitorsController extends Controller
     private function buildMicroserviceEndpoint(string $microserviceUrl, string $monitorId): string
     {
         return str_replace('{monitorId}', $monitorId, $microserviceUrl);
+    }
+
+    /**
+     * Fetches uptime stats data for all monitors.
+     *
+     * @return Response
+     * @throws \Throwable
+     */
+    public function actionUptimeStats(): Response
+    {
+        $endpoint = Constants::MICROSERVICE_ENDPOINTS['monitors']['monitors_stats'];
+
+        try {
+            $response = [];
+            $response = Upsnap::$plugin->apiService->get($endpoint);
+
+            // Ensure $response is an array before accessing its keys
+            if (!is_array($response) || !isset($response['status'])) {
+                throw new \Exception(Craft::t('upsnap', 'Something went wrong while fetching monitors uptime stats.. Please try again.'));
+            }
+
+            if (!isset($response['status']) || $response['status'] !== 'success') {
+                Craft::error("error message" . $response['message'], __METHOD__);
+                $errorMsg = $response['message'] ?? Craft::t('upsnap', 'Failed to fetch monitors uptime stats.');
+
+                throw new \Exception($errorMsg);
+            }
+
+            return $this->asJson([
+                'success' => true,
+                'message' => Craft::t('upsnap', 'Monitors uptime stats fetched successfully.'),
+                'data' => $response['data'] ?? [],
+            ]);
+        } catch (\Throwable $e) {
+            Craft::error("Monitors uptime stats fetch failed: {$e->getMessage()}", __METHOD__);
+            return $this->asJson([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ]);
+        }
     }
 }

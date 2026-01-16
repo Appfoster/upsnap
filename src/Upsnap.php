@@ -119,6 +119,7 @@ class Upsnap extends Plugin
                     'upsnap/monitors/histogram/<monitorId:[0-9a-fA-F\-]+>' => 'upsnap/monitors/histogram-data',
                     'upsnap/monitors/response-time/<monitorId:[0-9a-fA-F\-]+>' => 'upsnap/monitors/response-time-data',
                     'upsnap/monitors/uptime-stats/<monitorId:[0-9a-fA-F\-]+>' => 'upsnap/monitors/uptime-stats-data',
+                    'upsnap/monitors/uptime-stats' => 'upsnap/monitors/uptime-stats',
 
                     'upsnap/status-page/edit/<statusPageId:[0-9a-fA-F\-]+>' => 'upsnap/status-page/new',
                     'upsnap/status-page/new' => 'upsnap/status-page/new'

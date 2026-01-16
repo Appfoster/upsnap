@@ -54,6 +54,18 @@
 	align-items: center;
 }
 
+.card-footer-incidents {
+	color: #ef4444;
+	font-weight: 500;
+	cursor: pointer;
+	transition: text-decoration 0.15s ease, opacity 0.15s ease;
+}
+
+.card-footer-incidents:hover {
+	text-decoration: underline;
+	opacity: 0.9;
+}
+
 .fetch-recent-btn {
 	padding: 6px 12px;
 	font-size: 13px;

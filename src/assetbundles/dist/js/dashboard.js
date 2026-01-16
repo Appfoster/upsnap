@@ -932,10 +932,31 @@ Craft.UpsnapDashboard = {
 			<div class="card-body ${color}">
 				${pct !== null ? pct + "%" : "N/A"}
 			</div>
-			<div class="card-footer-incidents">
-				${incidents} incident${incidents === 1 ? "" : "s"}
-			</div>
+			${
+				incidents > 0
+					? `<div class="card-footer-incidents">
+							${incidents} incident${incidents === 1 ? "" : "s"}
+					</div>`
+					: ""
+			}
 		`;
+
+		const footer = card.querySelector(".card-footer-incidents");
+
+		if (!footer) return;
+
+		footer.addEventListener("click", (e) => {
+			e.stopPropagation();
+
+			if (!this.monitorId) return;
+			const url = Craft.getCpUrl('upsnap/incidents', {
+				monitor_id: this.monitorId,
+				timeframe: '24_hours',
+			});
+
+			window.location.href = url;
+		});
+
 	},
 
 	// ===========================================================
