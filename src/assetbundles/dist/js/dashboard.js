@@ -975,11 +975,43 @@ Craft.UpsnapDashboard = {
 		`;
 	},
 
+	appendPrimaryRegionStatus(monitor) {
+		if (!monitor || typeof monitor !== 'object') {
+			return monitor;
+		}
+
+		let lastStatus = monitor.last_status;
+		let lastCheckAt = monitor.last_check_at;
+
+		if (Array.isArray(monitor.regions)) {
+			const primaryRegion = monitor.regions.find(r => r.is_primary);
+
+			if (primaryRegion) {
+				const regionId = primaryRegion.id;
+				const regionChecks = monitor.service_last_checks?.[regionId];
+
+				const uptimeCheck = regionChecks?.uptime;
+				if (uptimeCheck) {
+					lastStatus = uptimeCheck.last_status;
+					lastCheckAt = uptimeCheck.last_checked_at;
+				}
+			}
+		}
+
+		monitor.last_status = lastStatus;
+		monitor.last_check_at = lastCheckAt;
+
+		return monitor;
+	},
+
+
 	// ===========================================================
 	//  MAIN FUNCTION: Updated to use API calls
 	// ===========================================================
 	renderMonitorCards() {
-		const data = window.CraftPageData?.monitorData;
+		let data = window.CraftPageData?.monitorData;
+		data = this.appendPrimaryRegionStatus(data)
+
 
 		// Render primary cards (these use existing data)
 		this.renderStatusCard(data);
@@ -1066,8 +1098,15 @@ $(document).on("pjax:end", () => {
 // ===========================================================
 document.addEventListener("upsnap:reachability:loaded", () => {
 	const data = window.CraftPageData?.monitorData;
+	const reachability = window.CraftPageData?.reachabilityData;
 
-	if (!window.CraftPageData?.reachabilityData) return;
+	if (!reachability) return;
+
+	// Prefer reachability status and timestamp over primary region data
+	if (data && typeof data === 'object') {
+		data.last_status = reachability.status === "ok" ? "up" : "down";
+		data.last_check_at = reachability.checkedAt;
+	}
 
 	Craft.UpsnapDashboard.renderStatusCard(data);
 	Craft.UpsnapDashboard.renderLastCheckCard(data);

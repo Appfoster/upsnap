@@ -680,9 +680,12 @@
 				const previousStatus =
 					Polling.lastKnownStatus.get(monitorId);
 
-			// Update monitor with primary region data
-			updateMonitorWithPrimaryRegionStatus(updatedMonitor);
-			const currentStatus = updatedMonitor.last_status;
+				// Get primary region status
+				const primaryStatus = getPrimaryRegionStatus(updatedMonitor);
+				const currentStatus = primaryStatus.lastStatus;
+
+				// First run → store baseline
+				if (previousStatus === undefined) {
 					Polling.lastKnownStatus.set(monitorId, currentStatus);
 				}
 
@@ -712,6 +715,33 @@
 		Polling.monitorIntervals.set(monitorId, intervalId);
 	}
 
+	const getPrimaryRegionStatus = (monitor) => {
+		if (!monitor.regions || !Array.isArray(monitor.regions)) {
+			return { lastStatus: monitor.last_status, lastCheckAt: monitor.last_check_at };
+		}
+
+		const primaryRegion = monitor.regions.find(r => r.is_primary);
+		if (!primaryRegion) {
+			return { lastStatus: monitor.last_status, lastCheckAt: monitor.last_check_at };
+		}
+
+		const regionId = primaryRegion.id;
+		const serviceLastChecks = monitor.service_last_checks || {};
+		const regionChecks = serviceLastChecks[regionId];
+
+		if (!regionChecks) {
+			return { lastStatus: null, lastCheckAt: null };
+		}
+
+		// Get the uptime check data (most relevant for status monitoring)
+		const uptimeCheck = regionChecks.uptime;
+		if (uptimeCheck) {
+			return {
+				lastStatus: uptimeCheck.last_status,
+				lastCheckAt: uptimeCheck.last_checked_at
+			};
+		}
+	};
 
 	function isRecentlyChecked(
 		lastCheckAt,
