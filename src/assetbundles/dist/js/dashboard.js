@@ -4,35 +4,6 @@ Craft.UpsnapDashboard = {
 	responseChartInstance: null,
 	monitorId: null, // Store monitor ID for API calls
 
-	// Update monitor object with primary region status data
-	updateMonitorWithPrimaryRegionStatus(data) {
-		if (!data || !data.regions || !Array.isArray(data.regions)) {
-			return data;
-		}
-
-		const primaryRegion = data.regions.find(r => r.is_primary);
-		if (!primaryRegion) {
-			return data;
-		}
-
-		const regionId = primaryRegion.id;
-		const serviceLastChecks = data.service_last_checks || {};
-		const regionChecks = serviceLastChecks[regionId];
-
-		if (!regionChecks) {
-			return data;
-		}
-
-		// Get the uptime check data and update data object directly
-		const uptimeCheck = regionChecks.uptime;
-		if (uptimeCheck) {
-			data.last_status = uptimeCheck.last_status;
-			data.last_check_at = uptimeCheck.last_checked_at;
-		}
-
-		return data;
-	},
-
 	init() {
 		this.refreshBtn = document.getElementById("refresh-btn");
 
@@ -413,8 +384,6 @@ Craft.UpsnapDashboard = {
 
 			status = reachability.status === "ok" ? "up" : "down";
 		} else {
-			// Update data with primary region status
-			this.updateMonitorWithPrimaryRegionStatus(data);
 			
 			if (!data.last_status) {
 				this.renderNoDataCard(card, "Current Status", message);
@@ -474,8 +443,6 @@ Craft.UpsnapDashboard = {
 
 			timestamp = reachability.checkedAt;
 		} else {
-			// Update data with primary region status
-			this.updateMonitorWithPrimaryRegionStatus(data);
 			
 			if (!data.last_check_at) {
 				this.renderNoDataCard(card, "Last check", message);
@@ -540,8 +507,6 @@ Craft.UpsnapDashboard = {
 			);
 
 			const histogram = data?.histogram?.data ?? [];
-			// Update monitor data with primary region status
-			this.updateMonitorWithPrimaryRegionStatus(monitorData);
 			const lastStatus = monitorData?.last_status;
 			const isEnabled = monitorData?.is_enabled ?? true;
 
@@ -1097,17 +1062,11 @@ $(document).on("pjax:end", () => {
 // Reachability Ready → Re-render dependent cards
 // ===========================================================
 document.addEventListener("upsnap:reachability:loaded", () => {
-	const data = window.CraftPageData?.monitorData;
 	const reachability = window.CraftPageData?.reachabilityData;
 
 	if (!reachability) return;
 
 	// Prefer reachability status and timestamp over primary region data
-	if (data && typeof data === 'object') {
-		data.last_status = reachability.status === "ok" ? "up" : "down";
-		data.last_check_at = reachability.checkedAt;
-	}
-
-	Craft.UpsnapDashboard.renderStatusCard(data);
-	Craft.UpsnapDashboard.renderLastCheckCard(data);
+	Craft.UpsnapDashboard.renderStatusCard(null);
+	Craft.UpsnapDashboard.renderLastCheckCard(null);
 });
