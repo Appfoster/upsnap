@@ -31,7 +31,39 @@
 		else alert(msg);
 	};
 
+	// Update monitor object with primary region status data
+	const updateMonitorWithPrimaryRegionStatus = (monitor) => {
+		if (!monitor.regions || !Array.isArray(monitor.regions)) {
+			return monitor;
+		}
+
+		const primaryRegion = monitor.regions.find(r => r.is_primary);
+		if (!primaryRegion) {
+			return monitor;
+		}
+
+		const regionId = primaryRegion.id;
+		const serviceLastChecks = monitor.service_last_checks || {};
+		const regionChecks = serviceLastChecks[regionId];
+
+		if (!regionChecks) {
+			return monitor;
+		}
+
+		// Get the uptime check data and update monitor object directly
+		const uptimeCheck = regionChecks.uptime;
+		if (uptimeCheck) {
+			monitor.last_status = uptimeCheck.last_status;
+			monitor.last_check_at = uptimeCheck.last_checked_at;
+		}
+
+		return monitor;
+	};
+
 	const buildRow = (monitor, primaryMonitorId) => {
+		// Update monitor with primary region data
+		updateMonitorWithPrimaryRegionStatus(monitor);
+
 		const url = monitor.config?.meta?.url || "";
 		const name = monitor.name || url || "Unnamed Monitor";
 		const isSelected = primaryMonitorId && monitor?.id === primaryMonitorId;
@@ -648,10 +680,9 @@
 				const previousStatus =
 					Polling.lastKnownStatus.get(monitorId);
 
-				const currentStatus = updatedMonitor.last_status;
-
-				// First run → store baseline
-				if (previousStatus === undefined) {
+			// Update monitor with primary region data
+			updateMonitorWithPrimaryRegionStatus(updatedMonitor);
+			const currentStatus = updatedMonitor.last_status;
 					Polling.lastKnownStatus.set(monitorId, currentStatus);
 				}
 
