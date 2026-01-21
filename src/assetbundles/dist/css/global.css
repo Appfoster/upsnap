@@ -1367,3 +1367,344 @@
 .table-empty-state {
     text-align: center;
 }
+
+/* Regions Multiselect Component */
+#regions-field {
+    margin: 16px 0;
+    width: 49%;
+}
+
+/* Tablet and smaller screens */
+@media (max-width: 1024px) {
+    #regions-field {
+        width: 100%;
+    }
+}
+
+.regions-multiselect-container {
+    display: flex;
+    align-items: flex-start;
+    padding: 12px;
+    border: 1px solid #d3d4d5;
+    border-radius: 4px;
+    min-height: 44px;
+    cursor: text;
+    transition: all 0.2s ease;
+    background-color: #fff;
+    position: relative;
+}
+
+.regions-multiselect-container:hover:not(.empty) {
+    border-color: #999;
+}
+
+.regions-multiselect-container:focus-within {
+    border-color: #0055b7;
+    box-shadow: 0 0 0 1px #0055b7;
+    outline: none;
+}
+
+.regions-chips-wrapper {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    flex: 1;
+    align-items: center;
+}
+
+.regions-chips-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.regions-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 10px;
+    background-color: #e8f4f8;
+    border: 1px solid #b3d9e8;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 500;
+    color: #0066cc;
+    white-space: nowrap;
+}
+
+.regions-chip.primary {
+    background-color: #fef3c7;
+    border-color: #fcd34d;
+    color: #92400e;
+}
+
+.regions-chip-name {
+    max-width: 120px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.regions-chip-badge {
+    display: inline-block;
+    font-size: 9px;
+    font-weight: 600;
+    background-color: #fbbf24;
+    color: #78350f;
+    padding: 2px 4px;
+    border-radius: 2px;
+    text-transform: uppercase;
+}
+
+.regions-chip-remove {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    padding: 0;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: inherit;
+    transition: opacity 0.15s ease;
+}
+
+.regions-chip-remove:hover {
+    opacity: 0.7;
+}
+
+.regions-chip-remove svg {
+    width: 14px;
+    height: 14px;
+}
+
+.regions-search-input {
+    flex: 1;
+    min-width: 120px;
+    padding: 4px;
+    border: none;
+    outline: none;
+    font-size: 13px;
+    background-color: transparent;
+    color: #333;
+}
+
+.regions-search-input::placeholder {
+    color: #999;
+}
+
+.regions-chevron-toggle {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    margin-left: 8px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #666;
+    transition: color 0.15s ease;
+}
+
+.regions-chevron-toggle:hover {
+    color: #333;
+}
+
+.regions-chevron-icon {
+    width: 20px;
+    height: 20px;
+    transition: transform 0.2s ease;
+}
+
+.regions-chevron-icon.rotated {
+    transform: rotate(180deg);
+}
+
+/* Dropdown Menu */
+.regions-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    margin-top: 2px;
+    background-color: #fff;
+    border: 1px solid #d3d4d5;
+    border-radius: 4px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    max-height: 240px;
+    overflow-y: auto;
+    z-index: 1000;
+}
+
+.regions-dropdown.hidden {
+    display: none !important;
+}
+
+.regions-loading-spinner {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 16px;
+    font-size: 13px;
+    color: #666;
+}
+
+.regions-loading-spinner.hidden {
+    display: none;
+}
+
+.regions-list-container {
+    padding: 4px 0;
+}
+
+.regions-dropdown-item {
+    display: flex;
+    align-items: center;
+    padding: 8px 12px;
+    border-bottom: 1px solid #f0f0f0;
+    transition: background-color 0.15s ease;
+}
+
+.regions-dropdown-item:last-child {
+    border-bottom: none;
+}
+
+.regions-dropdown-item:hover {
+    background-color: #f5f5f5;
+}
+
+.regions-dropdown-item.selected {
+    background-color: #efefef;
+}
+
+.regions-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+    padding: 0;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 13px;
+    color: #333;
+    text-align: left;
+}
+
+.regions-checkbox-box {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    border: 2px solid #999;
+    border-radius: 3px;
+    flex-shrink: 0;
+    background-color: #fff;
+    transition: all 0.15s ease;
+}
+
+.regions-checkbox:hover .regions-checkbox-box {
+    border-color: #0055b7;
+}
+
+.regions-dropdown-item.selected .regions-checkbox-box {
+    background-color: #0055b7;
+    border-color: #0055b7;
+    color: #fff;
+}
+
+.regions-checkbox-check {
+    font-size: 12px;
+    font-weight: bold;
+    line-height: 1;
+}
+
+.regions-item-name {
+    word-break: break-word;
+}
+
+.regions-primary-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: #666;
+    cursor: pointer;
+    white-space: nowrap;
+    user-select: none;
+    transition: color 0.15s ease;
+}
+
+.regions-primary-label:hover {
+    color: #333;
+}
+
+.regions-primary-checkbox {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+    accent-color: #0055b7;
+}
+
+.regions-primary-checkbox:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.regions-no-results {
+    padding: 12px;
+    text-align: center;
+    font-size: 13px;
+    color: #999;
+}
+
+.regions-no-results.hidden {
+    display: none;
+}
+
+.regions-error-message {
+    margin-top: 6px;
+    padding: 8px 12px;
+    background-color: #fef2f2;
+    border: 1px solid #fecaca;
+    border-radius: 3px;
+    font-size: 12px;
+    color: #c92a2a;
+}
+
+.regions-error-message.hidden {
+    display: none;
+}
+
+/* Responsive adjustments */
+@media (max-width: 767px) {
+    .regions-multiselect-container {
+        flex-direction: column;
+        min-height: auto;
+    }
+
+    .regions-chips-wrapper {
+        width: 100%;
+    }
+
+    .regions-chevron-toggle {
+        align-self: flex-end;
+        margin-top: 8px;
+        margin-left: 0;
+    }
+
+    .regions-dropdown {
+        position: fixed;
+        top: auto;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        max-height: 50vh;
+        border-radius: 8px 8px 0 0;
+    }
+}

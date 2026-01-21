@@ -95,6 +95,25 @@ class MonitorsController extends Controller
                 throw new \Exception('Invalid JSON payload.');
             }
 
+            // Validate regions
+            $regions = $payloadArray['regions'] ?? [];
+            if (empty($regions)) {
+                throw new \Exception('Please select at least one region.');
+            }
+
+            // Validate that a primary region is set
+            $hasPrimaryRegion = false;
+            foreach ($regions as $region) {
+                if (isset($region['is_primary']) && $region['is_primary'] === true) {
+                    $hasPrimaryRegion = true;
+                    break;
+                }
+            }
+
+            if (!$hasPrimaryRegion) {
+                throw new \Exception('Please set a primary region.');
+            }
+
             $monitorId = $payloadArray['monitorId'] ?? null;
 
             $endpoint = $monitorId
@@ -479,6 +498,7 @@ class MonitorsController extends Controller
             'name' => $m['name'],
             'url' => $meta['url'] ?? '',
             'enabled' => $m['is_enabled'] ?? true,
+            'regions' => $m['regions'] ?? [],
 
             // Health checks
             'brokenLinksEnabled' => $services['broken_links']['enabled'] ?? false,

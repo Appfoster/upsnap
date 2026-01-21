@@ -1,0 +1,68 @@
+{# upsnap/_components/regions-multiselect.twig #}
+<div class="field" id="regions-field">
+    <div class="heading">
+        <label for="regions-multiselect-input">Monitoring Regions</label>
+        <span class="required" aria-label="required"></span>
+    </div>
+
+    <div class="instructions">
+        Select multiple regions to monitor. One region must be set as primary.
+    </div>
+
+    <div class="input">
+        <!-- Main Input Container -->
+        <div 
+            id="regions-multiselect-container"
+            class="regions-multiselect-container"
+            data-endpoint="/actions/upsnap/regions/list"
+            tabindex="0"
+        >
+            <!-- LEFT: Chips + Input -->
+            <div class="regions-chips-wrapper">
+                <div id="regions-chips-container" class="regions-chips-container"></div>
+                
+                <input
+                    id="regions-multiselect-input"
+                    type="text"
+                    class="regions-search-input"
+                    placeholder="Search regions..."
+                    autocomplete="off"
+                    style="display: none;"
+                />
+            </div>
+
+            <!-- RIGHT: Chevron -->
+            <button
+                type="button"
+                class="regions-chevron-toggle"
+                aria-label="Toggle regions dropdown"
+            >
+                <svg class="regions-chevron-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+                </svg>
+            </button>
+        </div>
+
+        <!-- Dropdown Menu -->
+        <div id="regions-dropdown" class="regions-dropdown hidden">
+            <div class="regions-loading-spinner hidden">
+                <div class="spinner"></div>
+                <span>Loading regions...</span>
+            </div>
+
+            <div id="regions-list-container" class="regions-list-container"></div>
+
+            <div id="regions-no-results" class="regions-no-results hidden">
+                No regions found
+            </div>
+        </div>
+
+        <!-- Hidden input to store selected regions JSON -->
+        <input 
+            type="hidden" 
+            id="regions-data-input" 
+            name="regions"
+            value=""
+        />
+    </div>
+</div>

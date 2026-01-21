@@ -37,6 +37,7 @@ Craft.Upsnap.Monitor = {
 		this.registerSubmitHandler();
 		this.initIntervalSlider();
 		this.bindMonitorUrlListener();
+		this.initRegionsMultiSelect();
 	},
 	bindMonitorUrlListener() {
 		const field =
@@ -413,6 +414,11 @@ Craft.Upsnap.Monitor = {
 				"Monitor URL is required"
 			);
 
+			// Validate regions
+			if (window.validateRegionsMultiSelect && !window.validateRegionsMultiSelect()) {
+				return;
+			}
+
 			if (!validName || !validUrl) {
 				return;
 			}
@@ -512,6 +518,18 @@ Craft.Upsnap.Monitor = {
 			...document.querySelectorAll(".channel-checkbox:checked"),
 		].map((cb) => cb.value);
 
+		// Get regions data
+		const regionsDataInput = document.querySelector("#regions-data-input");
+		let regions = [];
+		if (regionsDataInput && regionsDataInput.value) {
+			try {
+				regions = JSON.parse(regionsDataInput.value);
+			} catch (e) {
+				console.error("Failed to parse regions data:", e);
+				regions = [];
+			}
+		}
+
 		// Service configs
 
 		const isEnabled = (name) =>
@@ -534,6 +552,7 @@ Craft.Upsnap.Monitor = {
 			service_type: "website",
 			channel_ids: channelIds,
 			is_enabled: isMonitoringEnabled,
+			regions: regions,
 
 			config: {
 				meta: {
@@ -699,7 +718,385 @@ Craft.Upsnap.Monitor = {
 
 		return parseInt(val); // fallback
 	},
-};
+	// Initialize Regions MultiSelect
+	initRegionsMultiSelect() {
+		const RegionsMultiSelect = {
+			container: document.getElementById('regions-multiselect-container'),
+			dropdown: document.getElementById('regions-dropdown'),
+			input: document.getElementById('regions-multiselect-input'),
+			chipsContainer: document.getElementById('regions-chips-container'),
+			listContainer: document.getElementById('regions-list-container'),
+			loadingSpinner: document.querySelector('.regions-loading-spinner'),
+			chevronBtn: document.querySelector('.regions-chevron-toggle'),
+			chevronIcon: document.querySelector('.regions-chevron-icon'),
+			noResults: document.getElementById('regions-no-results'),
+			dataInput: document.getElementById('regions-data-input'),
+
+			allRegions: [],
+			selectedRegions: [],
+			primaryRegionId: null,
+			isOpen: false,
+
+			init() {
+				if (!this.container) return; // Component might not be present
+				this.bindEvents();
+				this.fetchRegions();
+			},
+
+			bindEvents() {
+				// Open/close dropdown
+				this.container.addEventListener('click', (e) => {
+					if (e.target !== this.input && !this.input.contains(e.target)) {
+						this.toggleDropdown();
+					}
+				});
+
+				this.chevronBtn.addEventListener('click', (e) => {
+					e.preventDefault();
+					e.stopPropagation();
+					this.toggleDropdown();
+				});
+
+				// Search input
+				this.input.addEventListener('input', (e) => {
+					this.filterRegions(e.target.value);
+				});
+
+				this.input.addEventListener('focus', () => {
+					this.openDropdown();
+				});
+
+				// Close on outside click
+				document.addEventListener('mousedown', (e) => {
+					if (!this.container.contains(e.target) && !this.dropdown.contains(e.target)) {
+						this.closeDropdown();
+					}
+				});
+
+				// Keyboard navigation
+				this.input.addEventListener('keydown', (e) => {
+					if (e.key === 'Backspace' && !this.input.value && this.selectedRegions.length > 0) {
+						this.removeRegion(this.selectedRegions[this.selectedRegions.length - 1].id);
+					}
+				});
+			},
+
+			fetchRegions() {
+				const endpoint = this.container.dataset.endpoint;
+				this.showLoadingSpinner(true);
+
+				fetch(endpoint)
+					.then(res => {
+						if (!res.ok) throw new Error('Failed to fetch regions');
+						return res.json();
+					})
+					.then(data => {
+						if (data.success && Array.isArray(data.data)) {
+							this.allRegions = data.data;
+							
+							// Load existing regions if in edit mode
+							const existingRegions = this.getExistingRegions();
+							if (existingRegions && existingRegions.length > 0) {
+								this.selectedRegions = existingRegions;
+								const primaryRegion = existingRegions.find(r => r.is_primary);
+								if (primaryRegion) {
+									this.primaryRegionId = primaryRegion.id;
+								}
+							}
+
+							this.render();
+						}
+					})
+					.catch(error => {
+						console.error('Error fetching regions:', error);
+						this.showError('Failed to load regions');
+					})
+					.finally(() => {
+						this.showLoadingSpinner(false);
+					});
+			},
+
+			getExistingRegions() {
+				// Try to load from monitor data if available
+				if (window.CraftPageData && window.CraftPageData.monitorData && window.CraftPageData.monitorData.regions) {
+					return window.CraftPageData.monitorData.regions;
+				}
+				return null;
+			},
+
+			toggleDropdown() {
+				this.isOpen ? this.closeDropdown() : this.openDropdown();
+			},
+
+			openDropdown() {
+				this.isOpen = true;
+				this.dropdown.classList.remove('hidden');
+				this.input.style.display = 'block';
+				this.input.focus();
+				this.chevronIcon.classList.add('rotated');
+				this.renderDropdownList();
+			},
+
+			closeDropdown() {
+				this.isOpen = false;
+				this.dropdown.classList.add('hidden');
+				this.input.style.display = 'none';
+				this.input.value = '';
+				this.chevronIcon.classList.remove('rotated');
+				this.filterRegions('');
+			},
+
+			toggleRegion(regionId) {
+				const isSelected = this.selectedRegions.some(r => r.id === regionId);
+				
+				if (isSelected) {
+					this.removeRegion(regionId);
+				} else {
+					this.addRegion(regionId);
+				}
+			},
+
+			addRegion(regionId) {
+				const region = this.allRegions.find(r => r.id === regionId);
+				if (!region) return;
+
+				const regionWithPrimary = {
+					...region,
+					is_primary: this.selectedRegions.length === 0 // First region is primary by default
+				};
+
+				if (regionWithPrimary.is_primary) {
+					this.primaryRegionId = regionId;
+				}
+
+				this.selectedRegions.push(regionWithPrimary);
+				this.updateDataInput();
+				this.render();
+				this.renderDropdownList();
+			},
+
+			removeRegion(regionId) {
+				this.selectedRegions = this.selectedRegions.filter(r => r.id !== regionId);
+
+				// Update primary if removed region was primary
+				if (this.primaryRegionId === regionId) {
+					if (this.selectedRegions.length > 0) {
+						this.primaryRegionId = this.selectedRegions[0].id;
+						this.selectedRegions[0].is_primary = true;
+					} else {
+						this.primaryRegionId = null;
+					}
+				}
+
+				this.updateDataInput();
+				this.render();
+				this.renderDropdownList();
+			},
+
+			setPrimaryRegion(regionId) {
+				// Auto-select if not already selected
+				if (!this.selectedRegions.some(r => r.id === regionId)) {
+					this.addRegion(regionId);
+				}
+
+				// Remove primary flag from all regions
+				this.selectedRegions.forEach(r => r.is_primary = false);
+
+				// Set as primary
+				const primaryRegion = this.selectedRegions.find(r => r.id === regionId);
+				if (primaryRegion) {
+					primaryRegion.is_primary = true;
+					this.primaryRegionId = regionId;
+				}
+
+				this.updateDataInput();
+				this.render();
+				this.renderDropdownList();
+			},
+
+			filterRegions(query) {
+				const filtered = this.allRegions.filter(region =>
+					region.name.toLowerCase().includes(query.toLowerCase())
+				);
+				this.renderDropdownList(filtered);
+			},
+
+			render() {
+				// Render chips
+				this.chipsContainer.innerHTML = '';
+
+				this.selectedRegions.forEach(region => {
+					const chip = document.createElement('div');
+					chip.className = 'regions-chip';
+					if (region.is_primary) {
+						chip.classList.add('primary');
+					}
+
+					chip.innerHTML = `
+						<span class="regions-chip-name">${this.escapeHtml(region.name)}</span>
+						${region.is_primary ? '<span class="regions-chip-badge">Primary</span>' : ''}
+						<button type="button" class="regions-chip-remove" data-region-id="${region.id}">
+							<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+								<path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+							</svg>
+						</button>
+					`;
+
+					chip.querySelector('.regions-chip-remove').addEventListener('click', (e) => {
+						e.preventDefault();
+						e.stopPropagation();
+						this.removeRegion(region.id);
+					});
+
+					this.chipsContainer.appendChild(chip);
+				});
+
+				// Show/hide input placeholder
+				if (this.selectedRegions.length === 0 && !this.isOpen) {
+					this.container.classList.add('empty');
+				} else {
+					this.container.classList.remove('empty');
+				}
+			},
+
+			renderDropdownList(regions = null) {
+				const regionsToRender = regions || this.allRegions;
+				this.listContainer.innerHTML = '';
+
+				if (regionsToRender.length === 0 && regions !== null) {
+					this.noResults.classList.remove('hidden');
+					return;
+				} else {
+					this.noResults.classList.add('hidden');
+				}
+
+				regionsToRender.forEach(region => {
+					const isSelected = this.selectedRegions.some(r => r.id === region.id);
+					const isPrimary = this.primaryRegionId === region.id;
+
+					const item = document.createElement('div');
+					item.className = 'regions-dropdown-item';
+					if (isSelected) item.classList.add('selected');
+
+					item.innerHTML = `
+						<button type="button" class="regions-checkbox" data-region-id="${region.id}">
+							<span class="regions-checkbox-box">
+								${isSelected ? '<span class="regions-checkbox-check">✓</span>' : ''}
+							</span>
+							<span class="regions-item-name">${this.escapeHtml(region.name)}</span>
+						</button>
+
+						<label class="regions-primary-label">
+							<input 
+								type="checkbox" 
+								class="regions-primary-checkbox"
+								data-region-id="${region.id}"
+								${isPrimary ? 'checked' : ''}
+								${!isSelected ? 'disabled' : ''}
+							/>
+							<span>Primary</span>
+						</label>
+					`;
+
+					item.querySelector('.regions-checkbox').addEventListener('click', (e) => {
+						e.preventDefault();
+						this.toggleRegion(region.id);
+					});
+
+					const primaryCheckbox = item.querySelector('.regions-primary-checkbox');
+					primaryCheckbox.addEventListener('change', (e) => {
+						e.stopPropagation();
+						if (e.target.checked) {
+							this.setPrimaryRegion(region.id);
+						}
+					});
+
+					this.listContainer.appendChild(item);
+				});
+			},
+
+			updateDataInput() {
+				this.dataInput.value = JSON.stringify(this.selectedRegions);
+				this.clearError();
+			},
+
+			showLoadingSpinner(show) {
+				if (show) {
+					this.loadingSpinner.classList.remove('hidden');
+				} else {
+					this.loadingSpinner.classList.add('hidden');
+				}
+			},
+
+			ensureErrorContainer() {
+				const field = document.querySelector('#regions-field');
+				if (!field) return null;
+
+				let errorList = field.querySelector('.errors');
+				if (!errorList) {
+					errorList = document.createElement('ul');
+					errorList.classList.add('errors');
+					const inputDiv = field.querySelector('.input');
+					if (inputDiv) {
+						inputDiv.appendChild(errorList);
+					}
+				}
+				return errorList;
+			},
+
+			showError(message) {
+				const field = document.querySelector('#regions-field');
+				if (!field) return;
+
+				const errorList = this.ensureErrorContainer();
+				if (errorList) {
+					field.classList.add('has-errors');
+					errorList.innerHTML = `<li>${this.escapeHtml(message)}</li>`;
+				}
+			},
+
+			clearError() {
+				const field = document.querySelector('#regions-field');
+				if (!field) return;
+
+				const errorList = field.querySelector('.errors');
+				field.classList.remove('has-errors');
+				if (errorList) {
+					errorList.innerHTML = '';
+				}
+			},
+
+			escapeHtml(text) {
+				const map = {
+					'&': '&amp;',
+					'<': '&lt;',
+					'>': '&gt;',
+					'"': '&quot;',
+					"'": '&#039;'
+				};
+				return text.replace(/[&<>"']/g, m => map[m]);
+			},
+
+			validatePrimaryRegion() {
+				if (this.selectedRegions.length === 0) {
+					this.showError('Please select at least one region');
+					return false;
+				}
+
+				if (!this.primaryRegionId || !this.selectedRegions.some(r => r.is_primary)) {
+					this.showError('Please set a primary region');
+					return false;
+				}
+
+				return true;
+			}
+		};
+
+		RegionsMultiSelect.init();
+
+		// Make validation accessible globally for form submission
+		window.validateRegionsMultiSelect = () => RegionsMultiSelect.validatePrimaryRegion();
+	},};
 
 // Initialize when DOM is ready
 document.addEventListener("DOMContentLoaded", () => {
