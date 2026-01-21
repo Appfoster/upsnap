@@ -1656,6 +1656,29 @@
     cursor: not-allowed;
 }
 
+.regions-dropdown-item.disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.regions-dropdown-item.disabled:hover {
+    background-color: transparent;
+}
+
+.regions-dropdown-item.disabled .regions-checkbox {
+    cursor: not-allowed;
+    color: #999;
+}
+
+.regions-dropdown-item.disabled .regions-checkbox:hover .regions-checkbox-box {
+    border-color: #999;
+}
+
+.regions-dropdown-item.disabled .regions-checkbox-box {
+    background-color: #f5f5f5;
+    border-color: #ccc;
+}
+
 .regions-no-results {
     padding: 12px;
     text-align: center;
