@@ -379,7 +379,7 @@ class HealthCheckController extends BaseController
 
         try {
             $paramName = Constants::SUBNAV_ITEM_REACHABILITY['apiLabel'];
-            $response = $this->service->getHealthcheck($url, [$paramName], $forceFetch);
+            $response = $this->service->getHealthcheck($url, [$paramName], $forceFetch, null, $request->getParam('region', null));
 
             if (isset($response['result']['details'][$paramName]['error'])) {
                 throw new \Exception($response['result']['details'][$paramName]['error']);
