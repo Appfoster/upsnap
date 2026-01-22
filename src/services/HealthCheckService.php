@@ -47,14 +47,19 @@ class HealthCheckService
 	 * @param array $params possible values one of: ["uptime", "broken-links", "domain-check"]
 	 * @return array|mixed
 	 */
-	public function getHealthcheck($url, $params, $forceFetch=false, $seoStrategy = null, ? string $region = null)
+	public function getHealthcheck($url, $params, $forceFetch=false, $seoStrategy = null, ?string $region = null)
 	{
-		return Upsnap::$plugin->apiService->post('healthcheck', [
+		$payload = [
 			'url' => $url,
 			"checks" => $params,
 			'strategy' => $seoStrategy,
 			'force_fetch' => $forceFetch,
-			'region' => $region
-		]);
+		];
+		
+		if ($region !== null) {
+			$payload['region'] = $region;
+		}
+		
+		return Upsnap::$plugin->apiService->post('healthcheck', $payload);
 	}
 }

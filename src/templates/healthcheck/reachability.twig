@@ -57,7 +57,7 @@
 			<div class="reachability-content-wrapper">
 				{# Left side - 70% #}
 				<div class="reachability-left-panel">
-					{# Reachability details section - will be updated via AJAX #}
+					{# Status container at full width #}
 					<div id="reachability-section"></div>
 
 					{# Response Time Chart Section #}
@@ -114,8 +114,11 @@
 {% endblock %}
 
 {% block foot %}
-	<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
+	<script
+	src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"
+	integrity="sha512-CQBWl4fJHWbryGE+Pc7UAxWMUMNMWzWxF4SQo9CgkJIN1kx6djDQZjh3Y8SZ1d+6I+1zze6Z7kHXO7q3UyZAWw=="
+	crossorigin="anonymous">
+	</script>
     <script>
         window.CraftPageData = {
             title: {{ title|json_encode|raw }},
