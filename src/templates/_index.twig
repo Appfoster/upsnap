@@ -4,9 +4,8 @@
 {% block actionButton %}
 	<div class="buttons">
 		{% if monitorData and monitorData.regions and monitorData.regions|length > 0 %}
-			<div class="btngroup region-selector-group">
-				<select id="regionDropdown" class="region-dropdown">
-					<option value="">All Regions</option>
+			<div class="btngroup select region-selector-group">
+				<select id="regionDropdown">
 					{% for region in monitorData.regions %}
 						<option value="{{ region.id }}" {% if region.is_primary %}selected{% endif %}>
 							{{ region.name }}
