@@ -36,8 +36,7 @@
 		{% include 'upsnap/_components/status-container.twig' %}
 	{% else %}
 		<div class="dashboard-wrapper">
-			<div
-				class="dashboard-left">
+			<div class="dashboard-left">
 				<!-- ROW 1 -->
 				<div class="monitor-grid">
 					<div id="monitor-status-card" class="monitor-card skeleton"></div>
@@ -90,6 +89,7 @@
 						<canvas id="responseChart"></canvas>
 					</div>
 				</div>
+				{% include 'upsnap/_components/incidents-table.twig' %}
 			</div>
 
 			<div class="dashboard-right">
