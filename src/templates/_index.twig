@@ -3,17 +3,20 @@
 
 {% block actionButton %}
 	<div class="buttons">
-		{% if monitorData and monitorData.regions and monitorData.regions|length > 0 %}
-			<div class="btngroup select region-selector-group">
-				<select id="regionDropdown">
+		{% set hasRegions = monitorData and monitorData.regions and monitorData.regions|length > 0 %}
+		<div class="btngroup select region-selector-group" {% if not hasRegions %}title="Register to checkout region based monitoring"{% endif %}>
+			<select id="regionDropdown" {% if not hasRegions %}class="disabled" disabled{% endif %}>
+				{% if hasRegions %}
 					{% for region in monitorData.regions %}
 						<option value="{{ region.id }}" {% if region.is_primary %}selected{% endif %}>
 							{{ region.name }}
 						</option>
 					{% endfor %}
-				</select>
-			</div>
-		{% endif %}
+				{% else %}
+					<option>Select Region</option>
+				{% endif %}
+			</select>
+		</div>
 		<div class="btngroup">
 			<button type="button" class="btn submit" data-icon="refresh" id="refresh-btn">
 				{{ 'Refresh'|t('upsnap') }}
@@ -47,7 +50,8 @@
 		{% include 'upsnap/_components/status-container.twig' %}
 	{% else %}
 		<div class="dashboard-wrapper">
-			<div class="dashboard-left">
+			<div
+				class="dashboard-left">
 				<!-- ROW 1 -->
 				<div class="monitor-grid">
 					<div id="monitor-status-card" class="monitor-card skeleton"></div>
@@ -100,7 +104,6 @@
 						<canvas id="responseChart"></canvas>
 					</div>
 				</div>
-				{% include 'upsnap/_components/incidents-table.twig' %}
 			</div>
 
 			<div class="dashboard-right">
