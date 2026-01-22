@@ -562,11 +562,18 @@ class MonitorsController extends Controller
 
     public function actionHistogramData(string $monitorId): Response
     {
+        $request = Craft::$app->getRequest();
+
+        $params = array_merge(
+            $request->getQueryParams(),
+            $request->getBodyParams()
+        );
+
         try {
             $endpoint = $this->buildMicroserviceEndpoint(Constants::MICROSERVICE_ENDPOINTS['monitors']['histogram'],$monitorId);
 
-            // Pass all params to the service
-            $response = Upsnap::$plugin->apiService->get($endpoint);
+            // Pass all params including region to the service
+            $response = Upsnap::$plugin->apiService->get($endpoint, $params);
 
             if (!isset($response['status']) || $response['status'] !== 'success') {
                 throw new \Exception('Unable to fetch histogram data.');
@@ -619,11 +626,19 @@ class MonitorsController extends Controller
 
     public function actionUptimeStatsData(string $monitorId): Response
     {
+        $request = Craft::$app->getRequest();
+
+        $params = array_merge(
+            $request->getQueryParams(),
+            $request->getBodyParams(),
+            ["uptime_stats_time_frames" => "day,week,month,year"]
+        );
+
         try {
             $endpoint = $this->buildMicroserviceEndpoint(Constants::MICROSERVICE_ENDPOINTS['monitors']['uptime_stats'],$monitorId);
 
-            // Pass all params to the service
-            $response = Upsnap::$plugin->apiService->get($endpoint, ["uptime_stats_time_frames" => "day,week,month,year"]);
+            // Pass all params including region to the service
+            $response = Upsnap::$plugin->apiService->get($endpoint, $params);
 
             if (!isset($response['status']) || $response['status'] !== 'success') {
                 throw new \Exception('Unable to fetch uptime stats data.');

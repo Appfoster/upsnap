@@ -844,6 +844,8 @@ Craft.Upsnap.Monitor = {
 								if (primaryRegion) {
 									this.primaryRegionId = primaryRegion.id;
 								}
+								// Initialize the data input field with existing regions
+								this.updateDataInput();
 							} else {
 								// Pre-select default region on new monitor form
 								const defaultRegion = this.allRegions.find(
@@ -1105,6 +1107,20 @@ Craft.Upsnap.Monitor = {
 						e.stopPropagation();
 						if (e.target.checked && !isDisabled) {
 							this.setPrimaryRegion(region.id);
+						} else if (!e.target.checked && !isDisabled) {
+							// Uncheck primary - remove primary flag from this region
+							const selectedRegion = this.selectedRegions.find(
+								(r) => r.id === region.id,
+							);
+							if (selectedRegion) {
+								selectedRegion.is_primary = false;
+								if (this.primaryRegionId === region.id) {
+									this.primaryRegionId = null;
+								}
+								this.updateDataInput();
+								this.render();
+								this.renderDropdownList();
+							}
 						}
 					});
 
@@ -1184,7 +1200,7 @@ Craft.Upsnap.Monitor = {
 
 			validatePrimaryRegion() {
 				if (this.selectedRegions.length === 0) {
-					this.showError("Please select at least one region");
+					this.showError("Please set at least one region as primary");
 					return false;
 				}
 

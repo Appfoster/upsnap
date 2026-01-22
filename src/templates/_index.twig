@@ -3,6 +3,17 @@
 
 {% block actionButton %}
 	<div class="buttons">
+		{% if monitorData and monitorData.regions and monitorData.regions|length > 0 %}
+			<div class="btngroup select region-selector-group">
+				<select id="regionDropdown">
+					{% for region in monitorData.regions %}
+						<option value="{{ region.id }}" {% if region.is_primary %}selected{% endif %}>
+							{{ region.name }}
+						</option>
+					{% endfor %}
+				</select>
+			</div>
+		{% endif %}
 		<div class="btngroup">
 			<button type="button" class="btn submit" data-icon="refresh" id="refresh-btn">
 				{{ 'Refresh'|t('upsnap') }}
@@ -44,9 +55,6 @@
 					<div id="monitor-last-check-card" class="monitor-card skeleton"></div>
 					<div id="monitor-24h-card" class="monitor-card skeleton">
 						<div class="card-header">Last 24 hours</div>
-						<div class="card-skeleton">
-							<div class="skeleton-line"></div>
-						</div>
 					</div>
 				</div>
 
@@ -58,6 +66,7 @@
 							<div class="skeleton-line"></div>
 							<div class="skeleton-line"></div>
 						</div>
+						<div class="card-content" hidden></div>
 					</div>
 					<div id="uptime-week-card" class="monitor-card skeleton">
 						<div class="card-header">Last Week</div>
@@ -65,6 +74,7 @@
 							<div class="skeleton-line"></div>
 							<div class="skeleton-line"></div>
 						</div>
+						<div class="card-content" hidden></div>
 					</div>
 					<div id="uptime-month-card" class="monitor-card skeleton">
 						<div class="card-header">Last 30 Days</div>
@@ -72,6 +82,7 @@
 							<div class="skeleton-line"></div>
 							<div class="skeleton-line"></div>
 						</div>
+						<div class="card-content" hidden></div>
 					</div>
 				</div>
 				<!-- ROW 3 (Response Time Chart) -->
