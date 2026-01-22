@@ -840,9 +840,9 @@ function registerReachabilityJs() {
     }
 
     // Function to fetch reachability data
-    function fetchReachabilityData(region = '', forceFetch = false, skipResponseTimeChart = false) {
+    function fetchReachabilityData(region = '', forceFetch = false, skipResponseTimeChart = false, showSkeletonLoader = true) {
         // Show skeleton loaders while fetching
-        showSkeletonLoaders();
+        if(showSkeletonLoader) showSkeletonLoaders();
         
         // Only show region card skeletons if we're fetching response time chart
         if (!skipResponseTimeChart) {
@@ -1462,7 +1462,7 @@ function registerReachabilityJs() {
         regionDropdown.addEventListener('change', function() {
             const selectedRegion = this.value;
             // Skip response time chart fetch - just update status and details silently
-            fetchReachabilityData(selectedRegion, false, true);
+            fetchReachabilityData(selectedRegion, false, true, false);
         });
     }
 

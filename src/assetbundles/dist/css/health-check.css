@@ -847,6 +847,11 @@
     align-items: flex-start;
 }
 
+.reachability-content-wrapper-full {
+    display: block;
+    width: 100%;
+}
+
 .reachability-left-panel {
     display: flex;
     flex-direction: column;
