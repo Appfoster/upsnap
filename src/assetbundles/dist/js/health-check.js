@@ -905,21 +905,8 @@ function registerReachabilityJs() {
 
         let html = `
             <div class="details-section">
-                <h3 class="details-title">Check details</h3>
-
-                <table class="details-table">
-                    ${details?.monitoredFrom ? `
-                    <tr>
-                        <td class="details-label">Monitored from</td>
-                        <td class="details-value">
-                            ${details?.monitoredFrom?.location ?? 'Unknown'}
-                        </td>
-                    </tr>
-                    ` : ''}
-                </table>
-
                 <div id="more-details">
-                    <h3 class="pt-2rem details-title">HTTP Details</h3>
+                    <h3 class="details-title">HTTP Details</h3>
                     <table class="details-table">
                         <tr>
                             <td class="details-label">HTTP Status</td>
@@ -981,9 +968,6 @@ function registerReachabilityJs() {
                     </table>
                     ` : ''}
                 </div>
-
-                <a href="#" class="show-less">Show less</a>
-                <a href="#" class="show-details hidden">Show more</a>
             </div>
         `;
 
