@@ -131,7 +131,8 @@ class Upsnap extends Plugin
                     'upsnap/monitors/uptime-stats/<monitorId:[0-9a-fA-F\-]+>' => 'upsnap/monitors/uptime-stats-data',
 
                     'upsnap/status-page/edit/<statusPageId:[0-9a-fA-F\-]+>' => 'upsnap/status-page/new',
-                    'upsnap/status-page/new' => 'upsnap/status-page/new'
+                    'upsnap/status-page/new' => 'upsnap/status-page/new',
+                    'upsnap/regions/list' => 'upsnap/regions/list',
 
                 ]);
             }
