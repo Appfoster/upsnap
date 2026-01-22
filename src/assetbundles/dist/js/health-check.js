@@ -886,7 +886,12 @@ function registerReachabilityJs() {
                 // Hide reachability section
                 if (reachabilitySection) {
                     reachabilitySection.style.display = 'none';
-                } 
+                }
+                
+                // Still render response time chart and region cards even on error
+                if (!skipResponseTimeChart) {
+                    renderResponseTimeChart();
+                }
             }).finally(() => {
                 refreshBtn.disabled = false;
             });
@@ -984,6 +989,7 @@ function registerReachabilityJs() {
     function renderRegionCards() {
         const monitorData = window.CraftPageData?.monitorData;
         const regions = monitorData?.regions || [];
+        const isMonitorEnabled = monitorData?.is_enabled;
         const wrapper = document.getElementById('region-cards-wrapper');
 
         if (!wrapper || regions.length === 0) {
@@ -996,8 +1002,63 @@ function registerReachabilityJs() {
         regions.forEach(region => {
             const responseTimeData = regionResponseTimeData[region.id];
 
+            // If monitor is paused, show N/A instead of waiting for data
+            if (!isMonitorEnabled) {
+                const card = document.createElement('div');
+                card.className = 'region-card';
+                card.innerHTML = `
+                    <div class="region-card-header">
+                        <div class="region-card-title">
+                            ${region.name}
+                            ${region.is_primary ? '<span class="region-primary-pill">Primary</span>' : ''}
+                        </div>
+                    </div>
+                    <div class="region-stats-grid">
+                        <div class="region-stat-item">
+                            <div class="region-stat-label">Avg</div>
+                            <div class="region-stat-value">N/A</div>
+                        </div>
+                        <div class="region-stat-item">
+                            <div class="region-stat-label">Max</div>
+                            <div class="region-stat-value">N/A</div>
+                        </div>
+                        <div class="region-stat-item">
+                            <div class="region-stat-label">Min</div>
+                            <div class="region-stat-value">N/A</div>
+                        </div>
+                    </div>
+                `;
+                wrapper.appendChild(card);
+                return;
+            }
+
             if (!responseTimeData) {
-                // Fallback to skeleton if data not yet available
+                // Show unavailable message if data couldn't be fetched
+                const card = document.createElement('div');
+                card.className = 'region-card';
+                card.innerHTML = `
+                    <div class="region-card-header">
+                        <div class="region-card-title">
+                            ${region.name}
+                            ${region.is_primary ? '<span class="region-primary-pill">Primary</span>' : ''}
+                        </div>
+                    </div>
+                    <div class="region-stats-grid">
+                        <div class="region-stat-item">
+                            <div class="region-stat-label">Avg</div>
+                            <div class="region-stat-value">–</div>
+                        </div>
+                        <div class="region-stat-item">
+                            <div class="region-stat-label">Max</div>
+                            <div class="region-stat-value">–</div>
+                        </div>
+                        <div class="region-stat-item">
+                            <div class="region-stat-label">Min</div>
+                            <div class="region-stat-value">–</div>
+                        </div>
+                    </div>
+                `;
+                wrapper.appendChild(card);
                 return;
             }
 
@@ -1128,9 +1189,84 @@ function registerReachabilityJs() {
         
         const monitorData = window.CraftPageData?.monitorData;
         const monitorId = monitorData?.id;
+        const isMonitorEnabled = monitorData?.is_enabled;
 
         if (!monitorId) {
             hideResponseChartLoader();
+            return;
+        }
+
+        // Check if monitor is paused
+        if (!isMonitorEnabled) {
+            // Create empty chart with paused message
+            const ctx = document.getElementById('reachabilityResponseChart')?.getContext('2d');
+            if (!ctx) {
+                hideResponseChartLoader();
+                return;
+            }
+
+            // Destroy existing chart instance
+            if (responseTimeChartInstance) {
+                responseTimeChartInstance.destroy();
+            }
+
+            // Register paused message plugin
+            if (!Chart.registry.plugins.get('monitorPausedMessage')) {
+                Chart.register({
+                    id: 'monitorPausedMessage',
+                    afterDraw(chart, args, options) {
+                        const { ctx, chartArea } = chart;
+                        const padding = 20;
+                        
+                        ctx.save();
+                        ctx.textAlign = 'center';
+                        ctx.textBaseline = 'middle';
+                        
+                        // Main message
+                        ctx.font = 'bold 16px system-ui, -apple-system, BlinkMacSystemFont';
+                        ctx.fillStyle = '#1f2937';
+                        ctx.fillText(
+                            'Monitor is Paused',
+                            (chartArea.left + chartArea.right) / 2,
+                            (chartArea.top + chartArea.bottom) / 2 - 20
+                        );
+                        
+                        // Sub message
+                        ctx.font = '14px system-ui, -apple-system, BlinkMacSystemFont';
+                        ctx.fillStyle = '#6b7280';
+                        ctx.fillText(
+                            'Resume monitor to see response time results',
+                            (chartArea.left + chartArea.right) / 2,
+                            (chartArea.top + chartArea.bottom) / 2 + 20
+                        );
+                        
+                        ctx.restore();
+                    }
+                });
+            }
+
+            responseTimeChartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: []
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: { enabled: false },
+                        monitorPausedMessage: {}
+                    }
+                }
+            });
+
+            hideResponseChartLoader();
+            
+            // Render region cards with N/A values
+            renderRegionCards();
+            
             return;
         }
 
@@ -1454,7 +1590,8 @@ function registerReachabilityJs() {
     if (refreshBtn) {
         refreshBtn.addEventListener('click', function () {
             const selectedRegion = regionDropdown ? regionDropdown.value : '';
-            fetchReachabilityData(selectedRegion, true);
+            // Only refresh reachability status, skip response time chart update
+            fetchReachabilityData(selectedRegion, true, true);
             refreshBtn.disabled = true;
         });
     }
