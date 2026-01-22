@@ -49,6 +49,17 @@ class DashboardController extends BaseController
             }
         }
 
+        // Fetch recent incidents
+        $incidents = [];
+        try {
+            $incidentsResponse = Upsnap::$plugin->apiService->getMonitorIncidents('7D', 1, 20);
+            if (isset($incidentsResponse['status']) && $incidentsResponse['status'] === 'success') {
+                $incidents = $incidentsResponse['data']['incidents'] ?? [];
+            }
+        } catch (\Throwable $e) {
+            Craft::error("Incidents fetch failed: {$e->getMessage()}", __METHOD__);
+        }
+
         $variables = [
             'success' => true,
             'title' => Constants::SUBNAV_ITEM_DASHBOARD['label'],
@@ -56,6 +67,7 @@ class DashboardController extends BaseController
             'url' => $url,
             'monitorId' => $monitorId,
             'monitorData' => $monitorData,
+            'incidents' => $incidents,
             'apiKey' => $settingsService->getApiKey(),
             'apiTokenStatus' => $settingsService->getApiTokenStatus(),
             'apiTokenStatuses' => Constants::API_KEY_STATUS,

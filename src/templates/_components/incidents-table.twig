@@ -1,0 +1,58 @@
+{# upsnap/_components/incidents-table.twig #}
+<div id="incidents-table-card" class="incidents-table-wrapper">
+	<div class="card-header">
+		<span>Recent 20 Incidents</span>
+	</div>
+	<div class="incidents-table-container">
+		{% if incidents is empty %}
+			<div class="no-incidents-message">
+				<p>Hurray, No recent incidents found.</p>
+			</div>
+		{% else %}
+			<table class="data fullwidth">
+				<thead>
+					<tr>
+						<th>Monitor</th>
+						<th>Region</th>
+						<th>Check Type</th>
+						<th>Status Code</th>
+						<th>Message</th>
+						<th>Occurred At</th>
+					</tr>
+				</thead>
+				<tbody>
+					{% for incident in incidents %}
+						<tr>
+							<td>
+								<strong>{{ incident.monitor_name }}</strong>
+							</td>
+							<td>
+								<span class="region-badge">{{ incident.region }}</span>
+							</td>
+							<td>
+								<span class="check-type-badge check-type-{{ incident.check_type }}">
+									{{ incident.check_type|replace({'_': ' '})|title }}
+								</span>
+							</td>
+							<td>
+								<span class="status-code-badge status-{{ incident.status_code }}">
+									{{ incident.status_code }}
+								</span>
+							</td>
+							<td>
+								<span class="incident-message" title="{{ incident.error_message }}">
+									{{ incident.error_message|length > 80 ? incident.error_message|slice(0, 80) ~ '...' : incident.error_message }}
+								</span>
+							</td>
+							<td>
+								<time datetime="{{ incident.timestamp|date('c') }}">
+									{{ incident.timestamp|date('M d, Y H:i') }}
+								</time>
+							</td>
+						</tr>
+					{% endfor %}
+				</tbody>
+			</table>
+		{% endif %}
+	</div>
+</div>
