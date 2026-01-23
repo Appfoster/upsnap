@@ -1103,11 +1103,11 @@ function registerReachabilityJs() {
 
     // Function to format milliseconds to seconds
     function formatMsToSecs(ms) {
-        if (!ms) return 'N/A';
+		if (ms === null || ms === undefined) return "N/A";
         if (ms >= 1000) {
-			return (ms / 1000).toFixed(2) + "s";
-		}
-        return ms + "ms";
+            return (ms / 1000).toFixed(2) + "s";
+        }
+        return parseFloat(ms).toFixed(2) + "ms";
     }
 
     // Function to show/hide chart loader
