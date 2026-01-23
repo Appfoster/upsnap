@@ -143,3 +143,17 @@
     border: 1px solid #e3e5e8;
     border-radius: 16px;
 }
+
+.monitor-incidents-link {
+	color: #ef4444;
+	font-weight: 500;
+	cursor: pointer;
+	margin-left: 6px;
+	white-space: nowrap;
+	transition: text-decoration 0.15s ease, opacity 0.15s ease;
+}
+
+.monitor-incidents-link:hover {
+	text-decoration: underline;
+	opacity: 0.9;
+}
