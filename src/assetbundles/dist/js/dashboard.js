@@ -3,12 +3,23 @@ Craft.UpsnapDashboard = {
 	currentResponseTimeFilter: "last_24_hours",
 	responseChartInstance: null,
 	monitorId: null, // Store monitor ID for API calls
+	selectedRegionId: null, // Store selected region ID for API calls
 
 	init() {
 		this.refreshBtn = document.getElementById("refresh-btn");
+		this.regionDropdown = document.getElementById("regionDropdown");
 
 		// Extract monitor ID from page data
 		this.monitorId = window.CraftPageData?.monitorData?.id;
+
+		// Initialize region dropdown if available
+		if (this.regionDropdown) {
+			this.selectedRegionId = this.regionDropdown.value;
+			this.regionDropdown.addEventListener("change", (e) => {
+				this.selectedRegionId = e.target.value;
+				this.onRegionChange();
+			});
+		}
 
 		this.initializeDashboard();
 		this.renderMonitorCards();
@@ -26,6 +37,39 @@ Craft.UpsnapDashboard = {
 			});
 		}
 	},
+	
+	onRegionChange() {
+		// Show existing skeletons for all affected cards
+		const cardsToShow = [
+			"monitor-24h-card",
+			"uptime-day-card",
+			"uptime-week-card",
+			"uptime-month-card",
+			"reachability-card",
+		];
+
+		cardsToShow.forEach((cardId) => {
+			const card = document.getElementById(cardId);
+			if (card) {
+				card.classList.add("skeleton");
+				const skeleton = card.querySelector(".card-skeleton");
+				const content = card.querySelector(".card-content");
+				if (skeleton) skeleton.hidden = false;
+				if (content) content.hidden = true;
+			}
+		});
+
+		// Re-fetch data with new region
+		Promise.all([
+			this.render24hChartCard(window.CraftPageData?.monitorData),
+			this.renderResponseTimeCard(window.CraftPageData?.monitorData),
+			this.renderUptimeStatCards(),
+			this.fetchAndRenderReachability(),
+		]).catch((err) => {
+			console.error("Failed to refresh dashboard for region:", err);
+		});
+	},
+
 	isHttpsMonitor() {
 		const url = window.CraftPageData?.monitorUrl;
 
@@ -167,6 +211,7 @@ Craft.UpsnapDashboard = {
 		return Craft.sendActionRequest("POST", action, {
 			data: {
 				force_fetch: forceFetch,
+				region: this.selectedRegionId,
 			},
 		})
 			.then((response) => {
@@ -271,6 +316,22 @@ Craft.UpsnapDashboard = {
 		return Promise.allSettled(calls);
 	},
 
+	async fetchAndRenderReachability() {
+		const cardId = "reachability-card";
+		const card = document.getElementById(cardId);
+		if (!card) return;
+
+		try {
+			return this.fetchAndRenderCard({
+				action: "upsnap/health-check/reachability",
+				cardTitle: "Reachability",
+				cardId: cardId,
+			});
+		} catch (err) {
+			console.error("Failed to fetch reachability:", err);
+		}
+	},
+
 	runWithRefreshButton(button, fetchFn) {
 		if (!button || typeof fetchFn !== "function") return;
 
@@ -331,7 +392,12 @@ Craft.UpsnapDashboard = {
 	// ===========================================================
 	async fetchMonitorData(endpoint) {
 		try {
-			const res = await fetch(endpoint, {
+			// Add region parameter if selected
+			const separator = endpoint.includes('?') ? '&' : '?';
+			const regionParam = this.selectedRegionId ? `${separator}region=${encodeURIComponent(this.selectedRegionId)}` : '';
+			const finalEndpoint = this.selectedRegionId ? endpoint + regionParam : endpoint;
+
+			const res = await fetch(finalEndpoint, {
 				headers: {
 					"X-Requested-With": "XMLHttpRequest",
 				},
@@ -481,9 +547,13 @@ Craft.UpsnapDashboard = {
 	async render24hChartCard(monitorData) {
 		const card = document.getElementById("monitor-24h-card");
 		if (!card) return;
-
 		// Show skeleton while loading
-		card.classList.add("skeleton");
+		card.innerHTML = `
+			<div class="card-header">Last 24 hours</div>
+			<div class="card-skeleton">
+				<div class="skeleton-line"></div>
+			</div>
+		`;
 
 		const isDisabled = monitorData?.is_enabled === false;
 
@@ -622,13 +692,14 @@ Craft.UpsnapDashboard = {
 		if (ms >= 1000) {
 			return (ms / 1000).toFixed(2) + "s";
 		}
-		return ms + "ms";
+        return parseFloat(ms).toFixed(2) + "ms";
 	},
 
 	// ===========================================================
 	// Response Time Area Chart - NOW FETCHES FROM API
 	// ===========================================================
 	async renderResponseTimeCard(monitorData) {
+		this.showResponseChartLoader();
 		// Register no data plugin (safe-guard against double register)
 		if (!Chart.registry.plugins.get("noDataMessage")) {
 			Chart.register({
@@ -835,6 +906,7 @@ Craft.UpsnapDashboard = {
 			card.classList.remove("skeleton");
 			console.error("Failed to render response time card:", err);
 		}
+		this.hideResponseChartLoader();
 	},
 
 	// ===========================================================
@@ -918,6 +990,9 @@ Craft.UpsnapDashboard = {
 		const card = document.getElementById(elementId);
 		if (!card) return;
 
+		const content = card.querySelector(".card-content");
+		const skeleton = card.querySelector(".card-skeleton");
+
 		if (!stats) {
 			this.renderNoDataCard(card, label);
 			return;
@@ -929,8 +1004,10 @@ Craft.UpsnapDashboard = {
 		const color = this.uptimeColor(pct);
 
 		card.classList.remove("skeleton");
-		card.innerHTML = `
-			<div class="card-header">${label}</div>
+		if (skeleton) skeleton.hidden = true;
+		if (content) content.hidden = false;
+
+		content.innerHTML = `
 			<div class="card-body ${color}">
 				${pct !== null ? pct + "%" : "N/A"}
 			</div>

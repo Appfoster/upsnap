@@ -784,6 +784,7 @@ function showSkeletons(statusContainerWrapper, dataContainer) {
 
 function registerReachabilityJs() {
     const refreshBtn = document.getElementById("refresh-btn");
+    const regionDropdown = document.getElementById("regionDropdown");
     const statusContainerWrapper = document.getElementById("status-container-wrapper");
     const reachabilitySection = document.getElementById("reachability-section");
 
@@ -795,11 +796,62 @@ function registerReachabilityJs() {
     }
 
     let reachabilityData = {};
+    let regionResponseTimeData = {}; // Store region data to avoid duplicate API calls
+
+    // Helper function to display skeleton loaders
+    function showSkeletonLoaders() {
+        statusContainerWrapper.innerHTML = `
+            <div class="skeleton-card">
+                <div class="skeleton-card-header">
+                    <div class="skeleton-line skeleton-line-medium"></div>
+                </div>
+                <div class="skeleton-card-body">
+                    <div class="skeleton-line skeleton-line-long"></div>
+                    <div class="skeleton-line skeleton-line-short"></div>
+                </div>
+            </div>
+        `;
+        if (reachabilitySection) {
+            reachabilitySection.innerHTML = '';
+        }
+    }
+
+    // Helper function to display region card skeleton loaders
+    function showRegionCardSkeletons() {
+        const monitorData = window.CraftPageData?.monitorData;
+        const regions = monitorData?.regions || [];
+        const wrapper = document.getElementById('region-cards-wrapper');
+
+        if (!wrapper || regions.length === 0) return;
+
+        wrapper.innerHTML = '';
+        
+        // Create skeleton loaders for each region
+        regions.forEach(() => {
+            const skeleton = document.createElement('div');
+            skeleton.className = 'region-card skeleton';
+            skeleton.innerHTML = `
+                <div class="skeleton-line skeleton-line-medium" style="margin-bottom: 12px;"></div>
+                <div class="skeleton-line skeleton-line-long" style="margin-bottom: 6px;"></div>
+                <div class="skeleton-line skeleton-line-short"></div>
+            `;
+            wrapper.appendChild(skeleton);
+        });
+    }
 
     // Function to fetch reachability data
-    function fetchReachabilityData(forceFetch = false) {
+    function fetchReachabilityData(region = '', forceFetch = false, skipResponseTimeChart = false, showSkeletonLoader = true) {
+        // Show skeleton loaders while fetching
+        if(showSkeletonLoader) showSkeletonLoaders();
+        
+        // Only show region card skeletons if we're fetching response time chart
+        if (!skipResponseTimeChart) {
+            showRegionCardSkeletons();
+        }
+
         return Craft.sendActionRequest('POST', 'upsnap/health-check/reachability', {			
             data: {
+                region: region,
 				force_fetch: forceFetch
 			}})
                 .then(response => {
@@ -809,6 +861,11 @@ function registerReachabilityJs() {
                         // Render containers
                         renderStatusContainer(reachabilityData);
                         renderReachabilityDetails(reachabilityData.details || {});
+
+                        // Only render response time chart if not skipped
+                        if (!skipResponseTimeChart) {
+                            renderResponseTimeChart();
+                        }
                     } else {
                         const errorMessage = response?.data?.error || 'Failed to fetch reachability data';
                         throw new Error(errorMessage);
@@ -829,7 +886,12 @@ function registerReachabilityJs() {
                 // Hide reachability section
                 if (reachabilitySection) {
                     reachabilitySection.style.display = 'none';
-                } 
+                }
+                
+                // Still render response time chart and region cards even on error
+                if (!skipResponseTimeChart) {
+                    renderResponseTimeChart();
+                }
             }).finally(() => {
                 refreshBtn.disabled = false;
             });
@@ -848,21 +910,8 @@ function registerReachabilityJs() {
 
         let html = `
             <div class="details-section">
-                <h3 class="details-title">Check details</h3>
-
-                <table class="details-table">
-                    ${details?.monitoredFrom ? `
-                    <tr>
-                        <td class="details-label">Monitored from</td>
-                        <td class="details-value">
-                            ${details?.monitoredFrom?.location ?? 'Unknown'}
-                        </td>
-                    </tr>
-                    ` : ''}
-                </table>
-
                 <div id="more-details">
-                    <h3 class="pt-2rem details-title">HTTP Details</h3>
+                    <h3 class="details-title">HTTP Details</h3>
                     <table class="details-table">
                         <tr>
                             <td class="details-label">HTTP Status</td>
@@ -924,9 +973,6 @@ function registerReachabilityJs() {
                     </table>
                     ` : ''}
                 </div>
-
-                <a href="#" class="show-less">Show less</a>
-                <a href="#" class="show-details hidden">Show more</a>
             </div>
         `;
 
@@ -939,25 +985,626 @@ function registerReachabilityJs() {
         }
     }
 
-    // Helper function for HTTP status class
-    function getHttpStatusClass(status) {
-        if (status >= 100 && status < 200) return 'info';
-        if (status >= 200 && status < 300) return 'success';
-        if (status >= 300 && status < 400) return 'redirect';
-        if (status >= 400 && status < 500) return 'warning';
-        if (status >= 500) return 'error';
-        return 'unknown';
+    // Function to render region cards with response time stats (uses stored data, no duplicate API calls)
+    function renderRegionCards() {
+        const monitorData = window.CraftPageData?.monitorData;
+        const regions = monitorData?.regions || [];
+        const isMonitorEnabled = monitorData?.is_enabled;
+        const wrapper = document.getElementById('region-cards-wrapper');
+
+        if (!wrapper || regions.length === 0) {
+            return;
+        }
+
+        wrapper.innerHTML = '';
+
+        // Render card for each region using stored data
+        regions.forEach(region => {
+            const responseTimeData = regionResponseTimeData[region.id];
+
+            // If monitor is paused, show N/A instead of waiting for data
+            if (!isMonitorEnabled) {
+                const card = document.createElement('div');
+                card.className = 'region-card';
+                card.innerHTML = `
+                    <div class="region-card-header">
+                        <div class="region-card-title">
+                            ${region.name}
+                            ${region.is_primary ? '<span class="region-primary-pill">Primary</span>' : ''}
+                        </div>
+                    </div>
+                    <div class="region-stats-grid">
+                        <div class="region-stat-item">
+                            <div class="region-stat-label">Avg</div>
+                            <div class="region-stat-value">N/A</div>
+                        </div>
+                        <div class="region-stat-item">
+                            <div class="region-stat-label">Max</div>
+                            <div class="region-stat-value">N/A</div>
+                        </div>
+                        <div class="region-stat-item">
+                            <div class="region-stat-label">Min</div>
+                            <div class="region-stat-value">N/A</div>
+                        </div>
+                    </div>
+                `;
+                wrapper.appendChild(card);
+                return;
+            }
+
+            if (!responseTimeData) {
+                // Show unavailable message if data couldn't be fetched
+                const card = document.createElement('div');
+                card.className = 'region-card';
+                card.innerHTML = `
+                    <div class="region-card-header">
+                        <div class="region-card-title">
+                            ${region.name}
+                            ${region.is_primary ? '<span class="region-primary-pill">Primary</span>' : ''}
+                        </div>
+                    </div>
+                    <div class="region-stats-grid">
+                        <div class="region-stat-item">
+                            <div class="region-stat-label">Avg</div>
+                            <div class="region-stat-value">–</div>
+                        </div>
+                        <div class="region-stat-item">
+                            <div class="region-stat-label">Max</div>
+                            <div class="region-stat-value">–</div>
+                        </div>
+                        <div class="region-stat-item">
+                            <div class="region-stat-label">Min</div>
+                            <div class="region-stat-value">–</div>
+                        </div>
+                    </div>
+                `;
+                wrapper.appendChild(card);
+                return;
+            }
+
+            const avg = responseTimeData.avg_response_time;
+            const max = responseTimeData.max_response_time;
+            const min = responseTimeData.min_response_time;
+
+            // Create region card
+            const card = document.createElement('div');
+            card.className = 'region-card';
+            card.innerHTML = `
+                <div class="region-card-header">
+                    <div class="region-card-title">
+                        ${region.name}
+                        ${region.is_primary ? '<span class="region-primary-pill">Primary</span>' : ''}
+                    </div>
+                </div>
+                <div class="region-stats-grid">
+                    <div class="region-stat-item">
+                        <div class="region-stat-label">Avg</div>
+                        <div class="region-stat-value">${formatMsToSecs(avg)}</div>
+                    </div>
+                    <div class="region-stat-item">
+                        <div class="region-stat-label">Max</div>
+                        <div class="region-stat-value">${formatMsToSecs(max)}</div>
+                    </div>
+                    <div class="region-stat-item">
+                        <div class="region-stat-label">Min</div>
+                        <div class="region-stat-value">${formatMsToSecs(min)}</div>
+                    </div>
+                </div>
+            `;
+
+            wrapper.appendChild(card);
+        });
+    }
+
+
+    // Response time chart state
+    let currentResponseTimeFilter = 'last_hour';
+    let responseTimeChartInstance = null;
+
+    // Function to format milliseconds to seconds
+    function formatMsToSecs(ms) {
+		if (ms === null || ms === undefined) return "N/A";
+        if (ms >= 1000) {
+            return (ms / 1000).toFixed(2) + "s";
+        }
+        return parseFloat(ms).toFixed(2) + "ms";
+    }
+
+    // Function to show/hide chart loader
+    function showResponseChartLoader() {
+        const loader = document.getElementById('reachabilityChartLoader');
+        if (loader) loader.classList.remove('hidden');
+    }
+
+    function hideResponseChartLoader() {
+        const loader = document.getElementById('reachabilityChartLoader');
+        if (loader) loader.classList.add('hidden');
+    }
+
+    // Function to get response time range based on filter
+    function getResponseTimeRange(filter) {
+		const now = Math.floor(Date.now() / 1000);
+
+		const map = {
+			last_hour: 3600,
+			last_24_hours: 86400,
+			last_7_days: 604800,
+			last_30_days: 2592000,
+			last_90_days: 7776000,
+		};
+
+		return {
+			start: now - map[filter],
+			end: now,
+		};
+    }
+
+    let regionDataSets = {}; // Store raw data for each region to calculate stats
+
+    function updateAggregateStats() {
+        // Calculate stats based only on visible datasets
+        const visibleDatasets = responseTimeChartInstance?.data?.datasets || [];
+        
+        let stats = {
+            avg_response_time: 0,
+            max_response_time: 0,
+            min_response_time: Infinity,
+            totalPoints: 0,
+            totalSum: 0
+        };
+
+        visibleDatasets.forEach((dataset, datasetIndex) => {
+            const meta = responseTimeChartInstance?.getDatasetMeta(datasetIndex);
+            if (!meta || meta.hidden) return; // Skip hidden datasets
+
+            const values = dataset.data || [];
+            values.forEach(value => {
+                if (value === null || value === undefined) return;
+                
+                stats.totalSum += value;
+                stats.max_response_time = Math.max(stats.max_response_time, value);
+                stats.min_response_time = Math.min(stats.min_response_time, value);
+                stats.totalPoints++;
+            });
+        });
+
+        if (stats.totalPoints > 0) {
+            stats.avg_response_time = stats.totalSum / stats.totalPoints;
+        }
+
+        return stats;
+    }
+
+    function updateStatsDisplay() {
+        const stats = updateAggregateStats();
+        const avgEl = document.getElementById('reachabilityAvgTime');
+        const maxEl = document.getElementById('reachabilityMaxTime');
+        const minEl = document.getElementById('reachabilityMinTime');
+
+        if (avgEl) avgEl.textContent = formatMsToSecs(stats.avg_response_time);
+        if (maxEl) maxEl.textContent = formatMsToSecs(stats.max_response_time === 0 ? 0 : stats.max_response_time);
+        if (minEl) minEl.textContent = formatMsToSecs(stats.min_response_time === Infinity ? 0 : stats.min_response_time);
+    }
+
+    // Function to render response time chart for all regions
+    async function renderResponseTimeChart() {
+        showResponseChartLoader();
+        
+        const monitorData = window.CraftPageData?.monitorData;
+        const monitorId = monitorData?.id;
+        const isMonitorEnabled = monitorData?.is_enabled;
+
+        if (!monitorId) {
+            hideResponseChartLoader();
+            return;
+        }
+
+        // Check if monitor is paused
+        if (!isMonitorEnabled) {
+            // Create empty chart with paused message
+            const ctx = document.getElementById('reachabilityResponseChart')?.getContext('2d');
+            if (!ctx) {
+                hideResponseChartLoader();
+                return;
+            }
+
+            // Destroy existing chart instance
+            if (responseTimeChartInstance) {
+                responseTimeChartInstance.destroy();
+            }
+
+            // Register paused message plugin
+            if (!Chart.registry.plugins.get('monitorPausedMessage')) {
+                Chart.register({
+                    id: 'monitorPausedMessage',
+                    afterDraw(chart, args, options) {
+                        const { ctx, chartArea } = chart;
+                        const padding = 20;
+                        
+                        ctx.save();
+                        ctx.textAlign = 'center';
+                        ctx.textBaseline = 'middle';
+                        
+                        // Main message
+                        ctx.font = 'bold 16px system-ui, -apple-system, BlinkMacSystemFont';
+                        ctx.fillStyle = '#1f2937';
+                        ctx.fillText(
+                            'Monitor is Paused',
+                            (chartArea.left + chartArea.right) / 2,
+                            (chartArea.top + chartArea.bottom) / 2 - 20
+                        );
+                        
+                        // Sub message
+                        ctx.font = '14px system-ui, -apple-system, BlinkMacSystemFont';
+                        ctx.fillStyle = '#6b7280';
+                        ctx.fillText(
+                            'Resume monitor to see response time results',
+                            (chartArea.left + chartArea.right) / 2,
+                            (chartArea.top + chartArea.bottom) / 2 + 20
+                        );
+                        
+                        ctx.restore();
+                    }
+                });
+            }
+
+            responseTimeChartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: []
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: { enabled: false },
+                        monitorPausedMessage: {}
+                    }
+                }
+            });
+
+            hideResponseChartLoader();
+            
+            // Render region cards with N/A values
+            renderRegionCards();
+            
+            return;
+        }
+
+        try {
+            const range = getResponseTimeRange(currentResponseTimeFilter);
+            const queryParams = new URLSearchParams(range).toString();
+
+            // Fetch data for each region
+            const regions = monitorData.regions || [];
+            const datasets = [];
+            const allLabels = new Set();
+            let aggregatedStats = {
+                avg_response_time: 0,
+                max_response_time: 0,
+                min_response_time: Infinity,
+                totalPoints: 0
+            };
+
+            // Clear previous region datasets
+            regionDataSets = {};
+
+            const colors = [
+                { border: '#22c55e', bg: 'rgba(34, 197, 94, 0.35)' },
+                { border: '#f59e0b', bg: 'rgba(245, 158, 11, 0.35)' },
+                { border: '#3b82f6', bg: 'rgba(59, 130, 246, 0.35)' },
+                { border: '#ef4444', bg: 'rgba(239, 68, 68, 0.35)' },
+                { border: '#8b5cf6', bg: 'rgba(139, 92, 246, 0.35)' },
+                { border: '#06b6d4', bg: 'rgba(6, 182, 212, 0.35)' },
+                { border: '#ec4899', bg: 'rgba(236, 72, 153, 0.35)' },
+            ];
+
+            if (regions.length > 0) {
+                // Fetch data for each region
+                for (let i = 0; i < regions.length; i++) {
+                    const region = regions[i];
+                    const regionEndpoint = `/admin/upsnap/monitors/response-time/${monitorId}?${queryParams}&region=${encodeURIComponent(region.id)}`;
+
+                    try {
+                        const response = await fetch(regionEndpoint, {
+                            headers: {
+                                "X-Requested-With": "XMLHttpRequest",
+                            },
+                        });
+
+                        if (!response.ok) {
+                            console.warn(`Failed to fetch data for region ${region.name}`);
+                            continue;
+                        }
+
+                        const data = await response.json();
+                        const chartData = data?.data?.response_time_data?.chart_data || [];
+
+                        if (chartData.length === 0) continue;
+
+                        // Store the response time data for region cards (avoid duplicate API calls)
+                        regionResponseTimeData[region.id] = data?.data?.response_time_data;
+
+                        // Prepare dataset for this region
+                        const color = colors[i % colors.length];
+                        const values = [];
+                        const labels = [];
+                        let regionStats = {
+                            sum: 0,
+                            max: 0,
+                            min: Infinity,
+                            count: 0
+                        };
+
+                        chartData.forEach(point => {
+                            const d = new Date(point.timestamp * 1000);
+                            const label = d.toLocaleString('en-US', {
+                                month: 'short',
+                                day: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit',
+                                hour12: true
+                            });
+
+                            labels.push(label);
+                            allLabels.add(label);
+
+                            const responseTime = point.response_time || 0;
+                            values.push(responseTime);
+
+                            // Calculate region stats
+                            regionStats.sum += responseTime;
+                            regionStats.max = Math.max(regionStats.max, responseTime);
+                            regionStats.min = Math.min(regionStats.min, responseTime);
+                            regionStats.count++;
+
+                            // Update aggregated stats
+                            aggregatedStats.avg_response_time += responseTime;
+                            aggregatedStats.max_response_time = Math.max(aggregatedStats.max_response_time, responseTime);
+                            aggregatedStats.min_response_time = Math.min(aggregatedStats.min_response_time, responseTime);
+                            aggregatedStats.totalPoints++;
+                        });
+
+                        datasets.push({
+                            label: region.name,
+                            data: values,
+                            borderColor: color.border,
+                            backgroundColor: color.bg,
+                            borderWidth: 2,
+                            fill: true,
+                            cubicInterpolationMode: 'monotone',
+                            tension: 0.4,
+                            pointRadius: 0,
+                            pointHoverRadius: 0
+                        });
+
+                        // Store raw values for this region to calculate stats based on visibility
+                        regionDataSets[region.id] = values;
+
+                    } catch (error) {
+                        console.error(`Error fetching data for region ${region.name}:`, error);
+                    }
+                }
+
+                // Calculate average
+                if (aggregatedStats.totalPoints > 0) {
+                    aggregatedStats.avg_response_time = aggregatedStats.avg_response_time / aggregatedStats.totalPoints;
+                }
+            } else {
+                // No regions, fetch default data
+                const endpoint = `/admin/upsnap/monitors/response-time/${monitorId}?${queryParams}`;
+                const response = await fetch(endpoint, {
+                    headers: {
+                        "X-Requested-With": "XMLHttpRequest",
+                    },
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    const chartData = data?.response_time_data?.chart_data || [];
+
+                    if (chartData.length > 0) {
+                        const color = colors[0];
+                        const values = [];
+
+                        chartData.forEach(point => {
+                            const d = new Date(point.timestamp * 1000);
+                            const label = d.toLocaleString('en-US', {
+                                month: 'short',
+                                day: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit',
+                                hour12: true
+                            });
+
+                            allLabels.add(label);
+                            const responseTime = point.response_time || 0;
+                            values.push(responseTime);
+
+                            aggregatedStats.avg_response_time += responseTime;
+                            aggregatedStats.max_response_time = Math.max(aggregatedStats.max_response_time, responseTime);
+                            aggregatedStats.min_response_time = Math.min(aggregatedStats.min_response_time, responseTime);
+                            aggregatedStats.totalPoints++;
+                        });
+
+                        if (aggregatedStats.totalPoints > 0) {
+                            aggregatedStats.avg_response_time = aggregatedStats.avg_response_time / aggregatedStats.totalPoints;
+                        }
+
+                        datasets.push({
+                            label: 'Response Time',
+                            data: values,
+                            borderColor: color.border,
+                            backgroundColor: color.bg,
+                            borderWidth: 2,
+                            fill: true,
+                            cubicInterpolationMode: 'monotone',
+                            tension: 0.4,
+                            pointRadius: 0,
+                            pointHoverRadius: 0
+                        });
+                    }
+                }
+            }
+
+            const ctx = document.getElementById('reachabilityResponseChart')?.getContext('2d');
+            if (!ctx) {
+                hideResponseChartLoader();
+                return;
+            }
+
+            // Destroy existing chart instance
+            if (responseTimeChartInstance) {
+                responseTimeChartInstance.destroy();
+            }
+
+            // Register no data plugin if not already registered
+            if (!Chart.registry.plugins.get('noDataMessage')) {
+                Chart.register({
+                    id: 'noDataMessage',
+                    afterDraw(chart, args, options) {
+                        const { ctx, chartArea, data } = chart;
+                        const hasData = data?.datasets?.some(
+                            (ds) => Array.isArray(ds.data) && ds.data.length > 0
+                        );
+
+                        if (hasData) return;
+
+                        ctx.save();
+                        ctx.textAlign = 'center';
+                        ctx.textBaseline = 'middle';
+                        ctx.font = '14px system-ui, -apple-system, BlinkMacSystemFont';
+                        ctx.fillStyle = '#9CA3AF';
+
+                        ctx.fillText(
+                            options?.text || 'No data available',
+                            (chartArea.left + chartArea.right) / 2,
+                            (chartArea.top + chartArea.bottom) / 2
+                        );
+
+                        ctx.restore();
+                    }
+                });
+            }
+
+            const hasData = datasets.some(ds => ds.data && ds.data.length > 0);
+
+            responseTimeChartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: Array.from(allLabels),
+                    datasets: datasets
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false
+                    },
+                    scales: {
+                        x: { 
+                            display: false 
+                        },
+                        y: {
+                            display: hasData,
+                            ticks: {
+                                callback: (v) => v + 'ms',
+                                color: '#9CA3AF',
+                                font: { size: 11 }
+                            },
+                            grid: { 
+                                display: hasData,
+                                color: '#f3f4f6',
+                                drawBorder: false
+                            },
+                            border: { display: false }
+                        }
+                    },
+                    plugins: {
+                        legend: { 
+                            display: datasets.length > 1 || (datasets.length === 1 && !monitorData.regions),
+                            position: 'top',
+                            onClick: (e, legendItem, legend) => {
+                                
+                                // Handle legend item click to toggle dataset visibility
+                                const chart = legend.chart;
+                                const datasetIndex = legendItem.datasetIndex;
+                                const meta = chart.getDatasetMeta(datasetIndex);
+                                
+                                // Toggle visibility
+                                meta.hidden = !meta.hidden;
+                                
+                                chart.update();
+                                
+                                // Update stats based on visible datasets
+                                updateStatsDisplay();
+                            },
+                            labels: {
+                                color: '#6B7280',
+                                font: { size: 12 },
+                                padding: 15,
+                                usePointStyle: true
+                            }
+                        },
+                        tooltip: { 
+                            enabled: hasData,
+                            backgroundColor: 'rgba(0,0,0,0.8)',
+                            padding: 12,
+                            cornerRadius: 8,
+                            titleFont: { size: 12, weight: 'bold' },
+                            bodyFont: { size: 11 }
+                        },
+                        noDataMessage: {
+                            text: 'No response time data available'
+                        }
+                    }
+                }
+            });
+
+            // Update stats based on visible datasets
+            updateStatsDisplay();
+
+            // Render region cards with stored data
+            renderRegionCards();
+
+        } catch (error) {
+            console.error('Failed to render response time chart:', error);
+        } finally {
+            hideResponseChartLoader();
+        }
     }
 
     // Initial fetch on page load (no loader, skeleton is already visible)
     fetchReachabilityData();
 
+    // Add event listener for region dropdown change
+    if (regionDropdown) {
+        regionDropdown.addEventListener('change', function() {
+            const selectedRegion = this.value;
+            // Skip response time chart fetch - just update status and details silently
+            fetchReachabilityData(selectedRegion, false, true, false);
+        });
+    }
+
     // Add event listener for refresh button
     if (refreshBtn) {
         refreshBtn.addEventListener('click', function () {
-            fetchReachabilityData(true);
-            showSkeletons(statusContainerWrapper, reachabilitySection)
+            const selectedRegion = regionDropdown ? regionDropdown.value : '';
+            // Only refresh reachability status, skip response time chart update
+            fetchReachabilityData(selectedRegion, true, true);
             refreshBtn.disabled = true;
+        });
+    }
+
+    // Add event listener for response time filter dropdown
+    const responseTimeFilter = document.getElementById('reachabilityResponseTimeFilter');
+    if (responseTimeFilter) {
+        responseTimeFilter.addEventListener('change', async (e) => {
+            currentResponseTimeFilter = e.target.value;
+            await renderResponseTimeChart();
         });
     }
 }

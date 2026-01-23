@@ -75,6 +75,16 @@ class Upsnap extends Plugin
                 Craft::info('Upsnap plugin installed', __METHOD__);
 
                 if ($event->plugin === $this) {
+                    // Record installation data
+                    try {
+                        $siteUrl = Craft::$app->getSites()->getPrimarySite()?->baseUrl;
+                        if ($siteUrl) {
+                            $this->apiService->recordInstallationData($siteUrl);
+                        }
+                    } catch (\Exception $e) {
+                        Craft::error('Failed to record installation data: ' . $e->getMessage(), __METHOD__);
+                    }
+
                     $request = Craft::$app->getRequest();
                     if ($request->isCpRequest) {
                         return $this->redirectToSettings()->send();
@@ -121,7 +131,8 @@ class Upsnap extends Plugin
                     'upsnap/monitors/uptime-stats/<monitorId:[0-9a-fA-F\-]+>' => 'upsnap/monitors/uptime-stats-data',
 
                     'upsnap/status-page/edit/<statusPageId:[0-9a-fA-F\-]+>' => 'upsnap/status-page/new',
-                    'upsnap/status-page/new' => 'upsnap/status-page/new'
+                    'upsnap/status-page/new' => 'upsnap/status-page/new',
+                    'upsnap/regions/list' => 'upsnap/regions/list',
 
                 ]);
             }

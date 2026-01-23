@@ -201,7 +201,10 @@ class Constants
         ],
         'user' => [
             'details' => 'user/details'
-        ]
+        ],
+        'regions' => [
+            'list' => 'regions'
+        ],
     ];
 
     public const LIGHTHOUSE_STRATEGY = [

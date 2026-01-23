@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [1.1.0] - 2026-01-23
+
+### Added
+- **Multi-Region Monitoring Support**: Full regional data visualization across dashboard and reachability pages, including uptime histograms, uptime statistics, and response time graphs filterable by region.
+- **Region-wise Response Time Comparison**: Multi-region response time area chart on reachability page for comparing performance across regions with legend-based filtering.
+- **Recent Incidents Tracking**: Dashboard widget displaying the latest 20 incidents with incident details and status.
+
 ## [1.0.11] - 2026-01-19
 
 ### Chore
@@ -172,7 +179,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Asset minification and optimization
 - Background processing for monitoring tasks
 
-[Unreleased]: https://github.com/Appfoster/upsnap/compare/1.0.11...HEAD
+[Unreleased]: https://github.com/Appfoster/upsnap/compare/1.1.0...HEAD
+[1.1.0]: https://github.com/Appfoster/upsnap/releases/tag/1.1.0
 [1.0.11]: https://github.com/Appfoster/upsnap/releases/tag/1.0.11
 [1.0.10]: https://github.com/Appfoster/upsnap/releases/tag/1.0.10
 [1.0.9]: https://github.com/Appfoster/upsnap/releases/tag/1.0.9

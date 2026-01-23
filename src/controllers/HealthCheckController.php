@@ -373,13 +373,32 @@ class HealthCheckController extends BaseController
         $isAjax = $request->getIsAjax();
         $url = Upsnap::getMonitoringUrl();
         $forceFetch = $request->getBodyParam('force_fetch', false);
+        $monitorData = null;
+
         if (!$url) {
             return $this->service->handleMissingMonitoringUrl(Constants::SUBNAV_ITEM_REACHABILITY);
         }
 
+        // Fetch monitor data to get regions only for non-AJAX (full page) requests
+        if (!$isAjax) {
+            try {
+                $settingsService = Upsnap::$plugin->settingsService;
+                $monitorId = $settingsService->getMonitorId();
+                if ($monitorId) {
+                    $endpoint = Constants::MICROSERVICE_ENDPOINTS['monitors']['view'] . '/' . $monitorId;
+                    $response = Upsnap::$plugin->apiService->get($endpoint);
+                    if (isset($response['status']) && $response['status'] === 'success') {
+                        $monitorData = $response['data']['monitor'] ?? null;
+                    }
+                }
+            } catch (\Throwable $e) {
+                Craft::error("Monitor fetch failed: {$e->getMessage()}", __METHOD__);
+            }
+        }
+
         try {
             $paramName = Constants::SUBNAV_ITEM_REACHABILITY['apiLabel'];
-            $response = $this->service->getHealthcheck($url, [$paramName], $forceFetch);
+            $response = $this->service->getHealthcheck($url, [$paramName], $forceFetch, null, $request->getParam('region', null));
 
             if (isset($response['result']['details'][$paramName]['error'])) {
                 throw new \Exception($response['result']['details'][$paramName]['error']);
@@ -426,6 +445,9 @@ class HealthCheckController extends BaseController
         }
 
         $data = $this->service->prepareData($data, Constants::SUBNAV_ITEM_REACHABILITY, $isAjax);
+
+        // Add monitor data to context
+        $data['monitorData'] = $monitorData;
 
         if ($isAjax) {
             return $this->asJson($data);

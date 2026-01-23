@@ -120,6 +120,50 @@ class ApiService extends Component
     }
 
     /**
+     * Record installation data
+     */
+    public function recordInstallationData(string $siteUrl): ?array
+    {
+        $body = [
+            'platform' => 'craft',
+            'details' => [
+                'site_url' => $siteUrl
+            ]
+        ];
+
+        try {
+            return $this->post('installation-data', $body);
+        } catch (RequestException $e) {
+            Craft::error("Failed to record installation data: " . $e->getMessage(), __METHOD__);
+            return null;
+        }
+    }
+
+    /**
+     * Get monitor incidents
+     *
+     * @param string $timeRange Time range (e.g., '7D', '30D', '90D')
+     * @param int $page Page number (default: 1)
+     * @param int $pageSize Number of incidents per page (default: 50)
+     * @return array|null Response data or null on failure
+     */
+    public function getMonitorIncidents(string $timeRange = '24h', int $page = 1, int $pageSize = 50): ?array
+    {
+        $query = [
+            'time_range' => $timeRange,
+            'page' => $page,
+            'page_size' => $pageSize,
+        ];
+
+        try {
+            return $this->get('user/monitors/incidents', $query);
+        } catch (RequestException $e) {
+            Craft::error("Failed to fetch monitor incidents: " . $e->getMessage(), __METHOD__);
+            return null;
+        }
+    }
+
+    /**
      * Common headers
      */
     protected function getHeaders(): array

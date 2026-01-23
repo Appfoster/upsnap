@@ -95,6 +95,25 @@ class MonitorsController extends Controller
                 throw new \Exception('Invalid JSON payload.');
             }
 
+            // Validate regions
+            $regions = $payloadArray['regions'] ?? [];
+            if (empty($regions)) {
+                throw new \Exception('Please select at least one region.');
+            }
+
+            // Validate that a primary region is set
+            $hasPrimaryRegion = false;
+            foreach ($regions as $region) {
+                if (isset($region['is_primary']) && $region['is_primary'] === true) {
+                    $hasPrimaryRegion = true;
+                    break;
+                }
+            }
+
+            if (!$hasPrimaryRegion) {
+                throw new \Exception('Please set a primary region.');
+            }
+
             $monitorId = $payloadArray['monitorId'] ?? null;
 
             $endpoint = $monitorId
@@ -479,6 +498,7 @@ class MonitorsController extends Controller
             'name' => $m['name'],
             'url' => $meta['url'] ?? '',
             'enabled' => $m['is_enabled'] ?? true,
+            'regions' => $m['regions'] ?? [],
 
             // Health checks
             'brokenLinksEnabled' => $services['broken_links']['enabled'] ?? false,
@@ -542,11 +562,18 @@ class MonitorsController extends Controller
 
     public function actionHistogramData(string $monitorId): Response
     {
+        $request = Craft::$app->getRequest();
+
+        $params = array_merge(
+            $request->getQueryParams(),
+            $request->getBodyParams()
+        );
+
         try {
             $endpoint = $this->buildMicroserviceEndpoint(Constants::MICROSERVICE_ENDPOINTS['monitors']['histogram'],$monitorId);
 
-            // Pass all params to the service
-            $response = Upsnap::$plugin->apiService->get($endpoint);
+            // Pass all params including region to the service
+            $response = Upsnap::$plugin->apiService->get($endpoint, $params);
 
             if (!isset($response['status']) || $response['status'] !== 'success') {
                 throw new \Exception('Unable to fetch histogram data.');
@@ -599,11 +626,19 @@ class MonitorsController extends Controller
 
     public function actionUptimeStatsData(string $monitorId): Response
     {
+        $request = Craft::$app->getRequest();
+
+        $params = array_merge(
+            $request->getQueryParams(),
+            $request->getBodyParams(),
+            ["uptime_stats_time_frames" => "day,week,month,year"]
+        );
+
         try {
             $endpoint = $this->buildMicroserviceEndpoint(Constants::MICROSERVICE_ENDPOINTS['monitors']['uptime_stats'],$monitorId);
 
-            // Pass all params to the service
-            $response = Upsnap::$plugin->apiService->get($endpoint, ["uptime_stats_time_frames" => "day,week,month,year"]);
+            // Pass all params including region to the service
+            $response = Upsnap::$plugin->apiService->get($endpoint, $params);
 
             if (!isset($response['status']) || $response['status'] !== 'success') {
                 throw new \Exception('Unable to fetch uptime stats data.');

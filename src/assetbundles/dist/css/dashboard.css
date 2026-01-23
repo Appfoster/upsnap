@@ -20,6 +20,7 @@
     box-shadow: 0 2px 6px rgba(0,0,0,0.08);
     display: flex;
     flex-direction: column;
+    position: relative;
 }
 
 /* Header */
@@ -175,6 +176,7 @@
     display: flex;
     flex-direction: column;
     justify-content: center;
+    position: relative;
 }
 .monitor-grid {
     display: grid;
@@ -194,6 +196,7 @@
     flex-direction: column;
     justify-content: center;
     height: 2.5rem;
+    position: relative;
 }
 
 .monitor-card .card-header {
@@ -465,4 +468,207 @@
 
 @keyframes spin {
     to { transform: rotate(360deg); }
+}
+
+/* Region Dropdown Styles */
+.region-selector-group {
+    margin-right: 12px;
+}
+
+/* ============================================================
+   Incidents Table
+============================================================ */
+.incidents-table-wrapper {
+    background: #fff;
+    border-radius: 12px;
+    padding: 16px 20px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    border: 1px solid #e5e7eb;
+    margin-top: 20px;
+}
+
+.incidents-table-wrapper .card-header {
+    font-size: 16px;
+    font-weight: 600;
+    color: #374151;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.incidents-table-container {
+    overflow-x: auto;
+}
+
+.no-incidents-message {
+    text-align: center;
+    padding: 40px 20px;
+    color: #6b7280;
+}
+
+.no-incidents-message p {
+    font-size: 14px;
+    margin: 0;
+}
+
+/* Table Styles - Following Craft CMS patterns */
+.incidents-table-wrapper table.data {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.incidents-table-wrapper table.data thead th {
+    background-color: #f9fafb;
+    color: #374151;
+    font-weight: 600;
+    font-size: 13px;
+    text-align: left;
+    padding: 12px 16px;
+    border-bottom: 2px solid #e5e7eb;
+    white-space: nowrap;
+}
+
+.incidents-table-wrapper table.data tbody tr {
+    border-bottom: 1px solid #e5e7eb;
+    transition: background-color 0.15s ease;
+}
+
+.incidents-table-wrapper table.data tbody tr:hover {
+    background-color: #f9fafb;
+}
+
+.incidents-table-wrapper table.data tbody tr:last-child {
+    border-bottom: none;
+}
+
+.incidents-table-wrapper table.data tbody td {
+    padding: 12px 16px;
+    font-size: 13px;
+    color: #374151;
+    vertical-align: middle;
+}
+
+.incidents-table-wrapper table.data tbody td strong {
+    font-weight: 600;
+    color: #111827;
+}
+
+/* Region Badge */
+.region-badge {
+    display: inline-block;
+    padding: 4px 10px;
+    background-color: #e0e7ff;
+    color: #4338ca;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 500;
+    text-transform: uppercase;
+}
+
+/* Check Type Badge */
+.check-type-badge {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.check-type-uptime {
+    background-color: #dbeafe;
+    color: #1e40af;
+}
+
+.check-type-lighthouse {
+    background-color: #fef3c7;
+    color: #92400e;
+}
+
+.check-type-ssl {
+    background-color: #d1fae5;
+    color: #065f46;
+}
+
+.check-type-broken_links,
+.check-type-broken-links {
+    background-color: #fee2e2;
+    color: #991b1b;
+}
+
+.check-type-domain {
+    background-color: #e0e7ff;
+    color: #3730a3;
+}
+
+.check-type-mixed_content,
+.check-type-mixed-content {
+    background-color: #fce7f3;
+    color: #9f1239;
+}
+
+/* Status Code Badge */
+.status-code-badge {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    font-family: 'Courier New', monospace;
+}
+
+.status-code-badge.status-500,
+.status-code-badge.status-502,
+.status-code-badge.status-503,
+.status-code-badge.status-504 {
+    background-color: #fee2e2;
+    color: #991b1b;
+}
+
+.status-code-badge.status-429 {
+    background-color: #fef3c7;
+    color: #92400e;
+}
+
+.status-code-badge.status-404 {
+    background-color: #fecaca;
+    color: #7f1d1d;
+}
+
+/* Incident Message */
+.incident-message {
+    display: block;
+    color: #6b7280;
+    font-size: 13px;
+    line-height: 1.4;
+}
+
+/* Time formatting */
+.incidents-table-wrapper table.data tbody td time {
+    color: #6b7280;
+    font-size: 13px;
+    white-space: nowrap;
+}
+
+/* Responsive Table */
+@media (max-width: 1200px) {
+    .incidents-table-wrapper table.data {
+        font-size: 12px;
+    }
+    
+    .incidents-table-wrapper table.data thead th,
+    .incidents-table-wrapper table.data tbody td {
+        padding: 10px 12px;
+    }
+}
+
+@media (max-width: 768px) {
+    .incidents-table-wrapper {
+        padding: 12px;
+    }
+    
+    .incidents-table-container {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
 }

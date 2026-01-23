@@ -74,6 +74,7 @@
             }) }}
 			</div>
 		</div>
+        {% include 'upsnap/_components/regions-multiselect.twig' %}
 
 		<div id="notification-channels-accordion" class="field">
 			<div class="heading">
@@ -293,7 +294,8 @@
             title: {{ title|json_encode|raw }},
             monitorForm: true,
             monitorData: {{ monitor ? monitor|json_encode|raw : 'null' }},
-            minMonitorIntervalSeconds: {{ MIN_MONITOR_INTERVAL_SECONDS }}
+            minMonitorIntervalSeconds: {{ MIN_MONITOR_INTERVAL_SECONDS }},
+            userDetails: {{ userDetails ? userDetails|json_encode|raw : 'null' }}
         };
 	</script>
 {% endblock %}
