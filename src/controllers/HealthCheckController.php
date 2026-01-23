@@ -379,19 +379,21 @@ class HealthCheckController extends BaseController
             return $this->service->handleMissingMonitoringUrl(Constants::SUBNAV_ITEM_REACHABILITY);
         }
 
-        // Fetch monitor data to get regions
-        try {
-            $settingsService = Upsnap::$plugin->settingsService;
-            $monitorId = $settingsService->getMonitorId();
-            if ($monitorId) {
-                $endpoint = Constants::MICROSERVICE_ENDPOINTS['monitors']['view'] . '/' . $monitorId;
-                $response = Upsnap::$plugin->apiService->get($endpoint);
-                if (isset($response['status']) && $response['status'] === 'success') {
-                    $monitorData = $response['data']['monitor'] ?? null;
+        // Fetch monitor data to get regions only for non-AJAX (full page) requests
+        if (!$isAjax) {
+            try {
+                $settingsService = Upsnap::$plugin->settingsService;
+                $monitorId = $settingsService->getMonitorId();
+                if ($monitorId) {
+                    $endpoint = Constants::MICROSERVICE_ENDPOINTS['monitors']['view'] . '/' . $monitorId;
+                    $response = Upsnap::$plugin->apiService->get($endpoint);
+                    if (isset($response['status']) && $response['status'] === 'success') {
+                        $monitorData = $response['data']['monitor'] ?? null;
+                    }
                 }
+            } catch (\Throwable $e) {
+                Craft::error("Monitor fetch failed: {$e->getMessage()}", __METHOD__);
             }
-        } catch (\Throwable $e) {
-            Craft::error("Monitor fetch failed: {$e->getMessage()}", __METHOD__);
         }
 
         try {

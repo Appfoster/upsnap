@@ -11,8 +11,8 @@
 {% block actionButton %}
 	<div class="buttons">
 		{% set hasRegions = monitorData and monitorData.regions and monitorData.regions|length > 0 %}
-		<div class="btngroup select region-selector-group" {% if not hasRegions %}title="Register to checkout region based monitoring"{% endif %}>
-			<select id="regionDropdown" class="region-dropdown{% if not hasRegions %} disabled{% endif %}" {% if not hasRegions %}disabled{% endif %}>
+		<div class="btngroup select region-selector-group" {% if not hasRegions %}title="Register to check out region-based monitoring"{% endif %}>
+			<select id="regionDropdown" class="{% if not hasRegions %} disabled{% endif %}" {% if not hasRegions %}disabled{% endif %}>
 				{% if hasRegions %}
 					{% for region in monitorData.regions %}
 						<option value="{{ region.id }}" {% if region.is_primary %}selected{% endif %}>
@@ -20,7 +20,7 @@
 						</option>
 					{% endfor %}
 				{% else %}
-					<option>Select Region</option>
+					<option value = "">Select Region</option>
 				{% endif %}
 			</select>
 		</div>
