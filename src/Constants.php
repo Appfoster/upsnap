@@ -182,6 +182,7 @@ class Constants
                 'list' => 'user/integrations',
                 'create' => 'user/integrations',
                 'delete' => 'user/integrations/',
+                'supported' => 'integrations/supported',
             ],
             'notification_channels' => [
                 'list' => 'user/integrations',
