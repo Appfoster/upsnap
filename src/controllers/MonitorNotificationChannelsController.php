@@ -28,7 +28,6 @@ class MonitorNotificationChannelsController extends Controller
 
         try {
             $response = $this->apiService->get($endpoint);
-            Craft::error("Supported channels response: " . json_encode($response), __METHOD__);
 
             if (!isset($response['status']) || $response['status'] !== 'success') {
                 Craft::error("Supported channels fetch failed: " . json_encode($response), __METHOD__);
