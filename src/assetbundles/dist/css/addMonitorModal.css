@@ -137,9 +137,18 @@
     border: 1px solid #e3e5e8;
     border-radius: 16px;
 }
+.accordion-container {
+    padding: 1rem;
+    border: 1px solid #e3e5e8;
+    border-radius: 16px;
+}
 
 #advanced-settings-accordion {
     padding: 1rem;
     border: 1px solid #e3e5e8;
     border-radius: 16px;
+}
+
+.port-field {
+  margin-top: 1rem;
 }

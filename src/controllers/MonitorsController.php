@@ -360,7 +360,30 @@ class MonitorsController extends Controller
     {
         $tags = $request->getBodyParam('tags', ['default']);
         $isEnabled = (bool)$request->getBodyParam('enabled', true);
+        $monitorType = $request->getBodyParam('monitorType', 'website');
 
+        // Build base payload
+        $payload = [
+            'is_enabled' => $isEnabled,
+            'tags' => $tags,
+        ];
+
+        switch ($monitorType) {
+            case 'port':
+                return $this->preparePortMonitorPayload($payload, $request);
+            case 'keyword':
+                return $this->prepareKeywordMonitorPayload($payload, $request);
+            case 'website':
+            default:
+                return $this->prepareWebsiteMonitorPayload($payload, $request);
+        }
+    }
+
+    /**
+     * Prepare payload for website monitor
+     */
+    private function prepareWebsiteMonitorPayload(array $payload, $request): array
+    {
         $services = [
             'broken_links' => [
                 'enabled' => (bool)$request->getBodyParam('brokenLinksEnabled', true),
@@ -391,14 +414,86 @@ class MonitorsController extends Controller
             ],
         ];
 
-        return [
-            'service_type' => Constants::SERVICE_TYPES['website'],
-            'config' => [
-                'services' => $services,
+        $payload['service_type'] = Constants::SERVICE_TYPES['website'];
+        $payload['config'] = [
+            'meta' => [
+                'url' => $request->getBodyParam('url', ''),
             ],
-            'is_enabled' => $isEnabled,
-            'tags' => $tags,
+            'services' => $services,
         ];
+
+        return $payload;
+    }
+
+    /**
+     * Prepare payload for port monitor
+     */
+    private function preparePortMonitorPayload(array $payload, $request): array
+    {
+        $payload['service_type'] = Constants::SERVICE_TYPES['port'];
+        $payload['config'] = [
+            'meta' => [
+                'host' => $request->getBodyParam('portHost', ''),
+                'port' => (int)$request->getBodyParam('portNumber', 0),
+                'timeout' => (int)$request->getBodyParam('portTimeout', 5),
+            ],
+            'services' => [
+                'port_check' => [
+                    'enabled' => (bool)$request->getBodyParam('portEnabled', true),
+                    'monitor_interval' => (int)$request->getBodyParam('portMonitorInterval', 300),
+                    'retries' => 3,
+                ],
+            ],
+        ];
+
+        return $payload;
+    }
+
+    /**
+     * Prepare payload for keyword monitor
+     */
+    private function prepareKeywordMonitorPayload(array $payload, $request): array
+    {
+        // Parse keywords from hidden input
+        $keywordsJson = $request->getBodyParam('keywords', '[]');
+        $keywords = json_decode($keywordsJson, true) ?? [];
+
+        // Transform keywords to API format
+        $formattedKeywords = [];
+        if (!empty($keywords)) {
+            $matchCondition = $request->getBodyParam('keywordMatchCondition', 'must_contain');
+            $isRegex = (bool)$request->getBodyParam('keywordIsRegex', false);
+            $caseSensitive = (bool)$request->getBodyParam('keywordCaseSensitive', false);
+
+            foreach ($keywords as $keyword) {
+                $formattedKeywords[] = [
+                    'text' => $keyword,
+                    'type' => $matchCondition,
+                    'case_sensitive' => $caseSensitive,
+                    'is_regex' => $isRegex,
+                ];
+            }
+        }
+
+        $payload['service_type'] = Constants::SERVICE_TYPES['keyword'];
+        $payload['url'] = $request->getBodyParam('keywordUrl', '');
+        $payload['config'] = [
+            'meta' => [
+                'url' => $request->getBodyParam('keywordUrl', ''),
+                'timeout' => (int)$request->getBodyParam('keywordTimeout', 30),
+                'follow_redirects' => (bool)$request->getBodyParam('keywordFollowRedirects', false),
+            ],
+            'services' => [
+                'keyword' => [
+                    'enabled' => (bool)$request->getBodyParam('keywordEnabled', true),
+                    'monitor_interval' => (int)$request->getBodyParam('keywordMonitorInterval', 300),
+                    'keywords' => $formattedKeywords,
+                    'match_all' => (bool)$request->getBodyParam('keywordMatchAll', false),
+                ],
+            ],
+        ];
+
+        return $payload;
     }
 
     /**
@@ -492,39 +587,82 @@ class MonitorsController extends Controller
         $config = $m['config'] ?? [];
         $meta = $config['meta'] ?? [];
         $services = $config['services'] ?? [];
+        $serviceType = $m['service_type'] ?? 'website';
 
-        return [
+        $formatted = [
             'id' => $m['id'],
             'name' => $m['name'],
-            'url' => $meta['url'] ?? '',
             'enabled' => $m['is_enabled'] ?? true,
             'regions' => $m['regions'] ?? [],
-
-            // Health checks
-            'brokenLinksEnabled' => $services['broken_links']['enabled'] ?? false,
-            'brokenLinksMonitoringInterval' => $services['broken_links']['monitor_interval'] ?? "300",
-
-            'mixedContentEnabled' => $services['mixed_content']['enabled'] ?? false,
-            'mixedContentMonitoringInterval' => $services['mixed_content']['monitor_interval'] ?? "300",
-
-            'lighthouseEnabled' => $services['lighthouse']['enabled'] ?? false,
-            'lighthouseMonitoringInterval' => $services['lighthouse']['monitor_interval'] ?? "86400",
-            'lighthouseStrategy' => $services['lighthouse']['strategy'] ?? 'desktop',
-
-            'reachabilityEnabled' => $services['uptime']['enabled'] ?? false,
-            'reachabilityMonitoringInterval' => $services['uptime']['monitor_interval'] ?? "300",
-
-            'domainEnabled' => $services['domain']['enabled'] ?? false,
-            'domainMonitoringInterval' => $services['domain']['monitor_interval'] ?? "300",
-            'domainDaysBeforeExpiryAlert' => $services['domain']['notify_days_before_expiry'] ?? 7,
-
-            'securityCertificatesEnabled' => $services['ssl']['enabled'] ?? false,
-            'securityCertificatesMonitoringInterval' => $services['ssl']['monitor_interval'] ?? "300",
-            'sslDaysBeforeExpiryAlert' => $services['ssl']['notify_days_before_expiry'] ?? 7,
-
-            // Channels
+            'monitorType' => $serviceType,
             'channelIds' => $m['channel_ids'] ?? [],
         ];
+
+        // Format based on monitor type
+        switch ($serviceType) {
+            case 'port':
+                $formatted['portHost'] = $meta['host'] ?? '';
+                $formatted['portNumber'] = $meta['port'] ?? '';
+                $formatted['portTimeout'] = $meta['timeout'] ?? 5;
+                $formatted['portEnabled'] = $services['port_check']['enabled'] ?? false;
+                $formatted['portMonitorInterval'] = $services['port_check']['monitor_interval'] ?? 300;
+                break;
+
+            case 'keyword':
+                $formatted['keywordUrl'] = $meta['url'] ?? '';
+                $formatted['keywordTimeout'] = $meta['timeout'] ?? 30;
+                $formatted['keywordFollowRedirects'] = $meta['follow_redirects'] ?? false;
+
+                $keywordService = $services['keyword'] ?? [];
+                $formatted['keywordEnabled'] = $keywordService['enabled'] ?? false;
+                $formatted['keywordMonitorInterval'] = $keywordService['monitor_interval'] ?? 300;
+                $formatted['keywordMatchAll'] = $keywordService['match_all'] ?? false;
+
+                // Extract keywords with their individual settings
+                $keywords = [];
+                if (!empty($keywordService['keywords'])) {
+                    foreach ($keywordService['keywords'] as $kw) {
+                        $keywords[] = [
+                            'text' => $kw['text'] ?? '',
+                            'matchCondition' => $kw['type'] ?? 'must_contain',
+                            'isRegex' => $kw['is_regex'] ?? false,
+                            'caseSensitive' => $kw['case_sensitive'] ?? false,
+                        ];
+                    }
+                }
+
+                $formatted['keywords'] = $keywords;
+                break;
+
+            case 'website':
+            default:
+                $formatted['url'] = $meta['url'] ?? '';
+
+                // Health checks
+                $formatted['brokenLinksEnabled'] = $services['broken_links']['enabled'] ?? false;
+                $formatted['brokenLinksMonitoringInterval'] = $services['broken_links']['monitor_interval'] ?? "300";
+
+                $formatted['mixedContentEnabled'] = $services['mixed_content']['enabled'] ?? false;
+                $formatted['mixedContentMonitoringInterval'] = $services['mixed_content']['monitor_interval'] ?? "300";
+
+                $formatted['lighthouseEnabled'] = $services['lighthouse']['enabled'] ?? false;
+                $formatted['lighthouseMonitoringInterval'] = $services['lighthouse']['monitor_interval'] ?? "86400";
+                $formatted['lighthouseStrategy'] = $services['lighthouse']['strategy'] ?? 'desktop';
+
+                $formatted['reachabilityEnabled'] = $services['uptime']['enabled'] ?? false;
+                $formatted['reachabilityMonitoringInterval'] = $services['uptime']['monitor_interval'] ?? "300";
+
+                $formatted['domainEnabled'] = $services['domain']['enabled'] ?? false;
+                $formatted['domainMonitoringInterval'] = $services['domain']['monitor_interval'] ?? "300";
+                $formatted['domainDaysBeforeExpiryAlert'] = $services['domain']['notify_days_before_expiry'] ?? 7;
+
+                $formatted['securityCertificatesEnabled'] = $services['ssl']['enabled'] ?? false;
+                $formatted['securityCertificatesMonitoringInterval'] = $services['ssl']['monitor_interval'] ?? "300";
+                $formatted['sslDaysBeforeExpiryAlert'] = $services['ssl']['notify_days_before_expiry'] ?? 7;
+                break;
+        }
+
+        return $formatted;
     }
 
 
@@ -570,7 +708,7 @@ class MonitorsController extends Controller
         );
 
         try {
-            $endpoint = $this->buildMicroserviceEndpoint(Constants::MICROSERVICE_ENDPOINTS['monitors']['histogram'],$monitorId);
+            $endpoint = $this->buildMicroserviceEndpoint(Constants::MICROSERVICE_ENDPOINTS['monitors']['histogram'], $monitorId);
 
             // Pass all params including region to the service
             $response = Upsnap::$plugin->apiService->get($endpoint, $params);
@@ -602,7 +740,7 @@ class MonitorsController extends Controller
         );
 
         try {
-            $endpoint = $this->buildMicroserviceEndpoint(Constants::MICROSERVICE_ENDPOINTS['monitors']['response_time'],$monitorId);
+            $endpoint = $this->buildMicroserviceEndpoint(Constants::MICROSERVICE_ENDPOINTS['monitors']['response_time'], $monitorId);
 
             // Pass all params to the service
             $response = Upsnap::$plugin->apiService->get($endpoint, $params);
@@ -635,7 +773,7 @@ class MonitorsController extends Controller
         );
 
         try {
-            $endpoint = $this->buildMicroserviceEndpoint(Constants::MICROSERVICE_ENDPOINTS['monitors']['uptime_stats'],$monitorId);
+            $endpoint = $this->buildMicroserviceEndpoint(Constants::MICROSERVICE_ENDPOINTS['monitors']['uptime_stats'], $monitorId);
 
             // Pass all params including region to the service
             $response = Upsnap::$plugin->apiService->get($endpoint, $params);

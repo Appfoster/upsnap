@@ -242,6 +242,8 @@ class Constants
 
     public const SERVICE_TYPES = [
         'website' => 'website',
+        'port' => 'port',
+        'keyword' => 'keyword',
     ];
 
     public static function getAPIBaseUrl(): string

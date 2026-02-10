@@ -11,9 +11,8 @@
 		completedMonitors: new Set(),
 		monitorAttempts: new Map(),
 		lastKnownStatus: new Map(),
-		activeMonitorIds: new Set()
+		activeMonitorIds: new Set(),
 	};
-
 
 	const endpointSelector = "#upsnap-monitors-wrap";
 	const tbodySelector = "#upsnap-monitors-tbody";
@@ -37,7 +36,7 @@
 			return monitor;
 		}
 
-		const primaryRegion = monitor.regions.find(r => r.is_primary);
+		const primaryRegion = monitor.regions.find((r) => r.is_primary);
 		if (!primaryRegion) {
 			return monitor;
 		}
@@ -50,11 +49,21 @@
 			return monitor;
 		}
 
-		// Get the uptime check data and update monitor object directly
-		const uptimeCheck = regionChecks.uptime;
-		if (uptimeCheck) {
-			monitor.last_status = uptimeCheck.last_status;
-			monitor.last_check_at = uptimeCheck.last_checked_at;
+		// Determine which service to check based on monitor type
+		const serviceType = monitor.service_type || "website";
+		let serviceCheckKey = "uptime"; // default for website monitors
+
+		if (serviceType === "keyword") {
+			serviceCheckKey = "keyword";
+		} else if (serviceType === "port") {
+			serviceCheckKey = "port_check";
+		}
+
+		// Get the service check data and update monitor object directly
+		const serviceCheck = regionChecks[serviceCheckKey];
+		if (serviceCheck) {
+			monitor.last_status = serviceCheck.last_status;
+			monitor.last_check_at = serviceCheck.last_checked_at;
 		}
 
 		return monitor;
@@ -65,10 +74,13 @@
 		updateMonitorWithPrimaryRegionStatus(monitor);
 
 		const url = monitor.config?.meta?.url || "";
+		const serviceType = monitor.service_type || "website";
 		const name = monitor.name || url || "Unnamed Monitor";
 		const isSelected = primaryMonitorId && monitor?.id === primaryMonitorId;
 		const isPollingRelevant = Polling.activeMonitorIds.has(monitor.id);
-		const inPollingState = isPollingRelevant && isRecentlyChecked(monitor.last_check_at, monitor.updated_at);
+		const inPollingState =
+			isPollingRelevant &&
+			isRecentlyChecked(monitor.last_check_at, monitor.updated_at);
 
 		// Determine status
 		let statusLabel = "";
@@ -93,8 +105,16 @@
 		}
 
 		const tr = document.createElement("tr");
+		console.log("Building row,", monitor.config.meta);
 		tr.dataset.id = monitor.id ?? "";
 		tr.dataset.url = url;
+		tr.dataset.serviceType = serviceType;
+		let urlLabel = null;
+		if (serviceType === "port") {
+			urlLabel = `${monitor.config?.meta?.host}:${monitor.config?.meta?.port || ""}`;
+		} else {
+			urlLabel = url;
+		}
 
 		// checkbox column
 		const tdCheck = document.createElement("td");
@@ -112,7 +132,7 @@
 		const tdMonitor = document.createElement("td");
 		tdMonitor.innerHTML = `
 		<div class="heading">${escapeHtml(name)}</div>
-		<div class="light" style="margin-top:4px;">${escapeHtml(url)}</div>
+		<div class="light" style="margin-top:4px;">${escapeHtml(urlLabel)}</div>
 		
 		`;
 
@@ -129,14 +149,16 @@
 		if (isSelected) {
 			tdPrimary.innerHTML = `
 			<button class="btn small upsnap-set-primary disabled"
-					data-url="${escapeHtmlAttr(url)}">
+					data-url="${escapeHtmlAttr(url)}"
+					data-service-type="${serviceType}">
 					Selected
 				</button>
 			`;
 		} else {
 			tdPrimary.innerHTML = `
 				<button class="btn small upsnap-set-primary"
-					data-url="${escapeHtmlAttr(url)}">
+					data-url="${escapeHtmlAttr(url)}"
+					data-service-type="${serviceType}">
 					Set primary
 				</button>
 			`;
@@ -165,7 +187,7 @@
 					"/": "&#x2F;",
 					"`": "&#96;",
 					"=": "&#61;",
-				}[s])
+				})[s],
 		);
 	}
 	function escapeHtmlAttr(s) {
@@ -207,17 +229,26 @@
 	async function handleSetPrimary(e) {
 		const btn = e.currentTarget;
 		const url = btn.dataset.url;
+		const serviceType = btn.dataset.serviceType || "website";
 		const row = btn.closest("tr");
 		const monitorId = row ? row.dataset.id : null;
 
-		if (!url || !monitorId) {
-			craftError("Monitor data missing.");
+		if (!monitorId) {
+			craftError("Monitor ID missing.");
 			return;
 		}
 
 		btn.classList.add("loading");
 
 		try {
+			// Build payload based on monitor type
+			const payload = { monitorId: monitorId };
+
+			// Only include monitoringUrl for website monitors
+			if (serviceType === "website" && url) {
+				payload.monitoringUrl = url;
+			}
+
 			const response = await fetch(
 				"/actions/upsnap/settings/set-primary-monitor",
 				{
@@ -226,11 +257,8 @@
 						"Content-Type": "application/json",
 						"X-CSRF-Token": Craft.csrfTokenValue,
 					},
-					body: JSON.stringify({
-						monitorId: monitorId,
-						monitoringUrl: url,
-					}),
-				}
+					body: JSON.stringify(payload),
+				},
 			);
 
 			const json = await response.json();
@@ -324,7 +352,7 @@
 
 		// show loading row
 		if (showLoading)
-		tbody.innerHTML = `<tr><td colspan="5" class="table-empty-state">Loading monitors…</td></tr>`;
+			tbody.innerHTML = `<tr><td colspan="5" class="table-empty-state">Loading monitors…</td></tr>`;
 
 		try {
 			const monitors = [];
@@ -351,7 +379,7 @@
 			} else {
 				if (monitorCount >= maxMonitors) {
 					disableAddMonitorBtn(
-						`Monitor limit reached (${monitorCount}/${maxMonitors})`
+						`Monitor limit reached (${monitorCount}/${maxMonitors})`,
 					);
 				} else {
 					enableAddMonitorBtn();
@@ -431,7 +459,7 @@
 		// hide bulk-actions menu
 		const menuBtn = document.querySelector("#upsnap-actions-menubtn");
 		const menuWrapper = document.querySelector(
-			"#upsnap-actions-menu-wrapper"
+			"#upsnap-actions-menu-wrapper",
 		);
 		if (menuBtn) menuBtn.style.display = "none";
 		if (menuWrapper) menuWrapper.style.display = "none";
@@ -470,7 +498,7 @@
 
 	function renderStatusContainer(data) {
 		const statusContainerWrapper = document.getElementById(
-			"status-container-wrapper"
+			"status-container-wrapper",
 		);
 		if (!statusContainerWrapper) return;
 
@@ -589,7 +617,7 @@
 							"X-CSRF-Token": Craft.csrfTokenValue,
 						},
 						body: JSON.stringify({ ids, action: "delete" }),
-					}
+					},
 				);
 
 				const json = await res.json();
@@ -623,7 +651,7 @@
 
 			// Redirect to edit page
 			window.location.href = Craft.getUrl(
-				`upsnap/monitors/edit/${monitorId}`
+				`upsnap/monitors/edit/${monitorId}`,
 			);
 		});
 	}
@@ -668,8 +696,7 @@
 		Polling.activeMonitorIds.add(monitorId);
 
 		const intervalId = setInterval(async () => {
-			const attempts =
-				(Polling.monitorAttempts.get(monitorId) || 0) + 1;
+			const attempts = (Polling.monitorAttempts.get(monitorId) || 0) + 1;
 
 			Polling.monitorAttempts.set(monitorId, attempts);
 
@@ -677,8 +704,7 @@
 				const updatedMonitor = await fetchSingleMonitor(monitorId);
 				if (!updatedMonitor) return;
 
-				const previousStatus =
-					Polling.lastKnownStatus.get(monitorId);
+				const previousStatus = Polling.lastKnownStatus.get(monitorId);
 
 				// Get primary region status
 				const primaryStatus = getPrimaryRegionStatus(updatedMonitor);
@@ -717,12 +743,18 @@
 
 	const getPrimaryRegionStatus = (monitor) => {
 		if (!monitor.regions || !Array.isArray(monitor.regions)) {
-			return { lastStatus: monitor.last_status, lastCheckAt: monitor.last_check_at };
+			return {
+				lastStatus: monitor.last_status,
+				lastCheckAt: monitor.last_check_at,
+			};
 		}
 
-		const primaryRegion = monitor.regions.find(r => r.is_primary);
+		const primaryRegion = monitor.regions.find((r) => r.is_primary);
 		if (!primaryRegion) {
-			return { lastStatus: monitor.last_status, lastCheckAt: monitor.last_check_at };
+			return {
+				lastStatus: monitor.last_status,
+				lastCheckAt: monitor.last_check_at,
+			};
 		}
 
 		const regionId = primaryRegion.id;
@@ -738,7 +770,7 @@
 		if (uptimeCheck) {
 			return {
 				lastStatus: uptimeCheck.last_status,
-				lastCheckAt: uptimeCheck.last_checked_at
+				lastCheckAt: uptimeCheck.last_checked_at,
 			};
 		}
 	};
@@ -746,7 +778,7 @@
 	function isRecentlyChecked(
 		lastCheckAt,
 		lastUpdatedAt,
-		thresholdMs = 2 * 60 * 1000
+		thresholdMs = 2 * 60 * 1000,
 	) {
 		if (!lastCheckAt) return true;
 
@@ -774,7 +806,6 @@
 		return false;
 	}
 
-
 	function stopMonitorSpecificPolling(monitorId) {
 		const intervalId = Polling.monitorIntervals.get(monitorId);
 		if (!intervalId) return;
@@ -790,9 +821,7 @@
 	}
 
 	function updateMonitorRow(monitor) {
-		const row = document.querySelector(
-			`tr[data-id="${monitor.id}"]`
-		);
+		const row = document.querySelector(`tr[data-id="${monitor.id}"]`);
 
 		if (!row) return;
 
@@ -806,7 +835,6 @@
 
 		wireMenuButtons(newRow);
 	}
-
 
 	function consumeMonitorChangeQueue() {
 		const key = "upsnap:monitor-changes";
@@ -827,10 +855,7 @@
 		loadAndRender();
 
 		queue.forEach(({ monitorId }) => {
-			if (
-				monitorId &&
-				!Polling.completedMonitors.has(monitorId)
-			) {
+			if (monitorId && !Polling.completedMonitors.has(monitorId)) {
 				Polling.activeMonitorIds.add(monitorId);
 				startMonitorSpecificPolling(monitorId);
 			}
