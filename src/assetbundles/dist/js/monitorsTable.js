@@ -244,7 +244,7 @@
 			const payload = { monitorId: monitorId };
 
 			// Only include monitoringUrl for website monitors
-			if (serviceType === "website" && url) {
+			if (serviceType != "port" && url) {
 				payload.monitoringUrl = url;
 			}
 
