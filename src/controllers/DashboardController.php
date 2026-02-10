@@ -41,6 +41,13 @@ class DashboardController extends BaseController
 
                 if (isset($response['status']) && $response['status'] === 'success') {
                     $monitorData = $response['data']['monitor'] ?? null;
+                    // If monitor is port type, set $url to host:port
+                    if ($monitorData && ($monitorData['service_type'] ?? null) === 'port') {
+                        $meta = $monitorData['config']['meta'] ?? [];
+                        $host = $meta['host'] ?? '';
+                        $port = $meta['port'] ?? '';
+                        $url = $host && $port ? "$host:$port" : ($host ?: $port);
+                    }
                 } else {
                     Craft::error("Monitor fetch failed: invalid response", __METHOD__);
                 }

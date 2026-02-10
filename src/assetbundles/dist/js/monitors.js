@@ -402,18 +402,6 @@ Craft.Upsnap.Monitor = {
 			);
 			currentSeconds = Math.max(currentSeconds, effectiveMinimum);
 
-			// Debug logging
-			console.log(`[Interval Slider ${slider.dataset.targetInput}]`, {
-				initialValue,
-				minSeconds,
-				maxSeconds,
-				minMonitorIntervalSeconds,
-				effectiveMinimum,
-				currentSeconds,
-				sliderPosition: secondsToSlider(currentSeconds),
-				label: format(currentSeconds),
-			});
-
 			slider.value = secondsToSlider(currentSeconds);
 			label.textContent = format(currentSeconds);
 			hiddenInput.value = currentSeconds;
@@ -777,7 +765,6 @@ Craft.Upsnap.Monitor = {
 			try {
 				this.disableSavebtn();
 				const payload = this.buildPayload();
-				console.log("Submissting payload:", payload);
 
 				const response = await fetch("/actions/upsnap/monitors/save", {
 					method: "POST",

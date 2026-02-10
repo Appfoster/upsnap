@@ -105,7 +105,6 @@
 		}
 
 		const tr = document.createElement("tr");
-		console.log("Building row,", monitor.config.meta);
 		tr.dataset.id = monitor.id ?? "";
 		tr.dataset.url = url;
 		tr.dataset.serviceType = serviceType;

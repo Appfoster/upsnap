@@ -110,14 +110,14 @@ class Upsnap extends Plugin
                 $event->rules = array_merge($event->rules, [
                     'upsnap' => 'upsnap/dashboard/index',
 
-                    // Health Check Routes
-                    Constants::SUBNAV_ITEM_REACHABILITY['url'] => 'upsnap/health-check/reachability',
+                    // Health Check Routes - commented out as user can navigate from the dashboard cards.
+                    // Constants::SUBNAV_ITEM_REACHABILITY['url'] => 'upsnap/health-check/reachability',
                     // 'upsnap/reachability/history' => 'upsnap/health-check/reachability-history',
-                    Constants::SUBNAV_ITEM_SECURITY_CERTIFICATES['url'] => 'upsnap/health-check/security-certificates',
-                    Constants::SUBNAV_ITEM_BROKEN_LINKS['url'] => 'upsnap/health-check/broken-links',
-                    Constants::SUBNAV_ITEM_LIGHTHOUSE['url'] => 'upsnap/health-check/lighthouse',
-                    Constants::SUBNAV_ITEM_DOMAIN_CHECK['url'] => 'upsnap/health-check/domain-check',
-                    Constants::SUBNAV_ITEM_MIXED_CONTENT['url'] => 'upsnap/health-check/mixed-content',
+                    // Constants::SUBNAV_ITEM_SECURITY_CERTIFICATES['url'] => 'upsnap/health-check/security-certificates',
+                    // Constants::SUBNAV_ITEM_BROKEN_LINKS['url'] => 'upsnap/health-check/broken-links',
+                    // Constants::SUBNAV_ITEM_LIGHTHOUSE['url'] => 'upsnap/health-check/lighthouse',
+                    // Constants::SUBNAV_ITEM_DOMAIN_CHECK['url'] => 'upsnap/health-check/domain-check',
+                    // Constants::SUBNAV_ITEM_MIXED_CONTENT['url'] => 'upsnap/health-check/mixed-content',
                     Constants::SUBNAV_ITEM_STATUS_PAGE['url'] => 'upsnap/status-page/index',
 
 
