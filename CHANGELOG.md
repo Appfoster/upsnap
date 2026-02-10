@@ -4,6 +4,19 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [1.1.1] - 2026-02-11
+
+### Added
+- **New Monitor Types Support**:
+    - **Port Monitor**: Monitor the availability and response times of specific ports on a host.
+    - **Keyword Monitor**: Check for the presence or absence of specific keywords in the response body of a URL.
+- **New Notification Channels**:
+    - **Telegram**: Send monitoring alerts to Telegram chats or channels.
+    - **Slack**: Send monitoring alerts to Slack channels.
+
+### Chore
+- Minor bug fixes and UI refinements.
+
 ## [1.1.0] - 2026-01-23
 
 ### Added
@@ -179,7 +192,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Asset minification and optimization
 - Background processing for monitoring tasks
 
-[Unreleased]: https://github.com/Appfoster/upsnap/compare/1.1.0...HEAD
+[Unreleased]: https://github.com/Appfoster/upsnap/compare/1.1.1...HEAD
+[1.1.1]: https://github.com/Appfoster/upsnap/releases/tag/1.1.1
 [1.1.0]: https://github.com/Appfoster/upsnap/releases/tag/1.1.0
 [1.0.11]: https://github.com/Appfoster/upsnap/releases/tag/1.0.11
 [1.0.10]: https://github.com/Appfoster/upsnap/releases/tag/1.0.10
