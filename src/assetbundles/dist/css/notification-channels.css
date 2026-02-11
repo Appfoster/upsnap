@@ -351,3 +351,43 @@
         align-self: flex-end;
     }
 }
+/* Password Field with Toggle Button */
+.password-field {
+    position: relative;
+}
+
+.password-field input {
+    padding-right: 45px;
+}
+
+.password-toggle-btn {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: transparent;
+    border: none;
+    padding: 6px;
+    cursor: pointer;
+    color: #6b7280;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+}
+
+.password-toggle-btn:hover {
+    background: #f3f4f6;
+    color: #1f2937;
+}
+
+.password-toggle-btn svg {
+    display: block;
+    width: 20px;
+    height: 20px;
+}
+
+.password-toggle-btn .hidden {
+    display: none;
+}

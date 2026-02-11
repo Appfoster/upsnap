@@ -3,6 +3,7 @@
 
 {% set monitor = monitor ?? null %}
 {% set mode = mode ?? 'add' %}
+{% set monitorType = monitor.monitorType ?? 'website' %}
 
 {% set crumbs = [
     { html: "<a href='" ~ url('upsnap') ~ "' class='thumb cp-icon'><svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 576 512' focusable='false' aria-hidden='true'><path d='M575.8 255.5c0 18-15 32.1-32 32.1l-32 0 .7 160.2c0 2.7-.2 5.4-.5 8.1l0 16.2c0 22.1-17.9 40-40 40l-16 0c-1.1 0-2.2 0-3.3-.1c-1.4 .1-2.8 .1-4.2 .1L416 512l-24 0c-22.1 0-40-17.9-40-40l0-24 0-64c0-17.7-14.3-32-32-32l-64 0c-17.7 0-32 14.3-32 32l0 64 0 24c0 22.1-17.9 40-40 40l-24 0-31.9 0c-1.5 0-3-.1-4.5-.2c-1.2 .1-2.4 .2-3.6 .2l-16 0c-22.1 0-40-17.9-40-40l0-112c0-.9 0-1.9 .1-2.8l0-69.7-32 0c-18 0-32-14-32-32.1c0-9 3-17 10-24L266.4 8c7-7 15-8 22-8s15 2 21 7L564.8 231.5c8 7 12 15 11 24z'></path></svg></a>" },
@@ -18,6 +19,15 @@
     { label: '24h', value: 24, unit: 'hour' }
 ] %}
 
+{% set timeoutIntervals = [
+    { label: '1s', value: 1, unit: 'second' },
+    { label: '5s', value: 5, unit: 'second' },
+    { label: '10s', value: 10, unit: 'second' },
+    { label: '15s', value: 15, unit: 'second' },
+    { label: '20s', value: 20, unit: 'second' },
+    { label: '25s', value: 25, unit: 'second' },
+    { label: '30s', value: 30, unit: 'second' }
+] %}
 
 {% set lighthouseIntervals = [
     { label: '1d', value: 1, unit: 'day' },
@@ -25,6 +35,17 @@
     { label: '5d', value: 5, unit: 'day' },
     { label: '7d', value: 7, unit: 'day' },
     { label: '10d', value: 10, unit: 'day' }
+] %}
+
+{% set monitorTypeOptions = [
+    { label: 'Website', value: 'website' },
+    { label: 'Port', value: 'port' },
+    { label: 'Keyword', value: 'keyword' }
+] %}
+
+{% set keywordMatchOptions = [
+    { label: 'Exists', value: 'must_contain' },
+    { label: 'Does not exist', value: 'must_not_contain' }
 ] %}
 
 
@@ -50,238 +71,519 @@
 			{{ hiddenInput('monitorId', monitor ? monitor.id : null) }}
 		{% endif %}
 
-		<div class="flex">
-			<div class="flex-grow" style="margin-right: 20px;">
-				{{ forms.textField({
-                label: "Monitor Name",
-                id: "name",
-                name: "name",
-                value: monitor ? monitor.name : "",
-                required: true,
-                errors: []
-            }) }}
-			</div>
-
-			<div class="flex-grow">
-				{{ forms.textField({
-                label: "URL",
-                id: "url",
-                name: "url",
-                placeholder: "https://example.com",
-                value: monitor ? monitor.url : "https://",
-                required: true,
-                errors: []
-            }) }}
-			</div>
+		{# MONITOR TYPE SELECTOR #}
+		<div class="field">
+			{{ forms.selectField({
+				label: "Monitor Type",
+				id: "monitorType",
+				name: "monitorType",
+				options: monitorTypeOptions,
+				value: monitorType,
+				required: true,
+				disabled: mode == 'edit'
+			}) }}
 		</div>
-        {% include 'upsnap/_components/regions-multiselect.twig' %}
 
-		<div id="notification-channels-accordion" class="field">
-			<div class="heading">
-				<button type="button" id="integrations-trigger" class="accordion-trigger" aria-expanded="false" aria-controls="notification-channels-content">
-					<span class="accordion-arrow"></span>
-					<span>How would you like to get notified?</span>
-				</button>
-			</div>
-
-			<div id="notification-channels-content" class="accordion-content hidden">
-				<div class="spinner hidden" id="channels-loading-spinner"></div>
-				<div id="no-channels-msg" class="hidden">
-					No Integration Channels available. Please create them from Integrations.
+		{# ========== WEBSITE MONITOR FIELDS ========== #}
+		<div id="website-fields" data-monitor-type="website" style="{% if monitorType != 'website' %}display: none;{% endif %}">
+			<div class="flex">
+				<div class="flex-grow" style="margin-right: 20px;">
+					{{ forms.textField({
+						label: "Monitor Name",
+						id: "name",
+						name: "name",
+						value: monitor ? monitor.name : "",
+						required: true,
+						errors: []
+					}) }}
 				</div>
 
-				<table class="data fullwidth" id="channels-table" style="display:none;">
-					<thead>
-						<tr>
-							<th class="thin"><input type="checkbox" id="select-all-channels"></th>
-							<th>Name</th>
-							<th>Channel Type</th>
-						</tr>
-					</thead>
-					<tbody id="channels-tbody"></tbody>
-				</table>
+				<div class="flex-grow">
+					{{ forms.textField({
+						label: "URL",
+						id: "url",
+						name: "url",
+						placeholder: "https://example.com",
+						value: monitor ? (monitor.url ?? "https://") : "https://",
+						required: true,
+						errors: []
+					}) }}
+				</div>
+			</div>
+
+			{% include 'upsnap/_components/regions-multiselect.twig' %}
+
+			<div id="notification-channels-accordion" class="field">
+				<div class="heading">
+					<button type="button" id="integrations-trigger" class="accordion-trigger" aria-expanded="false" aria-controls="notification-channels-content">
+						<span class="accordion-arrow"></span>
+						<span>How would you like to get notified?</span>
+					</button>
+				</div>
+
+				<div id="notification-channels-content" class="accordion-content hidden">
+					<div class="spinner hidden" id="channels-loading-spinner"></div>
+					<div id="no-channels-msg" class="hidden">
+						No Integration Channels available. Please create them from Integrations.
+					</div>
+
+					<table class="data fullwidth" id="channels-table" style="display:none;">
+						<thead>
+							<tr>
+								<th class="thin"><input type="checkbox" id="select-all-channels"></th>
+								<th>Name</th>
+								<th>Channel Type</th>
+							</tr>
+						</thead>
+						<tbody id="channels-tbody"></tbody>
+					</table>
+				</div>
+			</div>
+
+			<div id="advanced-settings-accordion" class="field">
+				<div class="heading">
+					<button type="button" id="settings-accordion" class="accordion-trigger" aria-expanded="false" aria-controls="advanced-settings-content">
+						<span class="accordion-arrow"></span>
+						<span>Advanced Settings</span>
+					</button>
+				</div>
+
+				<div id="advanced-settings-content" class="accordion-content hidden">
+					{{ forms.lightswitchField({
+						label: "Enable Monitoring",
+						id: "enabled",
+						name: "enabled",
+						on: monitor ? (monitor.enabled ?? true) : true
+					}) }}
+
+					<div id="advanced-settings" style="{% if not (monitor ? (monitor.enabled ?? false) : false) %}display:none;{% endif %}">
+						<h3 id="healthcheck-settings-title" class="heading">Healthcheck Settings</h3>
+						<hr>
+
+						{# ------------ ROW 1 ------------ #}
+						<div class="healthcheck-row-grid">
+							<div class="healthcheck-section">
+								{{ forms.lightswitchField({
+									label: "Reachability Check"|t('upsnap'),
+									instructions: "Monitor if the site is reachable"|t('upsnap'),
+									id: 'reachabilityEnabled',
+									name: 'reachabilityEnabled',
+									on: monitor ? (monitor.reachabilityEnabled ?? true) : true,
+								}) }}
+
+								<div class="nested-settings-inline" id="reachability-settings">
+									{% include 'upsnap/_components/interval-slider.twig' with {
+										id: 'reachability',
+										name: 'reachabilityMonitoringInterval',
+										value: monitor ? (monitor.reachabilityMonitoringInterval ?? 300) : 300,
+										partitions: defaultIntervals,
+										minMonitorIntervalSeconds: MIN_MONITOR_INTERVAL_SECONDS
+									} %}
+								</div>
+							</div>
+
+							<div class="healthcheck-section">
+								{{ forms.lightswitchField({
+									label: "Broken Links Check"|t('upsnap'),
+									instructions: "Monitor for broken links on your site"|t('upsnap'),
+									id: 'brokenLinksEnabled',
+									name: 'brokenLinksEnabled',
+									on: monitor ? (monitor.brokenLinksEnabled ?? true) : true,
+								}) }}
+
+								<div class="nested-settings-inline" id="brokenLinks-settings">
+									{% include 'upsnap/_components/interval-slider.twig' with {
+										id: 'brokenLinks',
+										name: 'brokenLinksMonitoringInterval',
+										value: monitor ? (monitor.brokenLinksMonitoringInterval ?? 300) : 300,
+										partitions: defaultIntervals,
+										minMonitorIntervalSeconds: MIN_MONITOR_INTERVAL_SECONDS
+									} %}
+								</div>
+							</div>
+						</div>
+
+						{# ------------ ROW 2 ------------ #}
+						<div class="healthcheck-row-grid">
+							<div class="healthcheck-section http-disabled">
+								{{ forms.lightswitchField({
+									label: "Mixed Content Check"|t('upsnap'),
+									instructions: "Monitor for mixed content issues"|t('upsnap'),
+									id: 'mixedContentEnabled',
+									name: 'mixedContentEnabled',
+									on: monitor ? (monitor.mixedContentEnabled ?? true) : true,
+								}) }}
+								<div class="nested-settings-inline" id="mixedContent-settings" {% if not (monitor ? (monitor.mixedContentEnabled ?? true) : true) %} style="display:none;" {% endif %}>
+									{% include 'upsnap/_components/interval-slider.twig' with {
+										id: 'mixedContent',
+										name: 'mixedContentMonitoringInterval',
+										value: monitor ? (monitor.mixedContentMonitoringInterval ?? 300) : 300,
+										partitions: defaultIntervals,
+										minMonitorIntervalSeconds: MIN_MONITOR_INTERVAL_SECONDS
+									} %}
+								</div>
+
+							</div>
+
+							<div class="healthcheck-section">
+								{{ forms.lightswitchField({
+									label: "Domain Expiry Check"|t('upsnap'),
+									id: 'domainEnabled',
+									name: 'domainEnabled',
+									on: monitor ? (monitor.domainEnabled ?? true) : true,
+								}) }}
+
+								<div class="nested-settings-inline" id="domain-settings">
+									{% include 'upsnap/_components/interval-slider.twig' with {
+										id: 'domain',
+										name: 'domainMonitoringInterval',
+										value: monitor ? (monitor.domainMonitoringInterval ?? 300) : 300,
+										partitions: defaultIntervals,
+										minMonitorIntervalSeconds: MIN_MONITOR_INTERVAL_SECONDS
+									} %}
+									{{ forms.selectField({
+										label: "Days Before Expiry"|t('upsnap'),
+										id: 'domainExpiryDays',
+										name: 'domainDaysBeforeExpiryAlert',
+										options: expiryDayOptions,
+										value: monitor ? (monitor.domainDaysBeforeExpiryAlert ?? "30") : "30"
+									}) }}
+
+								</div>
+							</div>
+						</div>
+
+						{# ------------ ROW 3 ------------ #}
+						<div class="healthcheck-row-grid">
+							<div class="healthcheck-section  http-disabled">
+								{{ forms.lightswitchField({
+									label: "SSL Certificate Check"|t('upsnap'),
+									id: 'sslEnabled',
+									name: 'sslEnabled',
+									on: monitor ? (monitor.securityCertificatesEnabled ?? true) : true,
+								}) }}
+
+								<div class="nested-settings-inline" id="ssl-settings">
+									{% include 'upsnap/_components/interval-slider.twig' with {
+										id: 'securityCertificates',
+										name: 'securityCertificatesMonitoringInterval',
+										value: monitor ? (monitor.securityCertificatesMonitoringInterval ?? 300) : 300,
+										partitions: defaultIntervals,
+										minMonitorIntervalSeconds: MIN_MONITOR_INTERVAL_SECONDS
+									} %}
+									{{ forms.selectField({
+										label: "Days Before Expiry"|t('upsnap'),
+										id: 'sslExpiryDays',
+										name: 'sslDaysBeforeExpiryAlert',
+										options: expiryDayOptions,
+										value: monitor ? (monitor.sslDaysBeforeExpiryAlert ?? "30") : "30"
+									}) }}
+
+								</div>
+							</div>
+
+							<div class="healthcheck-section http-disabled"
+								data-disabled-reason="{{ 'These checks are not available for non HTTPS URLs.'|t('upsnap') }}"
+>
+								{{ forms.lightswitchField({
+									label: "Lighthouse Performance Check"|t('upsnap'),
+									instructions: "Monitor site performance"|t('upsnap'),
+									id: 'lighthouseEnabled',
+									name: 'lighthouseEnabled',
+									on: monitor ? (monitor.lighthouseEnabled ?? false) : true,
+								}) }}
+
+								<div class="nested-settings-inline" id="lighthouse-settings">
+
+									{% include 'upsnap/_components/interval-slider.twig' with {
+										id: 'lighthouse',
+										name: 'lighthouseMonitoringInterval',
+										value: monitor ? (monitor.lighthouseMonitoringInterval ?? 86400) : 7 * 86400,
+										partitions: lighthouseIntervals,
+										minMonitorIntervalSeconds: 86400
+									} %}
+
+									{{ forms.selectField({
+										label: "Strategy Type"|t('upsnap'),
+										id: 'lighthouseStrategy',
+										name: 'lighthouseStrategy',
+										options: strategyOptions,
+										value: monitor ? (monitor.lighthouseStrategy ?? 'desktop') : 'desktop',
+									}) }}
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
 			</div>
 		</div>
 
+		{# ========== PORT MONITOR FIELDS ========== #}
+		<div id="port-fields" data-monitor-type="port" style="{% if monitorType != 'port' %}display: none;{% endif %}">
+			<div class="flex">
+				<div class="flex-grow" style="margin-right: 20px;">
+					{{ forms.textField({
+						label: "Monitor Name",
+						id: "portName",
+						name: "portName",
+						value: monitor ? monitor.name : "",
+						required: true,
+						errors: []
+					}) }}
+				</div>
 
-		<div id="advanced-settings-accordion" class="field">
-			<div class="heading">
-				<button type="button" id="settings-accordion" class="accordion-trigger" aria-expanded="false" aria-controls="notification-channels-content">
-					<span class="accordion-arrow"></span>
-					<span>Advanced Settings</span>
-				</button>
+				<div class="flex-grow">
+					{{ forms.textField({
+						label: "Host / Address",
+						id: "portHost",
+						name: "portHost",
+						placeholder: "example.com or 192.168.1.1",
+						value: monitor ? (monitor.portHost ?? "") : "",
+						required: true,
+						errors: []
+					}) }}
+				</div>
 			</div>
 
-			<div id="advanced-settings-content" class="accordion-content hidden">
-				{{ forms.lightswitchField({
-                    label: "Enable Monitoring",
-                    id: "enabled",
-                    name: "enabled",
-                    on: monitor ? (monitor.enabled ?? true) : true
-                }) }}
+			<div class="flex">
+				<div class="port-field">
+					{{ forms.textField({
+						label: "Port",
+						id: "portNumber",
+						name: "portNumber",
+						type: "number",
+						placeholder: "8080",
+						min: 1,
+						max: 65535,
+						value: monitor ? (monitor.portNumber ?? "") : "",
+						required: true,
+						errors: []
+					}) }}
+				</div>
+			</div>
 
+			<div id="port-notification-channels-accordion" class="field accordion-container">
+				<div class="heading">
+					<button type="button" id="port-integrations-trigger" class="accordion-trigger" aria-expanded="false" aria-controls="port-notification-channels-content">
+						<span class="accordion-arrow"></span>
+						<span>How would you like to get notified?</span>
+					</button>
+				</div>
 
-				<div id="advanced-settings" style="{% if not (monitor ? (monitor.enabled ?? false) : false) %}display:none;{% endif %}">
-					<h3 id="healthcheck-settings-title" class="heading">Healthcheck Settings</h3>
-					<hr>
-
-					{# ------------ ROW 1 ------------ #}
-					<div class="healthcheck-row-grid">
-						<div class="healthcheck-section">
-							{{ forms.lightswitchField({
-                                label: "Reachability Check"|t('upsnap'),
-                                instructions: "Monitor if the site is reachable"|t('upsnap'),
-                                id: 'reachabilityEnabled',
-                                name: 'reachabilityEnabled',
-                                on: monitor ? (monitor.reachabilityEnabled ?? true) : true,
-                            }) }}
-
-							<div class="nested-settings-inline" id="reachability-settings">
-								{% include 'upsnap/_components/interval-slider.twig' with {
-                                    id: 'reachability',
-                                    name: 'reachabilityMonitoringInterval',
-                                    value: monitor ? (monitor.reachabilityMonitoringInterval ?? 300) : 300,
-                                    partitions: defaultIntervals,
-                                    minMonitorIntervalSeconds: MIN_MONITOR_INTERVAL_SECONDS
-                                } %}
-							</div>
-						</div>
-
-						<div class="healthcheck-section">
-							{{ forms.lightswitchField({
-                                label: "Broken Links Check"|t('upsnap'),
-                                instructions: "Monitor for broken links on your site"|t('upsnap'),
-                                id: 'brokenLinksEnabled',
-                                name: 'brokenLinksEnabled',
-                                on: monitor ? (monitor.brokenLinksEnabled ?? true) : true,
-                            }) }}
-
-							<div class="nested-settings-inline" id="brokenLinks-settings">
-								{% include 'upsnap/_components/interval-slider.twig' with {
-                                    id: 'brokenLinks',
-                                    name: 'brokenLinksMonitoringInterval',
-                                    value: monitor ? (monitor.brokenLinksMonitoringInterval ?? 300) : 300,
-                                    partitions: defaultIntervals,
-                                    minMonitorIntervalSeconds: MIN_MONITOR_INTERVAL_SECONDS
-                                } %}
-							</div>
-						</div>
+				<div id="port-notification-channels-content" class="accordion-content hidden">
+					<div class="spinner hidden" id="port-channels-loading-spinner"></div>
+					<div id="port-no-channels-msg" class="hidden">
+						No Integration Channels available. Please create them from Integrations.
 					</div>
 
-					{# ------------ ROW 2 ------------ #}
-					<div class="healthcheck-row-grid">
-						<div class="healthcheck-section http-disabled">
-							{{ forms.lightswitchField({
-                                label: "Mixed Content Check"|t('upsnap'),
-                                instructions: "Monitor for mixed content issues"|t('upsnap'),
-                                id: 'mixedContentEnabled',
-                                name: 'mixedContentEnabled',
-                                on: monitor ? (monitor.mixedContentEnabled ?? true) : true,
-                            }) }}
-							<div class="nested-settings-inline" id="mixedContent-settings" {% if not (monitor ? (monitor.mixedContentEnabled ?? true) : true) %} style="display:none;" {% endif %}>
-								{% include 'upsnap/_components/interval-slider.twig' with {
-                                    id: 'mixedContent',
-                                    name: 'mixedContentMonitoringInterval',
-                                    value: monitor ? (monitor.mixedContentMonitoringInterval ?? 300) : 300,
-                                    partitions: defaultIntervals,
-                                    minMonitorIntervalSeconds: MIN_MONITOR_INTERVAL_SECONDS
-                                } %}
+					<table class="data fullwidth" id="port-channels-table" style="display:none;">
+						<thead>
+							<tr>
+								<th class="thin"><input type="checkbox" id="port-select-all-channels"></th>
+								<th>Name</th>
+								<th>Channel Type</th>
+							</tr>
+						</thead>
+						<tbody id="port-channels-tbody"></tbody>
+					</table>
+				</div>
+			</div>
+
+			<div id="port-advanced-settings-accordion" class="field accordion-container">
+				<div class="heading">
+					<button type="button" id="port-settings-accordion" class="accordion-trigger" aria-expanded="false" aria-controls="port-advanced-settings-content">
+						<span class="accordion-arrow"></span>
+						<span>Advanced Settings</span>
+					</button>
+				</div>
+
+				<div id="port-advanced-settings-content" class="accordion-content hidden">
+					{{ forms.lightswitchField({
+						label: "Enable Monitoring",
+						id: "portEnabled",
+						name: "portEnabled",
+						on: monitor ? (monitor.portEnabled ?? true) : true
+					}) }}
+
+					<div id="port-advanced-settings" style="{% if not (monitor ? (monitor.portEnabled ?? false) : false) %}display:none;{% endif %}">
+						{% include 'upsnap/_components/interval-slider.twig' with {
+							id: 'portTimeout',
+							name: 'portTimeout',
+							value: monitor ? (monitor.portTimeout ?? 5) : 5,
+							partitions: timeoutIntervals,
+							minMonitorIntervalSeconds: 1,
+							label: 'Request Timeout',
+							description: 'The request timeout is {exact time} seconds.'
+						} %}
+
+						{% include 'upsnap/_components/interval-slider.twig' with {
+							id: 'portMonitorInterval',
+							name: 'portMonitorInterval',
+							value: monitor ? (monitor.portMonitorInterval ?? 300) : 300,
+							partitions: defaultIntervals,
+							minMonitorIntervalSeconds: MIN_MONITOR_INTERVAL_SECONDS,
+							label: 'Check Interval',
+							description: 'Your monitor will be checked every {exact time}.'
+						} %}
+					</div>
+				</div>
+			</div>
+		</div>
+
+		{# ========== KEYWORD MONITOR FIELDS ========== #}
+		<div id="keyword-fields" data-monitor-type="keyword" style="{% if monitorType != 'keyword' %}display: none;{% endif %}">
+			<div class="flex">
+				<div class="flex-grow" style="margin-right: 20px;">
+					{{ forms.textField({
+						label: "Monitor Name",
+						id: "keywordName",
+						name: "keywordName",
+						value: monitor ? monitor.name : "",
+						required: true,
+						errors: []
+					}) }}
+				</div>
+
+				<div class="flex-grow">
+					{{ forms.textField({
+						label: "URL",
+						id: "keywordUrl",
+						name: "keywordUrl",
+						placeholder: "https://example.com",
+						value: monitor ? (monitor.keywordUrl ?? "https://") : "https://",
+						required: true,
+						errors: []
+					}) }}
+				</div>
+			</div>
+
+			<div class="field">
+				<div class="heading">
+					<label>Keywords / Text<span class="required" aria-hidden="true"></span></label>
+				</div>
+				<div id="keywords-input-container" style="display: flex; gap: 10px; margin-bottom: 15px;">
+					<input type="text" id="keywordInput" class="text" placeholder="Enter keyword" style="flex: 1; padding: 8px;">
+					<button type="button" id="add-keyword-btn" class="btn" style="padding: 8px 16px;">+</button>
+				</div>
+				<div id="keywords-list" style="display: flex; flex-direction: column; gap: 15px;">
+					{# Keywords will be populated here as cards #}
+				{% if monitor and monitor.keywords is defined and monitor.keywords %}
+					{% for keyword in monitor.keywords %}
+						<div class="keyword-card" data-keyword="{{ keyword.text }}" style="border: 1px solid #e0e0e0; padding: 15px; border-radius: 5px; background: #fafafa;">
+							<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+								<strong>{{ keyword.text }}</strong>
+								<button type="button" class="remove-keyword" data-keyword="{{ keyword.text }}" style="background: none; border: none; cursor: pointer; padding: 0; font-size: 16px; color: #d32f2f;">✕</button>
 							</div>
-
-						</div>
-
-						<div class="healthcheck-section">
-							{{ forms.lightswitchField({
-                                label: "Domain Expiry Check"|t('upsnap'),
-                                id: 'domainEnabled',
-                                name: 'domainEnabled',
-                                on: monitor ? (monitor.domainEnabled ?? true) : true,
-                            }) }}
-
-							<div class="nested-settings-inline" id="domain-settings">
-								{% include 'upsnap/_components/interval-slider.twig' with {
-                                    id: 'domain',
-                                    name: 'domainMonitoringInterval',
-                                    value: monitor ? (monitor.domainMonitoringInterval ?? 300) : 300,
-                                    partitions: defaultIntervals,
-                                    minMonitorIntervalSeconds: MIN_MONITOR_INTERVAL_SECONDS
-                                } %}
-								{{ forms.selectField({
-                                    label: "Days Before Expiry"|t('upsnap'),
-                                    id: 'domainExpiryDays',
-                                    name: 'domainDaysBeforeExpiryAlert',
-                                    options: expiryDayOptions,
-                                    value: monitor ? (monitor.domainDaysBeforeExpiryAlert ?? "30") : "30"
-                                }) }}
-
+							<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+								<select class="keyword-match-condition" data-keyword="{{ keyword.text }}" style="padding: 8px; border: 1px solid #ddd; border-radius: 3px;">
+									<option value="must_contain" {% if keyword.matchCondition == 'must_contain' %}selected{% endif %}>Exists</option>
+									<option value="must_not_contain" {% if keyword.matchCondition == 'must_not_contain' %}selected{% endif %}>Does not exist</option>
+								</select>
+								<label style="display: flex; align-items: center; gap: 8px;">
+									<input type="checkbox" class="keyword-is-regex" data-keyword="{{ keyword.text }}" {% if keyword.isRegex %}checked{% endif %} style="cursor: pointer;">
+									<span>Regex</span>
+								</label>
 							</div>
+							<label style="display: flex; align-items: center; gap: 8px; margin-top: 8px;">
+								<input type="checkbox" class="keyword-case-sensitive" data-keyword="{{ keyword.text }}" {% if keyword.caseSensitive %}checked{% endif %} style="cursor: pointer;">
+								<span>Case Sensitive</span>
+							</label>
 						</div>
+					{% endfor %}
+				{% endif %}
+			</div>
+			{% set keywordTexts = [] %}
+			{% if monitor and monitor.keywords is defined and monitor.keywords %}
+				{% set keywordTexts = monitor.keywords|map(k => k.text) %}
+			{% endif %}
+			<input type="hidden" id="keywordsHidden" name="keywords" value='{{ keywordTexts|json_encode }}'>
+		</div>
+
+		<div id="keyword-notification-channels-accordion" class="field accordion-container">
+				<div class="heading">
+					<button type="button" id="keyword-integrations-trigger" class="accordion-trigger" aria-expanded="false" aria-controls="keyword-notification-channels-content">
+						<span class="accordion-arrow"></span>
+						<span>How would you like to get notified?</span>
+					</button>
+				</div>
+
+				<div id="keyword-notification-channels-content" class="accordion-content hidden">
+					<div class="spinner hidden" id="keyword-channels-loading-spinner"></div>
+					<div id="keyword-no-channels-msg" class="hidden">
+						No Integration Channels available. Please create them from Integrations.
 					</div>
 
-					{# ------------ ROW 3 ------------ #}
-					<div class="healthcheck-row-grid">
-						<div class="healthcheck-section  http-disabled">
-							{{ forms.lightswitchField({
-                                label: "SSL Certificate Check"|t('upsnap'),
-                                id: 'sslEnabled',
-                                name: 'sslEnabled',
-                                on: monitor ? (monitor.securityCertificatesEnabled ?? true) : true,
-                            }) }}
+					<table class="data fullwidth" id="keyword-channels-table" style="display:none;">
+						<thead>
+							<tr>
+								<th class="thin"><input type="checkbox" id="keyword-select-all-channels"></th>
+								<th>Name</th>
+								<th>Channel Type</th>
+							</tr>
+						</thead>
+						<tbody id="keyword-channels-tbody"></tbody>
+					</table>
+				</div>
+			</div>
 
-							<div class="nested-settings-inline" id="ssl-settings">
-                                {% include 'upsnap/_components/interval-slider.twig' with {
-                                    id: 'securityCertificates',
-                                    name: 'securityCertificatesMonitoringInterval',
-                                    value: monitor ? (monitor.securityCertificatesMonitoringInterval ?? 300) : 300,
-                                    partitions: defaultIntervals,
-                                    minMonitorIntervalSeconds: MIN_MONITOR_INTERVAL_SECONDS
-                                } %}
-								{{ forms.selectField({
-                                    label: "Days Before Expiry"|t('upsnap'),
-                                    id: 'sslExpiryDays',
-                                    name: 'sslDaysBeforeExpiryAlert',
-                                    options: expiryDayOptions,
-                                    value: monitor ? (monitor.sslDaysBeforeExpiryAlert ?? "30") : "30"
-                                }) }}
+			<div id="keyword-advanced-settings-accordion" class="field accordion-container">
+				<div class="heading">
+					<button type="button" id="keyword-settings-accordion" class="accordion-trigger" aria-expanded="false" aria-controls="keyword-advanced-settings-content">
+						<span class="accordion-arrow"></span>
+						<span>Advanced Settings</span>
+					</button>
+				</div>
 
-							</div>
-						</div>
+				<div id="keyword-advanced-settings-content" class="accordion-content hidden">
+					{{ forms.lightswitchField({
+						label: "Enable Monitoring",
+						id: "keywordEnabled",
+						name: "keywordEnabled",
+						on: monitor ? (monitor.keywordEnabled ?? true) : true
+					}) }}
 
-						<div class="healthcheck-section http-disabled"
-                        	data-disabled-reason="{{ 'These checks are not available for non HTTPS URLs.'|t('upsnap') }}"
->
-							{{ forms.lightswitchField({
-                                label: "Lighthouse Performance Check"|t('upsnap'),
-                                instructions: "Monitor site performance"|t('upsnap'),
-                                id: 'lighthouseEnabled',
-                                name: 'lighthouseEnabled',
-                                on: monitor ? (monitor.lighthouseEnabled ?? false) : true,
-                            }) }}
+					<div id="keyword-advanced-settings" style="{% if not (monitor ? (monitor.keywordEnabled ?? false) : false) %}display:none;{% endif %}">
+						{% include 'upsnap/_components/interval-slider.twig' with {
+							id: 'keywordTimeout',
+							name: 'keywordTimeout',
+							value: monitor ? (monitor.keywordTimeout ?? 30) : 30,
+							partitions: timeoutIntervals,
+							minMonitorIntervalSeconds: 1,
+							label: 'Request Timeout',
+							description: 'The request timeout is {exact time} seconds.'
+						} %}
 
-							<div class="nested-settings-inline" id="lighthouse-settings">
+						{% include 'upsnap/_components/interval-slider.twig' with {
+							id: 'keywordMonitorInterval',
+							name: 'keywordMonitorInterval',
+							value: monitor ? (monitor.keywordMonitorInterval ?? 300) : 300,
+							partitions: defaultIntervals,
+							minMonitorIntervalSeconds: MIN_MONITOR_INTERVAL_SECONDS,
+							label: 'Check Interval',
+							description: 'Your monitor will be checked every {exact time}.'
+						} %}
 
-                                {% include 'upsnap/_components/interval-slider.twig' with {
-                                    id: 'lighthouse',
-                                    name: 'lighthouseMonitoringInterval',
-                                    value: monitor ? (monitor.lighthouseMonitoringInterval ?? 86400) : 7 * 86400,
-                                    partitions: lighthouseIntervals,
-                                    minMonitorIntervalSeconds: 86400
-                                } %}
+						{{ forms.lightswitchField({
+							label: "Follow Redirects",
+							instructions: "Automatically follow HTTP redirects when checking the URL",
+							id: "keywordFollowRedirects",
+							name: "keywordFollowRedirects",
+							on: monitor ? (monitor.keywordFollowRedirects ?? false) : false
+						}) }}
 
-								{{ forms.selectField({
-                                    label: "Strategy Type"|t('upsnap'),
-                                    id: 'lighthouseStrategy',
-                                    name: 'lighthouseStrategy',
-                                    options: strategyOptions,
-                                    value: monitor ? (monitor.lighthouseStrategy ?? 'desktop') : 'desktop',
-                                }) }}
-							</div>
-						</div>
+						{{ forms.lightswitchField({
+							label: "Match All Keywords",
+							instructions: "All keywords must match for the check to pass. If disabled, matching any keyword is sufficient.",
+							id: "keywordMatchAll",
+							name: "keywordMatchAll",
+							on: monitor ? (monitor.keywordMatchAll ?? false) : false
+						}) }}
 					</div>
 				</div>
 			</div>
 		</div>
 	</form>
+
 	<div class="monitor-form-actions">
 		<button class="btn submit" id="save-monitor">
 			{{ mode == 'add' ? "Create Monitor" : "Save Changes" }}
@@ -290,12 +592,13 @@
 
 	<script>
 		window.preSelectedChannelIds = {{ monitor ? monitor.channelIds|json_encode|raw : '[]' }};
-        window.CraftPageData = {
-            title: {{ title|json_encode|raw }},
-            monitorForm: true,
-            monitorData: {{ monitor ? monitor|json_encode|raw : 'null' }},
-            minMonitorIntervalSeconds: {{ MIN_MONITOR_INTERVAL_SECONDS }},
-            userDetails: {{ userDetails ? userDetails|json_encode|raw : 'null' }}
-        };
+		window.CraftPageData = {
+			title: {{ title|json_encode|raw }},
+			monitorForm: true,
+			monitorData: {{ monitor ? monitor|json_encode|raw : 'null' }},
+			monitorType: {{ monitorType|json_encode|raw }},
+			minMonitorIntervalSeconds: {{ MIN_MONITOR_INTERVAL_SECONDS }},
+			userDetails: {{ userDetails ? userDetails|json_encode|raw : 'null' }}
+		};
 	</script>
 {% endblock %}

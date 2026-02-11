@@ -672,3 +672,7 @@
         -webkit-overflow-scrolling: touch;
     }
 }
+
+.fullwidth {
+    width: 100% !important;
+}

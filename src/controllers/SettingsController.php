@@ -32,17 +32,21 @@ class SettingsController extends BaseController
         // Create a settings model with current database values
         $settings = $service->getNewModel();
         $monitoringUrl = $service->getMonitoringUrl();
+        $service->validateApiKey();
+        $apiTokenStatus = $service->getApiTokenStatus();
         if (!$monitoringUrl) {
             // For fresh setup, use the primary site's base URL as default
             $primarySite = Craft::$app->getSites()->getPrimarySite();
             $monitoringUrl = rtrim($primarySite->getBaseUrl(), '/');
         }
-        $settings->monitoringUrl = $monitoringUrl;
+        if($apiTokenStatus != Constants::API_KEY_STATUS['active']) {
+            $settings->monitoringUrl = $monitoringUrl;
+        }
         $settings->monitorId = $monitorId;
         $apiKey = $service->getApiKey();
         $settings->apiKey = $service->maskApiKey($apiKey);
         $settings->monitoringInterval = $service->getMonitoringInterval();
-        
+
 
         return $this->renderSettings($settings);
     }
@@ -105,7 +109,7 @@ class SettingsController extends BaseController
         $service = Upsnap::getInstance()->settingsService;
         $service->validateApiKey();
         $userDetails = null;
-        if($service->getApiKey()) {
+        if ($service->getApiKey()) {
             $userDetails = $service->getUserDetails();
         }
         return $this->healthCheckService->sendResponse(
@@ -176,17 +180,21 @@ class SettingsController extends BaseController
         $monitorId = $request->getBodyParam('monitorId');
         $monitoringUrl = $request->getBodyParam('monitoringUrl');
 
-        if (!$monitorId || !$monitoringUrl) {
+        if (!$monitorId) {
             return $this->asJson([
                 'success' => false,
-                'message' => 'Missing monitorId or monitoringUrl.'
+                'message' => 'Missing monitorId.'
             ]);
         }
 
         try {
-            // Save values
+            // Always save the monitor ID
             $service->setMonitorId($monitorId);
-            $service->setMonitoringUrl($monitoringUrl);
+
+            // Only save the monitoring URL if it's provided (website monitors only)
+            if ($monitoringUrl) {
+                $service->setMonitoringUrl($monitoringUrl);
+            }
 
             return $this->asJson([
                 'success' => true,
@@ -196,7 +204,6 @@ class SettingsController extends BaseController
                     'monitoringUrl' => $monitoringUrl,
                 ]
             ]);
-
         } catch (\Throwable $e) {
             return $this->asJson([
                 'success' => false,
@@ -204,5 +211,4 @@ class SettingsController extends BaseController
             ]);
         }
     }
-
 }

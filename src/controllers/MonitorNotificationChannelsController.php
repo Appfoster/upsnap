@@ -22,6 +22,36 @@ class MonitorNotificationChannelsController extends Controller
         $this->settingsService =  Upsnap::$plugin->settingsService;
     }
 
+    public function actionListSupportedTypes(): Response
+    {
+        $endpoint = Constants::MICROSERVICE_ENDPOINTS['monitors']['integrations']['supported'];
+
+        try {
+            $response = $this->apiService->get($endpoint);
+
+            if (!isset($response['status']) || $response['status'] !== 'success') {
+                Craft::error("Supported channels fetch failed: " . json_encode($response), __METHOD__);
+                $errorMsg = $response['message'] ?? Craft::t('upsnap', 'Failed to fetch notification channels.');
+
+                throw new \Exception($errorMsg);
+            }
+
+            return $this->asJson([
+                'success' => true,
+                'message' => Craft::t('upsnap', 'Supported notification channels fetched successfully.'),
+                'data' => $response['data'] ?? [],
+            ]);
+        } catch (\Throwable $e) {
+            Craft::error("Supported channels fetch failed: {$e->getMessage()}", __METHOD__);
+
+            return $this->asJson([
+                'success' => false,
+                'message' => $e->getMessage(),
+                'data' => []
+            ]);
+        }
+    }
+
     public function actionCreate(): Response
     {
         $this->requirePostRequest();
