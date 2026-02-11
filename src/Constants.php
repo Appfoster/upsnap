@@ -117,30 +117,6 @@ class Constants
             'label' => self::SUBNAV_ITEM_DASHBOARD['label'],
             'url' => self::SUBNAV_ITEM_DASHBOARD['url']
         ],
-        // self::SUBNAV_ITEM_REACHABILITY['key'] => [
-        //     'label' => self::SUBNAV_ITEM_REACHABILITY['label'],
-        //     'url' => self::SUBNAV_ITEM_REACHABILITY['url']
-        // ],
-        // self::SUBNAV_ITEM_SECURITY_CERTIFICATES['key'] => [
-        //     'label' => self::SUBNAV_ITEM_SECURITY_CERTIFICATES['label'],
-        //     'url' => self::SUBNAV_ITEM_SECURITY_CERTIFICATES['url']
-        // ],
-        // self::SUBNAV_ITEM_BROKEN_LINKS['key'] => [
-        //     'label' => self::SUBNAV_ITEM_BROKEN_LINKS['label'],
-        //     'url' => self::SUBNAV_ITEM_BROKEN_LINKS['url']
-        // ],
-        // self::SUBNAV_ITEM_LIGHTHOUSE['key'] => [
-        //     'label' => self::SUBNAV_ITEM_LIGHTHOUSE['label'],
-        //     'url' => self::SUBNAV_ITEM_LIGHTHOUSE['url']
-        // ],
-        // self::SUBNAV_ITEM_DOMAIN_CHECK['key'] => [
-        //     'label' => self::SUBNAV_ITEM_DOMAIN_CHECK['label'],
-        //     'url' => self::SUBNAV_ITEM_DOMAIN_CHECK['url']
-        // ],
-        // self::SUBNAV_ITEM_MIXED_CONTENT['key'] => [
-        //     'label' => self::SUBNAV_ITEM_MIXED_CONTENT['label'],
-        //     'url' => self::SUBNAV_ITEM_MIXED_CONTENT['url']
-        // ],
         self::SUBNAV_ITEM_STATUS_PAGE['key'] => [
             'label' => self::SUBNAV_ITEM_STATUS_PAGE['label'],
             'url' => self::SUBNAV_ITEM_STATUS_PAGE['url']

@@ -32,12 +32,16 @@ class SettingsController extends BaseController
         // Create a settings model with current database values
         $settings = $service->getNewModel();
         $monitoringUrl = $service->getMonitoringUrl();
+        $service->validateApiKey();
+        $apiTokenStatus = $service->getApiTokenStatus();
         if (!$monitoringUrl) {
             // For fresh setup, use the primary site's base URL as default
             $primarySite = Craft::$app->getSites()->getPrimarySite();
             $monitoringUrl = rtrim($primarySite->getBaseUrl(), '/');
         }
-        $settings->monitoringUrl = $monitoringUrl;
+        if($apiTokenStatus != Constants::API_KEY_STATUS['active']) {
+            $settings->monitoringUrl = $monitoringUrl;
+        }
         $settings->monitorId = $monitorId;
         $apiKey = $service->getApiKey();
         $settings->apiKey = $service->maskApiKey($apiKey);
