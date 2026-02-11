@@ -45,8 +45,12 @@ Craft.UpsnapDashboard = {
 			"uptime-day-card",
 			"uptime-week-card",
 			"uptime-month-card",
-			"reachability-card",
 		];
+
+		// Add website-only cards
+		if (this.isWebsiteMonitor()) {
+			cardsToShow.push("reachability-card");
+		}
 
 		cardsToShow.forEach((cardId) => {
 			const card = document.getElementById(cardId);
@@ -60,14 +64,25 @@ Craft.UpsnapDashboard = {
 		});
 
 		// Re-fetch data with new region
-		Promise.all([
+		const calls = [
 			this.render24hChartCard(window.CraftPageData?.monitorData),
 			this.renderResponseTimeCard(window.CraftPageData?.monitorData),
 			this.renderUptimeStatCards(),
-			this.fetchAndRenderReachability(),
-		]).catch((err) => {
+		];
+
+		// Only fetch healthcheck data for website monitors
+		if (this.isWebsiteMonitor()) {
+			calls.push(this.fetchAndRenderReachability());
+		}
+
+		Promise.all(calls).catch((err) => {
 			console.error("Failed to refresh dashboard for region:", err);
 		});
+	},
+
+	isWebsiteMonitor() {
+		const serviceType = window.CraftPageData?.monitorData?.service_type || "website";
+		return serviceType === "website";
 	},
 
 	isHttpsMonitor() {
@@ -261,6 +276,11 @@ Craft.UpsnapDashboard = {
 	},
 
 	initializeDashboard() {
+		// Only fetch healthcheck data for website monitors
+		if (!this.isWebsiteMonitor()) {
+			return Promise.resolve();
+		}
+
 		const isHttps = this.isHttpsMonitor();
 		const calls = [
 			this.fetchAndRenderCard({
@@ -317,6 +337,11 @@ Craft.UpsnapDashboard = {
 	},
 
 	async fetchAndRenderReachability() {
+		// Only fetch for website monitors
+		if (!this.isWebsiteMonitor()) {
+			return Promise.resolve();
+		}
+
 		const cardId = "reachability-card";
 		const card = document.getElementById(cardId);
 		if (!card) return;
@@ -1032,10 +1057,21 @@ Craft.UpsnapDashboard = {
 				const regionId = primaryRegion.id;
 				const regionChecks = monitor.service_last_checks?.[regionId];
 
-				const uptimeCheck = regionChecks?.uptime;
-				if (uptimeCheck) {
-					lastStatus = uptimeCheck.last_status;
-					lastCheckAt = uptimeCheck.last_checked_at;
+				// Determine which service to check based on monitor type
+				const serviceType = monitor.service_type || "website";
+				let serviceCheckKey = "uptime"; // default for website monitors
+
+				if (serviceType === "keyword") {
+					serviceCheckKey = "keyword";
+				} else if (serviceType === "port") {
+					serviceCheckKey = "port_check";
+				}
+
+				// Get the service check data
+				const serviceCheck = regionChecks?.[serviceCheckKey];
+				if (serviceCheck) {
+					lastStatus = serviceCheck.last_status;
+					lastCheckAt = serviceCheck.last_checked_at;
 				}
 			}
 		}
