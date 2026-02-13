@@ -285,23 +285,57 @@ Craft.Upsnap.StatusPages = {
 			const isProtected = hiddenInput?.value === "1" || lightswitchBtn?.getAttribute("aria-checked") === "true";
 			
 			const password = this.passwordInput.value;
+			
+			// Determine if we're in edit mode and what the original protection status was
+			const isEditMode = !!window.Upsnap?.statusPage?.id;
+			const wasProtected = window.Upsnap?.statusPage?.is_protected === true;
+			const isPasswordDirty = password.length > 0;
 
 			// Validate form
-			if (!this.validateForm(name, isProtected, password)) {
+			if (!this.validateForm(name, isProtected, password, isEditMode, wasProtected, isPasswordDirty)) {
 				return;
 			}
 
+			// Build the base payload
 			const payload = {
 				statusPageId: window.Upsnap?.statusPage?.id,
 				name,
 				monitor_ids: Array.from(this.selectedMonitors.keys()),
 				is_published: true,
-				is_protected: isProtected,
 			};
 
-			// Only include password in payload if protection is enabled and password is provided
-			if (isProtected && password) {
-				payload.password = password;
+			// Handle is_protected and password fields based on mode and state
+			if (isEditMode) {
+				if (wasProtected) {
+					// Case 1: Status page WAS protected
+					if (isPasswordDirty) {
+						// User updated the password - send both fields
+						payload.is_protected = true;
+						payload.password = password;
+					}
+					// If password is not dirty, don't send is_protected or password at all
+					// This allows updating name/monitors without affecting protection
+					
+					// Edge case: User toggled protection OFF
+					if (!isProtected) {
+						payload.is_protected = false;
+						// Don't send password when disabling protection
+					}
+				} else {
+					// Case 2: Status page WAS NOT protected
+					if (isProtected) {
+						// User enabled protection - send both fields
+						payload.is_protected = true;
+						payload.password = password;
+					}
+				}
+			} else {
+				// Create mode
+				if (isProtected) {
+					payload.is_protected = true;
+					payload.password = password;
+				}
+				// If not protected in create mode, don't send these fields
 			}
 
 			this.disableSavebtn();
@@ -329,7 +363,7 @@ Craft.Upsnap.StatusPages = {
 			}
 		);
 	},
-	validateForm(name, isProtected, password) {
+	validateForm(name, isProtected, password, isEditMode, wasProtected, isPasswordDirty) {
 		if (!name) {
 			Craft.cp.displayError("Name is required.");
 			return false;
@@ -340,21 +374,38 @@ Craft.Upsnap.StatusPages = {
 			return false;
 		}
 
-		// For new pages or when changing protection status, validate password
-		if (isProtected) {
-			const isEditingExistingProtectedPage = 
-				window.Upsnap?.statusPage?.id && 
-				window.Upsnap?.statusPage?.is_protected;
-
-			// Require password for new protected pages or when editing and changing password
-			if (!isEditingExistingProtectedPage && !password) {
-				Craft.cp.displayError("Password is required when page protection is enabled.");
-				return false;
+		// Password validation logic based on mode and protection status
+		if (isEditMode) {
+			if (wasProtected) {
+				// Case 1: Was protected
+				// Password NOT required - user can just update name/monitors
+				// But if password is provided, validate it
+				if (isPasswordDirty && !this.validatePassword(password)) {
+					return false;
+				}
+			} else {
+				// Case 2: Was NOT protected
+				if (isProtected) {
+					// User is enabling protection - password IS required
+					if (!password) {
+						Craft.cp.displayError("Password is required when enabling page protection.");
+						return false;
+					}
+					if (!this.validatePassword(password)) {
+						return false;
+					}
+				}
 			}
-
-			// Validate password complexity if password is provided
-			if (password && !this.validatePassword(password)) {
-				return false;
+		} else {
+			// Create mode
+			if (isProtected) {
+				if (!password) {
+					Craft.cp.displayError("Password is required when page protection is enabled.");
+					return false;
+				}
+				if (!this.validatePassword(password)) {
+					return false;
+				}
 			}
 		}
 
