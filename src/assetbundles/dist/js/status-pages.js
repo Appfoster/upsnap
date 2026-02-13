@@ -335,7 +335,6 @@ Craft.Upsnap.StatusPages = {
 					payload.is_protected = true;
 					payload.password = password;
 				}
-				// If not protected in create mode, don't send these fields
 			}
 
 			this.disableSavebtn();
