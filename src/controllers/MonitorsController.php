@@ -156,7 +156,6 @@ class MonitorsController extends Controller
      * Get monitor settings/config from the microservice.
      * 
      * GET /actions/upsnap/monitors/get-settings
-     * GET /actions/upsnap/monitors/get-settings?monitor_id={id}
      */
     public function actionGetSettings(): Response
     {
