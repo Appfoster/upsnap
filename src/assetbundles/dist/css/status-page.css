@@ -139,3 +139,23 @@
 .menu-btn {
 	padding-bottom: 2px !important;
 }
+
+/* Password protection */
+.status-page-lock-icon {
+	margin-left: 5px;
+	color: #8f98a3;
+	opacity: 0.8;
+}
+
+.status-page-lock-icon:hover {
+	opacity: 1;
+	color: #606060;
+}
+
+.field.hidden {
+	display: none !important;
+}
+
+.field {
+	transition: opacity 0.2s ease-in-out;
+}
