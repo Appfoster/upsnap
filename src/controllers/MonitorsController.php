@@ -152,6 +152,40 @@ class MonitorsController extends Controller
     }
 
 
+    /**
+     * Get monitor settings/config from the microservice.
+     * 
+     * GET /actions/upsnap/monitors/get-settings
+     * GET /actions/upsnap/monitors/get-settings?monitor_id={id}
+     */
+    public function actionGetSettings(): Response
+    {
+        $endpoint = Constants::MICROSERVICE_ENDPOINTS['monitors']['settings'];
+
+        try {
+
+            $response = Upsnap::$plugin->apiService->get($endpoint);
+
+            if (!isset($response['status']) || $response['status'] !== 'success') {
+                throw new \Exception($response['message'] ?? 'Failed to fetch monitor settings.');
+            }
+
+            // Return all settings
+            return $this->asJson([
+                'success' => true,
+                'message' => 'Monitors settings fetched successfully.',
+                'data' => $response['data'] ?? [],
+            ]);
+        } catch (\Throwable $e) {
+            Craft::error("Monitors settings fetch failed: {$e->getMessage()}", __METHOD__);
+
+            return $this->asJson([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ]);
+        }
+    }
+
     public function actionList(): Response
     {
         $endpoint = Constants::MICROSERVICE_ENDPOINTS['monitors']['list'];
@@ -366,7 +400,7 @@ class MonitorsController extends Controller
             'userDetails' => $userDetails,
         ];
 
-        // Fetch details from microservice
+        // Fetch monitor details from microservice
         try {
             $endpoint = Constants::MICROSERVICE_ENDPOINTS['monitors']['view'] . '/' . $monitorId;
 
@@ -377,6 +411,18 @@ class MonitorsController extends Controller
             }
 
             $monitor = $response['data']['monitor'];
+
+            // Fetch config/settings from the separate settings API
+            $settingsEndpoint = Constants::MICROSERVICE_ENDPOINTS['monitors']['settings'];
+            $settingsResponse = Upsnap::$plugin->apiService->get($settingsEndpoint, ['id' => $monitorId]);
+
+            $config = [];
+            if (isset($settingsResponse['status']) && $settingsResponse['status'] === 'success') {
+                $config = $settingsResponse['data']['settings'] ?? [];
+            }
+
+            // Merge config into monitor data
+            $monitor['config'] = $config;
 
             // Format monitor for FE use (IMPORTANT)
             $variables['monitor'] = $this->formatMonitorForFrontend($monitor);
