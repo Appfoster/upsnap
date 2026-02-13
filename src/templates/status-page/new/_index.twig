@@ -32,7 +32,23 @@ statusPage: {{ statusPage|json_encode|raw }}
 
 			<div id="monitor-multiselect"></div>
 		</div>
+		{{ forms.lightswitchField({
+            label: "Password Protect Status Page",
+            instructions: "Require a password to view this status page.",
+            id: "is_protected",
+            name: "is_protected",
+            on: statusPage ? (statusPage.is_protected ?? false) : false
+        }) }}
 
+		{{ forms.passwordField({
+            label: "Password",
+            id: "password",
+            name: "password",
+            placeholder: 'Enter a secure password',
+            value: "",
+            autocomplete: "new-password",
+            instructions: "Minimum 8 characters with uppercase, lowercase, number, and special character."
+        }) }}
 		<div class="buttons">
 			<button type="submit" id='status-page-btn' class="btn submit">
 				Save Status Page
