@@ -159,6 +159,8 @@ class MonitorsController extends Controller
      */
     public function actionGetSettings(): Response
     {
+        $this->requireCpRequest();
+
         $endpoint = Constants::MICROSERVICE_ENDPOINTS['monitors']['settings'];
 
         try {

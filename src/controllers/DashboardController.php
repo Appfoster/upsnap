@@ -49,6 +49,8 @@ class DashboardController extends BaseController
                     $config = [];
                     if (isset($settingsResponse['status']) && $settingsResponse['status'] === 'success') {
                         $config = $settingsResponse['data']['settings'] ?? [];
+                    } else {
+                        Craft::error("Settings fetch failed: invalid response", __METHOD__);
                     }
 
                     // Merge config into monitor data
