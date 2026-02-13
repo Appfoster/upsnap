@@ -83,7 +83,7 @@ Craft.Upsnap.StatusPages = {
 		const viewIcon = page.is_published
 			? `
             <a
-                href="${window.Upsnap.upsnapDashboardUrl}/shared/${page.shareable_id}"
+                href="${window.Upsnap.upsnapStatsPageUrl}/shared/${page.shareable_id}"
                 class="btn icon"
                 target="_blank"
                 title="View Status Page"
