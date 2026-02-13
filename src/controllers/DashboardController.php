@@ -41,9 +41,26 @@ class DashboardController extends BaseController
 
                 if (isset($response['status']) && $response['status'] === 'success') {
                     $monitorData = $response['data']['monitor'] ?? null;
+
+                    // Fetch config/settings from the separate settings API
+                    $settingsEndpoint = Constants::MICROSERVICE_ENDPOINTS['monitors']['settings'];
+                    $settingsResponse = Upsnap::$plugin->apiService->get($settingsEndpoint, ['id' => $monitorId]);
+
+                    $config = [];
+                    if (isset($settingsResponse['status']) && $settingsResponse['status'] === 'success') {
+                        $config = $settingsResponse['data']['settings'] ?? [];
+                    } else {
+                        Craft::error("Settings fetch failed: invalid response", __METHOD__);
+                    }
+
+                    // Merge config into monitor data
+                    if ($monitorData) {
+                        $monitorData['config'] = $config;
+                    }
+
                     // If monitor is port type, set $url to host:port
                     if ($monitorData && ($monitorData['service_type'] ?? null) === 'port') {
-                        $meta = $monitorData['config']['meta'] ?? [];
+                        $meta = $config['meta'] ?? [];
                         $host = $meta['host'] ?? '';
                         $port = $meta['port'] ?? '';
                         $url = $host && $port ? "$host:$port" : ($host ?: $port);

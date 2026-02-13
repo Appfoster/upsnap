@@ -155,6 +155,7 @@ class Constants
             'delete' => 'user/monitors',
             'update' => 'user/monitors',
             'bulk_actions' => 'user/monitors',
+            'settings' => 'user/monitors/settings',
             'integrations' => [
                 'list' => 'user/integrations',
                 'create' => 'user/integrations',
