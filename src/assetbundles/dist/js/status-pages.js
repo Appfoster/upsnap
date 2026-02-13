@@ -27,12 +27,15 @@ Craft.Upsnap.StatusPages = {
 	initForm() {
 		this.form = document.getElementById("status-page-form");
 		this.nameInput = document.getElementById("name");
+		this.isProtectedInput = document.getElementById("is_protected");
+		this.passwordInput = document.getElementById("password");
 		this.multiSelectContainer = document.getElementById(
 			"monitor-multiselect"
 		);
 
 		this.fetchMonitors();
 		this.registerFormSubmit();
+		this.registerPasswordProtection();
 	},
 
 	cacheElements() {
@@ -96,9 +99,13 @@ Craft.Upsnap.StatusPages = {
             </span>
         `;
 
+		const lockIcon = page.is_protected 
+			? '<span data-icon="lock" class="status-page-lock-icon" title="Password Protected"></span>' 
+			: '';
+
 		tr.innerHTML = `
         <td>
-            <strong>${Craft.escapeHtml(page.name)}</strong>
+            <strong>${Craft.escapeHtml(page.name)}</strong>${lockIcon}
 			 <div class="light smalltext">
             ${monitorsCount} monitor${monitorsCount === 1 ? "" : "s"}
         </div>
@@ -270,14 +277,17 @@ Craft.Upsnap.StatusPages = {
 			e.preventDefault();
 
 			const name = this.nameInput.value.trim();
+			
+			// Get the lightswitch button and its hidden input
+			const lightswitchBtn = document.getElementById("is_protected");
+			const hiddenInput = lightswitchBtn?.querySelector('input[type="hidden"]');
+			// Check the hidden input value OR the aria-checked attribute
+			const isProtected = hiddenInput?.value === "1" || lightswitchBtn?.getAttribute("aria-checked") === "true";
+			
+			const password = this.passwordInput.value;
 
-			if (!name) {
-				Craft.cp.displayError("Name is required.");
-				return;
-			}
-
-			if (!this.selectedMonitors.size) {
-				Craft.cp.displayError("Select at least one monitor.");
+			// Validate form
+			if (!this.validateForm(name, isProtected, password)) {
 				return;
 			}
 
@@ -286,7 +296,13 @@ Craft.Upsnap.StatusPages = {
 				name,
 				monitor_ids: Array.from(this.selectedMonitors.keys()),
 				is_published: true,
+				is_protected: isProtected,
 			};
+
+			// Only include password in payload if protection is enabled and password is provided
+			if (isProtected && password) {
+				payload.password = password;
+			}
 
 			this.disableSavebtn();
 			this.saveStatusPage(payload);
@@ -313,6 +329,104 @@ Craft.Upsnap.StatusPages = {
 			}
 		);
 	},
+	validateForm(name, isProtected, password) {
+		if (!name) {
+			Craft.cp.displayError("Name is required.");
+			return false;
+		}
+
+		if (!this.selectedMonitors.size) {
+			Craft.cp.displayError("Select at least one monitor.");
+			return false;
+		}
+
+		// For new pages or when changing protection status, validate password
+		if (isProtected) {
+			const isEditingExistingProtectedPage = 
+				window.Upsnap?.statusPage?.id && 
+				window.Upsnap?.statusPage?.is_protected;
+
+			// Require password for new protected pages or when editing and changing password
+			if (!isEditingExistingProtectedPage && !password) {
+				Craft.cp.displayError("Password is required when page protection is enabled.");
+				return false;
+			}
+
+			// Validate password complexity if password is provided
+			if (password && !this.validatePassword(password)) {
+				return false;
+			}
+		}
+
+		return true;
+	},
+
+	validatePassword(password) {
+		if (password.length < 8) {
+			Craft.cp.displayError("Password must be at least 8 characters long.");
+			return false;
+		}
+
+		const hasUppercase = /[A-Z]/.test(password);
+		const hasLowercase = /[a-z]/.test(password);
+		const hasNumber = /\d/.test(password);
+		const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password);
+
+		if (!hasUppercase || !hasLowercase || !hasNumber || !hasSpecialChar) {
+			Craft.cp.displayError(
+				"Password must contain uppercase, lowercase, number, and special character."
+			);
+			return false;
+		}
+
+		return true;
+	},
+
+	registerPasswordProtection() {
+		// The lightswitch is a <button> element, not an input
+		const lightswitchBtn = document.getElementById("is_protected");
+		if (!lightswitchBtn || !this.passwordInput) return;
+
+		// Get the hidden input inside the lightswitch button
+		const hiddenInput = lightswitchBtn.querySelector('input[type="hidden"]');
+		
+		// Get the password field container - Craft wraps inputs in a .field div
+		const passwordField = this.passwordInput.closest(".field");
+		if (!passwordField) {
+			console.error("Password field container not found");
+			return;
+		}
+
+		// Function to update password field visibility
+		const updatePasswordFieldVisibility = () => {
+			// Check the hidden input value OR the aria-checked attribute
+			const isProtected = hiddenInput?.value === "1" || lightswitchBtn.getAttribute("aria-checked") === "true";
+			
+			if (isProtected) {
+				passwordField.style.display = "block";
+				passwordField.classList.remove("hidden");
+			} else {
+				passwordField.style.display = "none";
+				passwordField.classList.add("hidden");
+				this.passwordInput.value = ""; // Clear password when protection is disabled
+			}
+		};
+
+		// Listen to the lightswitch button click
+		lightswitchBtn.addEventListener("click", () => {
+			// Delay to let Craft update the aria-checked and hidden input value
+			setTimeout(updatePasswordFieldVisibility, 50);
+		});
+
+		// Also listen for any change events on the hidden input
+		if (hiddenInput) {
+			hiddenInput.addEventListener("change", updatePasswordFieldVisibility);
+		}
+
+		// Set initial state
+		updatePasswordFieldVisibility();
+	},
+
 	registerTableActions() {
 		document.addEventListener("click", (e) => {
 			const actionEl = e.target.closest(".menu li[data-action]");
