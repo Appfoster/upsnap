@@ -42,6 +42,7 @@ class StatusPageController extends BaseController
             'apiTokenStatus' => $settingsService->getApiTokenStatus(),
             'apiTokenStatuses' => Constants::API_KEY_STATUS,
             'upsnapDashboardUrl' => Constants::UPSNAP_DASHBOARD_URL,
+            'upsnapStatsPageUrl' => Constants::UPSNAP_STATS_PAGE_URL,
             'userDetails' => $userDetails
         ];
 

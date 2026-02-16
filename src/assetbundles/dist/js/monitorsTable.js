@@ -355,20 +355,54 @@
 
 		try {
 			const monitors = [];
+			let settingsMap = new Map();
+
 			if (apiKey) {
-				const response = await fetch(endpoint, {
-					headers: { "X-CSRF-Token": Craft.csrfTokenValue },
-				});
-				const json = await response.json();
+				// Fetch monitors and settings in parallel
+				const [monitorsResponse, settingsResponse] = await Promise.all([
+					fetch(endpoint, {
+						headers: { "X-CSRF-Token": Craft.csrfTokenValue },
+					}),
+					fetch("/actions/upsnap/monitors/get-settings", {
+						headers: {
+							"X-CSRF-Token": Craft.csrfTokenValue,
+							Accept: "application/json",
+						},
+					}),
+				]);
+
+				const monitorsJson = await monitorsResponse.json();
+				const settingsJson = await settingsResponse.json();
 
 				if (
-					!json.success ||
-					!json.data ||
-					!Array.isArray(json.data.monitors)
+					!monitorsJson.success ||
+					!monitorsJson.data ||
+					!Array.isArray(monitorsJson.data.monitors)
 				) {
-					throw new Error(json.message || "Failed to load monitors");
+					throw new Error(monitorsJson.message || "Failed to load monitors");
 				}
-				monitors.push(...json.data.monitors);
+
+				// Build settings map from monitor_id -> config
+				if (
+					settingsJson.success &&
+					settingsJson.data?.settings &&
+					Array.isArray(settingsJson.data.settings)
+				) {
+					settingsJson.data.settings.forEach((setting) => {
+						if (setting.monitor_id && setting.config) {
+							settingsMap.set(setting.monitor_id, setting.config);
+						}
+					});
+				}
+
+				// Merge config into each monitor
+				monitorsJson.data.monitors.forEach((monitor) => {
+					const config = settingsMap.get(monitor.id);
+					if (config) {
+						monitor.config = config;
+					}
+					monitors.push(monitor);
+				});
 			}
 
 			const monitorCount = monitors.length;

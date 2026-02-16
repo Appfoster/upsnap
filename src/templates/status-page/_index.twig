@@ -24,6 +24,7 @@
 		window.Upsnap = {
 apiKey: {{ apiKey|json_encode|raw }},
 upsnapDashboardUrl: {{ (upsnapDashboardUrl ?? 'unknown')|json_encode|raw }},
+upsnapStatsPageUrl: {{ (upsnapStatsPageUrl ?? 'unknown')|json_encode|raw }},
 userDetails: {{ userDetails|json_encode|raw }}
 };
 	</script>
