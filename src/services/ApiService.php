@@ -164,6 +164,31 @@ class ApiService extends Component
     }
 
     /**
+     * Make a raw GET request and return the binary body alongside response headers.
+     * Used for file export endpoints (CSV, PDF) that return non-JSON content.
+     *
+     * @return array{body: string, contentType: string, contentDisposition: string}
+     */
+    public function getRaw(string $endpoint, array $query = [], string $accept = '*/*'): array
+    {
+        try {
+            $response = $this->client->get($endpoint, [
+                'headers' => array_merge($this->getHeaders(), ['Accept' => $accept]),
+                'query'   => $query,
+            ]);
+
+            return [
+                'body'               => (string) $response->getBody(),
+                'contentType'        => $response->getHeaderLine('Content-Type')        ?: $accept,
+                'contentDisposition' => $response->getHeaderLine('Content-Disposition') ?: 'attachment; filename=export',
+            ];
+        } catch (RequestException $e) {
+            Craft::error('API getRaw failed: ' . $e->getMessage(), __METHOD__);
+            throw $e;
+        }
+    }
+
+    /**
      * Common headers
      */
     protected function getHeaders(): array

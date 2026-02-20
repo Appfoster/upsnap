@@ -134,6 +134,11 @@ class Upsnap extends Plugin
                     'upsnap/status-page/new' => 'upsnap/status-page/new',
                     'upsnap/regions/list' => 'upsnap/regions/list',
 
+                    // Incidents Routes
+                    Constants::SUBNAV_ITEM_INCIDENTS['url'] => 'upsnap/incidents/index',
+                    'upsnap/incidents/list'   => 'upsnap/incidents/list',
+                    'upsnap/incidents/export' => 'upsnap/incidents/export',
+
                 ]);
             }
         );

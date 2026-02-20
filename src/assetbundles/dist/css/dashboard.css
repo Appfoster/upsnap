@@ -488,12 +488,27 @@
 }
 
 .incidents-table-wrapper .card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
     font-size: 16px;
     font-weight: 600;
     color: #374151;
     margin-bottom: 16px;
     padding-bottom: 12px;
     border-bottom: 1px solid #e5e7eb;
+}
+
+.incidents-view-all-link {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--link-color, #0d78f2);
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+.incidents-view-all-link:hover {
+    text-decoration: underline;
 }
 
 .incidents-table-container {
