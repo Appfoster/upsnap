@@ -2,7 +2,7 @@
 <div id="incidents-table-card" class="incidents-table-wrapper">
 	<div class="card-header">
 		<span>Recent 20 Incidents</span>
-		<a href="{{ cpUrl('upsnap/incidents') ~ (monitorId is defined and monitorId ? '?monitorId=' ~ monitorId : '') }}" class="incidents-view-all-link">
+		<a href="{{ cpUrl('upsnap/incidents', (monitorId is defined and monitorId) ? {'monitorId': monitorId} : {}) }}" class="incidents-view-all-link">
 			{{ 'View all incidents'|t('upsnap') }} &rarr;
 		</a>
 	</div>

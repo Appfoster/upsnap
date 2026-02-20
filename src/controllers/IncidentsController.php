@@ -60,19 +60,7 @@ class IncidentsController extends BaseController
     }
 
     /**
-     * JSON endpoint that proxies to the microservice incidents endpoint.
-     * Supports all the query params the microservice accepts.
-     *
-     * GET /actions/upsnap/incidents/list
-     *   ?monitorId=  &time_range=  &page=  &page_size=  &check_type=
-     *   &search=  &sort_by=  &sort_order=  &region=  &include_paused=
-     */
-    /**
-     * Stream a CSV or PDF export directly from the microservice.
-     *
-     * GET /actions/upsnap/incidents/export
-     *   ?monitorId=  &file_type=csv|pdf  &start_time=  &end_time=
-     *   &type=  &search=  &region=
+     * Stream a CSV or PDF export.
      */
     public function actionExport(): Response
     {
@@ -117,6 +105,9 @@ class IncidentsController extends BaseController
         }
     }
 
+    /**
+     * Lists the incidents for a given monitor, with pagination and filtering.
+     */
     public function actionList(): Response
     {
         $request = Craft::$app->getRequest();
