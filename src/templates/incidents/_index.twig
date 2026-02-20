@@ -1,0 +1,295 @@
+{% extends '_layouts/cp' %}
+{% import '_includes/forms' as forms %}
+
+{% set selectedSubnavItem = 'incidents' %}
+
+{% set crumbs = [
+    { html: "<a href='" ~ url('upsnap') ~ "' class='thumb cp-icon'><svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 576 512' focusable='false' aria-hidden='true'><path d='M575.8 255.5c0 18-15 32.1-32 32.1l-32 0 .7 160.2c0 2.7-.2 5.4-.5 8.1l0 16.2c0 22.1-17.9 40-40 40l-16 0c-1.1 0-2.2 0-3.3-.1c-1.4 .1-2.8 .1-4.2 .1L416 512l-24 0c-22.1 0-40-17.9-40-40l0-24 0-64c0-17.7-14.3-32-32-32l-64 0c-17.7 0-32 14.3-32 32l0 64 0 24c0 22.1-17.9 40-40 40l-24 0-31.9 0c-1.5 0-3-.1-4.5-.2c-1.2 .1-2.4 .2-3.6 .2l-16 0c-22.1 0-40-17.9-40-40l0-112c0-.9 0-1.9 .1-2.8l0-69.7-32 0c-18 0-32-14-32-32.1c0-9 3-17 10-24L266.4 8c7-7 15-8 22-8s15 2 21 7L564.8 231.5c8 7 12 15 11 24z'></path></svg></a>" },
+] %}
+{% set hasApiKey = apiKey is not empty %}
+{% set isActiveApiToken = apiTokenStatus is same as(apiTokenStatuses.active) %}
+
+{% block actionButton %}
+	<div class="buttons">
+		{% if hasApiKey and isActiveApiToken %}
+			<div class="incidents-page-header__right">
+				<label for="incidents-monitor-select" class="incidents-label">
+					{{ 'Monitor'|t('upsnap') }}
+				</label>
+				<div class="incidents-select-wrap">
+					<select id="incidents-monitor-select" class="incidents-select">
+						<option value="">{{ 'Loading monitors…'|t('upsnap') }}</option>
+					</select>
+				</div>
+			</div>
+		{% endif %}
+	</div>
+{% endblock %}
+
+{% block content %}
+	<script>
+		window.UpsnapIncidents = {
+apiKey: {{ apiKey|json_encode|raw }},
+monitors: {{ monitors|json_encode|raw }},
+csrfToken: {{ craft.app.request.csrfToken|json_encode|raw }},
+listEndpoint: "{{ actionUrl('upsnap/incidents/list') }}",
+exportEndpoint: "{{ actionUrl('upsnap/incidents/export') }}",
+monitorsEndpoint: "{{ actionUrl('upsnap/monitors/list') }}",
+regionsEndpoint: "{{ actionUrl('upsnap/regions/list') }}",
+apiTokenStatus: {{ apiTokenStatus|json_encode|raw }},
+apiTokenStatuses: {{ apiTokenStatuses|json_encode|raw }},
+upsnapDashboardUrl: {{ (upsnapDashboardUrl ?? '')|json_encode|raw }}
+};
+	</script>
+
+	{% if not hasApiKey %}
+		{# ── No API token: registration prompt ───────────────────────────── #}
+		<div class="status-container warning">
+			<div class="status-header">
+				<div class="status-icon warning">!</div>
+				<h3 class="status-title">
+					{{ 'Need to register for this feature. Please register and add your API token to continue using this feature.'|t('upsnap') }}
+				</h3>
+			</div>
+			<p class="status-message">
+				<a href="{{ cpUrl('upsnap/settings') }}" class="go">{{ 'Go to Settings'|t('upsnap') }}</a>
+				{{ 'to add your API token and unlock the Incidents page.'|t('upsnap') }}
+			</p>
+		</div>
+	{% elseif not isActiveApiToken %}
+		{# ── Token expired/suspended: warning banner, no table ───────────── #}
+		<div class="status-container warning">
+			<div class="status-header">
+				<div class="status-icon warning">!</div>
+				<h3 class="status-title">
+					{{ 'Your API token is expired or suspended. Please update your API token to continue using the plugin features.'|t('upsnap') }}
+				</h3>
+			</div>
+			<p class="status-message">
+				<a href="{{ cpUrl('upsnap/settings') }}" class="go">{{ 'Go to Settings'|t('upsnap') }}</a>
+				{{ 'to update your API token and restore access to the Incidents page.'|t('upsnap') }}
+			</p>
+		</div>
+	{% else %}
+
+		<div
+			id="incidents-page">
+			{# ── Controls bar: timeframe left · search + filter right ────────────── #}
+			<div class="incidents-controls-bar">
+				<div class="incidents-controls-bar__left">
+					<label for="incidents-timeframe-select" class="incidents-label">
+						{{ 'Time range'|t('upsnap') }}
+					</label>
+					<div class="incidents-select-wrap">
+						<select id="incidents-timeframe-select" class="incidents-select">
+							<option value="24h" selected>{{ 'Last 24 hours'|t('upsnap') }}</option>
+							<option value="7d">{{ 'Last 7 days'|t('upsnap') }}</option>
+							<option value="30d">{{ 'Last 30 days'|t('upsnap') }}</option>
+						</select>
+					</div>
+				</div>
+
+				<div
+					class="incidents-controls-bar__right">
+					{# Search #}
+					<div class="incidents-search-wrap">
+						<input type="text" id="incidents-search" class="text incidents-search-input" placeholder="{{ 'Search incidents…'|t('upsnap') }}" autocomplete="off"/>
+					</div>
+
+					{# Filter #}
+					<div class="incidents-filter-container" id="incidents-filter-container">
+						<button type="button" class="btn incidents-filter-btn" id="incidents-filter-btn" title="{{ 'Filters'|t('upsnap') }}">
+							<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewbox="0 0 24 24" stroke="currentColor" stroke-width="2">
+								<line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="11" y1="18" x2="13" y2="18"/>
+							</svg>
+							<span>{{ 'Filters'|t('upsnap') }}</span>
+							<span class="incidents-filter-badge hidden" id="incidents-filter-badge">0</span>
+						</button>
+
+						<div class="incidents-filter-dropdown hidden" id="incidents-filter-dropdown">
+							<div
+								class="incidents-filter-dropdown__inner">
+
+								{# Check Type #}
+								<div class="incidents-filter-section">
+									<h4 class="incidents-filter-section__title">{{ 'Check Type'|t('upsnap') }}</h4>
+									<ul class="incidents-filter-list" id="incidents-checktype-list">
+										<li>
+											<label class="incidents-filter-item">
+												<input type="checkbox" class="incidents-checktype-cb" value="uptime"/>
+												<span>{{ 'Uptime'|t('upsnap') }}</span>
+											</label>
+										</li>
+										<li>
+											<label class="incidents-filter-item">
+												<input type="checkbox" class="incidents-checktype-cb" value="ssl"/>
+												<span>{{ 'Security Certificate'|t('upsnap') }}</span>
+											</label>
+										</li>
+										<li>
+											<label class="incidents-filter-item">
+												<input type="checkbox" class="incidents-checktype-cb" value="domain"/>
+												<span>{{ 'Domain'|t('upsnap') }}</span>
+											</label>
+										</li>
+										<li>
+											<label class="incidents-filter-item">
+												<input type="checkbox" class="incidents-checktype-cb" value="lighthouse"/>
+												<span>{{ 'Lighthouse'|t('upsnap') }}</span>
+											</label>
+										</li>
+										<li>
+											<label class="incidents-filter-item">
+												<input type="checkbox" class="incidents-checktype-cb" value="mixed_content"/>
+												<span>{{ 'Mixed Content'|t('upsnap') }}</span>
+											</label>
+										</li>
+										<li>
+											<label class="incidents-filter-item">
+												<input type="checkbox" class="incidents-checktype-cb" value="broken_links"/>
+												<span>{{ 'Broken Links'|t('upsnap') }}</span>
+											</label>
+										</li>
+									</ul>
+								</div>
+
+								{# Region (lazy-loaded) #}
+								<div class="incidents-filter-section">
+									<h4 class="incidents-filter-section__title">{{ 'Region'|t('upsnap') }}</h4>
+									<div id="incidents-region-filter-list">
+										<div class="incidents-filter-loading" id="incidents-region-loading">
+											<span class="spinner"></span>
+											<span>{{ 'Loading regions…'|t('upsnap') }}</span>
+										</div>
+									</div>
+								</div>
+
+								<div class="incidents-filter-dropdown__footer">
+									<button type="button" class="btn" id="incidents-clear-filters">
+										{{ 'Clear'|t('upsnap') }}
+									</button>
+									<button type="button" class="btn submit" id="incidents-apply-filters">
+										{{ 'Apply Filters'|t('upsnap') }}
+									</button>
+								</div>
+
+							</div>
+						</div>
+					</div>
+
+					{# Export #}
+					<div class="incidents-export-container" id="incidents-export-container">
+						<button type="button" class="btn incidents-export-btn" id="incidents-export-btn" title="{{ 'Export'|t('upsnap') }}">
+							<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewbox="0 0 24 24" stroke="currentColor" stroke-width="2">
+								<path stroke-linecap="round" stroke-linejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 15V3"/>
+							</svg>
+							<span>{{ 'Export'|t('upsnap') }}</span>
+						</button>
+
+						<div class="incidents-export-dropdown hidden" id="incidents-export-dropdown">
+							<button type="button" class="incidents-export-option" id="incidents-export-csv">
+								<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewbox="0 0 24 24" stroke="currentColor" stroke-width="2">
+									<path stroke-linecap="round" stroke-linejoin="round" d="M9 17v-2m3 2v-4m3 4v-6M5 20h14a2 2 0 002-2V6l-5-5H5a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+								</svg>
+								<span>{{ 'Export as CSV'|t('upsnap') }}</span>
+							</button>
+							<button type="button" class="incidents-export-option" id="incidents-export-pdf">
+								<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewbox="0 0 24 24" stroke="currentColor" stroke-width="2">
+									<path stroke-linecap="round" stroke-linejoin="round" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+								</svg>
+								<span>{{ 'Export as PDF'|t('upsnap') }}</span>
+							</button>
+						</div>
+					</div>
+
+				</div>
+			</div>
+
+			{# ── Table ──────────────────────────────────────────────────────────── #}
+			<div class="incidents-table-wrapper" id="incidents-table-wrapper">
+				<div class="loader-overlay" id="incidents-loader">
+					<div class="spinner big"></div>
+				</div>
+
+				<table class="data fullwidth" id="incidents-table">
+					<thead>
+						<tr>
+							<th class="incidents-th incidents-th--sortable" data-sort-key="check_type">
+								{{ 'Check Type'|t('upsnap') }}
+								<span class="incidents-sort-icon incidents-sort-icon--none" aria-hidden="true">
+									<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewbox="0 0 24 24" fill="currentColor"><path d="M7 10l5-5 5 5zm0 4l5 5 5-5z"/></svg>
+								</span>
+							</th>
+							<th class="incidents-th incidents-th--sortable" data-sort-key="region">
+								{{ 'Region'|t('upsnap') }}
+								<span class="incidents-sort-icon incidents-sort-icon--none" aria-hidden="true">
+									<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewbox="0 0 24 24" fill="currentColor"><path d="M7 10l5-5 5 5zm0 4l5 5 5-5z"/></svg>
+								</span>
+							</th>
+							<th class="incidents-th">
+								{{ 'Message'|t('upsnap') }}
+							</th>
+							<th class="incidents-th incidents-th--sortable" data-sort-key="status_code">
+								{{ 'Status Code'|t('upsnap') }}
+								<span class="incidents-sort-icon incidents-sort-icon--none" aria-hidden="true">
+									<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewbox="0 0 24 24" fill="currentColor"><path d="M7 10l5-5 5 5zm0 4l5 5 5-5z"/></svg>
+								</span>
+							</th>
+							<th class="incidents-th incidents-th--sortable" data-sort-key="timestamp">
+								{{ 'Occurred At'|t('upsnap') }}
+								<span class="incidents-sort-icon incidents-sort-icon--desc" aria-hidden="true">
+									<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewbox="0 0 24 24" fill="currentColor"><path d="M7 10l5-5 5 5zm0 4l5 5 5-5z"/></svg>
+								</span>
+							</th>
+						</tr>
+					</thead>
+					<tbody id="incidents-tbody">
+						<tr>
+							<td colspan="5" class="incidents-empty-cell">
+								<span class="spinner"></span>
+								<span>{{ 'Loading incidents…'|t('upsnap') }}</span>
+							</td>
+						</tr>
+					</tbody>
+				</table>
+			</div>
+
+			{# ── Pagination bar ────────────────────────────────────────────────── #}
+			<div class="incidents-pagination-bar" id="incidents-pagination-bar">
+				<div class="incidents-pagination-bar__left">
+					<label for="incidents-page-size" class="incidents-label">{{ 'Rows per page'|t('upsnap') }}</label>
+					<div class="incidents-select-wrap incidents-select-wrap--sm">
+						<select id="incidents-page-size" class="incidents-select">
+							<option value="20" selected>20</option>
+							<option value="50">50</option>
+							<option value="100">100</option>
+							<option value="200">200</option>
+						</select>
+					</div>
+				</div>
+
+				<div class="incidents-pagination-bar__center">
+					<span id="incidents-showing">{{ 'Showing 0 incidents'|t('upsnap') }}</span>
+				</div>
+
+				<div class="incidents-pagination-bar__right">
+					<button type="button" class="btn small" id="incidents-prev-btn" disabled>
+						&lsaquo;
+						{{ 'Prev'|t('upsnap') }}
+					</button>
+					<span class="incidents-page-info" id="incidents-page-info">
+						{{ 'Page 1 of 1'|t('upsnap') }}
+					</span>
+					<button type="button" class="btn small" id="incidents-next-btn" disabled>
+						{{ 'Next'|t('upsnap') }}
+						&rsaquo;
+					</button>
+				</div>
+			</div>
+
+		</div>
+		{# /incidents-page #}
+
+	{% endif %}
+	{# hasApiKey #}
+{% endblock %}
