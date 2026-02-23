@@ -782,6 +782,12 @@ Craft.UpsnapDashboard = {
 
 				responseTime = data?.response_time_data;
 				points = responseTime?.chart_data || [];
+
+				// Aggregate data based on time range for better performance
+				if (window.UpsnapUtils?.aggregateResponseTimeData) {
+					points = window.UpsnapUtils.aggregateResponseTimeData(points, this.currentResponseTimeFilter);
+				}
+
 				hasData = points.length > 0;
 			}
 
