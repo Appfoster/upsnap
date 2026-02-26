@@ -53,6 +53,7 @@ class Upsnap extends Plugin
 
         // Set alias for assets
         \Craft::setAlias('@upsnap', dirname(__DIR__)."/src");
+        \Craft::setAlias('@upsnapRoot', dirname(__DIR__));
 
         $this->setComponents([
             'apiService' => ApiService::class,
