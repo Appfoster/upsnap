@@ -1320,7 +1320,12 @@ function registerReachabilityJs() {
                         }
 
                         const data = await response.json();
-                        const chartData = data?.data?.response_time_data?.chart_data || [];
+                        let chartData = data?.data?.response_time_data?.chart_data || [];
+
+                        // Aggregate data based on time range for better performance
+                        if (window.UpsnapUtils?.aggregateResponseTimeData) {
+                            chartData = window.UpsnapUtils.aggregateResponseTimeData(chartData, currentResponseTimeFilter);
+                        }
 
                         if (chartData.length === 0) continue;
 
