@@ -23,6 +23,7 @@ Craft.UpsnapDashboard = {
 
 		this.initializeDashboard();
 		this.renderMonitorCards();
+		this.loadAndApplyRegionNames();
 
 		const apiKey = window.CraftPageData?.apiKey;
 		if (!apiKey) {
@@ -1132,6 +1133,39 @@ Craft.UpsnapDashboard = {
 	hideResponseChartLoader() {
 		const loader = document.getElementById("responseChartLoader");
 		if (loader) loader.classList.add("hidden");
+	},
+
+	async loadAndApplyRegionNames() {
+		const endpoint = window.CraftPageData?.regionsEndpoint;
+		if (!endpoint) return;
+
+		try {
+			const res = await fetch(endpoint, {
+				headers: {
+					'Accept': 'application/json',
+					'X-CSRF-Token': Craft.csrfTokenValue,
+				},
+			});
+			const json = await res.json();
+
+			if (!json.success || !json.data?.length) return;
+
+			const regionMap = {};
+			json.data.forEach((region) => {
+				const id   = region.id   ?? region.slug  ?? region;
+				const name = region.name ?? region.label ?? String(id);
+				regionMap[String(id)] = String(name);
+			});
+
+			document
+				.querySelectorAll('#incidents-table-card .region-badge')
+				.forEach((badge) => {
+					const raw = badge.textContent.trim();
+					if (regionMap[raw]) badge.textContent = regionMap[raw];
+				});
+		} catch (err) {
+			console.error('Failed to load region names for incidents table:', err);
+		}
 	},
 
 	renderStatusContainer() {

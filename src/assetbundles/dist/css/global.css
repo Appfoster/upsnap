@@ -224,6 +224,7 @@
 .details-table {
     width: 100%;
     border-collapse: collapse;
+    table-layout: fixed;
 }
 
 .details-table td {
@@ -236,10 +237,13 @@
     font-weight: 500;
     color: #666;
     width: 160px;
+    min-width: 160px;
 }
 
 .details-value {
     color: #333;
+    word-break: break-all;
+    overflow-wrap: anywhere;
 }
 
 /* Status Container */
@@ -651,6 +655,7 @@
 .details-table {
     width: 100%;
     border-collapse: collapse;
+    table-layout: fixed;
 }
 
 .details-table td {
@@ -663,10 +668,13 @@
     font-weight: 500;
     color: #666;
     width: 160px;
+    min-width: 160px;
 }
 
 .details-value {
     color: #333;
+    word-break: break-all;
+    overflow-wrap: anywhere;
 }
 
 .email-tags-container {
@@ -787,6 +795,34 @@
 
 .pill--grey {
     background-color: #6c757d;
+}
+
+/* Monitor type pill — used in the monitors listing table */
+.monitor-type-pill {
+    display: inline-block;
+    padding: 1px 7px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 500;
+    white-space: nowrap;
+    vertical-align: middle;
+    margin-left: 6px;
+    text-transform: capitalize;
+}
+
+.monitor-type-pill--website {
+    background-color: #dbeafe;
+    color: #1e40af;
+}
+
+.monitor-type-pill--port {
+    background-color: #ede9fe;
+    color: #5b21b6;
+}
+
+.monitor-type-pill--keyword {
+    background-color: #fef3c7;
+    color: #92400e;
 }
 
 .api-pill:hover {

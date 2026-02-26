@@ -7,10 +7,8 @@
 
 	const Polling = {
 		generalInterval: null,
-		monitorIntervals: new Map(),
+		monitorTimeouts: new Map(),
 		completedMonitors: new Set(),
-		monitorAttempts: new Map(),
-		lastKnownStatus: new Map(),
 		activeMonitorIds: new Set(),
 	};
 
@@ -127,12 +125,11 @@
         <label for="upsnap-checkbox-${escapeId(url)}"></label>
     `;
 
-		// monitor column: name + url + selected pill
+		// monitor column: name + url + type pill
 		const tdMonitor = document.createElement("td");
 		tdMonitor.innerHTML = `
 		<div class="heading">${escapeHtml(name)}</div>
-		<div class="light" style="margin-top:4px;">${escapeHtml(urlLabel)}</div>
-		
+		<div class="light" style="margin-top:4px;">${escapeHtml(urlLabel)}<span class="monitor-type-pill monitor-type-pill--${escapeHtml(serviceType)}">${escapeHtml(serviceType)}</span></div>
 		`;
 
 		// Status column
@@ -716,97 +713,33 @@
 			Polling.generalInterval = null;
 		}
 	}
-	const MAX_ATTEMPTS = 5;
-	const POLL_INTERVAL = 30 * 1000;
+	const POLL_DELAY =  60 * 1000;
 
 	function startMonitorSpecificPolling(monitorId) {
 		if (!monitorId) return;
-
 		if (Polling.completedMonitors.has(monitorId)) return;
-		if (Polling.monitorIntervals.has(monitorId)) return;
+		if (Polling.monitorTimeouts.has(monitorId)) return;
 
-		Polling.monitorAttempts.set(monitorId, 0);
+		// Immediately mark as active so buildRow shows "Checking"
 		Polling.activeMonitorIds.add(monitorId);
 
-		const intervalId = setInterval(async () => {
-			const attempts = (Polling.monitorAttempts.get(monitorId) || 0) + 1;
-
-			Polling.monitorAttempts.set(monitorId, attempts);
-
+		// After 60 s fire a single fetch — render result and stop
+		const timeoutId = setTimeout(async () => {
 			try {
 				const updatedMonitor = await fetchSingleMonitor(monitorId);
-				if (!updatedMonitor) return;
-
-				const previousStatus = Polling.lastKnownStatus.get(monitorId);
-
-				// Get primary region status
-				const primaryStatus = getPrimaryRegionStatus(updatedMonitor);
-				const currentStatus = primaryStatus.lastStatus;
-
-				// First run → store baseline
-				if (previousStatus === undefined) {
-					Polling.lastKnownStatus.set(monitorId, currentStatus);
-				}
-
-				// ✅ Status changed → stop immediately
-				if (
-					previousStatus !== undefined &&
-					currentStatus !== previousStatus
-				) {
-					stopMonitorSpecificPolling(monitorId);
+				// Remove from active set BEFORE updating row so buildRow shows real status
+				stopMonitorSpecificPolling(monitorId);
+				if (updatedMonitor) {
 					updateMonitorRow(updatedMonitor);
-					return;
-				}
-
-				// Update DOM without loader
-				updateMonitorRow(updatedMonitor);
-
-				// ❌ Max attempts reached
-				if (attempts >= MAX_ATTEMPTS) {
-					stopMonitorSpecificPolling(monitorId);
 				}
 			} catch (e) {
 				console.error("Monitor polling failed", e);
 				stopMonitorSpecificPolling(monitorId);
 			}
-		}, POLL_INTERVAL);
+		}, POLL_DELAY);
 
-		Polling.monitorIntervals.set(monitorId, intervalId);
+		Polling.monitorTimeouts.set(monitorId, timeoutId);
 	}
-
-	const getPrimaryRegionStatus = (monitor) => {
-		if (!monitor.regions || !Array.isArray(monitor.regions)) {
-			return {
-				lastStatus: monitor.last_status,
-				lastCheckAt: monitor.last_check_at,
-			};
-		}
-
-		const primaryRegion = monitor.regions.find((r) => r.is_primary);
-		if (!primaryRegion) {
-			return {
-				lastStatus: monitor.last_status,
-				lastCheckAt: monitor.last_check_at,
-			};
-		}
-
-		const regionId = primaryRegion.id;
-		const serviceLastChecks = monitor.service_last_checks || {};
-		const regionChecks = serviceLastChecks[regionId];
-
-		if (!regionChecks) {
-			return { lastStatus: null, lastCheckAt: null };
-		}
-
-		// Get the uptime check data (most relevant for status monitoring)
-		const uptimeCheck = regionChecks.uptime;
-		if (uptimeCheck) {
-			return {
-				lastStatus: uptimeCheck.last_status,
-				lastCheckAt: uptimeCheck.last_checked_at,
-			};
-		}
-	};
 
 	function isRecentlyChecked(
 		lastCheckAt,
@@ -840,14 +773,12 @@
 	}
 
 	function stopMonitorSpecificPolling(monitorId) {
-		const intervalId = Polling.monitorIntervals.get(monitorId);
-		if (!intervalId) return;
+		const timeoutId = Polling.monitorTimeouts.get(monitorId);
+		if (timeoutId != null) {
+			clearTimeout(timeoutId);
+		}
 
-		clearInterval(intervalId);
-
-		Polling.monitorIntervals.delete(monitorId);
-		Polling.monitorAttempts.delete(monitorId);
-		Polling.lastKnownStatus.delete(monitorId);
+		Polling.monitorTimeouts.delete(monitorId);
 		Polling.activeMonitorIds.delete(monitorId);
 
 		Polling.completedMonitors.add(monitorId);
@@ -867,6 +798,11 @@
 			?.addEventListener("change", updateBulkMenuState);
 
 		wireMenuButtons(newRow);
+
+		// Re-wire "Set as Primary" button
+		newRow.querySelectorAll(".upsnap-set-primary").forEach((b) => {
+			b.addEventListener("click", handleSetPrimary);
+		});
 	}
 
 	function consumeMonitorChangeQueue() {
@@ -889,7 +825,6 @@
 
 		queue.forEach(({ monitorId }) => {
 			if (monitorId && !Polling.completedMonitors.has(monitorId)) {
-				Polling.activeMonitorIds.add(monitorId);
 				startMonitorSpecificPolling(monitorId);
 			}
 		});
