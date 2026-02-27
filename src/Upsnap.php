@@ -53,6 +53,7 @@ class Upsnap extends Plugin
 
         // Set alias for assets
         \Craft::setAlias('@upsnap', dirname(__DIR__)."/src");
+        \Craft::setAlias('@upsnapRoot', dirname(__DIR__));
 
         $this->setComponents([
             'apiService' => ApiService::class,
@@ -133,6 +134,11 @@ class Upsnap extends Plugin
                     'upsnap/status-page/edit/<statusPageId:[0-9a-fA-F\-]+>' => 'upsnap/status-page/new',
                     'upsnap/status-page/new' => 'upsnap/status-page/new',
                     'upsnap/regions/list' => 'upsnap/regions/list',
+
+                    // Incidents Routes
+                    Constants::SUBNAV_ITEM_INCIDENTS['url'] => 'upsnap/incidents/index',
+                    'upsnap/incidents/list'   => 'upsnap/incidents/list',
+                    'upsnap/incidents/export' => 'upsnap/incidents/export',
 
                 ]);
             }

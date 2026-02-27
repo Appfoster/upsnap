@@ -47,9 +47,31 @@ function registerBrokenLinksJs() {
     contentContainer.style.display = "grid";
     if (refreshBtn) {
         refreshBtn.addEventListener('click', function () {
-            loadBrokenLinks(true);
-            showSkeletons(statusContainerWrapper, contentContainer)
+            // Reset status skeleton
+            showSkeletons(statusContainerWrapper, contentContainer);
+            // Reset details container (Pages Checked / Links Scanned / Broken Links) to skeleton
+            const detailsWrapper = document.getElementById("details-container-wrapper");
+            if (detailsWrapper) {
+                detailsWrapper.innerHTML = `
+                    <div class="skeleton-card">
+                        <div class="skeleton-card-header">
+                            <div class="skeleton-line skeleton-line-short"></div>
+                        </div>
+                        <div class="skeleton-card-body">
+                            <div class="skeleton-field">
+                                <div class="skeleton-line skeleton-line-short"></div>
+                                <div class="skeleton-line skeleton-line-medium"></div>
+                            </div>
+                            <div class="skeleton-field">
+                                <div class="skeleton-line skeleton-line-short"></div>
+                                <div class="skeleton-line skeleton-line-long"></div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
             refreshBtn.disabled = true;
+            loadBrokenLinks(true);
         });
     }
 
@@ -498,9 +520,9 @@ function registerLighthouseJs() {
     // Refresh button
     if (refreshBtn) {
         refreshBtn.addEventListener('click', function () {
-            fetchLighthouseData(currentDevice, true);
-            showLoaderSkeleton()
+            showLoaderSkeleton();
             refreshBtn.disabled = true;
+            fetchLighthouseData(currentDevice, true);
         });
     }
 
@@ -508,7 +530,7 @@ function registerLighthouseJs() {
         const statusWrapper = document.getElementById("status-container-wrapper");
         const detailsWrapper = document.getElementById("details-container-wrapper");
 
-        if (statusWrapper && detailsWrapper) {
+        if (statusWrapper) {
             statusWrapper.innerHTML = `
             <div class="skeleton-card">
 				<div class="skeleton-card-body">
@@ -530,6 +552,9 @@ function registerLighthouseJs() {
                 </div>
             </div>
         `;
+        }
+
+        if (detailsWrapper) {
             detailsWrapper.innerHTML = `
             <div class="skeleton-card">
                 <div class="skeleton-card-header">
@@ -923,7 +948,7 @@ function registerReachabilityJs() {
                         </tr>
                         <tr>
                             <td class="details-label">Redirect Paths</td>
-                            <td class="details-value">${details?.redirects?.length ? details.redirects.join(' → ') : '–'}</td>
+                            <td class="details-value">${details?.redirects?.length ? details.redirects.map((url, i) => i === 0 ? url : `<span style="color:#999;user-select:none;">→ </span>${url}`).join('<br>') : '–'}</td>
                         </tr>
                         <tr>
                             <td class="details-label">Resolved IPs</td>
@@ -947,7 +972,7 @@ function registerReachabilityJs() {
                     <table class="details-table">
                         <tr>
                             <td class="details-label">Page Title</td>
-                            <td class="details-value">${details?.pageTitle ?? '–'}</td>
+                            <td class="details-value">${details?.pageTitle ?? 'N/A'}</td>
                         </tr>
                     </table>
 
@@ -1320,7 +1345,12 @@ function registerReachabilityJs() {
                         }
 
                         const data = await response.json();
-                        const chartData = data?.data?.response_time_data?.chart_data || [];
+                        let chartData = data?.data?.response_time_data?.chart_data || [];
+
+                        // Aggregate data based on time range for better performance
+                        if (window.UpsnapUtils?.aggregateResponseTimeData) {
+                            chartData = window.UpsnapUtils.aggregateResponseTimeData(chartData, currentResponseTimeFilter);
+                        }
 
                         if (chartData.length === 0) continue;
 

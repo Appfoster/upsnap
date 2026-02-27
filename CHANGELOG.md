@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [1.1.3] - 2026-02-20
+### Added   
+- **Incidents Listing Page**: New page to list all incidents with details and status.
+   - Displays the latest 20 incidents on the dashboard widget with links to the full listing.
+   - Provides comprehensive details for each incident, including affected monitors, regions.
+   - Allows filtering and sorting of incidents based on check type, region, and timeframe.
+   - Allows users to export incident data in CSV and PDF formats for reporting and analysis.
+### Chore
+- Minor bug fixes and UI refinements.
+
 ## [1.1.2] - 2026-02-16
 ### Added
 - **New Monitor Type**: Added support for monitoring Ports and Keywords, allowing users to track the availability of specific ports and the presence of keywords in responses.
@@ -203,7 +213,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Asset minification and optimization
 - Background processing for monitoring tasks
 
-[Unreleased]: https://github.com/Appfoster/upsnap/compare/1.1.2...HEAD
+[Unreleased]: https://github.com/Appfoster/upsnap/compare/1.1.3...HEAD
+[1.1.3]: https://github.com/Appfoster/upsnap/releases/tag/1.1.3
 [1.1.2]: https://github.com/Appfoster/upsnap/releases/tag/1.1.2
 [1.1.1]: https://github.com/Appfoster/upsnap/releases/tag/1.1.1
 [1.1.0]: https://github.com/Appfoster/upsnap/releases/tag/1.1.0

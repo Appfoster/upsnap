@@ -133,7 +133,14 @@ class MonitorsController extends Controller
             $primaryMonitorId = $settingsService->getMonitorId();
             if ($primaryMonitorId !== null && $primaryMonitorId === $monitorId) {
                 $settingsService->setMonitorId($monitorId);
-                $settingsService->setMonitoringUrl($payloadArray['config']['meta']['url']);
+                
+                // Only update monitoring URL for monitors that have a URL (not port monitors)
+                $monitorData = $response['data']['monitor'] ?? [];
+                $serviceType = $monitorData['service_type'] ?? null;
+                
+                if ($serviceType !== 'port') {
+                    $settingsService->setMonitoringUrl($payloadArray['config']['meta']['url']);
+                }
             }
 
             return $this->asJson([
@@ -159,8 +166,6 @@ class MonitorsController extends Controller
      */
     public function actionGetSettings(): Response
     {
-        $this->requireCpRequest();
-
         $endpoint = Constants::MICROSERVICE_ENDPOINTS['monitors']['settings'];
 
         try {

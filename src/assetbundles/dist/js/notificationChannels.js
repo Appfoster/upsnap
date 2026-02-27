@@ -202,9 +202,21 @@
 			INTEGRATION_TYPES = {};
 			CHANNEL_CONFIG = {};
 
+			const CATEGORY_MAP = {
+				slack:       'chat_platforms',
+				teams:       'chat_platforms',
+				discord:     'chat_platforms',
+				google_chat: 'chat_platforms',
+				telegram:    'chat_platforms',
+				pagerduty:   'incident_management',
+				zapier:      'automation_connectors',
+				webhook:     'webhooks',
+				email:       'email_sms',
+			};
+
 			this.supportedTypes.forEach((channel) => {
 				const type = channel.type;
-				const category = type === 'email' ? 'email' : 'chat';
+				const category = CATEGORY_MAP[type] || 'chat_platforms';
 
 				// Build INTEGRATION_TYPES
 				INTEGRATION_TYPES[type] = {
@@ -358,22 +370,36 @@
 		}
 
 		/**
-		 * Get integration icon SVG
+		 * Get integration icon — uses a colour PNG from the logo folder.
+		 * Falls back to a generic mail SVG if the image fails to load or
+		 * the base URL is not available (mirrors the Next.js onError pattern).
 		 */
 		getIntegrationIcon(iconName) {
-			const icons = {
-				email: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"></rect><path d="M3 7l9 6 9-6"></path></svg>',
-				mail: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"></rect><path d="M3 7l9 6 9-6"></path></svg>',
-				discord:
-					'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515a.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0a12.64 12.64 0 0 0-.617-1.25a.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057a19.9 19.9 0 0 0 5.993 3.03a.078.078 0 0 0 .084-.028a14.09 14.09 0 0 0 1.226-1.994a.076.076 0 0 0-.041-.106a13.107 13.107 0 0 1-1.872-.892a.077.077 0 0 1-.008-.128a10.2 10.2 0 0 0 .372-.292a.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127a12.299 12.299 0 0 1-1.873.892a.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028a19.839 19.839 0 0 0 6.002-3.03a.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419c0-1.333.956-2.419 2.157-2.419c1.21 0 2.176 1.096 2.157 2.42c0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419c0-1.333.955-2.419 2.157-2.419c1.21 0 2.176 1.096 2.157 2.42c0 1.333-.946 2.418-2.157 2.418z"/></svg>',
-				"google-chat":
-					'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M5.5 3A2.5 2.5 0 003 5.5v5.844C3 12.816 4.184 14 5.656 14H7v3.344A.656.656 0 007.656 18L11 14h7.5a2.5 2.5 0 002.5-2.5V5.5A2.5 2.5 0 0018.5 3h-13z"/></svg>',
-				slack: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M6.194 14.644c0 1.16-.943 2.107-2.103 2.107a2.11 2.11 0 01-2.104-2.107c0-1.16.944-2.106 2.104-2.106h2.103v2.106zm1.061 0c0-1.16.944-2.106 2.104-2.106 1.16 0 2.103.946 2.103 2.106v5.274c0 1.16-.943 2.106-2.103 2.106a2.11 2.11 0 01-2.104-2.106v-5.274zm2.104-8.455c-1.16 0-2.104-.946-2.104-2.106C7.255 2.923 8.199 1.976 9.36 1.976c1.16 0 2.103.947 2.103 2.107v2.106H9.36zm0 1.06c1.16 0 2.103.947 2.103 2.107 0 1.16-.943 2.106-2.103 2.106H4.09c-1.16 0-2.104-.946-2.104-2.106 0-1.16.944-2.107 2.104-2.107h5.269zm8.455 2.107c0-1.16.943-2.107 2.103-2.107 1.16 0 2.104.947 2.104 2.107 0 1.16-.944 2.106-2.104 2.106h-2.103V9.356zm-1.061 0c0 1.16-.944 2.106-2.104 2.106a2.11 2.11 0 01-2.103-2.106V4.083c0-1.16.943-2.107 2.103-2.107 1.16 0 2.104.947 2.104 2.107v5.273zm-2.104 8.455c1.16 0 2.104.946 2.104 2.106 0 1.16-.944 2.107-2.104 2.107a2.11 2.11 0 01-2.103-2.107v-2.106h2.103zm0-1.06a2.11 2.11 0 01-2.103-2.107c0-1.16.943-2.106 2.103-2.106h5.27c1.16 0 2.103.946 2.103 2.106 0 1.16-.944 2.107-2.104 2.107h-5.269z"/></svg>',
-				telegram: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 00-.05-.18c-.06-.05-.14-.03-.21-.02-.09.02-1.49.95-4.22 2.79-.4.27-.76.41-1.08.4-.36-.01-1.04-.2-1.55-.37-.63-.2-1.12-.31-1.08-.66.02-.18.27-.36.74-.55 2.92-1.27 4.86-2.11 5.83-2.51 2.78-1.16 3.35-1.36 3.73-1.36.08 0 .27.02.39.12.1.08.13.19.14.27-.01.06.01.24 0 .38z"/></svg>',
-				teams: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M19.5 3A2.503 2.503 0 0022 5.5v13c0 1.378-1.122 2.5-2.5 2.5h-13A2.503 2.503 0 004 18.5v-13C4 4.122 5.122 3 6.5 3h13zm-8.25 5.75h-6.5v10.5h6.5v-10.5zm-4 2h1.5v2h-1.5v-2zm0 3h1.5v2h-1.5v-2zm6.75-5h-1.5v10.5h1.5V8.75zm4-2h-2v12.5h2V6.75z"/></svg>',
-			};
+			const fallbackSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"></rect><path d="M3 7l9 6 9-6"></path></svg>';
 
-			return icons[iconName] || icons.email;
+			const logoBaseUrl = window?.Upsnap?.settings?.logoBaseUrl || '';
+
+			if (!iconName || !logoBaseUrl) {
+				return fallbackSvg;
+			}
+
+			// Normalise: lowercase, underscores → hyphens (matches file names)
+			const normalizedName = iconName.toLowerCase().replace(/_/g, '-');
+
+			// Human-readable alt text
+			const humanName = iconName
+				.replace(/[_-]+/g, ' ')
+				.trim()
+				.replace(/\b\w/g, c => c.toUpperCase());
+
+			// Render the PNG with a hidden sibling SVG revealed on error,
+			// exactly mirroring the React onError → setHasError pattern.
+			return `<img
+				src="${logoBaseUrl}/${normalizedName}.png"
+				alt="${humanName} integration"
+				class="integration-icon-img"
+				onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"
+			/><span class="integration-icon-fallback" aria-hidden="true" style="display:none">${fallbackSvg}</span>`;
 		}
 
 		/**

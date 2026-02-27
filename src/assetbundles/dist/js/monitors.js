@@ -960,6 +960,18 @@ Craft.Upsnap.Monitor = {
 			payload.monitorId = monitorEl.value;
 		}
 
+		// Add is_enabled from the correct lightswitch input for this monitor type
+		const enabledInputName =
+			monitorType === "port"
+				? "portEnabled"
+				: monitorType === "keyword"
+				? "keywordEnabled"
+				: "enabled";
+		const enabledInput = document.querySelector(
+			`input[name="${enabledInputName}"]`,
+		);
+		payload.is_enabled = enabledInput ? enabledInput.value === "1" : true;
+
 		return payload;
 	},
 
