@@ -137,6 +137,11 @@
     border: 1px solid #e3e5e8;
     border-radius: 16px;
 }
+.accordion-container {
+    padding: 1rem;
+    border: 1px solid #e3e5e8;
+    border-radius: 16px;
+}
 
 #advanced-settings-accordion {
     padding: 1rem;
@@ -156,4 +161,7 @@
 .monitor-incidents-link:hover {
 	text-decoration: underline;
 	opacity: 0.9;
+}
+.port-field {
+  margin-top: 1rem;
 }

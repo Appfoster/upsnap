@@ -8,45 +8,23 @@
       <h2 class="upsnap-modal__title">{{ "Add Notification Channel"|t('upsnap') }}</h2>
       <button type="button" class="upsnap-modal__close" aria-label="Close">&times;</button>
     </div>
-    <div class="upsnap-modal__body">
-        {# Hidden field for channel type #}
-        <input type="hidden" id="channelType" name="channelType" value="email">
+    <div class="upsnap-modal__body" autocomplete="off">
 
         {# Name field - common for all types #}
-        {{ forms.textField({
-            label: "Name"|t('upsnap'),
-            id: 'channelName',
-            name: 'channelName',
-            required: true,
-            placeholder: 'Channel Name'
-        }) }}
-
-        {# Email recipient field - shown for email type #}
-        <div id="email-fields" class="channel-type-fields">
-            {{ forms.textField({
-                label: "Recipient Email"|t('upsnap'),
-                id: 'channelRecipient',
-                name: 'channelRecipient',
-                required: true,
-                type: 'email',
-                placeholder: 'alerts@example.com'
-            }) }}
+        <div class="field">
+            <label class="required mb-2" for="channelName">{{ "Name"|t('upsnap') }}</label>
+            <div class="input">
+                <input type="text" id="channelName" name="channelName" class="text fullwidth" required placeholder="Channel Name" autocomplete="off">
+            </div>
+            <ul class="errors hidden" id="channelName-errors"></ul>
         </div>
 
-        {# Webhook URL field - shown for Discord/Google Chat #}
-        <div id="webhook-fields" class="channel-type-fields hidden">
-            {{ forms.textField({
-                label: "Webhook URL"|t('upsnap'),
-                id: 'channelWebhookUrl',
-                name: 'channelWebhookUrl',
-                required: true,
-                type: 'url',
-                placeholder: 'https://...'
-            }) }}
-            <p class="light" id="webhook-help-text">
-                Enter the webhook URL for your integration.
-            </p>
+        {# Dynamic fields container - fields will be generated dynamically based on integration type #}
+        <div id="dynamic-fields-container">
+            {# Dynamic fields will be inserted here by JavaScript #}
         </div>
+        {# Hidden field for channel type #}
+        <input type="hidden" id="channelType" name="channelType" value="email">
       </div>
 
     <div class="upsnap-modal__footer">

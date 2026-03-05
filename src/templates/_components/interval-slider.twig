@@ -1,7 +1,8 @@
 {% set unitToSeconds = {
     minute: 60,
     hour: 3600,
-    day: 86400
+    day: 86400,
+    second: 1
 } %}
 
 {% set normalized = [] %}
@@ -12,16 +13,17 @@
     }]) %}
 {% endfor %}
 
-<div class="field" style="width: 200%;">
+{% set descriptionText = description ?? 'Your monitor will be checked every {exact time}.' %}
+
+<div class="field" style="width: 100%;">
     <div class="heading">
-        <label>Monitoring Interval</label>
+        <label>{{ label ?? 'Monitoring Interval' }}</label>
     </div>
 
     <div class="instructions">
-        Your monitor will be checked every
-        <strong>
-            <span id="{{ id }}IntervalLabel"></span>
-        </strong>
+        {% set beforeLabel = descriptionText|split('{exact time}')[0] %}
+        {% set afterLabel = descriptionText|split('{exact time}')[1] ?? '' %}
+        {{ beforeLabel }}<strong><span id="{{ id }}IntervalLabel"></span></strong>{{ afterLabel }}
     </div>
 
     <input
@@ -34,6 +36,7 @@
         data-target-input="{{ id }}MonitoringInterval"
         data-label="{{ id }}IntervalLabel"
         data-partitions='{{ normalized|json_encode|raw }}'
+        data-min-monitor-interval-seconds="{{ minMonitorIntervalSeconds }}"
     />
 
     <input
@@ -54,3 +57,4 @@
         {% endfor %}
     </div>
 </div>
+

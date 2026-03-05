@@ -18,7 +18,8 @@ class Constants
 
     // API Configuration
     public const API_BASE_URL_DEFAULT = 'https://api.upsnap.ai';
-    public const UPSNAP_DASHBOARD_URL = 'https://upsnap.ai';
+    public const UPSNAP_DASHBOARD_URL = 'https://app.upsnap.ai';
+    public const UPSNAP_STATS_PAGE_URL = 'https://stats.upsnap.ai';
     public const API_VERSION = 'v1';
     // API Endpoints
     public const ENDPOINT_HEALTHCHECK = 'healthcheck';
@@ -97,6 +98,12 @@ class Constants
         'url' => 'upsnap/status-page',
         'template' => 'upsnap/status-page/_index'
     ];
+    const SUBNAV_ITEM_INCIDENTS = [
+        'label' => 'Incidents',
+        'key' => 'incidents',
+        'url' => 'upsnap/incidents',
+        'template' => 'upsnap/incidents/_index'
+    ];
     const SUBNAV_ITEM_SETTINGS = [
         'label' => 'Settings',
         'key' => 'settings',
@@ -117,33 +124,13 @@ class Constants
             'label' => self::SUBNAV_ITEM_DASHBOARD['label'],
             'url' => self::SUBNAV_ITEM_DASHBOARD['url']
         ],
-        self::SUBNAV_ITEM_REACHABILITY['key'] => [
-            'label' => self::SUBNAV_ITEM_REACHABILITY['label'],
-            'url' => self::SUBNAV_ITEM_REACHABILITY['url']
-        ],
-        self::SUBNAV_ITEM_SECURITY_CERTIFICATES['key'] => [
-            'label' => self::SUBNAV_ITEM_SECURITY_CERTIFICATES['label'],
-            'url' => self::SUBNAV_ITEM_SECURITY_CERTIFICATES['url']
-        ],
-        self::SUBNAV_ITEM_BROKEN_LINKS['key'] => [
-            'label' => self::SUBNAV_ITEM_BROKEN_LINKS['label'],
-            'url' => self::SUBNAV_ITEM_BROKEN_LINKS['url']
-        ],
-        self::SUBNAV_ITEM_LIGHTHOUSE['key'] => [
-            'label' => self::SUBNAV_ITEM_LIGHTHOUSE['label'],
-            'url' => self::SUBNAV_ITEM_LIGHTHOUSE['url']
-        ],
-        self::SUBNAV_ITEM_DOMAIN_CHECK['key'] => [
-            'label' => self::SUBNAV_ITEM_DOMAIN_CHECK['label'],
-            'url' => self::SUBNAV_ITEM_DOMAIN_CHECK['url']
-        ],
-        self::SUBNAV_ITEM_MIXED_CONTENT['key'] => [
-            'label' => self::SUBNAV_ITEM_MIXED_CONTENT['label'],
-            'url' => self::SUBNAV_ITEM_MIXED_CONTENT['url']
-        ],
         self::SUBNAV_ITEM_STATUS_PAGE['key'] => [
             'label' => self::SUBNAV_ITEM_STATUS_PAGE['label'],
             'url' => self::SUBNAV_ITEM_STATUS_PAGE['url']
+        ],
+        self::SUBNAV_ITEM_INCIDENTS['key'] => [
+            'label' => self::SUBNAV_ITEM_INCIDENTS['label'],
+            'url' => self::SUBNAV_ITEM_INCIDENTS['url']
         ],
         self::SUBNAV_ITEM_SETTINGS['key'] => [
             'label' => self::SUBNAV_ITEM_SETTINGS['label'],
@@ -178,10 +165,12 @@ class Constants
             'delete' => 'user/monitors',
             'update' => 'user/monitors',
             'bulk_actions' => 'user/monitors',
+            'settings' => 'user/monitors/settings',
             'integrations' => [
                 'list' => 'user/integrations',
                 'create' => 'user/integrations',
                 'delete' => 'user/integrations/',
+                'supported' => 'integrations/supported',
             ],
             'notification_channels' => [
                 'list' => 'user/integrations',
@@ -191,6 +180,8 @@ class Constants
             'histogram' => 'user/monitors/{monitorId}/histogram',
             'response_time' => 'user/monitors/{monitorId}/response-time',
             'uptime_stats' => 'user/monitors/{monitorId}/uptime-stats',
+            'incidents' => 'user/monitors/incidents',
+            'export'    => 'user/monitors/{monitorId}/incidents/export',
             'status-page' => [
                 'list' => 'user/status-pages',
                 'detail' => 'user/status-pages',
@@ -202,7 +193,10 @@ class Constants
         ],
         'user' => [
             'details' => 'user/details'
-        ]
+        ],
+        'regions' => [
+            'list' => 'regions'
+        ],
     ];
 
     public const LIGHTHOUSE_STRATEGY = [
@@ -239,6 +233,8 @@ class Constants
 
     public const SERVICE_TYPES = [
         'website' => 'website',
+        'port' => 'port',
+        'keyword' => 'keyword',
     ];
 
     public static function getAPIBaseUrl(): string

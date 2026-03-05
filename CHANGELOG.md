@@ -4,6 +4,56 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [1.1.4] - 2026-02-27
+### Chore
+- Minor bug fixes and UI refinements.
+
+## [1.1.3] - 2026-02-27
+### Added   
+- **Incidents Listing Page**: New page to list all incidents with details and status.
+   - Displays the latest 20 incidents on the dashboard widget with links to the full listing.
+   - Provides comprehensive details for each incident, including affected monitors, regions.
+   - Allows filtering and sorting of incidents based on check type, region, and timeframe.
+   - Allows users to export incident data in CSV and PDF formats for reporting and analysis.
+### Chore
+- Minor bug fixes and UI refinements.
+
+## [1.1.2] - 2026-02-16
+### Added
+- **New Monitor Type**: Added support for monitoring Ports and Keywords, allowing users to track the availability of specific ports and the presence of keywords in responses.
+- **New Notification Channels**: Integrated Telegram and Slack as new notification channels for monitoring alerts.
+
+### Updated
+- **Status Page Enhancements**: Added the password protection status pages support in the status pages creation and listing pages.
+
+### Chore
+- Minor bug fixes and UI refinements.
+  
+## [1.1.1] - 2026-02-11
+
+### Added
+- **New Monitor Types Support**:
+    - **Port Monitor**: Monitor the availability and response times of specific ports on a host.
+    - **Keyword Monitor**: Check for the presence or absence of specific keywords in the response body of a URL.
+- **New Notification Channels**:
+    - **Telegram**: Send monitoring alerts to Telegram chats or channels.
+    - **Slack**: Send monitoring alerts to Slack channels.
+
+### Chore
+- Minor bug fixes and UI refinements.
+
+## [1.1.0] - 2026-01-23
+
+### Added
+- **Multi-Region Monitoring Support**: Full regional data visualization across dashboard and reachability pages, including uptime histograms, uptime statistics, and response time graphs filterable by region.
+- **Region-wise Response Time Comparison**: Multi-region response time area chart on reachability page for comparing performance across regions with legend-based filtering.
+- **Recent Incidents Tracking**: Dashboard widget displaying the latest 20 incidents with incident details and status.
+
+## [1.0.11] - 2026-01-19
+
+### Chore
+- Minor bug fixes and UI refinements.
+
 ## [1.0.10] - 2026-01-05
 
 ### Added
@@ -167,7 +217,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Asset minification and optimization
 - Background processing for monitoring tasks
 
-[Unreleased]: https://github.com/Appfoster/upsnap/compare/1.0.10...HEAD
+[Unreleased]: https://github.com/Appfoster/upsnap/compare/1.1.4...HEAD
+[1.1.4]: https://github.com/Appfoster/upsnap/releases/tag/1.1.4
+[1.1.3]: https://github.com/Appfoster/upsnap/releases/tag/1.1.3
+[1.1.2]: https://github.com/Appfoster/upsnap/releases/tag/1.1.2
+[1.1.1]: https://github.com/Appfoster/upsnap/releases/tag/1.1.1
+[1.1.0]: https://github.com/Appfoster/upsnap/releases/tag/1.1.0
+[1.0.11]: https://github.com/Appfoster/upsnap/releases/tag/1.0.11
 [1.0.10]: https://github.com/Appfoster/upsnap/releases/tag/1.0.10
 [1.0.9]: https://github.com/Appfoster/upsnap/releases/tag/1.0.9
 [1.0.8]: https://github.com/Appfoster/upsnap/releases/tag/1.0.8

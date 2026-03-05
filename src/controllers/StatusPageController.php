@@ -37,11 +37,12 @@ class StatusPageController extends BaseController
         $variables = [
             'success' => true,
             'title' => Constants::SUBNAV_ITEM_STATUS_PAGE['label'],
-            'selectedSubnavItem' => Constants::SUBNAV_ITEM_DASHBOARD['key'],
+            'selectedSubnavItem' => Constants::SUBNAV_ITEM_STATUS_PAGE['key'],
             'apiKey' => $settingsService->getApiKey(),
             'apiTokenStatus' => $settingsService->getApiTokenStatus(),
             'apiTokenStatuses' => Constants::API_KEY_STATUS,
             'upsnapDashboardUrl' => Constants::UPSNAP_DASHBOARD_URL,
+            'upsnapStatsPageUrl' => Constants::UPSNAP_STATS_PAGE_URL,
             'userDetails' => $userDetails
         ];
 

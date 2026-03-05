@@ -120,6 +120,75 @@ class ApiService extends Component
     }
 
     /**
+     * Record installation data
+     */
+    public function recordInstallationData(string $siteUrl): ?array
+    {
+        $body = [
+            'platform' => 'craft',
+            'details' => [
+                'site_url' => $siteUrl
+            ]
+        ];
+
+        try {
+            return $this->post('installation-data', $body);
+        } catch (RequestException $e) {
+            Craft::error("Failed to record installation data: " . $e->getMessage(), __METHOD__);
+            return null;
+        }
+    }
+
+    /**
+     * Get monitor incidents
+     *
+     * @param string $timeRange Time range (e.g., '7D', '30D', '90D')
+     * @param int $page Page number (default: 1)
+     * @param int $pageSize Number of incidents per page (default: 50)
+     * @return array|null Response data or null on failure
+     */
+    public function getMonitorIncidents(string $timeRange = '24h', int $page = 1, int $pageSize = 50): ?array
+    {
+        $query = [
+            'time_range' => $timeRange,
+            'page' => $page,
+            'page_size' => $pageSize,
+        ];
+
+        try {
+            return $this->get('user/monitors/incidents', $query);
+        } catch (RequestException $e) {
+            Craft::error("Failed to fetch monitor incidents: " . $e->getMessage(), __METHOD__);
+            return null;
+        }
+    }
+
+    /**
+     * Make a raw GET request and return the binary body alongside response headers.
+     * Used for file export endpoints (CSV, PDF) that return non-JSON content.
+     *
+     * @return array{body: string, contentType: string, contentDisposition: string}
+     */
+    public function getRaw(string $endpoint, array $query = [], string $accept = '*/*'): array
+    {
+        try {
+            $response = $this->client->get($endpoint, [
+                'headers' => array_merge($this->getHeaders(), ['Accept' => $accept]),
+                'query'   => $query,
+            ]);
+
+            return [
+                'body'               => (string) $response->getBody(),
+                'contentType'        => $response->getHeaderLine('Content-Type')        ?: $accept,
+                'contentDisposition' => $response->getHeaderLine('Content-Disposition') ?: 'attachment; filename=export',
+            ];
+        } catch (RequestException $e) {
+            Craft::error('API getRaw failed: ' . $e->getMessage(), __METHOD__);
+            throw $e;
+        }
+    }
+
+    /**
      * Common headers
      */
     protected function getHeaders(): array

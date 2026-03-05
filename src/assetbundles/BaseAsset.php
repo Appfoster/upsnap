@@ -21,6 +21,7 @@ class BaseAsset extends AssetBundle
 
         $this->js = [
             'js/global.js',
+            'js/chart.umd.min.js'
         ];
 
         parent::init();

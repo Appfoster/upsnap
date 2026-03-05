@@ -53,6 +53,7 @@ class Upsnap extends Plugin
 
         // Set alias for assets
         \Craft::setAlias('@upsnap', dirname(__DIR__)."/src");
+        \Craft::setAlias('@upsnapRoot', dirname(__DIR__));
 
         $this->setComponents([
             'apiService' => ApiService::class,
@@ -75,6 +76,16 @@ class Upsnap extends Plugin
                 Craft::info('Upsnap plugin installed', __METHOD__);
 
                 if ($event->plugin === $this) {
+                    // Record installation data
+                    try {
+                        $siteUrl = Craft::$app->getSites()->getPrimarySite()?->baseUrl;
+                        if ($siteUrl) {
+                            $this->apiService->recordInstallationData($siteUrl);
+                        }
+                    } catch (\Exception $e) {
+                        Craft::error('Failed to record installation data: ' . $e->getMessage(), __METHOD__);
+                    }
+
                     $request = Craft::$app->getRequest();
                     if ($request->isCpRequest) {
                         return $this->redirectToSettings()->send();
@@ -100,7 +111,7 @@ class Upsnap extends Plugin
                 $event->rules = array_merge($event->rules, [
                     'upsnap' => 'upsnap/dashboard/index',
 
-                    // Health Check Routes
+                    // Health Check Routes - commented out as user can navigate from the dashboard cards.
                     Constants::SUBNAV_ITEM_REACHABILITY['url'] => 'upsnap/health-check/reachability',
                     // 'upsnap/reachability/history' => 'upsnap/health-check/reachability-history',
                     Constants::SUBNAV_ITEM_SECURITY_CERTIFICATES['url'] => 'upsnap/health-check/security-certificates',
@@ -122,7 +133,13 @@ class Upsnap extends Plugin
                     'upsnap/monitors/uptime-stats' => 'upsnap/monitors/uptime-stats',
 
                     'upsnap/status-page/edit/<statusPageId:[0-9a-fA-F\-]+>' => 'upsnap/status-page/new',
-                    'upsnap/status-page/new' => 'upsnap/status-page/new'
+                    'upsnap/status-page/new' => 'upsnap/status-page/new',
+                    'upsnap/regions/list' => 'upsnap/regions/list',
+
+                    // Incidents Routes
+                    Constants::SUBNAV_ITEM_INCIDENTS['url'] => 'upsnap/incidents/index',
+                    'upsnap/incidents/list'   => 'upsnap/incidents/list',
+                    'upsnap/incidents/export' => 'upsnap/incidents/export',
 
                 ]);
             }

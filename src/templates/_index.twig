@@ -3,6 +3,20 @@
 
 {% block actionButton %}
 	<div class="buttons">
+		{% set hasRegions = monitorData and monitorData.regions and monitorData.regions|length > 0 %}
+		<div class="btngroup select region-selector-group" {% if not hasRegions %}title="Register to check out region-based monitoring"{% endif %}>
+			<select id="regionDropdown" {% if not hasRegions %}class="disabled" disabled{% endif %}>
+				{% if hasRegions %}
+					{% for region in monitorData.regions %}
+						<option value="{{ region.id }}" {% if region.is_primary %}selected{% endif %}>
+							{{ region.name }}
+						</option>
+					{% endfor %}
+				{% else %}
+					<option value = "">Select Region</option>
+				{% endif %}
+			</select>
+		</div>
 		<div class="btngroup">
 			<button type="button" class="btn submit" data-icon="refresh" id="refresh-btn">
 				{{ 'Refresh'|t('upsnap') }}
@@ -12,8 +26,6 @@
 {% endblock %}
 
 {% block content %}
-	<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
 	<script>
 
 		window.CraftPageData = {
@@ -25,8 +37,11 @@
 			apiTokenStatus: {{ (apiTokenStatus ?? 'unknown')|json_encode|raw }},
 			apiTokenStatuses: {{ (apiTokenStatuses ?? 'unknown')|json_encode|raw }},
 			upsnapDashboardUrl: {{ (upsnapDashboardUrl ?? 'unknown')|json_encode|raw }},
+			regionsEndpoint: {{ actionUrl('upsnap/regions/list')|json_encode|raw }},
 		};
 	</script>
+	{% set hasApiKey = apiKey is not empty %}
+	{% set isActiveApiToken = apiTokenStatus is same as(apiTokenStatuses.active) %}
 	<div id="status-container-wrapper" data-page="dashboard"></div>
 	{% if success == false %}
 
@@ -35,18 +50,32 @@
 
 		{% include 'upsnap/_components/status-container.twig' %}
 	{% else %}
-		<div class="dashboard-wrapper">
-			<div
-				class="dashboard-left">
+			{% if hasApiKey and not isActiveApiToken %}
+				{# ── Token expired/suspended/deleted: warning banner ─────────────── #}
+				<div class="status-container warning">
+					<div class="status-header">
+						<div class="status-icon warning">!</div>
+						<h3 class="status-title">
+							{{ 'Your API token is expired or suspended. Please update your API token to continue using the plugin features.'|t('upsnap') }}
+						</h3>
+					</div>
+					<p class="status-message">
+						<a href="{{ cpUrl('upsnap/settings') }}" class="go">{{ 'Go to Settings'|t('upsnap') }}</a>
+						{{ 'to update your API token and restore access to the dashboard.'|t('upsnap') }}
+					</p>
+				</div>
+			{% endif %}
+
+			   {% set isWebsite = monitorData.service_type is not defined or monitorData.service_type == 'website' %}
+			   <div class="dashboard-wrapper">
+				   <div
+					   class="dashboard-left{% if not isWebsite %} fullwidth{% endif %}">
 				<!-- ROW 1 -->
 				<div class="monitor-grid">
 					<div id="monitor-status-card" class="monitor-card skeleton"></div>
 					<div id="monitor-last-check-card" class="monitor-card skeleton"></div>
 					<div id="monitor-24h-card" class="monitor-card skeleton">
 						<div class="card-header">Last 24 hours</div>
-						<div class="card-skeleton">
-							<div class="skeleton-line"></div>
-						</div>
 					</div>
 				</div>
 
@@ -58,6 +87,7 @@
 							<div class="skeleton-line"></div>
 							<div class="skeleton-line"></div>
 						</div>
+						<div class="card-content" hidden></div>
 					</div>
 					<div id="uptime-week-card" class="monitor-card skeleton">
 						<div class="card-header">Last Week</div>
@@ -65,6 +95,7 @@
 							<div class="skeleton-line"></div>
 							<div class="skeleton-line"></div>
 						</div>
+						<div class="card-content" hidden></div>
 					</div>
 					<div id="uptime-month-card" class="monitor-card skeleton">
 						<div class="card-header">Last 30 Days</div>
@@ -72,6 +103,7 @@
 							<div class="skeleton-line"></div>
 							<div class="skeleton-line"></div>
 						</div>
+						<div class="card-content" hidden></div>
 					</div>
 				</div>
 				<!-- ROW 3 (Response Time Chart) -->
@@ -90,84 +122,86 @@
 						<canvas id="responseChart"></canvas>
 					</div>
 				</div>
+				{% include 'upsnap/_components/incidents-table.twig' %}
 			</div>
 
-			<div class="dashboard-right">
-				<div id="upsnap-dashboard" class="dashboard-cards">
-					<div id="reachability-card" class="stat-card skeleton">
-						<div class="card-header">
-							<h3>REACHABILITY</h3>
-							<hr>
-						</div>
-						<div class="card-skeleton">
-							<div class="skeleton-line"></div>
-							<div class="skeleton-line"></div>
-						</div>
-						<div class="card-content" hidden></div>
-					</div>
+				   {% if isWebsite %}
+				   <div class="dashboard-right">
+					   <div id="upsnap-dashboard" class="dashboard-cards">
+						   <div id="reachability-card" class="stat-card skeleton">
+							   <div class="card-header">
+								   <h3>REACHABILITY</h3>
+								   <hr>
+							   </div>
+							   <div class="card-skeleton">
+								   <div class="skeleton-line"></div>
+								   <div class="skeleton-line"></div>
+							   </div>
+							   <div class="card-content" hidden></div>
+						   </div>
 
+						   <div id="ssl-card" class="stat-card skeleton">
+							   <div class="card-header">
+								   <h3>SECURITY CERTIFICATES</h3>
+								   <hr>
+							   </div>
+							   <div class="card-skeleton">
+								   <div class="skeleton-line"></div>
+								   <div class="skeleton-line"></div>
+							   </div>
+							   <div class="card-content" hidden></div>
+						   </div>
 
-					<div id="ssl-card" class="stat-card skeleton">
-						<div class="card-header">
-							<h3>SECURITY CERTIFICATES</h3>
-							<hr>
-						</div>
-						<div class="card-skeleton">
-							<div class="skeleton-line"></div>
-							<div class="skeleton-line"></div>
-						</div>
-						<div class="card-content" hidden></div>
-					</div>
+						   <div id="broken-links-card" class="stat-card skeleton">
+							   <div class="card-header">
+								   <h3>BROKEN LINKS</h3>
+								   <hr>
+							   </div>
+							   <div class="card-skeleton">
+								   <div class="skeleton-line"></div>
+								   <div class="skeleton-line"></div>
+							   </div>
+							   <div class="card-content" hidden></div>
+						   </div>
 
-					<div id="broken-links-card" class="stat-card skeleton">
-						<div class="card-header">
-							<h3>BROKEN LINKS</h3>
-							<hr>
-						</div>
-						<div class="card-skeleton">
-							<div class="skeleton-line"></div>
-							<div class="skeleton-line"></div>
-						</div>
-						<div class="card-content" hidden></div>
-					</div>
+						   <div id="domain-check-card" class="stat-card skeleton">
+							   <div class="card-header">
+								   <h3>DOMAIN CHECK</h3>
+								   <hr>
+							   </div>
+							   <div class="card-skeleton">
+								   <div class="skeleton-line"></div>
+								   <div class="skeleton-line"></div>
+							   </div>
+							   <div class="card-content" hidden></div>
+						   </div>
 
-					<div id="domain-check-card" class="stat-card skeleton">
-						<div class="card-header">
-							<h3>DOMAIN CHECK</h3>
-							<hr>
-						</div>
-						<div class="card-skeleton">
-							<div class="skeleton-line"></div>
-							<div class="skeleton-line"></div>
-						</div>
-						<div class="card-content" hidden></div>
-					</div>
+						   <div id="mixed-content-card" class="stat-card skeleton">
+							   <div class="card-header">
+								   <h3>MIXED CONTENT</h3>
+								   <hr>
+							   </div>
+							   <div class="card-skeleton">
+								   <div class="skeleton-line"></div>
+								   <div class="skeleton-line"></div>
+							   </div>
+							   <div class="card-content" hidden></div>
+						   </div>
 
-					<div id="mixed-content-card" class="stat-card skeleton">
-						<div class="card-header">
-							<h3>MIXED CONTENT</h3>
-							<hr>
-						</div>
-						<div class="card-skeleton">
-							<div class="skeleton-line"></div>
-							<div class="skeleton-line"></div>
-						</div>
-						<div class="card-content" hidden></div>
-					</div>
-
-					<div id="lighthouse-card" class="stat-card skeleton">
-						<div class="card-header">
-							<h3>LIGHTHOUSE</h3>
-							<hr>
-						</div>
-						<div class="card-skeleton">
-							<div class="skeleton-line"></div>
-							<div class="skeleton-line"></div>
-						</div>
-						<div class="card-content" hidden></div>
-					</div>
-				</div>
-			</div>
+						   <div id="lighthouse-card" class="stat-card skeleton">
+							   <div class="card-header">
+								   <h3>LIGHTHOUSE</h3>
+								   <hr>
+							   </div>
+							   <div class="card-skeleton">
+								   <div class="skeleton-line"></div>
+								   <div class="skeleton-line"></div>
+							   </div>
+							   <div class="card-content" hidden></div>
+						   </div>
+					   </div>
+				   </div>
+				   {% endif %}
 		</div>
 	{% endif %}
 {% endblock %}

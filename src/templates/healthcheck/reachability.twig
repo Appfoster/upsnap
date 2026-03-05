@@ -10,6 +10,20 @@
 
 {% block actionButton %}
 	<div class="buttons">
+		{% set hasRegions = monitorData and monitorData.regions and monitorData.regions|length > 0 %}
+		<div class="btngroup select region-selector-group" {% if not hasRegions %}title="Register to check out region-based monitoring"{% endif %}>
+			<select id="regionDropdown" class="{% if not hasRegions %} disabled{% endif %}" {% if not hasRegions %}disabled{% endif %}>
+				{% if hasRegions %}
+					{% for region in monitorData.regions %}
+						<option value="{{ region.id }}" {% if region.is_primary %}selected{% endif %}>
+							{{ region.name }}
+						</option>
+					{% endfor %}
+				{% else %}
+					<option value = "">Select Region</option>
+				{% endif %}
+			</select>
+		</div>
 		<div class="btngroup">
 			<button type="button" class="btn submit" data-icon="refresh" id="refresh-btn">
 				{{ 'Check Now'|t('upsnap') }}
@@ -26,7 +40,7 @@
 		{% include 'upsnap/_components/status-container.twig' %}
 	{% else %}
 
-		{# Status container will be updated via AJAX #}
+		{# Status container at full width #}
 		<div id="status-container-wrapper" data-page="reachability">
 			<div class="skeleton-card">
 				<div class="skeleton-card-header">
@@ -39,8 +53,65 @@
 			</div>
 		</div>
 
-		{# Reachability details section - will be updated via AJAX #}
-		<div id="reachability-section"></div>
+		{% set hasRegions = monitorData and monitorData.regions and monitorData.regions|length > 0 %}
+
+		{% if hasRegions %}
+			{# Main content wrapper with 70/30 layout for details and region cards #}
+			<div class="reachability-content-wrapper">
+				{# Left side - 70% #}
+				<div class="reachability-left-panel">
+					{# Status container at full width #}
+					<div id="reachability-section"></div>
+
+					{# Response Time Chart Section #}
+					<div id="response-time-chart-section" class="response-time-chart">
+						<div class="card-header response-card-header">
+							<span>Response Time</span>
+							<select id="reachabilityResponseTimeFilter" class="response-time-filter">
+								<option value="last_hour">Last Hour</option>
+								<option value="last_24_hours">Last 24 Hours</option>
+								<option value="last_7_days">Last 7 Days</option>
+								<option value="last_30_days">Last 30 Days</option>
+								<option value="last_90_days">Last 90 Days</option>
+							</select>
+						</div>
+						<div class="response-chart-container">
+							<div class="chart-loader hidden" id="reachabilityChartLoader"></div>
+							<canvas id="reachabilityResponseChart"></canvas>
+						</div>
+						<div class="response-stats" id="reachabilityResponseStats">
+							<div class="response-stat-box">
+								<div class="stat-value" id="reachabilityAvgTime">–</div>
+								<div class="stat-label">Avg. response time</div>
+							</div>
+							<div class="response-stat-box">
+								<div class="stat-value" id="reachabilityMaxTime">–</div>
+								<div class="stat-label">Max. response time</div>
+							</div>
+							<div class="response-stat-box">
+								<div class="stat-value" id="reachabilityMinTime">–</div>
+								<div class="stat-label">Min. response time</div>
+							</div>
+						</div>
+					</div>
+				</div>
+
+				{# Right side - 30% #}
+				<div class="reachability-right-panel">
+					<div id="region-stats-container">
+						<h3 class="region-stats-title">Response Time by Region</h3>
+						<div id="region-cards-wrapper" class="region-cards-wrapper">
+							{# Region cards will be populated via JavaScript #}
+						</div>
+					</div>
+				</div>
+			</div>
+		{% else %}
+			{# When no regions: Reachability details takes full width, no chart or region cards #}
+			<div class="reachability-content-wrapper-full">
+				<div id="reachability-section"></div>
+			</div>
+		{% endif %}
 	{% endif %}
 
 {% endblock %}
@@ -49,7 +120,8 @@
     <script>
         window.CraftPageData = {
             title: {{ title|json_encode|raw }},
-            monitorUrl: {{ data.url|json_encode|raw }}
+            monitorUrl: {{ data.url|json_encode|raw }},
+            monitorData: {{ monitorData|json_encode|raw }}
         };
     </script>
 {% endblock %}

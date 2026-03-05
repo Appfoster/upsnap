@@ -7,13 +7,10 @@
 
 	const Polling = {
 		generalInterval: null,
-		monitorIntervals: new Map(),
+		monitorTimeouts: new Map(),
 		completedMonitors: new Set(),
-		monitorAttempts: new Map(),
-		lastKnownStatus: new Map(),
-		activeMonitorIds: new Set()
+		activeMonitorIds: new Set(),
 	};
-
 
 	const endpointSelector = "#upsnap-monitors-wrap";
 	const tbodySelector = "#upsnap-monitors-tbody";
@@ -31,13 +28,59 @@
 		else alert(msg);
 	};
 
+	// Update monitor object with primary region status data
+	const updateMonitorWithPrimaryRegionStatus = (monitor) => {
+		if (!monitor.regions || !Array.isArray(monitor.regions)) {
+			return monitor;
+		}
+
+		const primaryRegion = monitor.regions.find((r) => r.is_primary);
+		if (!primaryRegion) {
+			return monitor;
+		}
+
+		const regionId = primaryRegion.id;
+		const serviceLastChecks = monitor.service_last_checks || {};
+		const regionChecks = serviceLastChecks[regionId];
+
+		if (!regionChecks) {
+			return monitor;
+		}
+
+		// Determine which service to check based on monitor type
+		const serviceType = monitor.service_type || "website";
+		let serviceCheckKey = "uptime"; // default for website monitors
+
+		if (serviceType === "keyword") {
+			serviceCheckKey = "keyword";
+		} else if (serviceType === "port") {
+			serviceCheckKey = "port_check";
+		}
+
+		// Get the service check data and update monitor object directly
+		const serviceCheck = regionChecks[serviceCheckKey];
+		if (serviceCheck) {
+			monitor.last_status = serviceCheck.last_status;
+			monitor.last_check_at = serviceCheck.last_checked_at;
+		}
+
+		return monitor;
+	};
+
 	const buildRow = (monitor, primaryMonitorId) => {
+		// Update monitor with primary region data
+		updateMonitorWithPrimaryRegionStatus(monitor);
+
 		const url = monitor.config?.meta?.url || "";
+		const serviceType = monitor.service_type || "website";
 		const name = monitor.name || url || "Unnamed Monitor";
 		const isSelected = primaryMonitorId && monitor?.id === primaryMonitorId;
 		const isPollingRelevant = Polling.activeMonitorIds.has(monitor.id);
-		const inPollingState = isPollingRelevant && isRecentlyChecked(monitor.last_check_at, monitor.updated_at);
+		const inPollingState =
+			isPollingRelevant &&
+			isRecentlyChecked(monitor.last_check_at, monitor.updated_at);
 		const incidentCount = monitor.incident_count ?? 0;
+
 
 		// Determine status
 		let statusLabel = "";
@@ -64,6 +107,13 @@
 		const tr = document.createElement("tr");
 		tr.dataset.id = monitor.id ?? "";
 		tr.dataset.url = url;
+		tr.dataset.serviceType = serviceType;
+		let urlLabel = null;
+		if (serviceType === "port") {
+			urlLabel = `${monitor.config?.meta?.host}:${monitor.config?.meta?.port || ""}`;
+		} else {
+			urlLabel = url;
+		}
 
 		// checkbox column
 		const tdCheck = document.createElement("td");
@@ -77,13 +127,10 @@
         <label for="upsnap-checkbox-${escapeId(url)}"></label>
     `;
 
-		// monitor column: name + url + selected pill
+		// monitor column: name + url + type pill
 		const tdMonitor = document.createElement("td");
 		tdMonitor.innerHTML = `
-			<div class="heading">${escapeHtml(name)}</div>
-			<div class="light" style="margin-top:4px;">
-				${escapeHtml(url)}
-				${
+			<div class="heading">${escapeHtml(name)} 				${
 					incidentCount > 0
 						? `<span
 								class="monitor-incidents-link"
@@ -92,7 +139,9 @@
 								• ${incidentCount} incident${incidentCount === 1 ? "" : "s"}
 						</span>`
 						: ""
-				}
+				}</div>
+			<div class="light" style="margin-top:4px;">
+		    ${escapeHtml(urlLabel)}<span class="monitor-type-pill monitor-type-pill--${escapeHtml(serviceType)}">${escapeHtml(serviceType)}</span></div>
 			</div>
 		`;
 
@@ -109,14 +158,16 @@
 		if (isSelected) {
 			tdPrimary.innerHTML = `
 			<button class="btn small upsnap-set-primary disabled"
-					data-url="${escapeHtmlAttr(url)}">
+					data-url="${escapeHtmlAttr(url)}"
+					data-service-type="${serviceType}">
 					Selected
 				</button>
 			`;
 		} else {
 			tdPrimary.innerHTML = `
 				<button class="btn small upsnap-set-primary"
-					data-url="${escapeHtmlAttr(url)}">
+					data-url="${escapeHtmlAttr(url)}"
+					data-service-type="${serviceType}">
 					Set primary
 				</button>
 			`;
@@ -145,7 +196,7 @@
 					"/": "&#x2F;",
 					"`": "&#96;",
 					"=": "&#61;",
-				}[s])
+				})[s],
 		);
 	}
 	function escapeHtmlAttr(s) {
@@ -187,17 +238,26 @@
 	async function handleSetPrimary(e) {
 		const btn = e.currentTarget;
 		const url = btn.dataset.url;
+		const serviceType = btn.dataset.serviceType || "website";
 		const row = btn.closest("tr");
 		const monitorId = row ? row.dataset.id : null;
 
-		if (!url || !monitorId) {
-			craftError("Monitor data missing.");
+		if (!monitorId) {
+			craftError("Monitor ID missing.");
 			return;
 		}
 
 		btn.classList.add("loading");
 
 		try {
+			// Build payload based on monitor type
+			const payload = { monitorId: monitorId };
+
+			// Only include monitoringUrl for website monitors
+			if (serviceType != "port" && url) {
+				payload.monitoringUrl = url;
+			}
+
 			const response = await fetch(
 				"/actions/upsnap/settings/set-primary-monitor",
 				{
@@ -206,11 +266,8 @@
 						"Content-Type": "application/json",
 						"X-CSRF-Token": Craft.csrfTokenValue,
 					},
-					body: JSON.stringify({
-						monitorId: monitorId,
-						monitoringUrl: url,
-					}),
-				}
+					body: JSON.stringify(payload),
+				},
 			);
 
 			const json = await response.json();
@@ -304,24 +361,38 @@
 
 		// show loading row
 		if (showLoading)
-		tbody.innerHTML = `<tr><td colspan="5" class="table-empty-state">Loading monitors…</td></tr>`;
+			tbody.innerHTML = `<tr><td colspan="5" class="table-empty-state">Loading monitors…</td></tr>`;
 
 		try {
 			let monitors = [];
+			// const monitors = [];
+			let settingsMap = new Map();
+
 			if (apiKey) {
-				const response = await fetch(endpoint, {
-					headers: { "X-CSRF-Token": Craft.csrfTokenValue },
-				});
-				const json = await response.json();
+				// Fetch monitors and settings in parallel
+				const [monitorsResponse, settingsResponse] = await Promise.all([
+					fetch(endpoint, {
+						headers: { "X-CSRF-Token": Craft.csrfTokenValue },
+					}),
+					fetch("/actions/upsnap/monitors/get-settings", {
+						headers: {
+							"X-CSRF-Token": Craft.csrfTokenValue,
+							Accept: "application/json",
+						},
+					}),
+				]);
+
+				const monitorsJson = await monitorsResponse.json();
+				const settingsJson = await settingsResponse.json();
 
 				if (
-					!json.success ||
-					!json.data ||
-					!Array.isArray(json.data.monitors)
+					!monitorsJson.success ||
+					!monitorsJson.data ||
+					!Array.isArray(monitorsJson.data.monitors)
 				) {
-					throw new Error(json.message || "Failed to load monitors");
+					throw new Error(monitorsJson.message || "Failed to load monitors");
 				}
-				monitors.push(...json.data.monitors);
+				monitors.push(...monitorsJson.data.monitors);
 
 				// ------------------------------------
 				// FETCH + MERGE UPTIME STATS
@@ -335,6 +406,28 @@
 
 				// enrich monitors
 				monitors = mergeUptimeStats(monitors, uptimeStats);
+
+				// Build settings map from monitor_id -> config
+				if (
+					settingsJson.success &&
+					settingsJson.data?.settings &&
+					Array.isArray(settingsJson.data.settings)
+				) {
+					settingsJson.data.settings.forEach((setting) => {
+						if (setting.monitor_id && setting.config) {
+							settingsMap.set(setting.monitor_id, setting.config);
+						}
+					});
+				}
+
+				// Merge config into each monitor
+				monitorsJson.data.monitors.forEach((monitor) => {
+					const config = settingsMap.get(monitor.id);
+					if (config) {
+						monitor.config = config;
+					}
+					monitors.push(monitor);
+				});
 			}
 
 			const monitorCount = monitors.length;
@@ -344,7 +437,7 @@
 			} else {
 				if (monitorCount >= maxMonitors) {
 					disableAddMonitorBtn(
-						`Monitor limit reached (${monitorCount}/${maxMonitors})`
+						`Monitor limit reached (${monitorCount}/${maxMonitors})`,
 					);
 				} else {
 					enableAddMonitorBtn();
@@ -491,7 +584,7 @@
 		// hide bulk-actions menu
 		const menuBtn = document.querySelector("#upsnap-actions-menubtn");
 		const menuWrapper = document.querySelector(
-			"#upsnap-actions-menu-wrapper"
+			"#upsnap-actions-menu-wrapper",
 		);
 		if (menuBtn) menuBtn.style.display = "none";
 		if (menuWrapper) menuWrapper.style.display = "none";
@@ -530,7 +623,7 @@
 
 	function renderStatusContainer(data) {
 		const statusContainerWrapper = document.getElementById(
-			"status-container-wrapper"
+			"status-container-wrapper",
 		);
 		if (!statusContainerWrapper) return;
 
@@ -649,7 +742,7 @@
 							"X-CSRF-Token": Craft.csrfTokenValue,
 						},
 						body: JSON.stringify({ ids, action: "delete" }),
-					}
+					},
 				);
 
 				const json = await res.json();
@@ -683,7 +776,7 @@
 
 			// Redirect to edit page
 			window.location.href = Craft.getUrl(
-				`upsnap/monitors/edit/${monitorId}`
+				`upsnap/monitors/edit/${monitorId}`,
 			);
 		});
 	}
@@ -715,69 +808,38 @@
 			Polling.generalInterval = null;
 		}
 	}
-	const MAX_ATTEMPTS = 5;
-	const POLL_INTERVAL = 30 * 1000;
+	const POLL_DELAY =  60 * 1000;
 
 	function startMonitorSpecificPolling(monitorId) {
 		if (!monitorId) return;
-
 		if (Polling.completedMonitors.has(monitorId)) return;
-		if (Polling.monitorIntervals.has(monitorId)) return;
+		if (Polling.monitorTimeouts.has(monitorId)) return;
 
-		Polling.monitorAttempts.set(monitorId, 0);
+		// Immediately mark as active so buildRow shows "Checking"
 		Polling.activeMonitorIds.add(monitorId);
 
-		const intervalId = setInterval(async () => {
-			const attempts =
-				(Polling.monitorAttempts.get(monitorId) || 0) + 1;
-
-			Polling.monitorAttempts.set(monitorId, attempts);
-
+		// After 60 s fire a single fetch — render result and stop
+		const timeoutId = setTimeout(async () => {
 			try {
 				const updatedMonitor = await fetchSingleMonitor(monitorId);
-				if (!updatedMonitor) return;
-
-				const previousStatus =
-					Polling.lastKnownStatus.get(monitorId);
-
-				const currentStatus = updatedMonitor.last_status;
-
-				// First run → store baseline
-				if (previousStatus === undefined) {
-					Polling.lastKnownStatus.set(monitorId, currentStatus);
-				}
-
-				// ✅ Status changed → stop immediately
-				if (
-					previousStatus !== undefined &&
-					currentStatus !== previousStatus
-				) {
-					stopMonitorSpecificPolling(monitorId);
+				// Remove from active set BEFORE updating row so buildRow shows real status
+				stopMonitorSpecificPolling(monitorId);
+				if (updatedMonitor) {
 					updateMonitorRow(updatedMonitor);
-					return;
-				}
-
-				// Update DOM without loader
-				updateMonitorRow(updatedMonitor);
-
-				// ❌ Max attempts reached
-				if (attempts >= MAX_ATTEMPTS) {
-					stopMonitorSpecificPolling(monitorId);
 				}
 			} catch (e) {
 				console.error("Monitor polling failed", e);
 				stopMonitorSpecificPolling(monitorId);
 			}
-		}, POLL_INTERVAL);
+		}, POLL_DELAY);
 
-		Polling.monitorIntervals.set(monitorId, intervalId);
+		Polling.monitorTimeouts.set(monitorId, timeoutId);
 	}
-
 
 	function isRecentlyChecked(
 		lastCheckAt,
 		lastUpdatedAt,
-		thresholdMs = 2 * 60 * 1000
+		thresholdMs = 2 * 60 * 1000,
 	) {
 		if (!lastCheckAt) return true;
 
@@ -805,25 +867,20 @@
 		return false;
 	}
 
-
 	function stopMonitorSpecificPolling(monitorId) {
-		const intervalId = Polling.monitorIntervals.get(monitorId);
-		if (!intervalId) return;
+		const timeoutId = Polling.monitorTimeouts.get(monitorId);
+		if (timeoutId != null) {
+			clearTimeout(timeoutId);
+		}
 
-		clearInterval(intervalId);
-
-		Polling.monitorIntervals.delete(monitorId);
-		Polling.monitorAttempts.delete(monitorId);
-		Polling.lastKnownStatus.delete(monitorId);
+		Polling.monitorTimeouts.delete(monitorId);
 		Polling.activeMonitorIds.delete(monitorId);
 
 		Polling.completedMonitors.add(monitorId);
 	}
 
 	function updateMonitorRow(monitor) {
-		const row = document.querySelector(
-			`tr[data-id="${monitor.id}"]`
-		);
+		const row = document.querySelector(`tr[data-id="${monitor.id}"]`);
 
 		if (!row) return;
 
@@ -836,8 +893,12 @@
 			?.addEventListener("change", updateBulkMenuState);
 
 		wireMenuButtons(newRow);
-	}
 
+		// Re-wire "Set as Primary" button
+		newRow.querySelectorAll(".upsnap-set-primary").forEach((b) => {
+			b.addEventListener("click", handleSetPrimary);
+		});
+	}
 
 	function consumeMonitorChangeQueue() {
 		const key = "upsnap:monitor-changes";
@@ -858,11 +919,7 @@
 		loadAndRender();
 
 		queue.forEach(({ monitorId }) => {
-			if (
-				monitorId &&
-				!Polling.completedMonitors.has(monitorId)
-			) {
-				Polling.activeMonitorIds.add(monitorId);
+			if (monitorId && !Polling.completedMonitors.has(monitorId)) {
 				startMonitorSpecificPolling(monitorId);
 			}
 		});

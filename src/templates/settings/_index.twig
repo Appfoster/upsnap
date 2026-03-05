@@ -43,6 +43,8 @@
 {% set statusColorClass = statusColorMap[apiTokenStatus]|default('pill--grey') %}
 
 
+{% set _logoBaseUrl = craft.app.assetManager.getPublishedUrl('@upsnapRoot/assets/images/logo', true) %}
+
 {% block content %}
 	{# inject server values for JS to consume - put this before monitor.js is loaded #}
 	<script>
@@ -54,13 +56,26 @@
 			apiTokenStatus: {{ (apiTokenStatus ?? 'unknown')|json_encode|raw }},
 			apiTokenStatuses: {{ (apiTokenStatuses ?? 'unknown')|json_encode|raw }},
 			userDetails: {{ userDetails|json_encode|raw }},
-			subscriptionTypes : {{subscriptionTypes|json_encode|raw }}
+			subscriptionTypes : {{subscriptionTypes|json_encode|raw }},
+			logoBaseUrl: {{ (_logoBaseUrl ?? '')|json_encode|raw }}
 		};
 	</script>
 		<div id="status-container-wrapper" data-page="reachability"></div>
 
 		{# ====================== GENERAL TAB ====================== #}
 		<div id="monitors-tab" class="tab-content">
+			{% if not showHealthchecks %}
+				<div class="status-container warning" style="margin-bottom: 24px;">
+					<div class="status-header">
+						<div class="status-icon warning">!</div>
+						<h3 class="status-title">{{ 'Unlock Full Monitoring Insights'|t('upsnap') }}</h3>
+					</div>
+					<p class="status-message-dashboard">
+						<a href="{{ upsnapDashboardUrl }}/signup" class="status-link" target="_blank" rel="noopener">{{ 'Register'|t('upsnap') }}</a>
+						{{ ' to add monitors and unlock full monitoring insights.'|t('upsnap') }}
+					</p>
+				</div>
+			{% endif %}
 		 	{% include "upsnap/_components/monitorsTable.twig" %}
 			<input type="hidden" id="monitorId" name="monitorId" value="{{ settings.monitorId ?? '' }}">
 			<input type="hidden" id="monitoringUrlInput" name="monitoringUrlInput" value="{{ settings.monitoringUrl ?? '' }}">

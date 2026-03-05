@@ -41,12 +41,47 @@ class DashboardController extends BaseController
 
                 if (isset($response['status']) && $response['status'] === 'success') {
                     $monitorData = $response['data']['monitor'] ?? null;
+
+                    // Fetch config/settings from the separate settings API
+                    $settingsEndpoint = Constants::MICROSERVICE_ENDPOINTS['monitors']['settings'];
+                    $settingsResponse = Upsnap::$plugin->apiService->get($settingsEndpoint, ['id' => $monitorId]);
+
+                    $config = [];
+                    if (isset($settingsResponse['status']) && $settingsResponse['status'] === 'success') {
+                        $config = $settingsResponse['data']['settings'] ?? [];
+                    } else {
+                        Craft::error("Settings fetch failed: invalid response", __METHOD__);
+                    }
+
+                    // Merge config into monitor data
+                    if ($monitorData) {
+                        $monitorData['config'] = $config;
+                    }
+
+                    // If monitor is port type, set $url to host:port
+                    if ($monitorData && ($monitorData['service_type'] ?? null) === 'port') {
+                        $meta = $config['meta'] ?? [];
+                        $host = $meta['host'] ?? '';
+                        $port = $meta['port'] ?? '';
+                        $url = $host && $port ? "$host:$port" : ($host ?: $port);
+                    }
                 } else {
                     Craft::error("Monitor fetch failed: invalid response", __METHOD__);
                 }
             } catch (\Throwable $e) {
                 Craft::error("Monitor fetch failed: {$e->getMessage()}", __METHOD__);
             }
+        }
+
+        // Fetch recent incidents
+        $incidents = [];
+        try {
+            $incidentsResponse = Upsnap::$plugin->apiService->getMonitorIncidents('7D', 1, 20);
+            if (isset($incidentsResponse['status']) && $incidentsResponse['status'] === 'success') {
+                $incidents = $incidentsResponse['data']['incidents'] ?? [];
+            }
+        } catch (\Throwable $e) {
+            Craft::error("Incidents fetch failed: {$e->getMessage()}", __METHOD__);
         }
 
         $variables = [
@@ -56,6 +91,7 @@ class DashboardController extends BaseController
             'url' => $url,
             'monitorId' => $monitorId,
             'monitorData' => $monitorData,
+            'incidents' => $incidents,
             'apiKey' => $settingsService->getApiKey(),
             'apiTokenStatus' => $settingsService->getApiTokenStatus(),
             'apiTokenStatuses' => Constants::API_KEY_STATUS,
