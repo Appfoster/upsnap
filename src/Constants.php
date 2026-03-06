@@ -197,6 +197,10 @@ class Constants
         'regions' => [
             'list' => 'regions'
         ],
+        'tags' => [
+            'list' => 'user/tags',
+            'create' => 'user/tags',
+        ],
     ];
 
     public const LIGHTHOUSE_STRATEGY = [

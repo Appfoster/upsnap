@@ -12,6 +12,9 @@
 		activeMonitorIds: new Set(),
 	};
 
+	// Store tags map for lookup (id -> tag object)
+	let tagsMap = new Map();
+
 	const endpointSelector = "#upsnap-monitors-wrap";
 	const tbodySelector = "#upsnap-monitors-tbody";
 	const selectAllSelector = "#upsnap-select-all";
@@ -141,7 +144,9 @@
 						: ""
 				}</div>
 			<div class="light" style="margin-top:4px;">
-		    ${escapeHtml(urlLabel)}<span class="monitor-type-pill monitor-type-pill--${escapeHtml(serviceType)}">${escapeHtml(serviceType)}</span></div>
+				<span class="monitor-type-pill monitor-type-pill--${escapeHtml(serviceType)}">${escapeHtml(serviceType)}</span>
+				${escapeHtml(urlLabel)}
+				${buildTagsChips(monitor.tag_ids || [])}
 			</div>
 		`;
 
@@ -204,6 +209,23 @@
 	}
 	function escapeId(s) {
 		return btoa(s || "").replace(/=/g, "");
+	}
+
+	// Build tags chips HTML from tag IDs
+	function buildTagsChips(tagIds) {
+		if (!tagIds || !Array.isArray(tagIds) || tagIds.length === 0) {
+			return "";
+		}
+
+		return tagIds
+			.map((tagId) => {
+				const tag = tagsMap.get(tagId);
+				if (!tag) return "";
+				const bgColor = tag.color || "#6c757d";
+				return `<span class="monitor-tag-chip" style="background-color: ${escapeHtml(bgColor)}">${escapeHtml(tag.name)}</span>`;
+			})
+			.filter(Boolean)
+			.join("");
 	}
 
 	// Toggle menu dropdown simple
@@ -369,8 +391,8 @@
 			let settingsMap = new Map();
 
 			if (apiKey) {
-				// Fetch monitors and settings in parallel
-				const [monitorsResponse, settingsResponse] = await Promise.all([
+				// Fetch monitors, settings, and tags in parallel
+				const [monitorsResponse, settingsResponse, tagsResponse] = await Promise.all([
 					fetch(endpoint, {
 						headers: { "X-CSRF-Token": Craft.csrfTokenValue },
 					}),
@@ -380,10 +402,25 @@
 							Accept: "application/json",
 						},
 					}),
+					fetch("/actions/upsnap/tags/list", {
+						headers: {
+							"X-CSRF-Token": Craft.csrfTokenValue,
+							Accept: "application/json",
+						},
+					}),
 				]);
 
 				const monitorsJson = await monitorsResponse.json();
 				const settingsJson = await settingsResponse.json();
+				const tagsJson = await tagsResponse.json();
+
+				// Build tags map for lookup
+				if (tagsJson.success && Array.isArray(tagsJson.data)) {
+					tagsMap.clear();
+					tagsJson.data.forEach((tag) => {
+						tagsMap.set(tag.id, tag);
+					});
+				}
 
 				if (
 					!monitorsJson.success ||

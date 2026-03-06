@@ -454,6 +454,7 @@ class MonitorsController extends Controller
             'regions' => $m['regions'] ?? [],
             'monitorType' => $serviceType,
             'channelIds' => $m['channel_ids'] ?? [],
+            'tag_ids' => $m['tag_ids'] ?? [],
         ];
 
         // Format based on monitor type
