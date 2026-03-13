@@ -189,6 +189,37 @@ class ApiService extends Component
     }
 
     /**
+     * Sign up a new UpSnap user from within CraftCMS.
+     *
+     * NOTE: Returns a mock response while the microservice signup endpoint is being
+     * developed. To switch to the real API, replace the mock block below with:
+     *
+     *   return $this->post(Constants::ENDPOINT_SIGNUP, [
+     *       'email'    => $email,
+     *       'password' => $password,
+     *       'source'   => 'craftcms',
+     *       'site_url' => $siteUrl,
+     *   ]);
+     */
+    public function signupUser(string $email, string $password, string $siteUrl): array
+    {
+        // TODO: Replace with $this->post(Constants::ENDPOINT_SIGNUP, [...]) when ready.
+        $mockApiKey   = '033f292259dd5086f53f54acb2edec90453c6834f313d14a2e9e985ea3f66c14';
+        $mockMonitorId = '45f0305c-30ba-42b8-970b-2920f91f20e7';
+
+        return [
+            'status' => 'success',
+            'data'   => [
+                'fullname'   => '',
+                'email'      => $email,
+                'api_key'    => $mockApiKey,
+                'monitor_id' => $mockMonitorId,
+                'message'    => 'Account created successfully. You are now on the Beta plan.',
+            ],
+        ];
+    }
+
+    /**
      * Common headers
      */
     protected function getHeaders(): array

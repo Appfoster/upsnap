@@ -26,6 +26,8 @@ class Constants
 
     public const ENDPOINT_VERIFY_API_KEY = 'tokens/validate';
 
+    public const ENDPOINT_SIGNUP = 'user/signup';
+
     // Check Types
     public const CHECK_REACHABILITY = 'reachability';
     public const CHECK_SECURITY_CERTIFICATES = 'security_certificates';

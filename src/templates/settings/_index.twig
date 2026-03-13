@@ -7,26 +7,25 @@
 {% set showHealthchecks = showHealthchecks ?? false %}
 {% set isActiveApiToken = apiTokenStatus is same as(apiTokenStatuses.active) ? true : false %}
 
-{% set tabs = [
-	{ label: "Monitors"|t('upsnap'), url: '#monitors-tab', class: 'sel' },
-] %}
-
 {% if showHealthchecks %}
-	{% set tabs = tabs|merge([
+	{% set tabs = [
+		{ label: "Monitors"|t('upsnap'), url: '#monitors-tab', class: 'sel' },
 		(isActiveApiToken)
 			? { label: "Notification Channels"|t('upsnap'), url: '#notification-channels-tab' }
-			: { label: "Notification Channels"|t('upsnap'), url: '#notification-channels-tab', class: 'disabled-tab' }
-	]) %}
+			: { label: "Notification Channels"|t('upsnap'), url: '#notification-channels-tab', class: 'disabled-tab' },
+		{ label: "API Key"|t('upsnap'), url: '#api-tab' }
+	] %}
+{% else %}
+	{% set tabs = [
+		{ label: "Monitors"|t('upsnap'), url: '#monitors-tab' },
+		{ label: "API Key"|t('upsnap'), url: '#api-tab', class: 'sel' }
+	] %}
 {% endif %}
-
-{% set tabs = tabs|merge([
-    { label: "API Key"|t('upsnap'), url: '#api-tab' }
-]) %}
 
 
 {% block actionButton %}
 	<div class="flex smallgap">
-		<button id="save-button" type="submit" form="settings-form" class="btn submit">
+		<button id="save-button" type="submit" form="settings-form" class="btn submit"{{ not showHealthchecks ? ' style="display:none;"' : '' }}>
 			{{ "Save"|t('upsnap') }}
 		</button>
 	</div>
@@ -57,13 +56,25 @@
 			apiTokenStatuses: {{ (apiTokenStatuses ?? 'unknown')|json_encode|raw }},
 			userDetails: {{ userDetails|json_encode|raw }},
 			subscriptionTypes : {{subscriptionTypes|json_encode|raw }},
-			logoBaseUrl: {{ (_logoBaseUrl ?? '')|json_encode|raw }}
+			logoBaseUrl: {{ (_logoBaseUrl ?? '')|json_encode|raw }},
+			signupI18n: {
+				emailRequired:        {{ 'Email is required.'|t('upsnap')|json_encode|raw }},
+				emailInvalid:         {{ 'Please enter a valid email address.'|t('upsnap')|json_encode|raw }},
+				passwordRequired:     {{ 'Password is required.'|t('upsnap')|json_encode|raw }},
+				passwordWeak:         {{ 'Password must be at least 8 characters and contain uppercase, lowercase, a number, and a special character.'|t('upsnap')|json_encode|raw }},
+				creatingAccount:      {{ 'Creating account…'|t('upsnap')|json_encode|raw }},
+				accountCreated:       {{ 'Account created!'|t('upsnap')|json_encode|raw }},
+				successMessage:       {{ 'Account created successfully! Monitoring has started.'|t('upsnap')|json_encode|raw }},
+				submitLabel:          {{ 'Start beta free trial'|t('upsnap')|json_encode|raw }},
+				genericError:         {{ 'An error occurred. Please try again.'|t('upsnap')|json_encode|raw }},
+				unexpectedError:      {{ 'An unexpected error occurred. Please try again.'|t('upsnap')|json_encode|raw }}
+			}
 		};
 	</script>
 		<div id="status-container-wrapper" data-page="reachability"></div>
 
 		{# ====================== GENERAL TAB ====================== #}
-		<div id="monitors-tab" class="tab-content">
+		<div id="monitors-tab" class="tab-content{{ not showHealthchecks ? ' hidden' : '' }}">
 			{% if not showHealthchecks %}
 				<div class="status-container warning" style="margin-bottom: 24px;">
 					<div class="status-header">
@@ -87,26 +98,76 @@
 			{{ csrfInput() }}
 			{{ actionInput('upsnap/settings/save', { id: 'form-action-input' }) }}
 			{{ redirectInput('upsnap/settings') }}
-			{# <div id="status-container-wrapper" data-page="reachability"></div> #}
-			<div id="api-tab" class="tab-content hidden">
-				<div class="api-key-field-with-status">
-					{{ forms.textField({
-						label: "API Key"|t('upsnap'),
-						instructions: "Enter the Upsnap API Key and save to enable Healthcheck settings. To access the API key, please visit the <a href='#{upsnapDashboardUrl}' target='_blank' rel='noopener noreferrer'>Upsnap Dashboard<span class='sr-only' style='position:absolute;left:-10000px;'> (opens in a new tab)</span></a>"|t('upsnap')|raw,
-						id: 'apiKey',
-						name: 'apiKey',
-						type: 'text',
-						value: settings.apiKey ?? '',
-						placeholder: 'XXXX-XXXX-XXXX-XXXX',
-						errors: settings.getErrors('apiKey') ?? false
-					}) }}
+			<div id="api-tab" class="tab-content{{ showHealthchecks ? ' hidden' : '' }}">
+				{% if not showHealthchecks %}
+					{# ── Signup form (shown when no API key is stored) ── #}
+					<div id="signup-form-wrapper">
+						<div class="field">
+							<div class="heading">
+								<label for="signup-email">{{ "Email"|t('upsnap') }}</label>
+							</div>
+							<div class="input ltr">
+								<input type="email" id="signup-email" class="text fullwidth" placeholder="you@example.com" autocomplete="email">
+							</div>
+							<p id="signup-email-error" class="error" style="display:none;"></p>
+						</div>
+						<div class="field">
+							<div class="heading">
+								<label for="signup-password">{{ "Password"|t('upsnap') }}</label>
+							</div>
+							<div class="input ltr">
+								<input type="password" id="signup-password" class="text fullwidth" autocomplete="new-password">
+							</div>
+							<p id="signup-password-error" class="error" style="display:none;"></p>
+							<p class="instructions">{{ "Must be at least 8 characters with uppercase, lowercase, a number, and a special character."|t('upsnap') }}</p>
+						</div>
+						<div style="margin-top: 20px;">
+							<button id="signup-submit-btn" type="button" class="btn submit">
+								{{ "Start beta free trial"|t('upsnap') }}
+							</button>
+						</div>
+						<p id="signup-general-error" class="error" style="display:none; margin-top: 8px;"></p>
+						<p class="light" style="margin-top: 16px;">
+							{{ "Already have an account?"|t('upsnap') }}
+							<a id="toggle-api-key-form" href="#">{{ "Enter your API key"|t('upsnap') }}</a>
+						</p>
+					</div>
 
-					{% if showHealthchecks %}
+					{# ── Existing API key form (revealed via "Already have an account?" toggle) ── #}
+					<div id="existing-api-key-wrapper" style="display:none;">
+						{{ forms.textField({
+							label: "API Key"|t('upsnap'),
+							instructions: "Enter the Upsnap API Key and save to enable Healthcheck settings. To access the API key, please visit the <a href='#{upsnapDashboardUrl}' target='_blank' rel='noopener noreferrer'>Upsnap Dashboard<span class='sr-only' style='position:absolute;left:-10000px;'> (opens in a new tab)</span></a>"|t('upsnap')|raw,
+							id: 'apiKey',
+							name: 'apiKey',
+							type: 'text',
+							value: settings.apiKey ?? '',
+							placeholder: 'XXXX-XXXX-XXXX-XXXX',
+							errors: settings.getErrors('apiKey') ?? false
+						}) }}
+						<p class="light" style="margin-top: 16px;">
+							{{ "Don't have an API key?"|t('upsnap') }}
+							<a id="toggle-register-form" href="#">{{ "Register for free"|t('upsnap') }}</a>
+						</p>
+					</div>
+				{% else %}
+					{# ── API key already stored – show masked key with status badge ── #}
+					<div class="api-key-field-with-status">
+						{{ forms.textField({
+							label: "API Key"|t('upsnap'),
+							instructions: "Enter the Upsnap API Key and save to enable Healthcheck settings. To access the API key, please visit the <a href='#{upsnapDashboardUrl}' target='_blank' rel='noopener noreferrer'>Upsnap Dashboard<span class='sr-only' style='position:absolute;left:-10000px;'> (opens in a new tab)</span></a>"|t('upsnap')|raw,
+							id: 'apiKey',
+							name: 'apiKey',
+							type: 'text',
+							value: settings.apiKey ?? '',
+							placeholder: 'XXXX-XXXX-XXXX-XXXX',
+							errors: settings.getErrors('apiKey') ?? false
+						}) }}
 						<span class="api-pill {{ statusColorClass }}">
 							{{ apiTokenStatus|capitalize }}
 						</span>
-					{% endif %}
-				</div>
+					</div>
+				{% endif %}
 			</div>
 		</form>
 

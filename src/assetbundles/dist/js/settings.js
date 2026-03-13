@@ -275,3 +275,147 @@ Craft.Upsnap.Settings = {
 document.addEventListener("DOMContentLoaded", function () {
 	Craft.Upsnap.Settings.init();
 });
+
+// ---------------------------------------------------------------------------
+// Signup form
+// ---------------------------------------------------------------------------
+Craft.Upsnap.Signup = {
+	init: function () {
+		var signupWrapper = document.getElementById("signup-form-wrapper");
+		if (!signupWrapper) return; // signup form not present on this page load
+
+		var i18n = (window.Upsnap && window.Upsnap.settings && window.Upsnap.settings.signupI18n) || {};
+
+		var emailInput         = document.getElementById("signup-email");
+		var passwordInput      = document.getElementById("signup-password");
+		var emailError         = document.getElementById("signup-email-error");
+		var passwordError      = document.getElementById("signup-password-error");
+		var generalError       = document.getElementById("signup-general-error");
+		var submitBtn          = document.getElementById("signup-submit-btn");
+		var toggleLink         = document.getElementById("toggle-api-key-form");
+		var toggleRegisterLink = document.getElementById("toggle-register-form");
+		var existingWrapper    = document.getElementById("existing-api-key-wrapper");
+		var saveButton         = document.getElementById("save-button");
+
+		function isValidEmail(val) {
+			return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val);
+		}
+
+		function isValidPassword(val) {
+			return /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/.test(val);
+		}
+
+		function showErr(el, msg) { el.textContent = msg; el.style.display = "block"; }
+		function clearErr(el)     { el.textContent = "";  el.style.display = "none";  }
+
+		// Real-time validation on blur
+		emailInput.addEventListener("blur", function () {
+			if (this.value && !isValidEmail(this.value)) {
+				showErr(emailError, i18n.emailInvalid || "Please enter a valid email address.");
+			} else {
+				clearErr(emailError);
+			}
+		});
+
+		passwordInput.addEventListener("blur", function () {
+			if (this.value && !isValidPassword(this.value)) {
+				showErr(passwordError, i18n.passwordWeak || "Password must be at least 8 characters and contain uppercase, lowercase, a number, and a special character.");
+			} else {
+				clearErr(passwordError);
+			}
+		});
+
+		// "Already have an account?" toggle
+		if (toggleLink) {
+			toggleLink.addEventListener("click", function (e) {
+				e.preventDefault();
+				signupWrapper.style.display   = "none";
+				existingWrapper.style.display = "";
+				if (saveButton) saveButton.style.display = "";
+			});
+		}
+
+		// "Don't have an API key? Register" back-toggle
+		if (toggleRegisterLink) {
+			toggleRegisterLink.addEventListener("click", function (e) {
+				e.preventDefault();
+				existingWrapper.style.display = "none";
+				signupWrapper.style.display   = "";
+				if (saveButton) saveButton.style.display = "none";
+			});
+		}
+
+		// Signup submit
+		submitBtn.addEventListener("click", function () {
+			var email     = emailInput.value.trim();
+			var password  = passwordInput.value;
+			var hasErrors = false;
+
+			clearErr(emailError);
+			clearErr(passwordError);
+			clearErr(generalError);
+
+			if (!email) {
+				showErr(emailError, i18n.emailRequired || "Email is required.");
+				hasErrors = true;
+			} else if (!isValidEmail(email)) {
+				showErr(emailError, i18n.emailInvalid || "Please enter a valid email address.");
+				hasErrors = true;
+			}
+
+			if (!password) {
+				showErr(passwordError, i18n.passwordRequired || "Password is required.");
+				hasErrors = true;
+			} else if (!isValidPassword(password)) {
+				showErr(passwordError, i18n.passwordWeak || "Password must be at least 8 characters and contain uppercase, lowercase, a number, and a special character.");
+				hasErrors = true;
+			}
+
+			if (hasErrors) return;
+
+			submitBtn.disabled    = true;
+			submitBtn.textContent = i18n.creatingAccount || "Creating account\u2026";
+
+			var formData = new FormData();
+			formData.append(Craft.csrfTokenName, Craft.csrfTokenValue);
+			formData.append("email",    email);
+			formData.append("password", password);
+
+			fetch(Craft.getActionUrl("upsnap/settings/signup"), {
+				method:  "POST",
+				headers: { "Accept": "application/json", "X-Requested-With": "XMLHttpRequest" },
+				body:    formData,
+			})
+				.then(function (r) { return r.json(); })
+				.then(function (data) {
+					if (data.success) {
+						var notice = document.createElement("div");
+						notice.style.cssText = "background:#e6f4ea;color:#1e7e34;padding:12px 16px;border-radius:4px;margin-bottom:16px;";
+						notice.textContent   = data.message || i18n.successMessage || "Account created successfully! Monitoring has started.";
+						signupWrapper.insertBefore(notice, signupWrapper.firstChild);
+						submitBtn.textContent = i18n.accountCreated || "Account created!";
+						setTimeout(function () { window.location.href = data.redirectUrl; }, 1500);
+					} else {
+						var errs = data.errors || {};
+						if (errs.email)    showErr(emailError,    Array.isArray(errs.email)    ? errs.email[0]    : errs.email);
+						if (errs.password) showErr(passwordError, Array.isArray(errs.password) ? errs.password[0] : errs.password);
+						if (errs.general)  showErr(generalError,  Array.isArray(errs.general)  ? errs.general[0]  : errs.general);
+						if (!errs.email && !errs.password && !errs.general) {
+							showErr(generalError, data.message || i18n.genericError || "An error occurred. Please try again.");
+						}
+						submitBtn.disabled    = false;
+						submitBtn.textContent = i18n.submitLabel || "Start beta free trial";
+					}
+				})
+				.catch(function () {
+					showErr(generalError, i18n.unexpectedError || "An unexpected error occurred. Please try again.");
+					submitBtn.disabled    = false;
+					submitBtn.textContent = i18n.submitLabel || "Start beta free trial";
+				});
+		});
+	},
+};
+
+document.addEventListener("DOMContentLoaded", function () {
+	Craft.Upsnap.Signup.init();
+});

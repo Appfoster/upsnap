@@ -171,6 +171,10 @@ class Upsnap extends Plugin
      */
     private function redirectToSettings()
     {
-        return Craft::$app->getResponse()->redirect(UrlHelper::cpUrl(Constants::SUBNAV_ITEM_SETTINGS['url']));
+        $url = UrlHelper::cpUrl(Constants::SUBNAV_ITEM_SETTINGS['url']);
+        if (!$this->settingsService->getApiKey()) {
+            $url .= '#api-tab';
+        }
+        return Craft::$app->getResponse()->redirect($url);
     }
 }

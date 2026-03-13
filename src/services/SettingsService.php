@@ -512,6 +512,30 @@ class SettingsService extends Component
     }
 
     /**
+     * Sign up a new UpSnap user, storing the returned API key and monitor ID locally.
+     */
+    public function signup(string $email, string $password): array
+    {
+        $siteUrl = rtrim(Craft::$app->getSites()->getPrimarySite()?->baseUrl ?? '', '/');
+
+        $result = Upsnap::$plugin->apiService->signupUser($email, $password, $siteUrl);
+
+        if (($result['status'] ?? '') === 'success') {
+            $data = $result['data'] ?? [];
+
+            if (!empty($data['api_key'])) {
+                $this->setApiKey($data['api_key']);
+            }
+
+            if (!empty($data['monitor_id'])) {
+                $this->setMonitorId($data['monitor_id']);
+            }
+        }
+
+        return $result;
+    }
+
+    /**
      * Format an array of constants as an array of options, with optional restrictions
      */
     public function formatOptions(
