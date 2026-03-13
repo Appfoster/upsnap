@@ -38,6 +38,7 @@ Craft.Upsnap.Monitor = {
 		this.initIntervalSlider();
 		this.bindMonitorUrlListener();
 		this.initRegionsMultiSelect();
+		this.initTagsMultiSelect();
 		this.initMonitorTypeSelector();
 		this.initKeywordManagement();
 		this.initEnableMonitoringToggles();
@@ -935,10 +936,23 @@ Craft.Upsnap.Monitor = {
 			}
 		}
 
+		// Get tag IDs based on monitor type
+		const tagsDataInput = document.querySelector(`#${monitorType}-tags-data-input`);
+		let tagIds = [];
+		if (tagsDataInput && tagsDataInput.value) {
+			try {
+				tagIds = JSON.parse(tagsDataInput.value);
+			} catch (e) {
+				console.error("Failed to parse tags data:", e);
+				tagIds = [];
+			}
+		}
+
 		const basePayload = {
 			name: name,
 			channel_ids: channelIds,
 			regions: regions,
+			tag_ids: tagIds,
 		};
 
 		// Build monitor type specific payload
@@ -1024,6 +1038,7 @@ Craft.Upsnap.Monitor = {
 			regions: basePayload.regions,
 			check_interval: checkInterval,
 			channel_ids: basePayload.channel_ids,
+			tag_ids: basePayload.tag_ids
 		};
 	},
 
@@ -1057,6 +1072,7 @@ Craft.Upsnap.Monitor = {
 			},
 			regions: basePayload.regions,
 			channel_ids: basePayload.channel_ids,
+			tag_ids: basePayload.tag_ids,
 		};
 	},
 
@@ -1115,6 +1131,7 @@ Craft.Upsnap.Monitor = {
 			regions: basePayload.regions,
 			check_interval: checkInterval,
 			channel_ids: basePayload.channel_ids,
+			tag_ids: basePayload.tag_ids,
 		};
 	},
 	ensureErrorContainer(field) {
@@ -1786,6 +1803,367 @@ Craft.Upsnap.Monitor = {
 		// Make validation accessible globally for form submission
 		window.validateRegionsMultiSelect = () =>
 			RegionsMultiSelect.validatePrimaryRegion();
+	},
+
+	initTagsMultiSelect() {
+		// Find all tags containers and initialize each separately
+		const containers = document.querySelectorAll(".tags-multiselect-container");
+		
+		containers.forEach((containerEl) => {
+			const prefix = containerEl.dataset.tagsPrefix || 'website';
+			
+			const instance = {
+				container: containerEl,
+				dropdown: document.getElementById(`${prefix}-tags-dropdown`),
+				input: document.getElementById(`${prefix}-tags-multiselect-input`),
+				chipsContainer: document.getElementById(`${prefix}-tags-chips-container`),
+				listContainer: document.getElementById(`${prefix}-tags-list-container`),
+				loadingSpinner: document.getElementById(`${prefix}-tags-loading-spinner`),
+				chevronBtn: containerEl.querySelector(".tags-chevron-toggle"),
+				chevronIcon: containerEl.querySelector(".tags-chevron-icon"),
+				noResults: document.getElementById(`${prefix}-tags-no-results`),
+				createOption: document.getElementById(`${prefix}-tags-create-option`),
+				createBtn: document.getElementById(`${prefix}-tags-create-btn`),
+				createNameSpan: document.getElementById(`${prefix}-tags-create-name`),
+				dataInput: document.getElementById(`${prefix}-tags-data-input`),
+				monitorType: prefix,
+
+				allTags: [],
+				selectedTags: [],
+				isOpen: false,
+				searchTerm: "",
+
+				init() {
+					if (!this.container) return;
+					this.bindEvents();
+					this.fetchTags();
+				},
+
+				bindEvents() {
+					// Open/close dropdown on container click
+					this.container.addEventListener("click", (e) => {
+						if (e.target !== this.input && !this.input.contains(e.target)) {
+							this.toggleDropdown();
+						}
+					});
+
+					this.chevronBtn.addEventListener("click", (e) => {
+						e.preventDefault();
+						e.stopPropagation();
+						this.toggleDropdown();
+					});
+
+					// Search input
+					this.input.addEventListener("input", (e) => {
+						this.searchTerm = e.target.value.trim();
+						this.filterTags(this.searchTerm);
+					});
+
+					this.input.addEventListener("focus", () => {
+						this.openDropdown();
+					});
+
+					// Close on outside click
+					document.addEventListener("mousedown", (e) => {
+						if (!this.container.contains(e.target) && !this.dropdown.contains(e.target)) {
+							this.closeDropdown();
+						}
+					});
+
+					// Backspace to remove last tag
+					this.input.addEventListener("keydown", (e) => {
+						if (e.key === "Backspace" && !this.input.value && this.selectedTags.length > 0) {
+							this.removeTag(this.selectedTags[this.selectedTags.length - 1].id);
+						}
+						// Enter to create new tag if shown
+						if (e.key === "Enter" && this.searchTerm && !this.createOption.classList.contains("hidden")) {
+							e.preventDefault();
+							this.createTag(this.searchTerm);
+						}
+					});
+
+					// Create tag button
+					this.createBtn.addEventListener("click", (e) => {
+						e.preventDefault();
+						e.stopPropagation();
+						if (this.searchTerm) {
+							this.createTag(this.searchTerm);
+						}
+					});
+				},
+
+				fetchTags() {
+					const endpoint = this.container.dataset.endpoint;
+					this.showLoadingSpinner(true);
+
+					fetch(endpoint, {
+						headers: { "X-CSRF-Token": Craft.csrfTokenValue }
+					})
+						.then((res) => {
+							if (!res.ok) throw new Error("Failed to fetch tags");
+							return res.json();
+						})
+						.then((data) => {
+							if (data.success && Array.isArray(data.data)) {
+								this.allTags = data.data;
+
+								// Load existing tags if in edit mode
+								const existingTagIds = this.getExistingTagIds();
+								if (existingTagIds && existingTagIds.length > 0) {
+									this.selectedTags = this.allTags.filter(t => existingTagIds.includes(t.id));
+									this.updateDataInput();
+								}
+
+								this.render();
+							}
+						})
+						.catch((error) => {
+							console.error("Error fetching tags:", error);
+						})
+						.finally(() => {
+							this.showLoadingSpinner(false);
+						});
+				},
+
+				getExistingTagIds() {
+					if (window.CraftPageData?.monitorData?.tag_ids) {
+						return window.CraftPageData.monitorData.tag_ids;
+					}
+					return null;
+				},
+
+				toggleDropdown() {
+					this.isOpen ? this.closeDropdown() : this.openDropdown();
+				},
+
+				openDropdown() {
+					this.isOpen = true;
+					this.dropdown.classList.remove("hidden");
+					this.input.focus();
+					this.chevronIcon.classList.add("rotated");
+					this.renderDropdownList();
+				},
+
+				closeDropdown() {
+					this.isOpen = false;
+					this.dropdown.classList.add("hidden");
+					this.input.value = "";
+					this.searchTerm = "";
+					this.chevronIcon.classList.remove("rotated");
+					this.filterTags("");
+				},
+
+				showLoadingSpinner(show) {
+					if (this.loadingSpinner) {
+						this.loadingSpinner.classList.toggle("hidden", !show);
+					}
+				},
+
+			render() {
+				this.renderChips();
+				this.renderDropdownList();
+			},
+
+			renderChips() {
+				this.chipsContainer.innerHTML = "";
+
+				this.selectedTags.forEach((tag) => {
+					const chip = document.createElement("div");
+					chip.className = "tags-chip";
+					chip.style.backgroundColor = tag.color || "#6c757d";
+					chip.innerHTML = `
+						<span class="tags-chip-name">${this.escapeHtml(tag.name)}</span>
+						<button type="button" class="tags-chip-remove" data-id="${tag.id}" aria-label="Remove ${this.escapeHtml(tag.name)}">
+							<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+								<path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+							</svg>
+						</button>
+					`;
+
+					// Remove button handler
+					chip.querySelector(".tags-chip-remove").addEventListener("click", (e) => {
+						e.stopPropagation();
+						this.removeTag(tag.id);
+					});
+
+					this.chipsContainer.appendChild(chip);
+				});
+			},
+
+			renderDropdownList() {
+				this.listContainer.innerHTML = "";
+
+				const filteredTags = this.getFilteredTags();
+
+				if (filteredTags.length === 0 && !this.searchTerm) {
+					this.noResults.classList.remove("hidden");
+					this.noResults.textContent = "No tags available";
+					this.createOption.classList.add("hidden");
+					return;
+				}
+
+				this.noResults.classList.add("hidden");
+
+				filteredTags.forEach((tag) => {
+					const isSelected = this.selectedTags.some(t => t.id === tag.id);
+
+					const item = document.createElement("div");
+					item.className = `tags-dropdown-item${isSelected ? " selected" : ""}`;
+					item.dataset.id = tag.id;
+
+					item.innerHTML = `
+						<button type="button" class="tags-checkbox">
+							<div class="tags-checkbox-box">
+								<svg class="tags-checkbox-check" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+									<path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+								</svg>
+							</div>
+							<span class="tags-color-dot" style="background-color: ${tag.color || '#6c757d'}"></span>
+							<span class="tags-name">${this.escapeHtml(tag.name)}</span>
+						</button>
+					`;
+
+					item.addEventListener("click", (e) => {
+						e.stopPropagation();
+						this.toggleTag(tag.id);
+					});
+
+					this.listContainer.appendChild(item);
+				});
+
+				// Show create option if search term doesn't match any existing tag
+				this.updateCreateOption();
+			},
+
+			getFilteredTags() {
+				if (!this.searchTerm) {
+					return this.allTags;
+				}
+				const term = this.searchTerm.toLowerCase();
+				return this.allTags.filter(tag => tag.name.toLowerCase().includes(term));
+			},
+
+			filterTags(term) {
+				this.searchTerm = term;
+				this.renderDropdownList();
+			},
+
+			updateCreateOption() {
+				if (!this.searchTerm) {
+					this.createOption.classList.add("hidden");
+					return;
+				}
+
+				// Check if exact match exists
+				const exactMatch = this.allTags.some(
+					tag => tag.name.toLowerCase() === this.searchTerm.toLowerCase()
+				);
+
+				if (exactMatch) {
+					this.createOption.classList.add("hidden");
+				} else {
+					this.createOption.classList.remove("hidden");
+					this.createNameSpan.textContent = this.searchTerm;
+				}
+			},
+
+			toggleTag(tagId) {
+				const isSelected = this.selectedTags.some(t => t.id === tagId);
+				if (isSelected) {
+					this.removeTag(tagId);
+				} else {
+					this.addTag(tagId);
+				}
+			},
+
+			addTag(tagId) {
+				const tag = this.allTags.find(t => t.id === tagId);
+				if (!tag) return;
+
+				if (!this.selectedTags.some(t => t.id === tagId)) {
+					this.selectedTags.push(tag);
+					this.updateDataInput();
+					this.render();
+				}
+			},
+
+			removeTag(tagId) {
+				this.selectedTags = this.selectedTags.filter(t => t.id !== tagId);
+				this.updateDataInput();
+				this.render();
+			},
+
+			createTag(name) {
+				const createEndpoint = this.container.dataset.createEndpoint;
+				
+				// Generate random color
+				const color = '#' + Math.floor(Math.random()*16777215).toString(16).padStart(6, '0');
+
+				// Show loading state on create button
+				this.createBtn.disabled = true;
+				const originalText = this.createBtn.innerHTML;
+				this.createBtn.innerHTML = '<span class="spinner small"></span> Creating...';
+
+				fetch(createEndpoint, {
+					method: "POST",
+					headers: {
+						"Content-Type": "application/json",
+						"X-CSRF-Token": Craft.csrfTokenValue,
+					},
+					body: JSON.stringify({ name, color }),
+				})
+					.then((res) => res.json())
+					.then((data) => {
+						if (data.success && data.data) {
+							// Add new tag to allTags
+							this.allTags.push(data.data);
+							// Select the new tag
+							this.selectedTags.push(data.data);
+							this.updateDataInput();
+							// Clear search and re-render
+							this.input.value = "";
+							this.searchTerm = "";
+							this.render();
+
+							if (Craft.cp && Craft.cp.displayNotice) {
+								Craft.cp.displayNotice(`Tag "${name}" created`);
+							}
+						} else {
+							if (Craft.cp && Craft.cp.displayError) {
+								Craft.cp.displayError(data.message || "Failed to create tag");
+							}
+						}
+					})
+					.catch((err) => {
+						console.error("Failed to create tag:", err);
+						if (Craft.cp && Craft.cp.displayError) {
+							Craft.cp.displayError("Failed to create tag");
+						}
+					})
+					.finally(() => {
+						this.createBtn.disabled = false;
+						this.createBtn.innerHTML = originalText;
+					});
+			},
+
+			updateDataInput() {
+				const tagIds = this.selectedTags.map(t => t.id);
+				this.dataInput.value = JSON.stringify(tagIds);
+			},
+
+			escapeHtml(str) {
+				if (!str) return "";
+				return String(str)
+					.replace(/&/g, "&amp;")
+					.replace(/</g, "&lt;")
+					.replace(/>/g, "&gt;")
+					.replace(/"/g, "&quot;")
+					.replace(/'/g, "&#039;");
+			},
+			};
+
+			instance.init();
+		});
 	},
 };
 
