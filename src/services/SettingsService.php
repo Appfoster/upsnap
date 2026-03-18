@@ -15,6 +15,8 @@ use GuzzleHttp\Client;
  */
 class SettingsService extends Component
 {
+    public const API_KEY_VALIDATION_CACHE_TTL = 300; // seconds
+
     public ?string $apiKeyStatus;
     /**
      * Create a new Settings model instance
@@ -167,9 +169,69 @@ class SettingsService extends Component
     public function setApiKey(?string $apiKey): bool
     {
         if ($apiKey === null || $apiKey === '') {
+            // Clear API key and cached validation state
+            $this->deleteApiKeyValidationTimestamp();
+            $this->setApiTokenStatus(null);
             return $this->deleteSetting('apiKey');
         }
-        return $this->setSetting('apiKey', $apiKey);
+
+        $result = $this->setSetting('apiKey', $apiKey);
+
+        if ($result) {
+            // Invalidate cached validation when API key changes
+            $this->deleteApiKeyValidationTimestamp();
+        }
+
+        return $result;
+    }
+
+    /**
+     * Get the timestamp of the last API key validation.
+     */
+    private function getApiKeyValidationTimestamp(): ?int
+    {
+        $value = $this->getSetting('apiKeyValidationTimestamp');
+        return is_numeric($value) ? (int)$value : null;
+    }
+
+    /**
+     * Store the timestamp of the last API key validation.
+     */
+    private function setApiKeyValidationTimestamp(int $timestamp): bool
+    {
+        return $this->setSetting('apiKeyValidationTimestamp', $timestamp);
+    }
+
+    /**
+     * Delete the stored timestamp used for API key validation caching.
+     */
+    private function deleteApiKeyValidationTimestamp(): bool
+    {
+        return $this->deleteSetting('apiKeyValidationTimestamp');
+    }
+
+    /**
+     * Determine whether the API key should be re-validated.
+     */
+    private function shouldValidateApiKey(): bool
+    {
+        $lastValidatedAt = $this->getApiKeyValidationTimestamp();
+
+        if ($lastValidatedAt === null) {
+            return true;
+        }
+
+        $age = time() - $lastValidatedAt;
+        if ($age >= self::API_KEY_VALIDATION_CACHE_TTL) {
+            return true;
+        }
+
+        // If we don't currently have a known status, validate for safety.
+        if ($this->apiKeyStatus === null) {
+            return true;
+        }
+
+        return false;
     }
 
     public function verifyApiKey(string $apiKey): bool
@@ -312,13 +374,22 @@ class SettingsService extends Component
     }
 
     /**
-     * Validate API Key with microservice
+     * Validate API Key with microservice.
+     *
+     * To avoid excessive latency on every CP request, we cache the last validation time
+     * and only re-validate after a short TTL.
+     *
+     * @param bool $force Force re-validation regardless of cache age.
      */
-    public function validateApiKey(): void
+    public function validateApiKey(bool $force = false): void
     {
         $storedKey = $this->getApiKey();
 
         if (!$storedKey) {
+            return;
+        }
+
+        if (!$force && !$this->shouldValidateApiKey()) {
             return;
         }
 
@@ -327,14 +398,15 @@ class SettingsService extends Component
 
             if ($result['status'] === 'error') {
                 $this->handleInvalidTokenResponse($result['message']);
-                return;
+            } else {
+                $isValid = $result['isValid'];
+                $tokenStatus = $isValid ? Constants::API_KEY_STATUS['active'] : Constants::API_KEY_STATUS['deleted'];
+                $this->setApiTokenStatus($tokenStatus);
             }
-
-            $isValid = $result['isValid'];
-            $tokenStatus = $isValid ? Constants::API_KEY_STATUS['active'] : Constants::API_KEY_STATUS['deleted'];
-            $this->setApiTokenStatus($tokenStatus);
         } catch (\Throwable $e) {
             Craft::error("Error validating stored API key: {$e->getMessage()}", __METHOD__);
+        } finally {
+            $this->setApiKeyValidationTimestamp(time());
         }
     }
 
@@ -389,6 +461,8 @@ class SettingsService extends Component
 
         if (str_contains($normalizedMessage, 'suspended')) {
             $apiKeyStatus = Constants::API_KEY_STATUS['suspended'];
+        } elseif (str_contains($normalizedMessage, 'account expired') || str_contains($normalizedMessage, 'trial expired')) {
+            $apiKeyStatus = Constants::API_KEY_STATUS['account_expired'];
         } elseif (str_contains($normalizedMessage, 'expired')) {
             $apiKeyStatus = Constants::API_KEY_STATUS['expired'];
         } elseif (str_contains($normalizedMessage, 'not found')) {
@@ -508,6 +582,191 @@ class SettingsService extends Component
         } catch (\Throwable $e) {
             Craft::error("Monitor details fetch failed: {$e->getMessage()}", __METHOD__);
             return null;
+        }
+    }
+
+    /**
+     * Sign up a new UpSnap user, storing the returned API key and monitor ID locally.
+     */
+    public function signup(string $email, string $password, string $fullname): array
+    {
+        $result = Upsnap::$plugin->apiService->signupUser($email, $password, $fullname);
+
+        if (($result['status'] ?? '') === 'success') {
+            $data = $result['data'] ?? [];
+
+            // Get session token
+            $sessionToken = $data['token'] ?? null;
+            if (!$sessionToken) {
+                return [
+                    'status' => 'error',
+                    'message' => 'Signup failed: No session token received.',
+                ];
+            }
+
+            // Fetch or create API token
+            $apiKey = $this->getOrCreateApiToken($sessionToken);
+            if (!$apiKey) {
+                return [
+                    'status' => 'error',
+                    'message' => 'Signup failed: Could not retrieve or create API token.',
+                ];
+            }
+
+            // Store API key
+            $this->setApiKey($apiKey);
+
+            // Create first monitor automatically
+            $monitorResult = $this->createFirstMonitor($sessionToken);
+            if (!$monitorResult['success']) {
+                Craft::warning("Failed to create first monitor after signup: " . $monitorResult['message'], __METHOD__);
+                // Don't fail the entire signup if monitor creation fails
+            } else {
+                // Set the created monitor as primary
+                $monitorId = $monitorResult['data']['id'] ?? null;
+                $monitorUrl = $monitorResult['data']['config']['meta']['url'] ?? null;
+
+                if ($monitorId) {
+                    $this->setMonitorId($monitorId);
+                }
+                if ($monitorUrl) {
+                    $this->setMonitoringUrl($monitorUrl);
+                }
+            }
+        }
+
+        return $result;
+    }
+
+    /**
+     * Login an existing UpSnap user, storing the returned token and monitor URL locally.
+     *
+     * @param string $email
+     * @param string $password
+     * @return array
+     */
+    public function login(string $email, string $password): array
+    {
+        $result = Upsnap::$plugin->apiService->loginUser($email, $password);
+
+        if (($result['status'] ?? '') === 'success') {
+            $data = $result['data'] ?? [];
+
+            // Get session token
+            $sessionToken = $data['token'] ?? null;
+            if (!$sessionToken) {
+                return [
+                    'status' => 'error',
+                    'message' => 'Login failed: No session token received.',
+                ];
+            }
+
+            // Fetch or create API token
+            $apiKey = $this->getOrCreateApiToken($sessionToken);
+            if (!$apiKey) {
+                return [
+                    'status' => 'error',
+                    'message' => 'Login failed: Could not retrieve or create API token.',
+                ];
+            }
+
+            // Store API key
+            $this->setApiKey($apiKey);
+
+            // Store monitor URL if provided
+            if (!empty($data['monitor_url'])) {
+                $this->setMonitoringUrl($data['monitor_url']);
+            }
+        }
+
+        return $result;
+    }
+
+    /**
+     * Get existing API token or create new one
+     *
+     * @param string $sessionToken
+     * @return string|null
+     */
+    private function getOrCreateApiToken(string $sessionToken): ?string
+    {
+        // Try to get existing tokens
+        $tokensResult = Upsnap::$plugin->apiService->getTokens($sessionToken);
+
+        if (($tokensResult['status'] ?? '') === 'success') {
+            $tokens = $tokensResult['data']['tokens'] ?? [];
+            if (!empty($tokens)) {
+                // Use first token
+                return $tokens[0]['token_hash'] ?? null;
+            }
+        }
+
+        // No existing tokens, create new one
+        $generateResult = Upsnap::$plugin->apiService->generateToken($sessionToken);
+
+        if (($generateResult['status'] ?? '') === 'success') {
+            return $generateResult['data']['token_hash'] ?? null;
+        }
+
+        return null;
+    }
+
+    /**
+     * Create the first monitor for a new user using Craft CMS site details
+     */
+    private function createFirstMonitor(string $sessionToken): array
+    {
+        $originalToken = Upsnap::$plugin->apiService->getApiToken();
+        Upsnap::$plugin->apiService->setApiToken($sessionToken);
+
+        try {
+            // Get Craft CMS site details
+            $primarySite = Craft::$app->getSites()->getPrimarySite();
+            $siteName = $primarySite?->name ?? 'Craft CMS Site';
+            $siteUrl = rtrim($primarySite?->getBaseUrl() ?? '', '/');
+            if (!$siteUrl) {
+                return [
+                    'success' => false,
+                    'message' => 'Could not determine site URL.',
+                ];
+            }
+
+            // Create monitor payload
+            $payload = [
+                'name' => $siteName . ' Monitor',
+                'service_type' => Constants::SERVICE_TYPES['website'],
+                'config' => [
+                    'meta' => [
+                        'url' => $siteUrl,
+                    ],
+                ],
+                'is_enabled' => true
+            ];
+
+            // Create monitor via API
+            $result = Upsnap::$plugin->apiService->post(Constants::MICROSERVICE_ENDPOINTS['monitors']['create'], $payload);
+
+            if (($result['status'] ?? '') === 'success') {
+                // Extract monitor from nested structure
+                $monitor = $result['data']['monitor'] ?? $result['data'] ?? [];
+                return [
+                    'success' => true,
+                    'data' => $monitor,
+                ];
+            }
+
+            return [
+                'success' => false,
+                'message' => $result['message'] ?? 'Failed to create monitor.',
+            ];
+        } catch (\Throwable $e) {
+            Craft::error("Monitor creation failed: {$e->getMessage()}", __METHOD__);
+            return [
+                'success' => false,
+                'message' => 'An error occurred while creating the monitor.',
+            ];
+        } finally {
+            Upsnap::$plugin->apiService->setApiToken($originalToken);
         }
     }
 

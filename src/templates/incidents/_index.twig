@@ -62,12 +62,20 @@ upsnapDashboardUrl: {{ (upsnapDashboardUrl ?? '')|json_encode|raw }}
 			<div class="status-header">
 				<div class="status-icon warning">!</div>
 				<h3 class="status-title">
-					{{ 'Your API token is expired or suspended. Please update your API token to continue using the plugin features.'|t('upsnap') }}
+					{% if apiTokenStatus == apiTokenStatuses.account_expired %}
+						{{ 'Your account has expired. Please verify your email to continue using the service.'|t('upsnap') }}
+					{% else %}
+						{{ 'Your API token is expired or suspended. Please update your API token to continue using the plugin features.'|t('upsnap') }}
+					{% endif %}
 				</h3>
 			</div>
 			<p class="status-message">
 				<a href="{{ cpUrl('upsnap/settings') }}" class="go">{{ 'Go to Settings'|t('upsnap') }}</a>
-				{{ 'to update your API token and restore access to the Incidents page.'|t('upsnap') }}
+				{% if apiTokenStatus == apiTokenStatuses.account_expired %}
+					{{ 'to verify your email and restore access to the Incidents page.'|t('upsnap') }}
+				{% else %}
+					{{ 'to update your API token and restore access to the Incidents page.'|t('upsnap') }}
+				{% endif %}
 			</p>
 		</div>
 	{% else %}

@@ -429,20 +429,6 @@
 				) {
 					throw new Error(monitorsJson.message || "Failed to load monitors");
 				}
-				monitors.push(...monitorsJson.data.monitors);
-
-				// ------------------------------------
-				// FETCH + MERGE UPTIME STATS
-				// ------------------------------------
-				let uptimeStats = [];
-				try {
-					uptimeStats = await fetchUptimeStats();
-				} catch (e) {
-					console.warn('Failed to load uptime stats:', e);
-				}
-
-				// enrich monitors
-				monitors = mergeUptimeStats(monitors, uptimeStats);
 
 				// Build settings map from monitor_id -> config
 				if (
@@ -457,7 +443,7 @@
 					});
 				}
 
-				// Merge config into each monitor
+				// Merge config into each monitor and add to array
 				monitorsJson.data.monitors.forEach((monitor) => {
 					const config = settingsMap.get(monitor.id);
 					if (config) {
@@ -465,6 +451,19 @@
 					}
 					monitors.push(monitor);
 				});
+
+				// ------------------------------------
+				// FETCH + MERGE UPTIME STATS
+				// ------------------------------------
+				let uptimeStats = [];
+				try {
+					uptimeStats = await fetchUptimeStats();
+				} catch (e) {
+					console.warn('Failed to load uptime stats:', e);
+				}
+
+				// enrich monitors
+				monitors = mergeUptimeStats(monitors, uptimeStats);
 			}
 
 			const monitorCount = monitors.length;
@@ -681,7 +680,12 @@
 			case apiTokenStatuses.expired:
 				title = "Your API token has expired.";
 				error =
-					"Your current API token is invalid. Please provide a valid API token to create monitors, modify health check settings, and set up notification channels.";
+					"Your API token has expired. Please generate a new API token to continue using the service.";
+				break;
+			case apiTokenStatuses.account_expired:
+				title = "Your account has expired.";
+				error =
+					"Your 3-day free trial has expired. Please verify your email to continue using the service. Check your inbox for the verification link sent at registration, or use the forgot-password flow to verify your account.";
 				break;
 			case apiTokenStatuses.suspended:
 				title = "Your API token is suspended.";

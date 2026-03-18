@@ -7,35 +7,34 @@
 {% set showHealthchecks = showHealthchecks ?? false %}
 {% set isActiveApiToken = apiTokenStatus is same as(apiTokenStatuses.active) ? true : false %}
 
-{% set tabs = [
-	{ label: "Monitors"|t('upsnap'), url: '#monitors-tab', class: 'sel' },
-] %}
-
 {% if showHealthchecks %}
-	{% set tabs = tabs|merge([
+	{% set tabs = [
+		{ label: "Monitors"|t('upsnap'), url: '#monitors-tab', class: 'sel' },
 		(isActiveApiToken)
 			? { label: "Notification Channels"|t('upsnap'), url: '#notification-channels-tab' }
-			: { label: "Notification Channels"|t('upsnap'), url: '#notification-channels-tab', class: 'disabled-tab' }
-	]) %}
+			: { label: "Notification Channels"|t('upsnap'), url: '#notification-channels-tab', class: 'disabled-tab' },
+		{ label: "API Key"|t('upsnap'), url: '#api-tab' }
+	] %}
+{% else %}
+	{% set tabs = [
+		{ label: "Register/Sign In"|t('upsnap'), url: '#register-signin-tab', class: 'sel' }
+	] %}
 {% endif %}
-
-{% set tabs = tabs|merge([
-    { label: "API Key"|t('upsnap'), url: '#api-tab' }
-]) %}
 
 
 {% block actionButton %}
 	<div class="flex smallgap">
-		<button id="save-button" type="submit" form="settings-form" class="btn submit">
+		<button id="save-button" type="submit" form="settings-form" class="btn submit"{{ not showHealthchecks ? ' style="display:none;"' : '' }}>
 			{{ "Save"|t('upsnap') }}
 		</button>
 	</div>
 {% endblock %}
-{% set apiTokenStatus = apiTokenStatus ?? 'expired' %}
+{% set apiTokenStatus = apiTokenStatus ?? apiTokenStatuses.deleted %}
 
 {% set statusColorMap = {
     (apiTokenStatuses['active']): 'pill--green',
     (apiTokenStatuses['expired']): 'pill--red',
+    (apiTokenStatuses['account_expired']): 'pill--red',
     (apiTokenStatuses['deleted']): 'pill--grey',
     (apiTokenStatuses['suspended']): 'pill--yellow'
 } %}
@@ -57,13 +56,57 @@
 			apiTokenStatuses: {{ (apiTokenStatuses ?? 'unknown')|json_encode|raw }},
 			userDetails: {{ userDetails|json_encode|raw }},
 			subscriptionTypes : {{subscriptionTypes|json_encode|raw }},
-			logoBaseUrl: {{ (_logoBaseUrl ?? '')|json_encode|raw }}
+			logoBaseUrl: {{ (_logoBaseUrl ?? '')|json_encode|raw }},
+			signupI18n: {
+				emailRequired:        {{ 'Email is required.'|t('upsnap')|json_encode|raw }},
+				emailInvalid:         {{ 'Please enter a valid email address.'|t('upsnap')|json_encode|raw }},
+				passwordRequired:     {{ 'Password is required.'|t('upsnap')|json_encode|raw }},
+				passwordWeak:         {{ 'Password must be at least 8 characters and contain uppercase, lowercase, a number, and a special character.'|t('upsnap')|json_encode|raw }},
+				confirmPasswordRequired: {{ 'Confirm password is required.'|t('upsnap')|json_encode|raw }},
+				passwordMismatch:     {{ 'Passwords do not match.'|t('upsnap')|json_encode|raw }},
+				fullNameRequired:     {{ 'Full name is required.'|t('upsnap')|json_encode|raw }},
+				creatingAccount:      {{ 'Creating account…'|t('upsnap')|json_encode|raw }},
+				accountCreated:       {{ 'Account created!'|t('upsnap')|json_encode|raw }},
+				successMessage:       {{ 'Account created successfully! Monitoring has started.'|t('upsnap')|json_encode|raw }},
+				submitLabel:          {{ 'Start beta free trial'|t('upsnap')|json_encode|raw }},
+				genericError:         {{ 'An error occurred. Please try again.'|t('upsnap')|json_encode|raw }},
+				unexpectedError:      {{ 'An unexpected error occurred. Please try again.'|t('upsnap')|json_encode|raw }},
+				loginSuccess:         {{ 'Login successful!'|t('upsnap')|json_encode|raw }},
+				loginError:           {{ 'Login failed. Please check your credentials and try again.'|t('upsnap')|json_encode|raw }},
+				signInLabel:          {{ 'Sign In'|t('upsnap')|json_encode|raw }},
+				signUpLabel:          {{ 'Sign Up'|t('upsnap')|json_encode|raw }}
+			}
 		};
 	</script>
 		<div id="status-container-wrapper" data-page="reachability"></div>
 
+		{# Expired Account Banner #}
+		{% if apiTokenStatus == apiTokenStatuses.account_expired %}
+			<div class="status-container error" style="margin-bottom: 24px;">
+				<div class="status-header">
+					<div class="status-icon error">!</div>
+					<h3 class="status-title">{{ 'Account Expired'|t('upsnap') }}</h3>
+				</div>
+				<p class="status-message-dashboard">
+					{{ 'Your 3-day free trial has expired. Please verify your email to continue using the service. Check your inbox for the verification link sent at registration, or use the forgot-password flow to verify your account.'|t('upsnap') }}
+					<br><br>
+				</p>
+			</div>
+		{% elseif apiTokenStatus == apiTokenStatuses.expired %}
+			<div class="status-container error" style="margin-bottom: 24px;">
+				<div class="status-header">
+					<div class="status-icon error">!</div>
+					<h3 class="status-title">{{ 'API Token Expired'|t('upsnap') }}</h3>
+				</div>
+				<p class="status-message-dashboard">
+					{{ 'Your API token has expired. Please generate a new token in the Upsnap Dashboard and update it here to continue using monitoring features.'|t('upsnap') }}
+					<br><br>
+				</p>
+			</div>
+		{% endif %}
+
 		{# ====================== GENERAL TAB ====================== #}
-		<div id="monitors-tab" class="tab-content">
+		<div id="monitors-tab" class="tab-content{{ not showHealthchecks ? ' hidden' : '' }}">
 			{% if not showHealthchecks %}
 				<div class="status-container warning" style="margin-bottom: 24px;">
 					<div class="status-header">
@@ -80,6 +123,97 @@
 			<input type="hidden" id="monitorId" name="monitorId" value="{{ settings.monitorId ?? '' }}">
 			<input type="hidden" id="monitoringUrlInput" name="monitoringUrlInput" value="{{ settings.monitoringUrl ?? '' }}">
 		</div>
+
+		{# ====================== REGISTER/SIGN IN TAB ====================== #}
+		<div id="register-signin-tab" class="tab-content{{ showHealthchecks ? ' hidden' : '' }}">
+			<div class="status-container" style="margin-bottom: 24px;">
+				<p class="status-message-dashboard">
+					{{ 'Register or sign in to start monitoring your site and unlock full monitoring insights.'|t('upsnap') }}
+				</p>
+			</div>
+			{# ── Signup form ── #}
+			<div id="signup-form-wrapper">
+				<div class="field">
+					<div class="heading">
+						<label for="signup-fullname">{{ "Full Name"|t('upsnap') }}</label>
+					</div>
+					<div class="input ltr">
+						<input type="text" id="signup-fullname" class="text fullwidth" placeholder="John Doe" autocomplete="name">
+					</div>
+					<p id="signup-fullname-error" class="error" style="display:none;"></p>
+				</div>
+				<div class="field">
+					<div class="heading">
+						<label for="signup-email">{{ "Email"|t('upsnap') }}</label>
+					</div>
+					<div class="input ltr">
+						<input type="email" id="signup-email" class="text fullwidth" placeholder="you@example.com" autocomplete="email">
+					</div>
+					<p id="signup-email-error" class="error" style="display:none;"></p>
+				</div>
+				<div class="field">
+					<div class="heading">
+						<label for="signup-password">{{ "Password"|t('upsnap') }}</label>
+					</div>
+					<div class="input ltr">
+						<input type="password" id="signup-password" class="text fullwidth" autocomplete="new-password">
+					</div>
+					<p id="signup-password-error" class="error" style="display:none;"></p>
+					<p class="instructions">{{ "Must be at least 8 characters with uppercase, lowercase, a number, and a special character."|t('upsnap') }}</p>
+				</div>
+				<div class="field">
+					<div class="heading">
+						<label for="signup-confirm-password">{{ "Confirm Password"|t('upsnap') }}</label>
+					</div>
+					<div class="input ltr">
+						<input type="password" id="signup-confirm-password" class="text fullwidth" autocomplete="new-password">
+					</div>
+					<p id="signup-confirm-password-error" class="error" style="display:none;"></p>
+				</div>
+				<div style="margin-top: 20px;">
+					<button id="signup-submit-btn" type="button" class="btn submit">
+						{{ "Start beta free trial"|t('upsnap') }}
+					</button>
+				</div>
+				<p id="signup-general-error" class="error" style="display:none; text-transform: uppercase; margin-top: 8px;"></p>
+				<p class="light" style="margin-top: 16px;">
+					{{ "Already have an account?"|t('upsnap') }}
+					<a id="toggle-signin-form" href="#">{{ "Sign in"|t('upsnap') }}</a>
+				</p>
+			</div>
+
+			{# ── Signin form ── #}
+			<div id="signin-form-wrapper" style="display:none;">
+				<div class="field">
+					<div class="heading">
+						<label for="signin-email">{{ "Email"|t('upsnap') }}</label>
+					</div>
+					<div class="input ltr">
+						<input type="email" id="signin-email" class="text fullwidth" placeholder="you@example.com" autocomplete="email">
+					</div>
+					<p id="signin-email-error" class="error" style="display:none;"></p>
+				</div>
+				<div class="field">
+					<div class="heading">
+						<label for="signin-password">{{ "Password"|t('upsnap') }}</label>
+					</div>
+					<div class="input ltr">
+						<input type="password" id="signin-password" class="text fullwidth" autocomplete="current-password">
+					</div>
+					<p id="signin-password-error" class="error" style="display:none;"></p>
+				</div>
+				<div style="margin-top: 20px;">
+					<button id="signin-submit-btn" type="button" class="btn submit">
+						{{ "Sign In"|t('upsnap') }}
+					</button>
+				</div>
+				<p id="signin-general-error" class="error" style="display:none; margin-top: 8px;"></p>
+				<p class="light" style="margin-top: 16px;">
+					{{ "Don't have an account?"|t('upsnap') }}
+					<a id="toggle-signup-form" href="#">{{ "Sign up"|t('upsnap') }}</a>
+				</p>
+			</div>
+		</div>
 		{% if isActiveApiToken ?? false %}
 			{% include "upsnap/_components/notificationChannels.twig" %}
 		{% endif %}
@@ -87,8 +221,8 @@
 			{{ csrfInput() }}
 			{{ actionInput('upsnap/settings/save', { id: 'form-action-input' }) }}
 			{{ redirectInput('upsnap/settings') }}
-			{# <div id="status-container-wrapper" data-page="reachability"></div> #}
 			<div id="api-tab" class="tab-content hidden">
+				{# ── API key field ── #}
 				<div class="api-key-field-with-status">
 					{{ forms.textField({
 						label: "API Key"|t('upsnap'),
@@ -100,10 +234,9 @@
 						placeholder: 'XXXX-XXXX-XXXX-XXXX',
 						errors: settings.getErrors('apiKey') ?? false
 					}) }}
-
 					{% if showHealthchecks %}
 						<span class="api-pill {{ statusColorClass }}">
-							{{ apiTokenStatus|capitalize }}
+							{{ apiTokenStatus|replace({'_': ' '})|title }}
 						</span>
 					{% endif %}
 				</div>
