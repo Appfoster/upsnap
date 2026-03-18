@@ -42,7 +42,8 @@ class BaseController extends \craft\web\Controller
         $apiTokenStatus = $settingsService->getApiTokenStatus();
 
         if ($this->id !== 'settings' && (!$hasApiKey || $apiTokenStatus === Constants::API_KEY_STATUS['expired'] || $apiTokenStatus === Constants::API_KEY_STATUS['account_expired'])) {
-            $settingsUrl = UrlHelper::cpUrl(Constants::SUBNAV_ITEM_SETTINGS['url']) . '#api-tab';
+            $tab = $hasApiKey ? '#api-tab' : '#register-signin-tab';
+            $settingsUrl = UrlHelper::cpUrl(Constants::SUBNAV_ITEM_SETTINGS['url']) . $tab;
 
             if (Craft::$app->getRequest()->getIsAjax()) {
                 Craft::$app->getResponse()->format = \yii\web\Response::FORMAT_JSON;

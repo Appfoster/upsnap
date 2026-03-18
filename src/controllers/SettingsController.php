@@ -262,7 +262,7 @@ class SettingsController extends BaseController
                 return $this->asJson([
                     'success'     => true,
                     'message'     => $result['data']['message'] ?? Craft::t('upsnap', 'Account created successfully! Monitoring has started.'),
-                    'redirectUrl' => UrlHelper::cpUrl(Constants::SUBNAV_ITEM_SETTINGS['url'] . '#monitors-tab'),
+                    'redirectUrl' => UrlHelper::cpUrl(Constants::SUBNAV_ITEM_SETTINGS['url']) . '#monitors-tab',
                 ]);
             }
 

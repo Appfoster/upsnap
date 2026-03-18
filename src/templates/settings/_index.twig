@@ -81,7 +81,7 @@
 		<div id="status-container-wrapper" data-page="reachability"></div>
 
 		{# Expired Account Banner #}
-		{% if apiTokenStatus == apiTokenStatuses.expired or apiTokenStatus == apiTokenStatuses.account_expired %}
+		{% if apiTokenStatus == apiTokenStatuses.account_expired %}
 			<div class="status-container error" style="margin-bottom: 24px;">
 				<div class="status-header">
 					<div class="status-icon error">!</div>
@@ -89,6 +89,17 @@
 				</div>
 				<p class="status-message-dashboard">
 					{{ 'Your 3-day free trial has expired. Please verify your email to continue using the service. Check your inbox for the verification link sent at registration, or use the forgot-password flow to verify your account.'|t('upsnap') }}
+					<br><br>
+				</p>
+			</div>
+		{% elseif apiTokenStatus == apiTokenStatuses.expired %}
+			<div class="status-container error" style="margin-bottom: 24px;">
+				<div class="status-header">
+					<div class="status-icon error">!</div>
+					<h3 class="status-title">{{ 'API Token Expired'|t('upsnap') }}</h3>
+				</div>
+				<p class="status-message-dashboard">
+					{{ 'Your API token has expired. Please generate a new token in the Upsnap Dashboard and update it here to continue using monitoring features.'|t('upsnap') }}
 					<br><br>
 				</p>
 			</div>
