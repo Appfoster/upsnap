@@ -15,8 +15,6 @@ use GuzzleHttp\Client;
  */
 class SettingsService extends Component
 {
-    public const API_KEY_VALIDATION_CACHE_TTL = 300; // seconds
-
     public ?string $apiKeyStatus;
     /**
      * Create a new Settings model instance
@@ -169,69 +167,9 @@ class SettingsService extends Component
     public function setApiKey(?string $apiKey): bool
     {
         if ($apiKey === null || $apiKey === '') {
-            // Clear API key and cached validation state
-            $this->deleteApiKeyValidationTimestamp();
-            $this->setApiTokenStatus(null);
             return $this->deleteSetting('apiKey');
         }
-
-        $result = $this->setSetting('apiKey', $apiKey);
-
-        if ($result) {
-            // Invalidate cached validation when API key changes
-            $this->deleteApiKeyValidationTimestamp();
-        }
-
-        return $result;
-    }
-
-    /**
-     * Get the timestamp of the last API key validation.
-     */
-    private function getApiKeyValidationTimestamp(): ?int
-    {
-        $value = $this->getSetting('apiKeyValidationTimestamp');
-        return is_numeric($value) ? (int)$value : null;
-    }
-
-    /**
-     * Store the timestamp of the last API key validation.
-     */
-    private function setApiKeyValidationTimestamp(int $timestamp): bool
-    {
-        return $this->setSetting('apiKeyValidationTimestamp', $timestamp);
-    }
-
-    /**
-     * Delete the stored timestamp used for API key validation caching.
-     */
-    private function deleteApiKeyValidationTimestamp(): bool
-    {
-        return $this->deleteSetting('apiKeyValidationTimestamp');
-    }
-
-    /**
-     * Determine whether the API key should be re-validated.
-     */
-    private function shouldValidateApiKey(): bool
-    {
-        $lastValidatedAt = $this->getApiKeyValidationTimestamp();
-
-        if ($lastValidatedAt === null) {
-            return true;
-        }
-
-        $age = time() - $lastValidatedAt;
-        if ($age >= self::API_KEY_VALIDATION_CACHE_TTL) {
-            return true;
-        }
-
-        // If we don't currently have a known status, validate for safety.
-        if ($this->apiKeyStatus === null) {
-            return true;
-        }
-
-        return false;
+        return $this->setSetting('apiKey', $apiKey);
     }
 
     public function verifyApiKey(string $apiKey): bool
@@ -374,22 +312,13 @@ class SettingsService extends Component
     }
 
     /**
-     * Validate API Key with microservice.
-     *
-     * To avoid excessive latency on every CP request, we cache the last validation time
-     * and only re-validate after a short TTL.
-     *
-     * @param bool $force Force re-validation regardless of cache age.
+     * Validate API Key with microservice
      */
-    public function validateApiKey(bool $force = false): void
+    public function validateApiKey(): void
     {
         $storedKey = $this->getApiKey();
 
         if (!$storedKey) {
-            return;
-        }
-
-        if (!$force && !$this->shouldValidateApiKey()) {
             return;
         }
 
@@ -398,15 +327,14 @@ class SettingsService extends Component
 
             if ($result['status'] === 'error') {
                 $this->handleInvalidTokenResponse($result['message']);
-            } else {
-                $isValid = $result['isValid'];
-                $tokenStatus = $isValid ? Constants::API_KEY_STATUS['active'] : Constants::API_KEY_STATUS['deleted'];
-                $this->setApiTokenStatus($tokenStatus);
+                return;
             }
+
+            $isValid = $result['isValid'];
+            $tokenStatus = $isValid ? Constants::API_KEY_STATUS['active'] : Constants::API_KEY_STATUS['deleted'];
+            $this->setApiTokenStatus($tokenStatus);
         } catch (\Throwable $e) {
             Craft::error("Error validating stored API key: {$e->getMessage()}", __METHOD__);
-        } finally {
-            $this->setApiKeyValidationTimestamp(time());
         }
     }
 
