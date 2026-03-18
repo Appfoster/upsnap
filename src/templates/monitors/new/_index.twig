@@ -111,7 +111,14 @@
 				</div>
 			</div>
 
-			{% include 'upsnap/_components/regions-multiselect.twig' %}
+			<div class="flex" style="gap: 20px; margin-top: 20px; align-items: flex-start;">
+				<div class="flex-grow">
+					{% include 'upsnap/_components/regions-multiselect.twig' %}
+				</div>
+				<div class="flex-grow" style="flex: 0 0 calc(50% - 10px); max-width: calc(50% - 10px);">
+					{% include 'upsnap/_components/tags-multiselect.twig' with { prefix: 'website' } %}
+				</div>
+			</div>
 
 			<div id="notification-channels-accordion" class="field">
 				<div class="heading">
@@ -345,20 +352,24 @@
 				</div>
 			</div>
 
-			<div class="flex">
-				<div class="port-field">
+			<div class="flex" style="gap: 20px; margin-top: 20px; align-items: flex-start;">
+				<div class="flex-grow" style="flex: 0 0 calc(50% - 10px); max-width: calc(50% - 10px);">
 					{{ forms.textField({
 						label: "Port",
 						id: "portNumber",
 						name: "portNumber",
 						type: "number",
 						placeholder: "8080",
+						instructions: "The port number to monitor (1-65535).",
 						min: 1,
 						max: 65535,
 						value: monitor ? (monitor.portNumber ?? "") : "",
 						required: true,
 						errors: []
 					}) }}
+				</div>
+				<div class="flex-grow" style="flex: 0 0 calc(50% - 10px); max-width: calc(50% - 10px);">
+					{% include 'upsnap/_components/tags-multiselect.twig' with { prefix: 'port' } %}
 				</div>
 			</div>
 
@@ -454,6 +465,12 @@
 						required: true,
 						errors: []
 					}) }}
+				</div>
+			</div>
+
+			<div class="flex" style="margin-bottom: 20px; margin-top: 20px;">
+				<div class="flex-grow" style="flex: 0 0 50%; max-width: 50%;">
+					{% include 'upsnap/_components/tags-multiselect.twig' with { prefix: 'keyword' } %}
 				</div>
 			</div>
 
@@ -598,7 +615,9 @@
 			monitorData: {{ monitor ? monitor|json_encode|raw : 'null' }},
 			monitorType: {{ monitorType|json_encode|raw }},
 			minMonitorIntervalSeconds: {{ MIN_MONITOR_INTERVAL_SECONDS }},
-			userDetails: {{ userDetails ? userDetails|json_encode|raw : 'null' }}
+			userDetails: {{ userDetails ? userDetails|json_encode|raw : 'null' }},
+			tagsEndpoint: "{{ actionUrl('upsnap/tags/list') }}",
+			tagsCreateEndpoint: "{{ actionUrl('upsnap/tags/create') }}"
 		};
 	</script>
 {% endblock %}

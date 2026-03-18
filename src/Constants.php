@@ -18,7 +18,7 @@ class Constants
 
     // API Configuration
     public const API_BASE_URL_DEFAULT = 'https://api.upsnap.ai';
-    public const UPSNAP_DASHBOARD_URL = 'https://upsnap.ai';
+    public const UPSNAP_DASHBOARD_URL = 'https://app.upsnap.ai';
     public const UPSNAP_STATS_PAGE_URL = 'https://stats.upsnap.ai';
     public const API_VERSION = 'v1';
     // API Endpoints
@@ -190,13 +190,18 @@ class Constants
                 'create' => 'user/status-pages',
                 'update' => 'user/status-pages',
                 'delete' => 'user/status-pages',
-            ]
+            ],
+            'monitors_stats' => 'user/monitors/uptime-stats',
         ],
         'user' => [
             'details' => 'user/details'
         ],
         'regions' => [
             'list' => 'regions'
+        ],
+        'tags' => [
+            'list' => 'user/tags',
+            'create' => 'user/tags',
         ],
     ];
 

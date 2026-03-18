@@ -131,8 +131,8 @@
             sel.appendChild(opt);
         });
 
-        // Pre-select: honour ?monitorId= URL param first, then fall back to first in list
-        const urlMonitorId = new URLSearchParams(window.location.search).get('monitorId');
+        // Pre-select: honour ?monitor_id= URL param first, then fall back to first in list
+        const urlMonitorId = new URLSearchParams(window.location.search).get('monitor_id');
         const preselect = urlMonitorId && monitors.find((m) => m.id === urlMonitorId)
             ? urlMonitorId
             : monitors[0].id;
