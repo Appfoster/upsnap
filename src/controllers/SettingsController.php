@@ -214,10 +214,76 @@ class SettingsController extends BaseController
     }
 
     /**
-     * Handle in-plugin user signup (AJAX POST).
+     * Handle in-plugin user signup
      * Returns JSON with success/error details and a redirectUrl on success.
      */
     public function actionSignup(): \yii\web\Response
+    {
+        $this->requirePostRequest();
+
+        $request   = Craft::$app->getRequest();
+        $fullname  = trim($request->getBodyParam('fullname', ''));
+        $email     = trim($request->getBodyParam('email', ''));
+        $password  = $request->getBodyParam('password', '');
+        $confirm   = $request->getBodyParam('confirm_password', '');
+
+        $errors = [];
+
+        if ($fullname === '') {
+            $errors['fullname'] = [Craft::t('upsnap', 'Full name is required.')];
+        }
+
+        if ($email === '') {
+            $errors['email'] = [Craft::t('upsnap', 'Email is required.')];
+        } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            $errors['email'] = [Craft::t('upsnap', 'Please enter a valid email address.')];
+        }
+
+        if ($password === '') {
+            $errors['password'] = [Craft::t('upsnap', 'Password is required.')];
+        } elseif (!preg_match('/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/', $password)) {
+            $errors['password'] = [Craft::t('upsnap', 'Password must be at least 8 characters and contain uppercase, lowercase, a number, and a special character.')];
+        }
+
+        if ($confirm === '') {
+            $errors['confirm_password'] = [Craft::t('upsnap', 'Confirm password is required.')];
+        } elseif ($confirm !== $password) {
+            $errors['confirm_password'] = [Craft::t('upsnap', 'Passwords do not match.')];
+        }
+
+        if (!empty($errors)) {
+            return $this->asJson(['success' => false, 'errors' => $errors]);
+        }
+
+        try {
+            $result = Upsnap::getInstance()->settingsService->signup($email, $password, $fullname);
+
+            if (($result['status'] ?? '') === 'success') {
+                return $this->asJson([
+                    'success'     => true,
+                    'message'     => $result['data']['message'] ?? Craft::t('upsnap', 'Account created successfully! Monitoring has started.'),
+                    'redirectUrl' => UrlHelper::cpUrl(Constants::SUBNAV_ITEM_SETTINGS['url'] . '#monitors-tab'),
+                ]);
+            }
+
+            return $this->asJson([
+                'success' => false,
+                'errors'  => ['general' => [$result['message'] ?? Craft::t('upsnap', 'Account creation failed. Please try again.')]],
+            ]);
+        } catch (\Throwable $e) {
+            Craft::error('Signup failed: ' . $e->getMessage(), __METHOD__);
+            return $this->asJson([
+                'success' => false,
+                'errors'  => ['general' => [Craft::t('upsnap', 'An error occurred. Please try again.')]],
+            ]);
+        }
+    }
+
+    /**
+     * Handle in-plugin user login
+     * Returns JSON with success/error details.
+     */
+    public function actionLogin(): \yii\web\Response
     {
         $this->requirePostRequest();
 
@@ -235,8 +301,6 @@ class SettingsController extends BaseController
 
         if ($password === '') {
             $errors['password'] = [Craft::t('upsnap', 'Password is required.')];
-        } elseif (!preg_match('/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/', $password)) {
-            $errors['password'] = [Craft::t('upsnap', 'Password must be at least 8 characters and contain uppercase, lowercase, a number, and a special character.')];
         }
 
         if (!empty($errors)) {
@@ -244,23 +308,22 @@ class SettingsController extends BaseController
         }
 
         try {
-            //TODO: Replace mock response with real API call once the endpoint is ready
-            $result = Upsnap::getInstance()->settingsService->signup($email, $password);
+            $result = Upsnap::getInstance()->settingsService->login($email, $password);
 
             if (($result['status'] ?? '') === 'success') {
                 return $this->asJson([
-                    'success'     => true,
-                    'message'     => $result['data']['message'] ?? Craft::t('upsnap', 'Account created successfully! Monitoring has started.'),
-                    'redirectUrl' => UrlHelper::cpUrl(Constants::SUBNAV_ITEM_SETTINGS['url']),
+                    'success' => true,
+                    'message' => Craft::t('upsnap', 'Login successful!'),
+                    'redirectUrl' => UrlHelper::cpUrl(Constants::SUBNAV_ITEM_SETTINGS['url']) . '#monitors-tab',
                 ]);
             }
 
             return $this->asJson([
                 'success' => false,
-                'errors'  => ['general' => [$result['message'] ?? Craft::t('upsnap', 'Account creation failed. Please try again.')]],
+                'errors'  => ['general' => [$result['message'] ?? Craft::t('upsnap', 'Login failed. Please check your credentials and try again.')]],
             ]);
         } catch (\Throwable $e) {
-            Craft::error('Signup failed: ' . $e->getMessage(), __METHOD__);
+            Craft::error('Login failed: ' . $e->getMessage(), __METHOD__);
             return $this->asJson([
                 'success' => false,
                 'errors'  => ['general' => [Craft::t('upsnap', 'An error occurred. Please try again.')]],

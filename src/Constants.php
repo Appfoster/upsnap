@@ -25,8 +25,7 @@ class Constants
     public const ENDPOINT_HEALTHCHECK = 'healthcheck';
 
     public const ENDPOINT_VERIFY_API_KEY = 'tokens/validate';
-
-    public const ENDPOINT_SIGNUP = 'user/signup';
+    public const REGISTER_SOURCE = 'plugin';
 
     // Check Types
     public const CHECK_REACHABILITY = 'reachability';
@@ -155,6 +154,7 @@ class Constants
         'active' => 'active',
         'suspended' => 'suspended',
         'expired' => 'expired',
+        'account_expired' => 'account_expired',
         'deleted' => 'deleted',
     ];
 
@@ -194,7 +194,9 @@ class Constants
             'monitors_stats' => 'user/monitors/uptime-stats',
         ],
         'user' => [
-            'details' => 'user/details'
+            'details' => 'user/details',
+            'register' => 'user/register',
+            'login' => 'user/login'
         ],
         'regions' => [
             'list' => 'regions'
@@ -203,6 +205,10 @@ class Constants
             'list' => 'user/tags',
             'create' => 'user/tags',
         ],
+        'tokens' => [
+            'list' => 'tokens',
+            'generate' => 'tokens/generate',
+        ]
     ];
 
     public const LIGHTHOUSE_STRATEGY = [

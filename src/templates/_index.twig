@@ -56,7 +56,11 @@
 					<div class="status-header">
 						<div class="status-icon warning">!</div>
 						<h3 class="status-title">
-							{{ 'Your API token is expired or suspended. Please update your API token to continue using the plugin features.'|t('upsnap') }}
+							{% if apiTokenStatus == apiTokenStatuses.account_expired %}
+								{{ 'Your account has expired. Please verify your email to continue using the service.'|t('upsnap') }}
+							{% else %}
+								{{ 'Your API token is expired or suspended. Please update your API token to continue using the plugin features.'|t('upsnap') }}
+							{% endif %}
 						</h3>
 					</div>
 					<p class="status-message">

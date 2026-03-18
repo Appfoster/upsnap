@@ -191,32 +191,104 @@ class ApiService extends Component
     /**
      * Sign up a new UpSnap user from within CraftCMS.
      *
-     * NOTE: Returns a mock response while the microservice signup endpoint is being
-     * developed. To switch to the real API, replace the mock block below with:
-     *
-     *   return $this->post(Constants::ENDPOINT_SIGNUP, [
-     *       'email'    => $email,
-     *       'password' => $password,
-     *       'source'   => 'craftcms',
-     *       'site_url' => $siteUrl,
-     *   ]);
      */
-    public function signupUser(string $email, string $password, string $siteUrl): array
+    public function signupUser(string $email, string $password, string $fullname): array
     {
-        // TODO: Replace with $this->post(Constants::ENDPOINT_SIGNUP, [...]) when ready.
-        $mockApiKey   = '033f292259dd5086f53f54acb2edec90453c6834f313d14a2e9e985ea3f66c14';
-        $mockMonitorId = '45f0305c-30ba-42b8-970b-2920f91f20e7';
+        // Real API call
+        try {
+            $result = $this->post(Constants::MICROSERVICE_ENDPOINTS['user']['register'], [
+                'email' => $email,
+                'password' => $password,
+                'fullname' => $fullname,
+                'source' => Constants::REGISTER_SOURCE,
+            ]);
+            return $result;
+        } catch (RequestException $e) {
+            Craft::error("Signup API failed: " . $e->getMessage(), __METHOD__);
+            return [
+                'status' => 'error',
+                'message' => 'Signup failed. Please try again.',
+            ];
+        }
+    }
 
-        return [
-            'status' => 'success',
-            'data'   => [
-                'fullname'   => '',
-                'email'      => $email,
-                'api_key'    => $mockApiKey,
-                'monitor_id' => $mockMonitorId,
-                'message'    => 'Account created successfully. You are now on the Beta plan.',
-            ],
-        ];
+    /**
+     * Login user
+     *
+     * @param string $email
+     * @param string $password
+     * @return array
+     */
+    public function loginUser(string $email, string $password): array
+    {
+        // Real API call
+        try {
+            $result = $this->post(Constants::MICROSERVICE_ENDPOINTS['user']['login'], [
+                'email' => $email,
+                'password' => $password,
+            ]);
+            return $result;
+        } catch (RequestException $e) {
+            Craft::error("Login API failed: " . $e->getMessage(), __METHOD__);
+            return [
+                'status' => 'error',
+                'message' => 'Login failed. Please try again.',
+            ];
+        }
+    }
+
+    /**
+     * Get user tokens using session token
+     *
+     * @param string $sessionToken
+     * @return array
+     */
+    public function getTokens(string $sessionToken): array
+    {
+        $originalToken = $this->apiToken;
+        $this->apiToken = $sessionToken;
+
+        try {
+            $result = $this->get(Constants::MICROSERVICE_ENDPOINTS['tokens']['list']);
+            return $result;
+        } catch (RequestException $e) {
+            Craft::error("Get tokens API failed: " . $e->getMessage(), __METHOD__);
+            return [
+                'status' => 'error',
+                'message' => 'Failed to retrieve tokens.',
+            ];
+        } finally {
+            $this->apiToken = $originalToken;
+        }
+    }
+
+    /**
+     * Generate new token using session token
+     *
+     * @param string $sessionToken
+     * @return array
+     */
+    public function generateToken(string $sessionToken): array
+    {
+        $originalToken = $this->apiToken;
+        $this->apiToken = $sessionToken;
+
+        try {
+            $result = $this->post(Constants::MICROSERVICE_ENDPOINTS['tokens']['generate'], [
+                'name' => 'CraftCMS Plugin Token',
+                'description' => 'Token for CraftCMS health check plugin',
+                'expires' => null,
+            ]);
+            return $result;
+        } catch (RequestException $e) {
+            Craft::error("Generate token API failed: " . $e->getMessage(), __METHOD__);
+            return [
+                'status' => 'error',
+                'message' => 'Failed to generate token.',
+            ];
+        } finally {
+            $this->apiToken = $originalToken;
+        }
     }
 
     /**
@@ -229,5 +301,21 @@ class ApiService extends Component
             'Accept'        => 'application/json',
             'X-Requested-From' => 'craft',
         ];
+    }
+
+    /**
+     * Get the current API token
+     */
+    public function getApiToken(): ?string
+    {
+        return $this->apiToken;
+    }
+
+    /**
+     * Set the API token
+     */
+    public function setApiToken(?string $token): void
+    {
+        $this->apiToken = $token;
     }
 }

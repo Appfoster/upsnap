@@ -174,7 +174,7 @@ class Upsnap extends Plugin
     {
         $url = UrlHelper::cpUrl(Constants::SUBNAV_ITEM_SETTINGS['url']);
         if (!$this->settingsService->getApiKey()) {
-            $url .= '#api-tab';
+            $url .= '#register-signin-tab';
         }
         return Craft::$app->getResponse()->redirect($url);
     }

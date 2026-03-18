@@ -23,7 +23,7 @@ class BaseController extends \craft\web\Controller
     }
 
     /**
-     * Redirect to Settings → API Key tab when no API key is stored.
+     * Redirect to Settings → API Key tab when no API key is stored or when API key is expired.
      * SettingsController (id = 'settings') is excluded to prevent redirect loops.
      *
      * @inheritdoc
@@ -34,7 +34,14 @@ class BaseController extends \craft\web\Controller
             return false;
         }
 
-        if ($this->id !== 'settings' && !Upsnap::getInstance()->settingsService->getApiKey()) {
+        $settingsService = Upsnap::getInstance()->settingsService;
+        $hasApiKey = $settingsService->getApiKey() !== null;
+        if ($hasApiKey) {
+            $settingsService->validateApiKey();
+        }
+        $apiTokenStatus = $settingsService->getApiTokenStatus();
+
+        if ($this->id !== 'settings' && (!$hasApiKey || $apiTokenStatus === Constants::API_KEY_STATUS['expired'] || $apiTokenStatus === Constants::API_KEY_STATUS['account_expired'])) {
             $settingsUrl = UrlHelper::cpUrl(Constants::SUBNAV_ITEM_SETTINGS['url']) . '#api-tab';
 
             if (Craft::$app->getRequest()->getIsAjax()) {
@@ -44,9 +51,6 @@ class BaseController extends \craft\web\Controller
                 Craft::$app->end();
             }
 
-            Craft::$app->getSession()->setNotice(
-                Craft::t('upsnap', 'Please create an account to start monitoring.')
-            );
             Craft::$app->getResponse()->redirect($settingsUrl)->send();
             Craft::$app->end();
         }
