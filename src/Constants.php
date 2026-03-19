@@ -25,7 +25,7 @@ class Constants
     public const ENDPOINT_HEALTHCHECK = 'healthcheck';
 
     public const ENDPOINT_VERIFY_API_KEY = 'tokens/validate';
-    public const REGISTER_SOURCE = 'plugin';
+    public const REGISTER_SOURCE = 'craftcms';
 
     // Check Types
     public const CHECK_REACHABILITY = 'reachability';
