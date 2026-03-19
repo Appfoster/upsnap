@@ -742,7 +742,6 @@ class SettingsService extends Component
 
             // Create monitor via API
             $result = Upsnap::$plugin->apiService->post(Constants::MICROSERVICE_ENDPOINTS['monitors']['create'], $payload);
-            Craft::error("Create monitor API response:" . print_r($result, true), __METHOD__);
 
             if (($result['status'] ?? '') === 'success') {
                 // Extract monitor from nested structure

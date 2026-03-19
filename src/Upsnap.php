@@ -14,7 +14,6 @@ use craft\events\RegisterUrlRulesEvent;
 use appfoster\upsnap\services\ApiService;
 use appfoster\upsnap\services\HistoryService;
 use appfoster\upsnap\services\SettingsService;
-use yii\helpers\Console;
 
 /**
  * @property ApiService $apiService

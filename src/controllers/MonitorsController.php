@@ -681,7 +681,6 @@ class MonitorsController extends Controller
             }
 
             if (!isset($response['status']) || $response['status'] !== 'success') {
-                Craft::error("error message" . $response['message'], __METHOD__);
                 $errorMsg = $response['message'] ?? Craft::t('upsnap', 'Failed to fetch monitors uptime stats.');
 
                 throw new \Exception($errorMsg);
