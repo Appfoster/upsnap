@@ -466,9 +466,8 @@ Craft.Upsnap.Signup = {
 					.then(function (r) { return r.json(); })
 					.then(function (response) {
 						// Check if there are no monitors
-						const monitors = response.data || [];
+						const monitors = response.data?.monitors || [];
 						const hasMonitors = Array.isArray(monitors) && monitors.length > 0;
-						
 						
 						if (!hasMonitors) {
 							Craft.cp.displayNotice("No monitors found. Creating your first monitor…");
@@ -477,6 +476,7 @@ Craft.Upsnap.Signup = {
 						} else {
 							// User has monitors, redirect directly
 							window.location.href = redirectUrl || Craft.getCpUrl('upsnap/settings') + '#monitors-tab';
+							window.location.reload();
 						}
 					})
 					.catch(function (err) {
