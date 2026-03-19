@@ -14,6 +14,7 @@ use craft\events\RegisterUrlRulesEvent;
 use appfoster\upsnap\services\ApiService;
 use appfoster\upsnap\services\HistoryService;
 use appfoster\upsnap\services\SettingsService;
+use yii\helpers\Console;
 
 /**
  * @property ApiService $apiService
@@ -78,7 +79,7 @@ class Upsnap extends Plugin
                 if ($event->plugin === $this) {
                     // Record installation data
                     try {
-                        $siteUrl = Craft::$app->getSites()->getPrimarySite()?->baseUrl;
+                        $siteUrl = self::getMonitoringUrl();
                         if ($siteUrl) {
                             $this->apiService->recordInstallationData($siteUrl);
                         }

@@ -1,0 +1,283 @@
+/**
+ * Signup Inline Progress Styling
+ * Inline progress display below the signup form
+ */
+
+#upsnap-inline-progress-container {
+	margin-top: 20px;
+	transition: opacity 0.3s ease;
+}
+
+#upsnap-inline-progress-container.upsnap-progress-hidden {
+	display: none;
+}
+
+#upsnap-inline-progress-container.upsnap-progress-visible {
+	display: block;
+	animation: slideDown 0.3s ease;
+}
+
+@keyframes slideDown {
+	from {
+		opacity: 0;
+		transform: translateY(-10px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+.upsnap-inline-progress {
+	background: #f5f5f5;
+	border: 1px solid #e0e0e0;
+	border-radius: 6px;
+	padding: 20px;
+}
+
+@media (prefers-color-scheme: dark) {
+	.upsnap-inline-progress {
+		background: #2a2a2a;
+		border-color: #444;
+	}
+}
+
+/* Steps container */
+.upsnap-progress-steps {
+	display: flex;
+	align-items: center;
+	gap: 0;
+	margin-bottom: 20px;
+	flex-wrap: wrap;
+	justify-content: space-between;
+}
+
+/* Individual step */
+.upsnap-progress-step {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 8px 12px;
+	border-radius: 4px;
+	flex: 1;
+	min-width: 150px;
+	transition: all 0.3s ease;
+}
+
+.upsnap-progress-step.pending {
+	background: #ffffff;
+	border: 1px solid #e0e0e0;
+	color: #666;
+}
+
+.upsnap-progress-step.in-progress {
+	background: #e3f2fd;
+	border: 1px solid #1976d2;
+	color: #1976d2;
+	font-weight: 500;
+}
+
+.upsnap-progress-step.completed {
+	background: #e8f5e9;
+	border: 1px solid #4caf50;
+	color: #4caf50;
+	font-weight: 500;
+}
+
+.upsnap-progress-step.error {
+	background: #ffebee;
+	border: 1px solid #d32f2f;
+	color: #d32f2f;
+	font-weight: 500;
+}
+
+@media (prefers-color-scheme: dark) {
+	.upsnap-progress-step.pending {
+		background: #3a3a3a;
+		border-color: #555;
+		color: #aaa;
+	}
+
+	.upsnap-progress-step.in-progress {
+		background: #1a3a52;
+		border-color: #1976d2;
+		color: #64b5f6;
+	}
+
+	.upsnap-progress-step.completed {
+		background: #1b5e20;
+		border-color: #4caf50;
+		color: #81c784;
+	}
+
+	.upsnap-progress-step.error {
+		background: #5a1a1a;
+		border-color: #d32f2f;
+		color: #ef5350;
+	}
+}
+
+/* Step icon */
+.upsnap-progress-step-icon {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 24px;
+	height: 24px;
+	border-radius: 50%;
+	font-weight: bold;
+	font-size: 12px;
+	flex-shrink: 0;
+	animation: iconPulse 0.6s ease infinite;
+}
+
+.upsnap-progress-step.pending .upsnap-progress-step-icon {
+	animation: none;
+}
+
+.upsnap-progress-step.completed .upsnap-progress-step-icon {
+	animation: none;
+	background: #4caf50;
+	color: white;
+}
+
+.upsnap-progress-step.error .upsnap-progress-step-icon {
+	animation: none;
+	background: #d32f2f;
+	color: white;
+}
+
+@keyframes iconPulse {
+	0%, 100% {
+		opacity: 1;
+	}
+	50% {
+		opacity: 0.6;
+	}
+}
+
+/* Step label */
+.upsnap-progress-step-label {
+	font-size: 13px;
+	font-weight: 500;
+	white-space: nowrap;
+}
+
+/* Divider */
+.upsnap-progress-step-divider {
+	display: none;
+}
+
+@media (min-width: 768px) {
+	.upsnap-progress-steps {
+		gap: 8px;
+	}
+
+	.upsnap-progress-step {
+		flex: 0 1 auto;
+		padding: 10px 14px;
+	}
+
+	.upsnap-progress-step-divider {
+		display: block;
+		width: 12px;
+		height: 2px;
+		background: #ccc;
+		margin: 0 4px;
+		flex-shrink: 0;
+	}
+
+	@media (prefers-color-scheme: dark) {
+		.upsnap-progress-step-divider {
+			background: #555;
+		}
+	}
+}
+
+/* Message area */
+.upsnap-progress-message {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	font-size: 14px;
+	padding: 12px;
+	background: white;
+	border-radius: 4px;
+	border-left: 4px solid #1976d2;
+}
+
+@media (prefers-color-scheme: dark) {
+	.upsnap-progress-message {
+		background: #3a3a3a;
+		border-left-color: #1976d2;
+		color: #e0e0e0;
+	}
+}
+
+/* Spinner */
+.upsnap-spinner {
+	display: flex;
+	align-items: center;
+	gap: 4px;
+	min-width: 30px;
+}
+
+.upsnap-spinner span {
+	display: inline-block;
+	width: 6px;
+	height: 6px;
+	border-radius: 50%;
+	background: #1976d2;
+	animation: bounce 1.4s infinite ease-in-out both;
+}
+
+.upsnap-spinner span:nth-child(1) {
+	animation-delay: -0.32s;
+}
+
+.upsnap-spinner span:nth-child(2) {
+	animation-delay: -0.16s;
+}
+
+@keyframes bounce {
+	0%, 80%, 100% {
+		opacity: 0.6;
+		transform: scale(0.8);
+	}
+	40% {
+		opacity: 1;
+		transform: scale(1);
+	}
+}
+
+@media (prefers-color-scheme: dark) {
+	.upsnap-spinner span {
+		background: #64b5f6;
+	}
+}
+
+/* Mobile adjustments */
+@media (max-width: 600px) {
+	.upsnap-inline-progress {
+		padding: 16px;
+	}
+
+	.upsnap-progress-steps {
+		flex-direction: column;
+		gap: 8px;
+	}
+
+	.upsnap-progress-step {
+		width: 100%;
+		min-width: unset;
+	}
+
+	.upsnap-progress-step-label {
+		font-size: 12px;
+	}
+
+	.upsnap-progress-message {
+		font-size: 13px;
+		padding: 10px;
+	}
+}

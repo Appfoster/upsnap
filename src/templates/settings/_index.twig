@@ -68,7 +68,7 @@
 				creatingAccount:      {{ 'Creating account…'|t('upsnap')|json_encode|raw }},
 				accountCreated:       {{ 'Account created!'|t('upsnap')|json_encode|raw }},
 				successMessage:       {{ 'Account created successfully! Monitoring has started.'|t('upsnap')|json_encode|raw }},
-				submitLabel:          {{ 'Start beta free trial'|t('upsnap')|json_encode|raw }},
+				submitLabel:          {{ 'Start Monitoring'|t('upsnap')|json_encode|raw }},
 				genericError:         {{ 'An error occurred. Please try again.'|t('upsnap')|json_encode|raw }},
 				unexpectedError:      {{ 'An unexpected error occurred. Please try again.'|t('upsnap')|json_encode|raw }},
 				loginSuccess:         {{ 'Login successful!'|t('upsnap')|json_encode|raw }},
@@ -172,7 +172,7 @@
 				</div>
 				<div style="margin-top: 20px;">
 					<button id="signup-submit-btn" type="button" class="btn submit">
-						{{ "Start beta free trial"|t('upsnap') }}
+						{{ "Start Monitoring"|t('upsnap') }}
 					</button>
 				</div>
 				<p id="signup-general-error" class="error" style="display:none; text-transform: capitalize; margin-top: 8px;"></p>
@@ -251,5 +251,17 @@
 			title: {{ title|json_encode|raw }},
 			monitorUrl: {{ settings.monitoringUrl|json_encode|raw }}
 		};
+
+		// Initialize signup inline progress component
+		document.addEventListener('DOMContentLoaded', function() {
+			if (typeof window.UpsnapSignupProgress !== 'undefined') {
+				window.UpsnapSignupProgress.init();
+			}
+
+			// Initialize verification banner
+			if (typeof window.UpsnapVerificationBanner !== 'undefined') {
+				window.UpsnapVerificationBanner.init();
+			}
+		});
 	</script>
 {% endblock %}
