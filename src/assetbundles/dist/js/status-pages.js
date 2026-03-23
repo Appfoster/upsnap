@@ -60,11 +60,12 @@ Craft.Upsnap.StatusPages = {
 	actionMenu(page) {
 		return `
 		<button type="button" class="btn icon menubtn menu-btn" title="Actions"></button>
-		<div class="menu" data-status-page-id="${page.id}">
+		<div class="menu" data-status-page-id="${page.id}" data-shareable-id="${page.shareable_id}">
 			<ul>
 				<li data-action="toggle">
 					<a>${page.is_published ? "Unpublish" : "Publish"}</a>
 				</li>
+				<li data-action="copy-link"><a>Copy link</a></li>
 				<li data-action="reset"><a>Reset shareable link</a></li>
 				<li data-action="edit"><a>Edit</a></li>
 				<li class="separator"></li>
@@ -123,6 +124,73 @@ Craft.Upsnap.StatusPages = {
 		new Garnish.MenuBtn(tr.querySelector(".menubtn"));
 	},
 
+	/* ─── Dummy data helpers ────────────────────────────────────────────── */
+	getDummyStatusPages() {
+		return [
+			{ name: 'Main Website',       is_published: true,  is_protected: false, monitor_count: 3 },
+			{ name: 'API Services',       is_published: true,  is_protected: true,  monitor_count: 5 },
+			{ name: 'Staging Environment',is_published: false, is_protected: false, monitor_count: 2 },
+		];
+	},
+
+	renderDummyStatusPagesPreview() {
+		const wrapper = document.getElementById('status-pages-wrapper');
+		if (!wrapper) return;
+
+		// Hide the real table & empty state
+		this.table.classList.add('hidden');
+		this.emptyState.classList.add('hidden');
+
+		// Remove any stale preview
+		const existing = wrapper.querySelector('.sp-preview-wrap');
+		if (existing) existing.remove();
+
+		const dummy = this.getDummyStatusPages();
+		const rowsHtml = dummy.map((page) => {
+			const lock = page.is_protected ? '<span data-icon="lock" class="status-page-lock-icon" title="Password Protected"></span>' : '';
+			const badge = page.is_published
+				? '<span class="status green"></span> Published'
+				: '<span class="status gray"></span> Unpublished';
+			const count = page.monitor_count;
+			return `<tr>
+				<td><strong>${Craft.escapeHtml(page.name)}</strong>${lock}<div class="light smalltext">${count} monitor${count === 1 ? '' : 's'}</div></td>
+				<td>${badge}</td>
+				<td class="thin"><span class="btn icon disabled" data-icon="view" aria-disabled="true"></span></td>
+			</tr>`;
+		}).join('');
+
+		const preview = document.createElement('div');
+		preview.className = 'sp-preview-wrap';
+		preview.innerHTML = `
+			<div class="sp-preview-table-wrapper">
+				<div class="sp-preview-gate">
+					<svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+						<path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+					</svg>
+					<h3>No status pages yet</h3>
+					<p>Share real-time uptime with your users, reduce support requests, and build trust with a public or private status page.</p>
+					<a href="${Craft.getUrl('upsnap/status-page/new')}" class="btn submit sp-preview-gate-btn">Create your first Status Page</a>
+				</div>
+				<table class="data fullwidth sp-preview-table">
+					<thead><tr>
+						<th>Name</th>
+						<th>Status</th>
+						<th class="thin">Actions</th>
+					</tr></thead>
+					<tbody>${rowsHtml}</tbody>
+				</table>
+			</div>
+		`;
+		wrapper.appendChild(preview);
+	},
+
+	clearDummyStatusPagesPreview() {
+		const wrapper = document.getElementById('status-pages-wrapper');
+		if (!wrapper) return;
+		const preview = wrapper.querySelector('.sp-preview-wrap');
+		if (preview) preview.remove();
+	},
+
 	fetchStatusPages() {
 		this.showLoader(true);
 
@@ -145,10 +213,12 @@ Craft.Upsnap.StatusPages = {
 
 			if (!pages.length) {
 				this.table.classList.add("hidden");
-				this.emptyState.classList.remove("hidden");
+				this.emptyState.classList.add("hidden");
+				this.renderDummyStatusPagesPreview();
 				return;
 			}
 
+			this.clearDummyStatusPagesPreview();
 			pages.forEach((page) => this.renderRow(page));
 			this.table.classList.remove("hidden");
 		});
@@ -495,6 +565,12 @@ Craft.Upsnap.StatusPages = {
 					this.togglePublish(statusPageId);
 					break;
 
+				case "copy-link": {
+					const shareableId = menu?.dataset.shareableId;
+					this.copyStatusPageLink(shareableId);
+					break;
+				}
+
 				case "delete":
 					this.confirmDelete(statusPageId);
 					break;
@@ -510,6 +586,40 @@ Craft.Upsnap.StatusPages = {
 					break;
 			}
 		});
+	},
+
+	copyStatusPageLink(shareableId) {
+		if (!shareableId) {
+			Craft.cp.displayError("No shareable link available for this status page.");
+			return;
+		}
+		const url = `${window.Upsnap.upsnapStatsPageUrl}/shared/${shareableId}`;
+
+		if (navigator.clipboard && navigator.clipboard.writeText) {
+			navigator.clipboard.writeText(url).then(() => {
+				Craft.cp.displayNotice("Link copied to clipboard.");
+			}).catch(() => {
+				Craft.cp.displayError("Failed to copy link.");
+			});
+			return;
+		}
+
+		// Fallback for non-secure contexts (HTTP)
+		const ta = document.createElement("textarea");
+		ta.value = url;
+		ta.style.position = "fixed";
+		ta.style.opacity = "0";
+		document.body.appendChild(ta);
+		ta.focus();
+		ta.select();
+		try {
+			document.execCommand("copy");
+			Craft.cp.displayNotice("Link copied to clipboard.");
+		} catch {
+			Craft.cp.displayError("Failed to copy link.");
+		} finally {
+			document.body.removeChild(ta);
+		}
 	},
 
 	togglePublish(statusPageId) {

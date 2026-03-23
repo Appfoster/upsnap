@@ -112,9 +112,20 @@ class IncidentsController extends BaseController
     {
         $request = Craft::$app->getRequest();
 
+        // Normalise time_range: the external API requires uppercase (e.g. '7D', '30D').
+        // The Twig select emits '7D' and '1M'; map '1M' → '30D' for API compatibility.
+        $rawTimeRange = $request->getQueryParam('time_range', '24h');
+        $timeRange = match(strtolower($rawTimeRange)) {
+            '7d'  => '7D',
+            '30d' => '30D',
+            '1m'  => '30D',
+            '90d' => '90D',
+            default => $rawTimeRange,
+        };
+
         $params = array_filter([
             'monitorId'      => $request->getQueryParam('monitorId'),
-            'time_range'     => $request->getQueryParam('time_range', '24h'),
+            'time_range'     => $timeRange,
             'page'           => $request->getQueryParam('page', 1),
             'page_size'      => $request->getQueryParam('page_size', 20),
             'check_type'     => $request->getQueryParam('check_type'),

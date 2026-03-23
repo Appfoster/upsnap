@@ -7,7 +7,6 @@
 
     /* ─── Config ──────────────────────────────────────────────────────────── */
     const cfg = window.UpsnapIncidents;
-    console.log('[Upsnap] Incidents config:', cfg);
 
     /* ─── State ───────────────────────────────────────────────────────────── */
     const state = {
@@ -87,9 +86,6 @@
     const humanCheckType = (v) =>
         (v || '').replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 
-    const craftNotice = (msg) => {
-        if (Craft && Craft.cp && Craft.cp.displayNotice) Craft.cp.displayNotice(msg);
-    };
     const craftError = (msg) => {
         if (Craft && Craft.cp && Craft.cp.displayError) Craft.cp.displayError(msg);
     };
@@ -104,7 +100,7 @@
     /* ─── Convert timeRange string → { start_time, end_time } unix seconds ── */
     const timeRangeToTimestamps = (range) => {
         const now = Math.floor(Date.now() / 1000);
-        const offsets = { '24h': 86400, '7d': 604800, '30d': 2592000 };
+        const offsets = { '24h': 86400, '7D': 604800, '1M': 2592000 };
         const offset  = offsets[range] ?? 86400;
         return { start_time: now - offset, end_time: now };
     };
@@ -141,6 +137,16 @@
     };
 
     /* ─── Build a table row ────────────────────────────────────────────────── */
+    /* ─── Dummy data for empty-state preview ────────────────────────────── */
+    const getDummyIncidents = () => [
+        { check_type: 'uptime',       region: 'us-east-1',    error_message: 'Connection timed out after 30s',                  status_code: 503, timestamp: '2026-03-19T10:23:00Z' },
+        { check_type: 'ssl',          region: 'eu-west-1',    error_message: 'SSL certificate expires in 7 days',               status_code: 200, timestamp: '2026-03-19T09:15:00Z' },
+        { check_type: 'broken_links', region: 'ap-southeast-1', error_message: '404 Not Found: /about/team',                   status_code: 404, timestamp: '2026-03-19T08:47:00Z' },
+        { check_type: 'uptime',       region: 'us-west-2',    error_message: 'HTTP 500 Internal Server Error',                  status_code: 500, timestamp: '2026-03-18T23:52:00Z' },
+        { check_type: 'domain',       region: 'eu-central-1', error_message: 'Domain expires in 14 days',                       status_code: 200, timestamp: '2026-03-18T18:30:00Z' },
+        { check_type: 'mixed_content',region: 'us-east-1',    error_message: 'Insecure HTTP resource loaded on HTTPS page',     status_code: 200, timestamp: '2026-03-18T14:11:00Z' },
+    ];
+
     const buildRow = (inc) => {
         const tr = document.createElement('tr');
 
@@ -180,19 +186,153 @@
         if (!tbody) return;
         tbody.innerHTML = '';
 
+        const exportBtn = el.exportBtn();
+
         if (!incidents || !incidents.length) {
-            const tr = document.createElement('tr');
-            tr.innerHTML = `<td colspan="5" class="incidents-empty-cell">
-                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" style="opacity:.4">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-                <span>No incidents found.</span>
-            </td>`;
-            tbody.appendChild(tr);
+            if (exportBtn) exportBtn.classList.add('disable');
+            renderDummyIncidentsPreview('empty');
             return;
         }
 
+        if (exportBtn) exportBtn.classList.remove('disable');
+        clearDummyIncidentsPreview();
         incidents.forEach((inc) => tbody.appendChild(buildRow(inc)));
+    };
+
+    /* ─── Case 1: not registered — clean dummy rows, no blur ─────────────── */
+    const renderCleanDummyRows = () => {
+        const tbody = el.tbody();
+        if (!tbody) return;
+        tbody.innerHTML = '';
+        getDummyIncidents().forEach((inc) => tbody.appendChild(buildRow(inc)));
+        const showEl = el.showing();
+        if (showEl) showEl.textContent = `Showing ${getDummyIncidents().length} incidents`;
+        disablePageControls();
+        // Case 1: also disable timeframe, search and filter — unregistered users
+        // can't fetch any real data.
+        [el.timeframeSelect(), el.searchInput(), el.filterBtn()].forEach((e) => {
+            if (!e) return;
+            e.classList.add('incidents-ctrl-disabled');
+            if (e.tagName === 'BUTTON' || e.tagName === 'SELECT' || e.tagName === 'INPUT') e.disabled = true;
+        });
+    };
+
+    /* ─── Blurred preview: 'empty' (case 3) or 'expired' (case 4) ───────── */
+    const renderDummyIncidentsPreview = (mode) => {
+        const wrapper = document.getElementById('incidents-table-wrapper');
+        const tbody   = el.tbody();
+        if (!wrapper || !tbody) return;
+
+        wrapper.classList.add('incidents-preview-table-wrapper');
+
+        // Blur the table and fill with dummy rows
+        const table = wrapper.querySelector('#incidents-table');
+        if (table) { table.style.filter = 'blur(3px)'; table.style.opacity = '0.5'; }
+        tbody.innerHTML = '';
+        getDummyIncidents().forEach((inc) => {
+            const tr = buildRow(inc);
+            tr.style.pointerEvents = 'none';
+            tbody.appendChild(tr);
+        });
+
+        // Remove any existing gate then add the correct one
+        const existingGate = wrapper.querySelector('.incidents-preview-gate');
+        if (existingGate) existingGate.remove();
+
+        const gate = document.createElement('div');
+        gate.className = 'incidents-preview-gate';
+
+        if (mode === 'expired') {
+            const settingsUrl = cfg.settingsUrl || '#';
+            const isAccountExpired = cfg.apiTokenStatus === (cfg.apiTokenStatuses || {}).account_expired;
+            const msg = isAccountExpired
+                ? 'Your 3-day free trial has expired. Please verify your email to continue using the service. Check your inbox for the verification link sent at registration, or use the forgot-password flow to verify your account.'
+                : 'Your API token is expired or suspended. Update it in Settings to restore access.';
+            gate.innerHTML = `
+                <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+                </svg>
+                <h3>${msg}</h3>
+                <a href="${settingsUrl}" class="btn submit incidents-preview-gate-btn">Go to Settings</a>
+            `;
+        } else {
+            // mode === 'empty'
+            gate.innerHTML = `
+                <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <h3>No incidents for selected time range &mdash; your site is looking great!</h3>
+                <p>When a monitor detects downtime, SSL issues, broken links or mixed content, they will appear here.</p>
+            `;
+        }
+
+        wrapper.appendChild(gate);
+        disablePageControls();
+        // Case 4 (expired): also disable timeframe, search and filter — user
+        // can't fetch any data until the token is fixed.
+        if (mode === 'expired') {
+            [el.timeframeSelect(), el.searchInput(), el.filterBtn()].forEach((e) => {
+                if (!e) return;
+                e.classList.add('incidents-ctrl-disabled');
+                if (e.tagName === 'BUTTON' || e.tagName === 'SELECT' || e.tagName === 'INPUT') e.disabled = true;
+            });
+        }
+    };
+
+    const clearDummyIncidentsPreview = () => {
+        const wrapper = document.getElementById('incidents-table-wrapper');
+        if (!wrapper) return;
+        wrapper.classList.remove('incidents-preview-table-wrapper');
+        const gate = wrapper.querySelector('.incidents-preview-gate');
+        if (gate) gate.remove();
+        const table = wrapper.querySelector('#incidents-table');
+        if (table) { table.style.filter = ''; table.style.opacity = ''; }
+        enablePageControls();
+    };
+
+    /* ─── Disable / enable all page controls ─────────────────────────────── */
+    const disablePageControls = () => {
+        // Note: do NOT add incidents-ctrl-disabled to the controls-bar container
+        // itself — that sets pointer-events:none on the whole bar and blocks the
+        // timeframe select, search and filter (which registered users can still
+        // use in the empty state to look for incidents in other time ranges).
+        [
+            document.getElementById('incidents-pagination-bar'),
+            el.exportBtn(),
+            el.pageSizeSelect(),
+            el.prevBtn(),
+            el.nextBtn(),
+            ...el.sortHeaders(),
+        ].forEach((e) => {
+            if (!e) return;
+            e.classList.add('incidents-ctrl-disabled');
+            if (e.tagName === 'BUTTON' || e.tagName === 'SELECT' || e.tagName === 'INPUT') {
+                e.disabled = true;
+            }
+        });
+    };
+
+    const enablePageControls = () => {
+        [
+            document.querySelector('.incidents-controls-bar'),
+            document.getElementById('incidents-pagination-bar'),
+            el.timeframeSelect(),
+            el.searchInput(),
+            el.filterBtn(),
+            el.exportBtn(),
+            el.pageSizeSelect(),
+            el.prevBtn(),
+            el.nextBtn(),
+            ...el.sortHeaders(),
+        ].forEach((e) => {
+            if (!e) return;
+            e.classList.remove('incidents-ctrl-disabled');
+            if (e.tagName === 'BUTTON' || e.tagName === 'SELECT' || e.tagName === 'INPUT') {
+                e.disabled = false;
+            }
+        });
+        // renderTable still manages the 'disable' CSS class on exportBtn
+        // (added when empty, removed when data is present).
     };
 
     /* ─── Render pagination ───────────────────────────────────────────────── */
@@ -312,6 +452,7 @@
         el.sortHeaders().forEach((th) => {
             th.style.cursor = 'pointer';
             th.addEventListener('click', () => {
+                if (th.classList.contains('incidents-ctrl-disabled')) return;
                 const key = th.dataset.sortKey;
                 if (state.sortBy === key) {
                     state.sortOrder = state.sortOrder === 'asc' ? 'desc' : 'asc';
@@ -502,6 +643,7 @@
 
         exportBtn.addEventListener('click', (e) => {
             e.stopPropagation();
+            if (exportBtn.classList.contains('disable')) return;
             // Close filter dropdown if open
             const filterDropdown = el.filterDropdown();
             if (filterDropdown) filterDropdown.classList.add('hidden');
@@ -585,24 +727,35 @@
 
     /* ─── Init ────────────────────────────────────────────────────────────── */
     const init = () => {
-        const monitors = cfg.monitors || [];
-        populateMonitorSelect(monitors);
-
+        populateMonitorSelect(cfg.monitors || []);
         bindSortHeaders();
         updateSortIcons();
         bindFilterDropdown();
         bindExportDropdown();
         bindControls();
-
-        // Eagerly load regions so regionMap is populated before the first
-        // fetchAndRender() call — ensures the Region column shows names.
         loadRegions();
 
+        // Case 1: Not registered — show clean dummy data, no blur
+        if (!cfg.apiKey) {
+            setLoading(false);
+            renderCleanDummyRows();
+            return;
+        }
+
+        // Case 4: Token expired/suspended — blurred dummy + expired overlay
+        const activeStatus = (cfg.apiTokenStatuses || {}).active;
+        if (activeStatus && cfg.apiTokenStatus !== activeStatus) {
+            setLoading(false);
+            renderDummyIncidentsPreview('expired');
+            return;
+        }
+
+        // Case 2 & 3: Registered + active token — fetch real data
         if (state.monitorId) {
             fetchAndRender();
         } else {
             setLoading(false);
-            renderTable([]);
+            renderTable([]); // empty → case 3 (blurred + "no incidents yet")
         }
     };
 

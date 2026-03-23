@@ -87,10 +87,17 @@
 					<div class="status-icon error">!</div>
 					<h3 class="status-title">{{ 'Account Expired'|t('upsnap') }}</h3>
 				</div>
-				<p class="status-message-dashboard">
-					{{ 'Your 3-day free trial has expired. Please verify your email to continue using the service. Check your inbox for the verification link sent at registration, or use the forgot-password flow to verify your account.'|t('upsnap') }}
-					<br><br>
-				</p>
+			<p class="status-message-dashboard">
+				{% set forgotPasswordLink %}
+					<a href="{{ upsnapDashboardUrl }}/reset-password" target="_blank" rel="noopener noreferrer">
+						{{ 'forgot-password'|t('upsnap') }}
+					</a>
+				{% endset %}
+
+				{{ 'Your 3-day free trial has expired. Please verify your email to continue using the service. Check your inbox for the verification link sent at registration, or use the {link} flow to verify your account.' 
+					| t('upsnap', { link: forgotPasswordLink }) | raw }}
+				<br><br>
+			</p>
 			</div>
 		{% elseif apiTokenStatus == apiTokenStatuses.expired %}
 			<div class="status-container error" style="margin-bottom: 24px;">
@@ -99,7 +106,14 @@
 					<h3 class="status-title">{{ 'API Token Expired'|t('upsnap') }}</h3>
 				</div>
 				<p class="status-message-dashboard">
-					{{ 'Your API token has expired. Please generate a new token in the Upsnap Dashboard and update it here to continue using monitoring features.'|t('upsnap') }}
+					{% set dashboardLink %}
+						<a href="{{ upsnapDashboardUrl }}" target="_blank" rel="noopener noreferrer">
+							{{ 'dashboard'|t('upsnap') }}
+						</a>
+					{% endset %}
+
+					{{ 'Your API token has expired. Please generate a new token in the Upsnap Dashboard and update it here to continue using monitoring features. You can also use the {link} to recover access.' 
+						| t('upsnap', { link: dashboardLink }) | raw }}
 					<br><br>
 				</p>
 			</div>
