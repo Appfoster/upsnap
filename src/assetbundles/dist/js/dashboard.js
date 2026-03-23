@@ -164,7 +164,7 @@ Craft.UpsnapDashboard = {
 				<button class="fetch-recent-btn" type="button" data-icon="refresh">
 					Check Now
 				</button>
-				<a href="${detailUrl}" class="detail-link" target="_blank" rel="noopener">
+				<a href="${detailUrl}" class="detail-link" rel="noopener">
 					View Details →
 				</a>
 			</div>

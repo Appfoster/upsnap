@@ -180,7 +180,10 @@
         if (!tbody) return;
         tbody.innerHTML = '';
 
+        const exportBtn = el.exportBtn();
+
         if (!incidents || !incidents.length) {
+            if (exportBtn) exportBtn.classList.add('disable');
             const tr = document.createElement('tr');
             tr.innerHTML = `<td colspan="5" class="incidents-empty-cell">
                 <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" style="opacity:.4">
@@ -192,6 +195,7 @@
             return;
         }
 
+        if (exportBtn) exportBtn.classList.remove('disable');
         incidents.forEach((inc) => tbody.appendChild(buildRow(inc)));
     };
 
@@ -502,6 +506,7 @@
 
         exportBtn.addEventListener('click', (e) => {
             e.stopPropagation();
+            if (exportBtn.classList.contains('disable')) return;
             // Close filter dropdown if open
             const filterDropdown = el.filterDropdown();
             if (filterDropdown) filterDropdown.classList.add('hidden');

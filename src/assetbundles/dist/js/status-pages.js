@@ -60,11 +60,12 @@ Craft.Upsnap.StatusPages = {
 	actionMenu(page) {
 		return `
 		<button type="button" class="btn icon menubtn menu-btn" title="Actions"></button>
-		<div class="menu" data-status-page-id="${page.id}">
+		<div class="menu" data-status-page-id="${page.id}" data-shareable-id="${page.shareable_id}">
 			<ul>
 				<li data-action="toggle">
 					<a>${page.is_published ? "Unpublish" : "Publish"}</a>
 				</li>
+				<li data-action="copy-link"><a>Copy link</a></li>
 				<li data-action="reset"><a>Reset shareable link</a></li>
 				<li data-action="edit"><a>Edit</a></li>
 				<li class="separator"></li>
@@ -495,6 +496,12 @@ Craft.Upsnap.StatusPages = {
 					this.togglePublish(statusPageId);
 					break;
 
+				case "copy-link": {
+					const shareableId = menu?.dataset.shareableId;
+					this.copyStatusPageLink(shareableId);
+					break;
+				}
+
 				case "delete":
 					this.confirmDelete(statusPageId);
 					break;
@@ -510,6 +517,40 @@ Craft.Upsnap.StatusPages = {
 					break;
 			}
 		});
+	},
+
+	copyStatusPageLink(shareableId) {
+		if (!shareableId) {
+			Craft.cp.displayError("No shareable link available for this status page.");
+			return;
+		}
+		const url = `${window.Upsnap.upsnapStatsPageUrl}/shared/${shareableId}`;
+
+		if (navigator.clipboard && navigator.clipboard.writeText) {
+			navigator.clipboard.writeText(url).then(() => {
+				Craft.cp.displayNotice("Link copied to clipboard.");
+			}).catch(() => {
+				Craft.cp.displayError("Failed to copy link.");
+			});
+			return;
+		}
+
+		// Fallback for non-secure contexts (HTTP)
+		const ta = document.createElement("textarea");
+		ta.value = url;
+		ta.style.position = "fixed";
+		ta.style.opacity = "0";
+		document.body.appendChild(ta);
+		ta.focus();
+		ta.select();
+		try {
+			document.execCommand("copy");
+			Craft.cp.displayNotice("Link copied to clipboard.");
+		} catch {
+			Craft.cp.displayError("Failed to copy link.");
+		} finally {
+			document.body.removeChild(ta);
+		}
 	},
 
 	togglePublish(statusPageId) {
