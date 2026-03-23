@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
-## [1.1.4] - 2026-03-19
+## [1.1.4] - 2026-03-23
 ### Added
 - **New Signup/Signin Flow**:  Users can now sign-up/sign-in directly from the plugin dashboard using their email and password, without needing to create an account on the WebApp first. This streamlines the onboarding process and allows users to start monitoring their sites immediately after installing the plugin.
 - **Tags Support In Monitors**: Users can now add tags to their monitors for better organization and filtering. Tags can be added during monitor creation or editing.
