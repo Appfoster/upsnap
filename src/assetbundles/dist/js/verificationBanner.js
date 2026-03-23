@@ -109,8 +109,6 @@
 
 				// Clean up URL
 				window.history.replaceState({}, document.title, window.location.pathname);
-			} else {
-				console.error('Not a signup completion redirect');
 			}
 		},
 	};
