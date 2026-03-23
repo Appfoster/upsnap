@@ -122,6 +122,65 @@
 	opacity: 50%;
 }
 
+/* ── Status pages dummy preview ─────────────────────────────────────────── */
+.sp-preview-wrap {
+	pointer-events: none;
+	user-select: none;
+}
+
+.sp-preview-table-wrapper {
+	position: relative;
+	overflow: hidden;
+	min-height: 180px;
+}
+
+.sp-preview-table {
+	filter: blur(3px);
+	opacity: 0.5;
+	pointer-events: none;
+}
+
+.sp-preview-gate {
+	position: absolute;
+	inset: 0;
+	z-index: 10;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: 10px;
+	background: rgba(255, 255, 255, 0.72);
+	backdrop-filter: blur(2px);
+	-webkit-backdrop-filter: blur(2px);
+	padding: 24px;
+	text-align: center;
+	pointer-events: all;
+}
+
+.sp-preview-gate svg {
+	opacity: 0.45;
+	flex-shrink: 0;
+}
+
+.sp-preview-gate h3 {
+	font-size: 16px;
+	font-weight: 600;
+	color: var(--text-color, #3f4d5a);
+	margin: 0;
+}
+
+.sp-preview-gate p {
+	font-size: 13px;
+	color: var(--medium-dark-text-color, #596673);
+	margin: 0;
+	max-width: 420px;
+}
+
+.sp-preview-gate-btn {
+	margin-top: 4px;
+	pointer-events: all !important;
+}
+
 #status-pages-loaders {
 	position: fixed;
 	margin: auto;

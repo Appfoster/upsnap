@@ -266,6 +266,12 @@
     border-color: #ffeaa7;
 }
 
+.status-container.info,
+.status-container.notice {
+    background: #f0f4ff;
+    border-color: #c7d7f8;
+}
+
 .status-header {
     display: flex;
     align-items: center;

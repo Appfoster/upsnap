@@ -1,5 +1,61 @@
 /* ── incidents.css ─────────────────────────────────────────────────────── */
 
+/* ── Shared disabled state for any control ───────────────────────────── */
+.incidents-ctrl-disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none;
+    user-select: none;
+}
+
+/* ── Preview / locked state ───────────────────────────────────────────── */
+.incidents-preview-table-wrapper {
+    position: relative;
+    overflow: hidden;
+    min-height: 260px;
+}
+
+.incidents-preview-gate {
+    position: absolute;
+    inset: 0;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    background: rgba(255, 255, 255, 0.72);
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
+    padding: 24px;
+    text-align: center;
+    pointer-events: all;
+}
+
+.incidents-preview-gate svg {
+    opacity: 0.45;
+    flex-shrink: 0;
+}
+
+.incidents-preview-gate h3 {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-color, #3f4d5a);
+    margin: 0;
+}
+
+.incidents-preview-gate p {
+    font-size: 13px;
+    color: var(--medium-dark-text-color, #596673);
+    margin: 0;
+    max-width: 400px;
+}
+
+.incidents-preview-gate-btn {
+    margin-top: 4px;
+    pointer-events: all !important;
+}
+
 /* ── Page layout ──────────────────────────────────────────────────────── */
 #incidents-page {
     display: flex;
@@ -96,17 +152,8 @@
     align-items: center;
 }
 
-.incidents-search-icon {
-    position: absolute;
-    left: 8px;
-    color: var(--medium-dark-text-color, #596673);
-    pointer-events: none;
-    display: flex;
-    align-items: center;
-}
-
 .incidents-search-input {
-    padding-left: 28px;
+    padding: 0 10px;
     height: 32px;
     font-size: 13px;
     min-width: 200px;
@@ -281,7 +328,6 @@
     font-size: 13px;
 }
 
-.incidents-empty-cell svg,
 .incidents-empty-cell .spinner {
     display: block;
     margin: 0 auto 10px;
