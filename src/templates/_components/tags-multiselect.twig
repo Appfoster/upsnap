@@ -2,11 +2,11 @@
 {% set prefix = prefix ?? 'website' %}
 <div class="field tags-field" id="{{ prefix }}-tags-field">
     <div class="heading">
-        <label for="{{ prefix }}-tags-multiselect-input">Add tags</label>
+        <label for="{{ prefix }}-tags-multiselect-input">{{ 'Add tags'|t('upsnap') }}</label>
     </div>
 
     <div class="instructions">
-        Tags will enable you to organise your monitors in a better way
+        {{ 'Tags will enable you to organise your monitors in a better way'|t('upsnap') }}
     </div>
 
     <div class="input">
@@ -15,8 +15,8 @@
             id="{{ prefix }}-tags-multiselect-container"
             class="tags-multiselect-container"
             data-tags-prefix="{{ prefix }}"
-            data-endpoint="/actions/upsnap/tags/list"
-            data-create-endpoint="/actions/upsnap/tags/create"
+            data-endpoint="{{ actionUrl('upsnap/tags/list') }}"
+            data-create-endpoint="{{ actionUrl('upsnap/tags/create') }}"
             tabindex="0"
         >
             <!-- LEFT: Chips + Input -->
@@ -48,20 +48,20 @@
         <div id="{{ prefix }}-tags-dropdown" class="tags-dropdown hidden">
             <div class="tags-loading-spinner hidden" id="{{ prefix }}-tags-loading-spinner">
                 <div class="spinner"></div>
-                <span>Loading tags...</span>
+                <span>{{ 'Loading tags...'|t('upsnap') }}</span>
             </div>
 
             <div id="{{ prefix }}-tags-list-container" class="tags-list-container"></div>
 
             <div id="{{ prefix }}-tags-no-results" class="tags-no-results hidden">
-                No tags found
+                {{ 'No tags found'|t('upsnap') }}
             </div>
 
             <!-- Create new tag option -->
             <div id="{{ prefix }}-tags-create-option" class="tags-create-option hidden">
                 <button type="button" id="{{ prefix }}-tags-create-btn" class="tags-create-btn">
                     <span class="tags-create-icon">+</span>
-                    <span>Create "<span id="{{ prefix }}-tags-create-name"></span>"</span>
+                    <span>{{ 'Create'|t('upsnap') }} "<span id="{{ prefix }}-tags-create-name"></span>"</span>
                 </button>
             </div>
         </div>

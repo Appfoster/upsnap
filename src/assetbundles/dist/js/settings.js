@@ -392,98 +392,6 @@ Craft.Upsnap.Signup = {
 			});
 		}
 
-		// Signup submit
-		if (signupSubmitBtn) {
-			signupSubmitBtn.addEventListener("click", function () {
-				var fullname  = fullnameInput ? fullnameInput.value.trim() : "";
-				var email     = signupEmailInput ? signupEmailInput.value.trim() : "";
-				var password  = signupPasswordInput ? signupPasswordInput.value : "";
-				var confirm   = confirmPasswordInput ? confirmPasswordInput.value : "";
-				var hasErrors = false;
-
-				clearErr(fullnameError);
-				clearErr(signupEmailError);
-				clearErr(signupPasswordError);
-				clearErr(confirmPasswordError);
-				clearErr(signupGeneralError);
-
-				if (!fullname) {
-					showErr(fullnameError, i18n.fullNameRequired || "Full name is required.");
-					hasErrors = true;
-				}
-
-				if (!email) {
-					showErr(signupEmailError, i18n.emailRequired || "Email is required.");
-					hasErrors = true;
-				} else if (!isValidEmail(email)) {
-					showErr(signupEmailError, i18n.emailInvalid || "Please enter a valid email address.");
-					hasErrors = true;
-				}
-
-				if (!password) {
-					showErr(signupPasswordError, i18n.passwordRequired || "Password is required.");
-					hasErrors = true;
-				} else if (!isValidPassword(password)) {
-					showErr(signupPasswordError, i18n.passwordWeak || "Password must be at least 8 characters and contain uppercase, lowercase, a number, and a special character.");
-					hasErrors = true;
-				}
-
-				if (!confirm) {
-					showErr(confirmPasswordError, i18n.confirmPasswordRequired || "Confirm password is required.");
-					hasErrors = true;
-				} else if (confirm !== password) {
-					showErr(confirmPasswordError, i18n.passwordMismatch || "Passwords do not match.");
-					hasErrors = true;
-				}
-
-				if (hasErrors) return;
-
-				signupSubmitBtn.disabled    = true;
-				signupSubmitBtn.textContent = i18n.creatingAccount || "Creating account…";
-
-				var formData = new FormData();
-				formData.append(Craft.csrfTokenName, Craft.csrfTokenValue);
-				formData.append("fullname", fullname);
-				formData.append("email",     email);
-				formData.append("password",  password);
-				formData.append("confirm_password", confirm);
-
-				fetch(Craft.getActionUrl("upsnap/settings/signup"), {
-					method:  "POST",
-					headers: { "Accept": "application/json", "X-Requested-With": "XMLHttpRequest" },
-					body:    formData,
-				})
-					.then(function (r) { return r.json(); })
-					.then(function (data) {
-						if (data.success) {
-							var notice = document.createElement("div");
-							notice.style.cssText = "background:#e6f4ea;color:#1e7e34;padding:12px 16px;border-radius:4px;margin-bottom:16px;";
-							notice.textContent   = data.message || "Account created successfully! Monitoring has started.";
-							signupWrapper.insertBefore(notice, signupWrapper.firstChild);
-							signupSubmitBtn.textContent = "Account created. You have 3 days to verify your email. Please check your inbox for the verification link.";
-							setTimeout(function () { window.location.reload(); }, 3000); // Reload to show new state
-						} else {
-							var errs = data.errors || {};
-							if (errs.fullname) showErr(fullnameError,         Array.isArray(errs.fullname) ? errs.fullname[0] : errs.fullname);
-							if (errs.email)    showErr(signupEmailError,      Array.isArray(errs.email)    ? errs.email[0]    : errs.email);
-							if (errs.password) showErr(signupPasswordError,   Array.isArray(errs.password) ? errs.password[0] : errs.password);
-							if (errs.confirm_password) showErr(confirmPasswordError, Array.isArray(errs.confirm_password) ? errs.confirm_password[0] : errs.confirm_password);
-							if (errs.general)  showErr(signupGeneralError,    Array.isArray(errs.general)  ? errs.general[0]  : errs.general);
-							if (!errs.fullname && !errs.email && !errs.password && !errs.general) {
-								showErr(signupGeneralError, data.message || i18n.genericError || "An error occurred. Please try again.");
-							}
-							signupSubmitBtn.disabled    = false;
-							signupSubmitBtn.textContent = i18n.submitLabel || "Start beta free trial";
-						}
-					})
-					.catch(function () {
-						showErr(signupGeneralError, i18n.unexpectedError || "An unexpected error occurred. Please try again.");
-						signupSubmitBtn.disabled    = false;
-						signupSubmitBtn.textContent = i18n.submitLabel || "Start beta free trial";
-					});
-			});
-		}
-
 		// Signin submit
 		if (signinSubmitBtn) {
 			signinSubmitBtn.addEventListener("click", function () {
@@ -527,9 +435,9 @@ Craft.Upsnap.Signup = {
 					.then(function (data) {
 						if (data.success) {
 							Craft.cp.displayNotice(data.message || "Login successful!");
-							const redirectUrl = data.redirectUrl || Craft.getCpUrl('upsnap/settings') + '#monitors-tab';
-							window.location.href = redirectUrl;
-							setTimeout(function () { window.location.reload(); }, 2000);
+							
+							// Check if user has monitors
+							checkMonitorsAndCreateIfNeeded(data.redirectUrl);
 						} else {
 							var errs = data.errors || {};
 							if (errs.email)    showErr(signinEmailError,   Array.isArray(errs.email)    ? errs.email[0]    : errs.email);
@@ -547,6 +455,68 @@ Craft.Upsnap.Signup = {
 						signinSubmitBtn.disabled    = false;
 						signinSubmitBtn.textContent = i18n.signInLabel || "Sign In";
 					});
+
+			// Helper function to check monitors and create if needed
+			function checkMonitorsAndCreateIfNeeded(redirectUrl) {
+				const actionUrl = Craft.getActionUrl('upsnap/monitors/list');
+				
+				fetch(actionUrl, {
+					headers: { "X-CSRF-Token": Craft.csrfTokenValue },
+				})
+					.then(function (r) { return r.json(); })
+					.then(function (response) {
+						// Check if there are no monitors
+						const monitors = response.data?.monitors || [];
+						const hasMonitors = Array.isArray(monitors) && monitors.length > 0;
+						
+						if (!hasMonitors) {
+							Craft.cp.displayNotice("No monitors found. Creating your first monitor…");
+							// No monitors found, create the first one
+							createFirstMonitorAndRedirect(redirectUrl);
+						} else {
+							// User has monitors, redirect directly
+							window.location.href = redirectUrl || Craft.getCpUrl('upsnap/settings') + '#monitors-tab';
+							window.location.reload();
+						}
+					})
+					.catch(function (err) {
+						console.error('Failed to fetch monitors:', err);
+						// If we can't check, try to create monitor anyway
+						createFirstMonitorAndRedirect(redirectUrl);
+					});
+			}
+
+			// Helper function to create first monitor and show loading message
+			function createFirstMonitorAndRedirect(redirectUrl) {
+				// Set flag so monitors table knows to show loading message
+				sessionStorage.setItem('upsnap_creating_first_monitor', 'true');
+				
+				// Navigate to monitors tab first
+				window.location.href = redirectUrl || Craft.getCpUrl('upsnap/settings') + '#monitors-tab';
+				
+				// Create the monitor in background
+				setTimeout(function() {
+					fetch(Craft.getActionUrl('upsnap/settings/create-first-monitor'), {
+						method: 'POST',
+						headers: {
+							'X-CSRF-Token': Craft.csrfTokenValue,
+							'Accept': 'application/json',
+						},
+						body: JSON.stringify({}),
+					})
+						.then(function (r) { return r.json(); })
+						.then(function (data) {
+							if (data.success) {
+								// Monitor created successfully, reload the page to show it
+								window.location.reload();
+							} 
+						})
+						.catch(function (err) {
+							console.error('Failed to create first monitor:', err);
+							sessionStorage.removeItem('upsnap_creating_first_monitor');
+						});
+				}, 100);
+			}
 			});
 		}
 	},

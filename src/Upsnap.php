@@ -78,7 +78,7 @@ class Upsnap extends Plugin
                 if ($event->plugin === $this) {
                     // Record installation data
                     try {
-                        $siteUrl = Craft::$app->getSites()->getPrimarySite()?->baseUrl;
+                        $siteUrl = self::getMonitoringUrl();
                         if ($siteUrl) {
                             $this->apiService->recordInstallationData($siteUrl);
                         }
