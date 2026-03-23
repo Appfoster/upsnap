@@ -332,8 +332,10 @@
 
 			// Auto-redirect after 2 seconds
 			setTimeout(() => {
-				const redirectUrl = Craft.getCpUrl('upsnap/settings') + '&signup=completed';
-				window.location.href = redirectUrl;
+				const redirectedUrl = Craft.getCpUrl('upsnap/settings', {
+					signup: 'completed'
+				});
+				window.location.href = redirectedUrl
 			}, 2000);
 		},
 
