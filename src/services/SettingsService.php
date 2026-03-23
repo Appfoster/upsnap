@@ -9,6 +9,7 @@ use appfoster\upsnap\Upsnap;
 use Craft;
 use Exception;
 use GuzzleHttp\Client;
+use craft\helpers\UrlHelper;
 
 /**
  * Settings service for managing plugin settings using Record models
@@ -81,7 +82,7 @@ class SettingsService extends Component
     {
         $url = null;
         if (!$this->getSetting('monitoringUrl')) {
-            $primarySiteUrl = Craft::$app->getSites()->getPrimarySite()?->baseUrl;
+            $primarySiteUrl = $this->getSiteUrl();
             if ($primarySiteUrl) {
                 $this->setMonitoringUrl($primarySiteUrl);
                 return $primarySiteUrl;
@@ -389,6 +390,8 @@ class SettingsService extends Component
 
         if (str_contains($normalizedMessage, 'suspended')) {
             $apiKeyStatus = Constants::API_KEY_STATUS['suspended'];
+        } elseif (str_contains($normalizedMessage, 'account expired') || str_contains($normalizedMessage, 'trial expired')) {
+            $apiKeyStatus = Constants::API_KEY_STATUS['account_expired'];
         } elseif (str_contains($normalizedMessage, 'expired')) {
             $apiKeyStatus = Constants::API_KEY_STATUS['expired'];
         } elseif (str_contains($normalizedMessage, 'not found')) {
@@ -512,6 +515,257 @@ class SettingsService extends Component
     }
 
     /**
+     * Step 1 of 3: Create account and return session token.
+     * Session token is stored temporarily for use in subsequent steps.
+     */
+    public function createUserAccountStep(string $email, string $password, string $fullname): array
+    {
+        $result = Upsnap::$plugin->apiService->signupUser($email, $password, $fullname);
+        if (($result['status'] ?? '') === 'success') {
+            $data = $result['data'] ?? [];
+            $sessionToken = $data['token'] ?? null;
+
+            if (!$sessionToken) {
+                return [
+                    'status' => 'error',
+                    'message' => 'Account creation failed: No session token received.',
+                ];
+            }
+
+            // Store session token temporarily in cache for use in step 2
+            Craft::$app->getCache()->set('upsnap_signup_session_' . $sessionToken, $email, 3600);
+
+            return [
+                'status' => 'success',
+                'data' => [
+                    'session_token' => $sessionToken,
+                    'message' => 'Account created successfully.',
+                ],
+            ];
+        }
+
+        return $result;
+    }
+
+    /**
+     * Step 2 of 3: Exchange session token for API token.
+     * Stores the API token for later use.
+     */
+    public function getApiTokenStep(string $sessionToken): array
+    {
+        if (!$sessionToken) {
+            return [
+                'status' => 'error',
+                'message' => 'Invalid session token.',
+            ];
+        }
+
+        try {
+            $apiKey = $this->getOrCreateApiToken($sessionToken);
+            if (!$apiKey) {
+                return [
+                    'status' => 'error',
+                    'message' => 'Could not retrieve or create API token.',
+                ];
+            }
+
+            // Store API key for later retrieval
+            $this->setApiKey($apiKey);
+
+            return [
+                'status' => 'success',
+                'data' => [
+                    'api_token' => $this->maskApiKey($apiKey),
+                    'message' => 'API key fetched successfully.',
+                ],
+            ];
+        } catch (\Throwable $e) {
+            Craft::error("Step 2 failed: {$e->getMessage()}", __METHOD__);
+            return [
+                'status' => 'error',
+                'message' => 'Error fetching API token: ' . $e->getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * Step 3 of 3: Create first monitor with the API token.
+     * Must be called after step 2 (API token must be stored).
+     */
+    public function createFirstMonitorStep(): array
+    {
+        try {
+            // Create first monitor
+            $monitorResult = $this->createFirstMonitor();
+
+            if (!$monitorResult['success']) {
+                // Don't fail entirely, monitor creation is optional
+                return [
+                    'status' => 'success',
+                    'data' => [
+                        'monitor_id' => null,
+                        'message' => 'Account ready. Monitor creation is optional.',
+                    ],
+                ];
+            }
+
+            // Set the created monitor as primary
+            $monitorId = $monitorResult['data']['id'] ?? null;
+            $monitorUrl = $monitorResult['data']['config']['meta']['url'] ?? null;
+
+            if ($monitorId) {
+                $this->setMonitorId($monitorId);
+            }
+            if ($monitorUrl) {
+                $this->setMonitoringUrl($monitorUrl);
+            }
+
+            return [
+                'status' => 'success',
+                'data' => [
+                    'monitor_id' => $monitorId,
+                    'monitor_url' => $monitorUrl,
+                    'message' => 'First monitor created successfully.',
+                ],
+                'success' => true,
+            ];
+        } catch (\Throwable $e) {
+            Craft::error("Step 3 failed: {$e->getMessage()}", __METHOD__);
+            return [
+                'status' => 'error',
+                'message' => 'Error creating first monitor: ' . $e->getMessage(),
+                'success' => false,
+            ];
+        }
+    }
+
+    /**
+     * Login an existing UpSnap user, storing the returned token and monitor URL locally.
+     *
+     * @param string $email
+     * @param string $password
+     * @return array
+     */
+    public function login(string $email, string $password): array
+    {
+        $result = Upsnap::$plugin->apiService->loginUser($email, $password);
+
+        if (($result['status'] ?? '') === 'success') {
+            $data = $result['data'] ?? [];
+
+            // Get session token
+            $sessionToken = $data['token'] ?? null;
+            if (!$sessionToken) {
+                return [
+                    'status' => 'error',
+                    'message' => 'Login failed: No session token received.',
+                ];
+            }
+
+            // Fetch or create API token
+            $apiKey = $this->getOrCreateApiToken($sessionToken);
+            if (!$apiKey) {
+                return [
+                    'status' => 'error',
+                    'message' => 'Login failed: Could not retrieve or create API token.',
+                ];
+            }
+
+            // Store API key
+            $this->setApiKey($apiKey);
+
+            // Store monitor URL if provided
+            if (!empty($data['monitor_url'])) {
+                $this->setMonitoringUrl($data['monitor_url']);
+            }
+        }
+
+        return $result;
+    }
+
+    /**
+     * Get existing API token or create new one
+     *
+     * @param string $sessionToken
+     * @return string|null
+     */
+    private function getOrCreateApiToken(string $sessionToken): ?string
+    {
+        // Try to get existing tokens
+        $tokensResult = Upsnap::$plugin->apiService->getTokens($sessionToken);
+
+        if (($tokensResult['status'] ?? '') === 'success') {
+            $tokens = $tokensResult['data']['tokens'] ?? [];
+            if (!empty($tokens)) {
+                // Use first token
+                return $tokens[0]['token_hash'] ?? null;
+            }
+        }
+
+        // No existing tokens, create new one
+        $generateResult = Upsnap::$plugin->apiService->generateToken($sessionToken);
+
+        if (($generateResult['status'] ?? '') === 'success') {
+            return $generateResult['data']['token_hash'] ?? null;
+        }
+
+        return null;
+    }
+
+    /**
+     * Create the first monitor for a new user using Craft CMS site details
+     */
+    private function createFirstMonitor(): array
+    {
+        $originalToken = Upsnap::$plugin->apiService->getApiToken();
+        // Upsnap::$plugin->apiService->setApiToken($sessionToken);
+
+        try {
+            // Get Craft CMS site details
+            $siteUrl = $this->getSiteUrl();
+            $siteName =  'Craft CMS Site';
+            if (!$siteUrl) {
+                throw new \Exception('Could not determine site URL for monitor creation.');
+            }
+
+            // Create monitor payload
+            $payload = [
+                'name' => $siteName . ' Monitor',
+                'service_type' => Constants::SERVICE_TYPES['website'],
+                'config' => [
+                    'meta' => [
+                        'url' => $siteUrl,
+                    ],
+                ],
+                'is_enabled' => true
+            ];
+
+            // Create monitor via API
+            $result = Upsnap::$plugin->apiService->post(Constants::MICROSERVICE_ENDPOINTS['monitors']['create'], $payload);
+
+            if (($result['status'] ?? '') === 'success') {
+                // Extract monitor from nested structure
+                $monitor = $result['data']['monitor'] ?? $result['data'] ?? [];
+                return [
+                    'success' => true,
+                    'data' => $monitor,
+                ];
+            }
+
+            return [
+                'success' => false,
+                'message' => $result['message'] ?? 'Failed to create monitor.',
+            ];
+        } catch (\Throwable $e) {
+            Craft::error("Monitor creation failed: {$e->getMessage()}", __METHOD__);
+            return [
+                'success' => false,
+                'message' => 'An error occurred while creating the monitor.',
+            ];
+        }
+    }
+
+    /**
      * Format an array of constants as an array of options, with optional restrictions
      */
     public function formatOptions(
@@ -536,5 +790,22 @@ class SettingsService extends Component
         }
 
         return $options;
+    }
+
+    /**
+     * Returns a reliable site URL with fallbacks.
+     *
+     * @return string|null
+     */
+    public function getSiteUrl(): ?string
+    {
+        $request = Craft::$app->getRequest();
+        //  Web request fallback
+        if (!$request->getIsConsoleRequest()) {
+            return $request->getHostInfo();
+        }
+
+
+        return parse_url(UrlHelper::siteUrl(), PHP_URL_HOST);
     }
 }

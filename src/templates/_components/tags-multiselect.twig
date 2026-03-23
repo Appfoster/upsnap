@@ -1,0 +1,78 @@
+{# upsnap/_components/tags-multiselect.twig #}
+{% set prefix = prefix ?? 'website' %}
+<div class="field tags-field" id="{{ prefix }}-tags-field">
+    <div class="heading">
+        <label for="{{ prefix }}-tags-multiselect-input">{{ 'Add tags'|t('upsnap') }}</label>
+    </div>
+
+    <div class="instructions">
+        {{ 'Tags will enable you to organise your monitors in a better way'|t('upsnap') }}
+    </div>
+
+    <div class="input">
+        <!-- Main Input Container -->
+        <div 
+            id="{{ prefix }}-tags-multiselect-container"
+            class="tags-multiselect-container"
+            data-tags-prefix="{{ prefix }}"
+            data-endpoint="{{ actionUrl('upsnap/tags/list') }}"
+            data-create-endpoint="{{ actionUrl('upsnap/tags/create') }}"
+            tabindex="0"
+        >
+            <!-- LEFT: Chips + Input -->
+            <div class="tags-chips-wrapper">
+                <div id="{{ prefix }}-tags-chips-container" class="tags-chips-container"></div>
+                
+                <input
+                    id="{{ prefix }}-tags-multiselect-input"
+                    type="text"
+                    class="tags-search-input"
+                    placeholder="Search or create tags..."
+                    autocomplete="off"
+                />
+            </div>
+
+            <!-- RIGHT: Chevron -->
+            <button
+                type="button"
+                class="tags-chevron-toggle"
+                aria-label="Toggle tags dropdown"
+            >
+                <svg class="tags-chevron-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+                </svg>
+            </button>
+        </div>
+
+        <!-- Dropdown Menu -->
+        <div id="{{ prefix }}-tags-dropdown" class="tags-dropdown hidden">
+            <div class="tags-loading-spinner hidden" id="{{ prefix }}-tags-loading-spinner">
+                <div class="spinner"></div>
+                <span>{{ 'Loading tags...'|t('upsnap') }}</span>
+            </div>
+
+            <div id="{{ prefix }}-tags-list-container" class="tags-list-container"></div>
+
+            <div id="{{ prefix }}-tags-no-results" class="tags-no-results hidden">
+                {{ 'No tags found'|t('upsnap') }}
+            </div>
+
+            <!-- Create new tag option -->
+            <div id="{{ prefix }}-tags-create-option" class="tags-create-option hidden">
+                <button type="button" id="{{ prefix }}-tags-create-btn" class="tags-create-btn">
+                    <span class="tags-create-icon">+</span>
+                    <span>{{ 'Create'|t('upsnap') }} "<span id="{{ prefix }}-tags-create-name"></span>"</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Hidden input to store selected tag IDs JSON -->
+        <input 
+            type="hidden" 
+            id="{{ prefix }}-tags-data-input" 
+            name="{{ prefix }}_tag_ids"
+            class="tags-data-input"
+            value=""
+        />
+    </div>
+</div>

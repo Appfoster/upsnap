@@ -3,6 +3,7 @@
 namespace appfoster\upsnap\controllers;
 
 use Craft;
+use craft\helpers\UrlHelper;
 use appfoster\upsnap\Upsnap;
 use appfoster\upsnap\assetbundles\SettingsAsset;
 use appfoster\upsnap\Constants;
@@ -36,8 +37,7 @@ class SettingsController extends BaseController
         $apiTokenStatus = $service->getApiTokenStatus();
         if (!$monitoringUrl) {
             // For fresh setup, use the primary site's base URL as default
-            $primarySite = Craft::$app->getSites()->getPrimarySite();
-            $monitoringUrl = rtrim($primarySite->getBaseUrl(), '/');
+            $monitoringUrl = $service->getSiteUrl();
         }
         if($apiTokenStatus != Constants::API_KEY_STATUS['active']) {
             $settings->monitoringUrl = $monitoringUrl;
@@ -68,8 +68,7 @@ class SettingsController extends BaseController
 
         // Set default monitoring URL if not set
         if (!$settings->monitoringUrl) {
-            $primarySite = Craft::$app->getSites()->getPrimarySite();
-            $settings->monitoringUrl = rtrim($primarySite->getBaseUrl(), '/');
+            $settings->monitoringUrl = $service->getSiteUrl();
         }
 
         // Only update fields that are actually in the request
@@ -208,6 +207,162 @@ class SettingsController extends BaseController
             return $this->asJson([
                 'success' => false,
                 'message' => 'Error saving monitor: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Handle in-plugin user login
+     * Returns JSON with success/error details.
+     */
+    public function actionLogin(): \yii\web\Response
+    {
+        $this->requirePostRequest();
+
+        $request  = Craft::$app->getRequest();
+        $email    = trim($request->getBodyParam('email', ''));
+        $password = $request->getBodyParam('password', '');
+
+        $errors = [];
+
+        if ($email === '') {
+            $errors['email'] = [Craft::t('upsnap', 'Email is required.')];
+        } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            $errors['email'] = [Craft::t('upsnap', 'Please enter a valid email address.')];
+        }
+
+        if ($password === '') {
+            $errors['password'] = [Craft::t('upsnap', 'Password is required.')];
+        }
+
+        if (!empty($errors)) {
+            return $this->asJson(['success' => false, 'errors' => $errors]);
+        }
+
+        try {
+            $result = Upsnap::getInstance()->settingsService->login($email, $password);
+
+            if (($result['status'] ?? '') === 'success') {
+                return $this->asJson([
+                    'success' => true,
+                    'message' => Craft::t('upsnap', 'Login successful!'),
+                    'redirectUrl' => UrlHelper::cpUrl(Constants::SUBNAV_ITEM_SETTINGS['url']) . '#monitors-tab',
+                ]);
+            }
+
+            return $this->asJson([
+                'success' => false,
+                'errors'  => ['general' => [$result['message'] ?? Craft::t('upsnap', 'Login failed. Please check your credentials and try again.')]],
+            ]);
+        } catch (\Throwable $e) {
+            Craft::error('Login failed: ' . $e->getMessage(), __METHOD__);
+            return $this->asJson([
+                'success' => false,
+                'errors'  => ['general' => [Craft::t('upsnap', 'An error occurred. Please try again.')]],
+            ]);
+        }
+    }
+
+    /**
+     * Signup Step 1: Create account and return session token.
+     * Used by progress modal to start the 3-step signup flow.
+     */
+    public function actionRegister(): \yii\web\Response
+    {
+        $this->requirePostRequest();
+
+        $request   = Craft::$app->getRequest();
+        $fullname  = trim($request->getBodyParam('fullname', ''));
+        $email     = trim($request->getBodyParam('email', ''));
+        $password  = $request->getBodyParam('password', '');
+        $confirm   = $request->getBodyParam('confirm_password', '');
+
+        $errors = [];
+
+        if ($fullname === '') {
+            $errors['fullname'] = [Craft::t('upsnap', 'Full name is required.')];
+        }
+
+        if ($email === '') {
+            $errors['email'] = [Craft::t('upsnap', 'Email is required.')];
+        } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            $errors['email'] = [Craft::t('upsnap', 'Please enter a valid email address.')];
+        }
+
+        if ($password === '') {
+            $errors['password'] = [Craft::t('upsnap', 'Password is required.')];
+        } elseif (!preg_match('/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/', $password)) {
+            $errors['password'] = [Craft::t('upsnap', 'Password must be at least 8 characters and contain uppercase, lowercase, a number, and a special character.')];
+        }
+
+        if ($confirm === '') {
+            $errors['confirm_password'] = [Craft::t('upsnap', 'Confirm password is required.')];
+        } elseif ($confirm !== $password) {
+            $errors['confirm_password'] = [Craft::t('upsnap', 'Passwords do not match.')];
+        }
+
+        if (!empty($errors)) {
+            return $this->asJson(['success' => false, 'errors' => $errors]);
+        }
+
+        try {
+            $result = Upsnap::getInstance()->settingsService->createUserAccountStep($email, $password, $fullname);
+            return $this->asJson($result);
+        } catch (\Throwable $e) {
+            Craft::error('Signup Step 1 failed: ' . $e->getMessage(), __METHOD__);
+            return $this->asJson([
+                'status'  => 'error',
+                'message' => Craft::t('upsnap', 'An error occurred. Please try again.'),
+            ]);
+        }
+    }
+
+    /**
+     * Signup Step 2: Fetch or create API token using session token.
+     * Called after Step 1 completes.
+     */
+    public function actionCreateApiToken(): \yii\web\Response
+    {
+        $this->requirePostRequest();
+
+        $request       = Craft::$app->getRequest();
+        $sessionToken  = trim($request->getBodyParam('session_token', ''));
+
+        if (!$sessionToken) {
+            return $this->asJson([
+                'status'  => 'error',
+                'message' => 'Session token is required.',
+            ]);
+        }
+
+        try {
+            $result = Upsnap::getInstance()->settingsService->getApiTokenStep($sessionToken);
+            return $this->asJson($result);
+        } catch (\Throwable $e) {
+            Craft::error('Signup Step 2 failed: ' . $e->getMessage(), __METHOD__);
+            return $this->asJson([
+                'status'  => 'error',
+                'message' => Craft::t('upsnap', 'An error occurred. Please try again.'),
+            ]);
+        }
+    }
+
+    /**
+     * Signup Step 3: Create first monitor.
+     * Called after Step 2 completes.
+     */
+    public function actionCreateFirstMonitor(): \yii\web\Response
+    {
+        $this->requirePostRequest();
+
+        try {
+            $result = Upsnap::getInstance()->settingsService->createFirstMonitorStep();
+            return $this->asJson($result);
+        } catch (\Throwable $e) {
+            Craft::error('Signup Step 3 failed: ' . $e->getMessage(), __METHOD__);
+            return $this->asJson([
+                'status'  => 'error',
+                'message' => Craft::t('upsnap', 'An error occurred. Please try again.'),
             ]);
         }
     }

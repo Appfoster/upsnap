@@ -25,11 +25,6 @@ Craft.UpsnapDashboard = {
 		this.renderMonitorCards();
 		this.loadAndApplyRegionNames();
 
-		const apiKey = window.CraftPageData?.apiKey;
-		if (!apiKey) {
-			this.renderStatusContainer();
-		}
-
 		if (this.refreshBtn) {
 			this.refreshBtn.addEventListener("click", () => {
 				this.runWithRefreshButton(this.refreshBtn, () =>
@@ -164,7 +159,7 @@ Craft.UpsnapDashboard = {
 				<button class="fetch-recent-btn" type="button" data-icon="refresh">
 					Check Now
 				</button>
-				<a href="${detailUrl}" class="detail-link" target="_blank" rel="noopener">
+				<a href="${detailUrl}" class="detail-link" rel="noopener">
 					View Details →
 				</a>
 			</div>
@@ -1043,10 +1038,31 @@ Craft.UpsnapDashboard = {
 			<div class="card-body ${color}">
 				${pct !== null ? pct + "%" : "N/A"}
 			</div>
-			<div class="card-footer-incidents">
-				${incidents} incident${incidents === 1 ? "" : "s"}
-			</div>
+			${
+				incidents > 0
+					? `<div class="card-footer-incidents">
+							${incidents} incident${incidents === 1 ? "" : "s"}
+					</div>`
+					: ""
+			}
 		`;
+
+		const footer = card.querySelector(".card-footer-incidents");
+
+		if (!footer) return;
+
+		footer.addEventListener("click", (e) => {
+			e.stopPropagation();
+
+			if (!this.monitorId) return;
+			const url = Craft.getCpUrl('upsnap/incidents', {
+				monitor_id: this.monitorId,
+				timeframe: '24_hours',
+			});
+
+			window.location.href = url;
+		});
+
 	},
 
 	appendPrimaryRegionStatus(monitor) {
@@ -1166,29 +1182,6 @@ Craft.UpsnapDashboard = {
 		} catch (err) {
 			console.error('Failed to load region names for incidents table:', err);
 		}
-	},
-
-	renderStatusContainer() {
-		const statusContainerWrapper = document.getElementById(
-			"status-container-wrapper"
-		);
-		const upsnapDashboardUrl = window.CraftPageData?.upsnapDashboardUrl;
-		if (!statusContainerWrapper) return;
-
-		let icon = "!";
-
-		const html = `
-			<div class="status-container warning">
-				<div class="status-header">
-					<div class="status-icon warning">${icon}</div>
-					<h3 class="status-title">Unlock Full Monitoring Insights</h3>
-				</div>
-				<p class="status-message-dashboard">
-					<a href="${upsnapDashboardUrl}/signup" class="status-link">Register</a>  to unlock complete monitoring insights - last 24-hour histograms, uptime statistics, response time charts, live incident notifications, a public status page, and more.
-				</p>
-			</div>
-		`;
-		statusContainerWrapper.innerHTML = html;
 	},
 };
 

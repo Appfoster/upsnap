@@ -12,6 +12,9 @@
 		activeMonitorIds: new Set(),
 	};
 
+	// Store tags map for lookup (id -> tag object)
+	let tagsMap = new Map();
+
 	const endpointSelector = "#upsnap-monitors-wrap";
 	const tbodySelector = "#upsnap-monitors-tbody";
 	const selectAllSelector = "#upsnap-select-all";
@@ -79,6 +82,8 @@
 		const inPollingState =
 			isPollingRelevant &&
 			isRecentlyChecked(monitor.last_check_at, monitor.updated_at);
+		const incidentCount = monitor.incident_count ?? 0;
+
 
 		// Determine status
 		let statusLabel = "";
@@ -128,8 +133,21 @@
 		// monitor column: name + url + type pill
 		const tdMonitor = document.createElement("td");
 		tdMonitor.innerHTML = `
-		<div class="heading">${escapeHtml(name)}</div>
-		<div class="light" style="margin-top:4px;">${escapeHtml(urlLabel)}<span class="monitor-type-pill monitor-type-pill--${escapeHtml(serviceType)}">${escapeHtml(serviceType)}</span></div>
+			<div class="heading">${escapeHtml(name)} 				${
+					incidentCount > 0
+						? `<span
+								class="monitor-incidents-link"
+								data-monitor-id="${monitor.id}"
+							>
+								• ${incidentCount} incident${incidentCount === 1 ? "" : "s"}
+						</span>`
+						: ""
+				}</div>
+			<div class="light" style="margin-top:4px;">
+				<span class="monitor-type-pill monitor-type-pill--${escapeHtml(serviceType)}">${escapeHtml(serviceType)}</span>
+				${escapeHtml(urlLabel)}
+				${buildTagsChips(monitor.tag_ids || [])}
+			</div>
 		`;
 
 		// Status column
@@ -191,6 +209,23 @@
 	}
 	function escapeId(s) {
 		return btoa(s || "").replace(/=/g, "");
+	}
+
+	// Build tags chips HTML from tag IDs
+	function buildTagsChips(tagIds) {
+		if (!tagIds || !Array.isArray(tagIds) || tagIds.length === 0) {
+			return "";
+		}
+
+		return tagIds
+			.map((tagId) => {
+				const tag = tagsMap.get(tagId);
+				if (!tag) return "";
+				const bgColor = tag.color || "#6c757d";
+				return `<span class="monitor-tag-chip" style="background-color: ${escapeHtml(bgColor)}">${escapeHtml(tag.name)}</span>`;
+			})
+			.filter(Boolean)
+			.join("");
 	}
 
 	// Toggle menu dropdown simple
@@ -351,12 +386,13 @@
 			tbody.innerHTML = `<tr><td colspan="5" class="table-empty-state">Loading monitors…</td></tr>`;
 
 		try {
-			const monitors = [];
+			let monitors = [];
+			// const monitors = [];
 			let settingsMap = new Map();
 
 			if (apiKey) {
-				// Fetch monitors and settings in parallel
-				const [monitorsResponse, settingsResponse] = await Promise.all([
+				// Fetch monitors, settings, and tags in parallel
+				const [monitorsResponse, settingsResponse, tagsResponse] = await Promise.all([
 					fetch(endpoint, {
 						headers: { "X-CSRF-Token": Craft.csrfTokenValue },
 					}),
@@ -366,10 +402,25 @@
 							Accept: "application/json",
 						},
 					}),
+					fetch("/actions/upsnap/tags/list", {
+						headers: {
+							"X-CSRF-Token": Craft.csrfTokenValue,
+							Accept: "application/json",
+						},
+					}),
 				]);
 
 				const monitorsJson = await monitorsResponse.json();
 				const settingsJson = await settingsResponse.json();
+				const tagsJson = await tagsResponse.json();
+
+				// Build tags map for lookup
+				if (tagsJson.success && Array.isArray(tagsJson.data)) {
+					tagsMap.clear();
+					tagsJson.data.forEach((tag) => {
+						tagsMap.set(tag.id, tag);
+					});
+				}
 
 				if (
 					!monitorsJson.success ||
@@ -392,7 +443,7 @@
 					});
 				}
 
-				// Merge config into each monitor
+				// Merge config into each monitor and add to array
 				monitorsJson.data.monitors.forEach((monitor) => {
 					const config = settingsMap.get(monitor.id);
 					if (config) {
@@ -400,6 +451,19 @@
 					}
 					monitors.push(monitor);
 				});
+
+				// ------------------------------------
+				// FETCH + MERGE UPTIME STATS
+				// ------------------------------------
+				let uptimeStats = [];
+				try {
+					uptimeStats = await fetchUptimeStats();
+				} catch (e) {
+					console.warn('Failed to load uptime stats:', e);
+				}
+
+				// enrich monitors
+				monitors = mergeUptimeStats(monitors, uptimeStats);
 			}
 
 			const monitorCount = monitors.length;
@@ -442,6 +506,24 @@
 			tbody.querySelectorAll(".upsnap-set-primary").forEach((b) => {
 				b.addEventListener("click", handleSetPrimary);
 			});
+
+			// set incidents button handlers
+			tbody.querySelectorAll(".monitor-incidents-link").forEach((el) => {
+				el.addEventListener("click", (e) => {
+					e.stopPropagation();
+
+					const monitorId = el.dataset.monitorId;
+					if (!monitorId) return;
+
+					const url = Craft.getCpUrl("upsnap/incidents", {
+						monitor_id: monitorId,
+						timeframe: "24_hours",
+					});
+
+					window.location.href = url;
+				});
+			});
+
 		} catch (err) {
 			tbody.innerHTML = `<tr><td colspan="4">Error loading monitors. See console for details.</td></tr>`;
 			console.error("Error loading monitors:", err);
@@ -457,6 +539,55 @@
 				Craft.Upsnap.Monitor.notify(err.message, "error");
 			}
 		}
+	}
+
+	/**
+	 * Fetches the uptime stats for the current monitor.
+	 *
+	 * @return {Promise<Array<object>>} A promise that resolves to an array of uptime stats objects.
+	 */
+	async function fetchUptimeStats() {
+		const res = await fetch(
+			Craft.getCpUrl('upsnap/monitors/uptime-stats'),
+			{
+				headers: {
+					'X-CSRF-Token': Craft.csrfTokenValue,
+					'X-Requested-With': 'XMLHttpRequest',
+				},
+			}
+		);
+
+		const json = await res.json();
+
+		if (!json.success) {
+			throw new Error(json.message || 'Failed to fetch uptime stats');
+		}
+
+		return json.data?.uptime_stats || [];
+	}
+
+	/**
+	 * Merges an array of monitors with an array of uptime stats.
+	 *
+	 * @param {Array<Object>} monitors - An array of monitor objects.
+	 * @param {Array<Object>} uptimeStats - An array of uptime stats objects.
+	 * @returns {Array<Object>} - A new array of monitors with the incident count merged.
+	 */
+	function mergeUptimeStats(monitors, uptimeStats) {
+		return monitors.map((monitor) => {
+			const stat = uptimeStats.find(
+				(u) => u.monitor_id === monitor.id
+			);
+
+			if (stat?.stats) {
+				return {
+					...monitor,
+					incident_count: stat.stats?.day?.incident_count ?? 0,
+				};
+			}
+
+			return monitor;
+		});
 	}
 
 	function populateWithDefaultMonitor(tbody) {
@@ -549,7 +680,12 @@
 			case apiTokenStatuses.expired:
 				title = "Your API token has expired.";
 				error =
-					"Your current API token is invalid. Please provide a valid API token to create monitors, modify health check settings, and set up notification channels.";
+					"Your API token has expired. Please generate a new API token to continue using the service.";
+				break;
+			case apiTokenStatuses.account_expired:
+				title = "Your account has expired.";
+				error =
+					"Your 3-day free trial has expired. Please verify your email to continue using the service. Check your inbox for the verification link sent at registration, or use the forgot-password flow to verify your account.";
 				break;
 			case apiTokenStatuses.suspended:
 				title = "Your API token is suspended.";

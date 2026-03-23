@@ -3,6 +3,7 @@
 namespace appfoster\upsnap\controllers;
 
 use Craft;
+use appfoster\upsnap\Upsnap;
 use appfoster\upsnap\assetbundles\BaseAsset;
 
 class BaseController extends \craft\web\Controller

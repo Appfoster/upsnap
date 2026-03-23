@@ -1,0 +1,242 @@
+/* Email Verification Banner Styles */
+
+.upsnap-verification-overlay {
+	position: fixed;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	background: linear-gradient(135deg, rgba(63, 81, 181, 0.95) 0%, rgba(33, 150, 243, 0.95) 100%);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	z-index: 10000;
+	animation: fadeIn 0.3s ease;
+}
+
+.upsnap-verification-overlay.hidden {
+	display: none;
+}
+
+@keyframes fadeIn {
+	from {
+		opacity: 0;
+	}
+	to {
+		opacity: 1;
+	}
+}
+
+.upsnap-verification-content {
+	background: white;
+	border-radius: 12px;
+	box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+	max-width: 600px;
+	width: 90%;
+	padding: 50px 40px;
+	text-align: center;
+	animation: slideInUp 0.4s ease;
+}
+
+@keyframes slideInUp {
+	from {
+		opacity: 0;
+		transform: translateY(30px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+.upsnap-verification-icon {
+	font-size: 64px;
+	margin-bottom: 20px;
+	animation: bounce 1s ease-in-out;
+}
+
+@keyframes bounce {
+	0%,
+	100% {
+		transform: translateY(0);
+	}
+	50% {
+		transform: translateY(-10px);
+	}
+}
+
+.upsnap-verification-content h1 {
+	color: #1976d2;
+	font-size: 32px;
+	margin: 0 0 16px 0;
+	font-weight: 700;
+}
+
+.upsnap-verification-message {
+	color: #555;
+	font-size: 16px;
+	line-height: 1.6;
+	margin: 0 0 30px 0;
+}
+
+.upsnap-verification-message strong {
+	color: #1976d2;
+	font-weight: 600;
+}
+
+.upsnap-verification-instructions {
+	background-color: #f8f9fa;
+	border-left: 4px solid #1976d2;
+	border-radius: 4px;
+	padding: 20px;
+	margin-bottom: 30px;
+	text-align: left;
+}
+
+.upsnap-verification-instructions ol {
+	margin: 0;
+	padding-left: 20px;
+	color: #666;
+	font-size: 14px;
+	line-height: 1.8;
+}
+
+.upsnap-verification-instructions li {
+	margin-bottom: 10px;
+}
+
+.upsnap-verification-instructions li:last-child {
+	margin-bottom: 0;
+}
+
+.upsnap-verification-actions {
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
+	margin-bottom: 24px;
+}
+
+#upsnap-verification-close-btn {
+	background: linear-gradient(135deg, #1976d2 0%, #1565c0 100%);
+	border: none;
+	color: white;
+	font-size: 16px;
+	font-weight: 600;
+	border-radius: 6px;
+	cursor: pointer;
+	transition: all 0.3s ease;
+	box-shadow: 0 4px 12px rgba(25, 118, 210, 0.3);
+}
+
+#upsnap-verification-close-btn:hover {
+	background: linear-gradient(135deg, #1565c0 0%, #0d47a1 100%);
+	box-shadow: 0 6px 16px rgba(25, 118, 210, 0.4);
+	transform: translateY(-2px);
+}
+
+#upsnap-verification-close-btn:active {
+	transform: translateY(0);
+}
+
+.upsnap-resend-verify-link {
+	color: #1976d2;
+	text-decoration: none;
+	font-size: 14px;
+	font-weight: 500;
+	cursor: pointer;
+	transition: all 0.3s ease;
+	display: inline-block;
+	padding: 8px 12px;
+	border-radius: 4px;
+}
+
+.upsnap-resend-verify-link:hover {
+	background-color: #e8f4fd;
+	color: #1565c0;
+	text-decoration: underline;
+}
+
+.upsnap-verification-note {
+	background-color: #fff9c4;
+	border: 1px solid #fdd835;
+	border-radius: 4px;
+	padding: 12px 16px;
+	font-size: 12px;
+	color: #666;
+	line-height: 1.6;
+}
+
+.upsnap-verification-note strong {
+	color: #f57f17;
+	font-weight: 600;
+}
+
+/* Responsive adjustments */
+@media (max-width: 600px) {
+	.upsnap-verification-content {
+		padding: 30px 20px;
+	}
+
+	.upsnap-verification-content h1 {
+		font-size: 24px;
+	}
+
+	.upsnap-verification-message {
+		font-size: 14px;
+	}
+
+	.upsnap-verification-icon {
+		font-size: 48px;
+		margin-bottom: 16px;
+	}
+
+	.upsnap-verification-instructions {
+		padding: 16px;
+	}
+
+	.upsnap-verification-instructions ol {
+		font-size: 13px;
+	}
+
+	#upsnap-verification-close-btn {
+		padding: 10px 24px;
+		font-size: 14px;
+	}
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+	.upsnap-verification-content {
+		background: #1e1e1e;
+		color: #e0e0e0;
+	}
+
+	.upsnap-verification-content h1 {
+		color: #64b5f6;
+	}
+
+	.upsnap-verification-message {
+		color: #b0b0b0;
+	}
+
+	.upsnap-verification-instructions {
+		background-color: #2d2d2d;
+		border-left-color: #64b5f6;
+		color: #b0b0b0;
+	}
+
+	.upsnap-resend-verify-link {
+		color: #64b5f6;
+	}
+
+	.upsnap-resend-verify-link:hover {
+		background-color: #263238;
+		color: #90caf9;
+	}
+
+	.upsnap-verification-note {
+		background-color: #3d3d00;
+		border-color: #f57f17;
+		color: #d0d0a0;
+	}
+}

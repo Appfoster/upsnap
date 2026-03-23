@@ -246,6 +246,58 @@
     overflow-wrap: anywhere;
 }
 
+/* Preview gate overlay (expired / suspended / unregistered) */
+.sp-preview-table-wrapper {
+    position: relative;
+    overflow: hidden;
+    min-height: 260px;
+}
+
+.sp-preview-gate {
+    position: absolute;
+    inset: 0;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    background: rgba(255, 255, 255, 0.72);
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
+    padding: 24px;
+    text-align: center;
+    pointer-events: all;
+}
+
+.sp-preview-gate svg {
+    opacity: 0.45;
+    flex-shrink: 0;
+}
+
+.sp-preview-gate h3 {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-color, #3f4d5a);
+    margin: 0;
+}
+
+.sp-preview-gate p {
+    font-size: 13px;
+    color: var(--medium-dark-text-color, #596673);
+    margin: 0;
+    max-width: 400px;
+}
+
+.sp-preview-gate-btn {
+    margin-top: 4px;
+    pointer-events: all !important;
+}
+
+.placeholder-image {
+	opacity: 50%;
+}
+
 /* Status Container */
 .status-container {
     background: #f0f9f0;
@@ -264,6 +316,12 @@
 .status-container.warning {
     background: #fffbf0;
     border-color: #ffeaa7;
+}
+
+.status-container.info,
+.status-container.notice {
+    background: #f0f4ff;
+    border-color: #c7d7f8;
 }
 
 .status-header {
@@ -801,12 +859,12 @@
 .monitor-type-pill {
     display: inline-block;
     padding: 1px 7px;
-    border-radius: 6px;
+    border-radius: 16px;
     font-size: 11px;
     font-weight: 500;
     white-space: nowrap;
     vertical-align: middle;
-    margin-left: 6px;
+    margin-right: 6px;
     text-transform: capitalize;
 }
 
@@ -823,6 +881,19 @@
 .monitor-type-pill--keyword {
     background-color: #fef3c7;
     color: #92400e;
+}
+
+/* Monitor tag chips — used in the monitors listing table */
+.monitor-tag-chip {
+    display: inline-block;
+    padding: 1px 7px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 500;
+    white-space: nowrap;
+    vertical-align: middle;
+    margin-left: 6px;
+    color: #fff;
 }
 
 .api-pill:hover {
@@ -1400,7 +1471,7 @@
 /* Regions Multiselect Component */
 #regions-field {
     margin: 16px 0;
-    width: 49%;
+    width: 100%;
 }
 
 /* Tablet and smaller screens */
@@ -1751,6 +1822,347 @@
     }
 
     .regions-dropdown {
+        position: fixed;
+        top: auto;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        max-height: 50vh;
+        border-radius: 8px 8px 0 0;
+    }
+}
+
+/* ============================================
+   Tags Multi-Select Component
+   ============================================ */
+
+.tags-field {
+    position: relative;
+}
+
+.tags-field .input {
+    position: relative;
+}
+
+.tags-multiselect-container {
+    display: flex;
+    align-items: flex-start;
+    padding: 12px;
+    border: 1px solid #d3d4d5;
+    border-radius: 4px;
+    min-height: 44px;
+    cursor: text;
+    transition: all 0.2s ease;
+    background-color: #fff;
+    position: relative;
+}
+
+.tags-multiselect-container:hover {
+    border-color: #999;
+}
+
+.tags-multiselect-container:focus-within {
+    border-color: #0055b7;
+    box-shadow: 0 0 0 1px #0055b7;
+    outline: none;
+}
+
+.tags-chips-wrapper {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    flex: 1;
+    align-items: center;
+}
+
+.tags-chips-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.tags-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 500;
+    white-space: nowrap;
+    color: #fff;
+}
+
+.tags-chip-name {
+    max-width: 120px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.tags-chip-remove {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 14px;
+    height: 14px;
+    padding: 0;
+    background: rgba(255, 255, 255, 0.3);
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    color: inherit;
+    transition: background-color 0.15s ease;
+}
+
+.tags-chip-remove:hover {
+    background: rgba(255, 255, 255, 0.5);
+}
+
+.tags-chip-remove svg {
+    width: 10px;
+    height: 10px;
+}
+
+.tags-search-input {
+    flex: 1;
+    min-width: 100px;
+    padding: 4px;
+    border: none;
+    outline: none;
+    font-size: 13px;
+    background-color: transparent;
+    color: #333;
+}
+
+.tags-search-input::placeholder {
+    color: #999;
+}
+
+.tags-chevron-toggle {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    margin-left: 8px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #666;
+    transition: color 0.15s ease;
+}
+
+.tags-chevron-toggle:hover {
+    color: #333;
+}
+
+.tags-chevron-icon {
+    width: 20px;
+    height: 20px;
+    transition: transform 0.2s ease;
+}
+
+.tags-chevron-icon.rotated {
+    transform: rotate(180deg);
+}
+
+/* Tags Dropdown Menu */
+.tags-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    margin-top: 2px;
+    background-color: #fff;
+    border: 1px solid #d3d4d5;
+    border-radius: 4px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    max-height: 280px;
+    overflow-y: auto;
+    z-index: 1000;
+}
+
+.tags-dropdown.hidden {
+    display: none !important;
+}
+
+.tags-loading-spinner {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 16px;
+    font-size: 13px;
+    color: #666;
+}
+
+.tags-loading-spinner.hidden {
+    display: none;
+}
+
+.tags-list-container {
+    padding: 4px 0;
+}
+
+.tags-dropdown-item {
+    display: flex;
+    align-items: center;
+    padding: 10px 12px;
+    border-bottom: 1px solid #f0f0f0;
+    transition: background-color 0.15s ease;
+    cursor: pointer;
+}
+
+.tags-dropdown-item:last-child {
+    border-bottom: none;
+}
+
+.tags-dropdown-item:hover {
+    background-color: #f5f5f5;
+}
+
+.tags-dropdown-item.selected {
+    background-color: #e8f4ff;
+}
+
+.tags-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex: 1;
+    padding: 0;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 13px;
+    color: #333;
+    text-align: left;
+}
+
+.tags-color-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.tags-checkbox-box {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    border: 2px solid #999;
+    border-radius: 3px;
+    flex-shrink: 0;
+    background-color: #fff;
+    transition: all 0.15s ease;
+}
+
+.tags-checkbox:hover .tags-checkbox-box {
+    border-color: #0055b7;
+}
+
+.tags-dropdown-item.selected .tags-checkbox-box {
+    background-color: #0055b7;
+    border-color: #0055b7;
+    color: #fff;
+}
+
+.tags-checkbox-check {
+    width: 12px;
+    height: 12px;
+    display: none;
+}
+
+.tags-dropdown-item.selected .tags-checkbox-check {
+    display: block;
+}
+
+.tags-no-results {
+    padding: 16px;
+    text-align: center;
+    color: #666;
+    font-size: 13px;
+}
+
+.tags-no-results.hidden {
+    display: none;
+}
+
+/* Create New Tag Option */
+.tags-create-option {
+    border-top: 1px solid #e0e0e0;
+    padding: 8px;
+}
+
+.tags-create-option.hidden {
+    display: none;
+}
+
+.tags-create-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 10px 12px;
+    background: none;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 13px;
+    color: #0055b7;
+    text-align: left;
+    transition: background-color 0.15s ease;
+}
+
+.tags-create-btn:hover {
+    background-color: #e8f4ff;
+}
+
+.tags-create-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.tags-create-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    background: #0055b7;
+    color: #fff;
+    border-radius: 50%;
+    font-size: 14px;
+    font-weight: bold;
+}
+
+/* Responsive adjustments for tags */
+@media (max-width: 767px) {
+    .tags-field {
+        flex: 0 0 100% !important;
+        max-width: 100% !important;
+    }
+
+    .tags-multiselect-container {
+        flex-direction: column;
+        min-height: auto;
+    }
+
+    .tags-chips-wrapper {
+        width: 100%;
+    }
+
+    .tags-chevron-toggle {
+        align-self: flex-end;
+        margin-top: 8px;
+        margin-left: 0;
+    }
+
+    .tags-dropdown {
         position: fixed;
         top: auto;
         bottom: 0;
