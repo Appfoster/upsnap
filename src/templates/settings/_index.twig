@@ -88,7 +88,7 @@
 					<h3 class="status-title">{{ 'Account Expired'|t('upsnap') }}</h3>
 				</div>
 				<p class="status-message-dashboard">
-					{{ 'Your 3-day free trial has expired. Please verify your email to continue using the service. Check your inbox for the verification link sent at registration, or use the forgot-password flow to verify your account.'|t('upsnap') }}
+					{{ 'Your 3-day free trial has expired. Please verify your email to continue using the service. Check your inbox for the verification link sent at registration, or use the'|t('upsnap') }} <a href="{{ upsnapDashboardUrl }}/reset-password" target="_blank" rel="noopener noreferrer">{{ 'forgot-password'|t('upsnap') }}</a> {{ 'flow to verify your account.'|t('upsnap') }}
 					<br><br>
 				</p>
 			</div>
@@ -99,7 +99,7 @@
 					<h3 class="status-title">{{ 'API Token Expired'|t('upsnap') }}</h3>
 				</div>
 				<p class="status-message-dashboard">
-					{{ 'Your API token has expired. Please generate a new token in the Upsnap Dashboard and update it here to continue using monitoring features.'|t('upsnap') }}
+					{{ 'Your API token has expired. Please generate a new token in the Upsnap Dashboard and update it here to continue using monitoring features. You can also use the'|t('upsnap') }} <a href="{{ upsnapDashboardUrl }}/reset-password" target="_blank" rel="noopener noreferrer">{{ 'forgot-password'|t('upsnap') }}</a> {{ 'flow to recover access.'|t('upsnap') }}
 					<br><br>
 				</p>
 			</div>

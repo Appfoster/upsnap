@@ -246,7 +246,7 @@
             const settingsUrl = cfg.settingsUrl || '#';
             const isAccountExpired = cfg.apiTokenStatus === (cfg.apiTokenStatuses || {}).account_expired;
             const msg = isAccountExpired
-                ? 'Your account has expired. Please verify your email to continue using the service.'
+                ? 'Your 3-day free trial has expired. Please verify your email to continue using the service. Check your inbox for the verification link sent at registration, or use the forgot-password flow to verify your account.'
                 : 'Your API token is expired or suspended. Update it in Settings to restore access.';
             gate.innerHTML = `
                 <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">

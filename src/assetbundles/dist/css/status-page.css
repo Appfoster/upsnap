@@ -118,9 +118,7 @@
 .register-message {
 	padding: 0px;
 }
-.status-page-image {
-	opacity: 50%;
-}
+
 
 /* ── Status pages dummy preview ─────────────────────────────────────────── */
 .sp-preview-wrap {
@@ -128,26 +126,14 @@
 	user-select: none;
 }
 
-.sp-preview-table-wrapper {
-	position: relative;
-	overflow: hidden;
-	min-height: 180px;
-}
-
-.sp-preview-table {
-	filter: blur(3px);
-	opacity: 0.5;
-	pointer-events: none;
-}
-
-.sp-preview-gate {
+.sp-preview-gate-status-page {
 	position: absolute;
 	inset: 0;
 	z-index: 10;
 	display: flex;
 	flex-direction: column;
 	align-items: center;
-	justify-content: center;
+	padding-top	: 12rem !important;
 	gap: 10px;
 	background: rgba(255, 255, 255, 0.72);
 	backdrop-filter: blur(2px);
@@ -157,28 +143,10 @@
 	pointer-events: all;
 }
 
-.sp-preview-gate svg {
-	opacity: 0.45;
-	flex-shrink: 0;
-}
-
-.sp-preview-gate h3 {
-	font-size: 16px;
-	font-weight: 600;
-	color: var(--text-color, #3f4d5a);
-	margin: 0;
-}
-
-.sp-preview-gate p {
-	font-size: 13px;
-	color: var(--medium-dark-text-color, #596673);
-	margin: 0;
-	max-width: 420px;
-}
-
-.sp-preview-gate-btn {
-	margin-top: 4px;
-	pointer-events: all !important;
+.sp-preview-table {
+	filter: blur(3px);
+	opacity: 0.5;
+	pointer-events: none;
 }
 
 #status-pages-loaders {

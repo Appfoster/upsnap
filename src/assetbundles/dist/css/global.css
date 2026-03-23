@@ -246,6 +246,58 @@
     overflow-wrap: anywhere;
 }
 
+/* Preview gate overlay (expired / suspended / unregistered) */
+.sp-preview-table-wrapper {
+    position: relative;
+    overflow: hidden;
+    min-height: 260px;
+}
+
+.sp-preview-gate {
+    position: absolute;
+    inset: 0;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    background: rgba(255, 255, 255, 0.72);
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
+    padding: 24px;
+    text-align: center;
+    pointer-events: all;
+}
+
+.sp-preview-gate svg {
+    opacity: 0.45;
+    flex-shrink: 0;
+}
+
+.sp-preview-gate h3 {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-color, #3f4d5a);
+    margin: 0;
+}
+
+.sp-preview-gate p {
+    font-size: 13px;
+    color: var(--medium-dark-text-color, #596673);
+    margin: 0;
+    max-width: 400px;
+}
+
+.sp-preview-gate-btn {
+    margin-top: 4px;
+    pointer-events: all !important;
+}
+
+.placeholder-image {
+	opacity: 50%;
+}
+
 /* Status Container */
 .status-container {
     background: #f0f9f0;
