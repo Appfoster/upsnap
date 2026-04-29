@@ -72,13 +72,11 @@ class IncidentsController extends BaseController
             return $this->asJson(['success' => false, 'message' => 'monitorId is required.']);
         }
 
-        $endpoint = str_replace(
-            '{monitorId}',
-            $monitorId,
-            Constants::MICROSERVICE_ENDPOINTS['monitors']['export']
-        );
+        $endpoint = Constants::MICROSERVICE_ENDPOINTS['monitors']['export'];
+        Craft::error("Exporting incidents for monitor $monitorId as $fileType", __METHOD__);
 
         $params = array_filter([
+            'monitor_id'  => $monitorId,
             'start_time' => $request->getQueryParam('start_time'),
             'end_time'   => $request->getQueryParam('end_time'),
             'type'       => $request->getQueryParam('type'),
