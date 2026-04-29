@@ -183,7 +183,7 @@ class Constants
             'response_time' => 'user/monitors/{monitorId}/response-time',
             'uptime_stats' => 'user/monitors/{monitorId}/uptime-stats',
             'incidents' => 'user/monitors/incidents',
-            'export'    => 'user/monitors/{monitorId}/incidents/export',
+            'export'    => 'user/monitors/incidents/export',
             'status-page' => [
                 'list' => 'user/status-pages',
                 'detail' => 'user/status-pages',
