@@ -492,3 +492,15 @@
     background: rgba(0,0,0,.05);
     color: var(--link-color, #0d78f2);
 }
+
+
+/* ── Monitor column — visible only in "All Monitors" mode ──────────────── */
+.incidents-th--monitor,
+.incident-monitor-cell {
+    display: none;
+}
+
+#incidents-table.incidents-table--all-monitors .incidents-th--monitor,
+#incidents-table.incidents-table--all-monitors .incident-monitor-cell {
+    display: table-cell;
+}

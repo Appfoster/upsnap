@@ -68,14 +68,10 @@ class IncidentsController extends BaseController
         $monitorId = $request->getQueryParam('monitorId');
         $fileType  = $request->getQueryParam('file_type', 'csv');
 
-        if (!$monitorId) {
-            return $this->asJson(['success' => false, 'message' => 'monitorId is required.']);
-        }
-
         $endpoint = Constants::MICROSERVICE_ENDPOINTS['monitors']['export'];
 
         $params = array_filter([
-            'monitor_id'  => $monitorId,
+            'monitor_id'  => $monitorId ?: null,
             'start_time' => $request->getQueryParam('start_time'),
             'end_time'   => $request->getQueryParam('end_time'),
             'type'       => $request->getQueryParam('type'),

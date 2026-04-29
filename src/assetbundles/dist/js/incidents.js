@@ -110,30 +110,30 @@
         const sel = el.monitorSelect();
         if (!sel) return;
         sel.innerHTML = '';
-        monitors = monitors.monitors || []
+        monitors = monitors.monitors || [];
 
-        if (!monitors || !monitors.length) {
-            const opt = document.createElement('option');
-            opt.value = '';
-            opt.textContent = 'No monitors found';
-            sel.appendChild(opt);
-            return;
+        // "All Monitors" is always the first option
+        const allOpt = document.createElement('option');
+        allOpt.value = '';
+        allOpt.textContent = 'All Monitors';
+        sel.appendChild(allOpt);
+
+        if (monitors && monitors.length) {
+            monitors.forEach((m) => {
+                const opt = document.createElement('option');
+                opt.value = m.id;
+                opt.textContent = m.name;
+                sel.appendChild(opt);
+            });
         }
 
-        monitors.forEach((m) => {
-            const opt = document.createElement('option');
-            opt.value = m.id;
-            opt.textContent = m.name;
-            sel.appendChild(opt);
-        });
-
-        // Pre-select: honour ?monitor_id= URL param first, then fall back to first in list
+        // Pre-select: honour ?monitor_id= URL param if valid, otherwise default to "All Monitors"
         const urlMonitorId = new URLSearchParams(window.location.search).get('monitor_id');
-        const preselect = urlMonitorId && monitors.find((m) => m.id === urlMonitorId)
+        const preselect = (urlMonitorId && monitors && monitors.find((m) => m.id === urlMonitorId))
             ? urlMonitorId
-            : monitors[0].id;
+            : '';
         state.monitorId = preselect;
-        sel.value = state.monitorId;
+        sel.value = preselect;
     };
 
     /* ─── Build a table row ────────────────────────────────────────────────── */
@@ -155,6 +155,11 @@
         const tdStatus = document.createElement('td');
         tdStatus.className = 'incident-status-cell';
         tdStatus.innerHTML = `<span class="incident-status-dot-wrap" data-tooltip="${isResolved ? 'Resolved' : 'Active'}"><span class="incident-status-dot ${isResolved ? 'is-resolved' : 'is-active'}"></span></span>`;
+
+        // Monitor name (visible only when "All Monitors" is selected)
+        const tdMonitor = document.createElement('td');
+        tdMonitor.className = 'incident-monitor-cell';
+        tdMonitor.innerHTML = `<strong>${escapeHtml(inc.monitor_name || '') || '&mdash;'}</strong>`;
 
         // Check Type
         const tdType = document.createElement('td');
@@ -182,11 +187,25 @@
         const ts = inc.timestamp || inc.occurred_at || inc.created_at || '';
         tdTime.innerHTML = `<time datetime="${escapeHtml(ts)}">${escapeHtml(formatDate(ts))}</time>`;
 
-        tr.append(tdStatus, tdType, tdRegion, tdMsg, tdCode, tdTime);
+        tr.append(tdStatus, tdMonitor, tdType, tdRegion, tdMsg, tdCode, tdTime);
         return tr;
     };
 
-    /* ─── Render table body ───────────────────────────────────────────────── */
+    /* ─── Show/hide the Monitor column based on current selection ──────────── */
+    const updateMonitorColumnVisibility = () => {
+        const isAll = !state.monitorId;
+        const table = document.getElementById('incidents-table');
+        if (table) {
+            table.classList.toggle('incidents-table--all-monitors', isAll);
+        }
+        // Update colspan of any loading/empty cell currently in tbody
+        const emptyCell = document.querySelector('#incidents-tbody .incidents-empty-cell');
+        if (emptyCell) {
+            emptyCell.colSpan = isAll ? 7 : 6;
+        }
+    };
+
+    /* ─── Render table body ─────────────────────────────────────────── */
     const renderTable = (incidents) => {
         const tbody = el.tbody();
         if (!tbody) return;
@@ -388,7 +407,11 @@
 
     /* ─── Fetch & render ──────────────────────────────────────────────────── */
     const fetchAndRender = async () => {
-        if (!state.monitorId) {
+        // state.monitorId === null  → no monitors exist (unregistered/preview)
+        // state.monitorId === ''    → "All Monitors" selected (omit filter)
+        // state.monitorId === 'id'  → specific monitor
+        if (state.monitorId === null) {
+            setLoading(false);
             renderTable([]);
             return;
         }
@@ -398,7 +421,9 @@
         // Build on top of the existing endpoint URL (which may already contain
         // Craft's ?site= or other query params from actionUrl()).
         const url = new URL(cfg.listEndpoint, window.location.origin);
-        url.searchParams.set('monitorId',  state.monitorId);
+        if (state.monitorId) {
+            url.searchParams.set('monitorId', state.monitorId);
+        }
         url.searchParams.set('time_range', state.timeRange);
         url.searchParams.set('page',       state.page);
         url.searchParams.set('page_size',  state.pageSize);
@@ -614,15 +639,12 @@
 
     /* ─── Export dropdown ─────────────────────────────────────────────────── */
     const triggerExport = (fileType) => {
-        if (!state.monitorId) {
-            craftError('Please select a monitor before exporting.');
-            return;
-        }
-
         const { start_time, end_time } = timeRangeToTimestamps(state.timeRange);
 
         const url = new URL(cfg.exportEndpoint, window.location.origin);
-        url.searchParams.set('monitorId',  state.monitorId);
+        if (state.monitorId) {
+            url.searchParams.set('monitorId', state.monitorId);
+        }
         url.searchParams.set('file_type',  fileType);
         url.searchParams.set('start_time', start_time);
         url.searchParams.set('end_time',   end_time);
@@ -675,6 +697,7 @@
             monSel.addEventListener('change', () => {
                 state.monitorId = monSel.value;
                 state.page = 1;
+                updateMonitorColumnVisibility();
                 fetchAndRender();
             });
         }
@@ -757,12 +780,9 @@
         }
 
         // Case 2 & 3: Registered + active token — fetch real data
-        if (state.monitorId) {
-            fetchAndRender();
-        } else {
-            setLoading(false);
-            renderTable([]); // empty → case 3 (blurred + "no incidents yet")
-        }
+        // state.monitorId is '' (All Monitors) or a specific ID after populateMonitorSelect()
+        updateMonitorColumnVisibility();
+        fetchAndRender();
     };
 
     // Run after DOM is ready
