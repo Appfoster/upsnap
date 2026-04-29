@@ -2172,3 +2172,67 @@
         border-radius: 8px 8px 0 0;
     }
 }
+
+/* -------------------------------------------------------
+   Monitor incidents link (monitors listing page)
+------------------------------------------------------- */
+.monitor-incidents-link {
+    color: #dc2626;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.monitor-incidents-link:hover {
+    text-decoration: underline;
+}
+
+/* -------------------------------------------------------
+   Region tooltip (monitors listing page)
+------------------------------------------------------- */
+.upsnap-region-tooltip {
+    position: fixed;
+    z-index: 9999;
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 10px 12px;
+    min-width: 180px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+    pointer-events: none;
+    display: none;
+    font-size: 11px;
+}
+
+.upsnap-region-tooltip.visible {
+    display: block;
+}
+
+.upsnap-rtt-header {
+    font-weight: 600;
+    font-size: 11px;
+    color: #374151;
+    margin-bottom: 8px;
+    white-space: nowrap;
+}
+
+.upsnap-rtt-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    padding: 2px 0;
+}
+
+.upsnap-rtt-count--red {
+    color: #dc2626;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+}
+
+.upsnap-rtt-count--green {
+    color: #059669;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+}

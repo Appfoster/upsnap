@@ -703,3 +703,108 @@
 .fullwidth {
     width: 100% !important;
 }
+
+/* -------------------------------------------------------
+   Incident Stats Card (#incident-stats-card)
+------------------------------------------------------- */
+#incident-stats-card {
+    border: 1px solid #e5e7eb;
+    transition: box-shadow 0.2s ease;
+}
+
+#incident-stats-card:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.is-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 4px;
+}
+
+.is-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: #6b7280;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.is-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.is-badge--red {
+    background: #fee2e2;
+    color: #dc2626;
+}
+
+.is-badge--green {
+    background: #d1fae5;
+    color: #059669;
+}
+
+.is-badge--clickable {
+    cursor: pointer;
+}
+
+.is-badge--clickable:hover {
+    opacity: 0.85;
+    text-decoration: underline;
+}
+
+.is-divider {
+    border: 0;
+    border-top: 1px solid #f3f4f6;
+    margin: 8px 0;
+}
+
+.is-region-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 0;
+    border-bottom: 1px solid #f3f4f6;
+    font-size: 13px;
+}
+
+.is-region-row:last-child {
+    border-bottom: none;
+}
+
+.is-region-name {
+    color: #374151;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 150px;
+}
+
+.is-count--red {
+    color: #dc2626;
+    font-variant-numeric: tabular-nums;
+    font-weight: 500;
+    flex-shrink: 0;
+}
+
+.is-count--green {
+    color: #059669;
+    font-variant-numeric: tabular-nums;
+    font-weight: 500;
+    flex-shrink: 0;
+}
+
+.is-empty {
+    font-size: 12px;
+    color: #9ca3af;
+    text-align: center;
+    padding: 8px 0;
+    margin: 0;
+}

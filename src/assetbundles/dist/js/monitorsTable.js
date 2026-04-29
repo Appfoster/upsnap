@@ -15,6 +15,9 @@
 	// Store tags map for lookup (id -> tag object)
 	let tagsMap = new Map();
 
+	// Store region names map for tooltip (region_id -> human-readable name)
+	let regionNameMap = new Map();
+
 	const endpointSelector = "#upsnap-monitors-wrap";
 	const tbodySelector = "#upsnap-monitors-tbody";
 	const selectAllSelector = "#upsnap-select-all";
@@ -82,7 +85,8 @@
 		const inPollingState =
 			isPollingRelevant &&
 			isRecentlyChecked(monitor.last_check_at, monitor.updated_at);
-		const incidentCount = monitor.incident_count ?? 0;
+		const incidentRegions = monitor.incident_regions || [];
+		const totalIncidents = incidentRegions.reduce((sum, r) => sum + (r.incident_count || 0), 0);
 
 
 		// Determine status
@@ -132,14 +136,19 @@
 
 		// monitor column: name + url + type pill
 		const tdMonitor = document.createElement("td");
+		const regionStatsAttr = incidentRegions.length > 0
+			? `data-region-stats="${escapeHtmlAttr(JSON.stringify(incidentRegions))}"`
+			: '';
+
 		tdMonitor.innerHTML = `
 			<div class="heading">${escapeHtml(name)} 				${
-					incidentCount > 0
+					totalIncidents > 0
 						? `<span
 								class="monitor-incidents-link"
 								data-monitor-id="${monitor.id}"
+								${regionStatsAttr}
 							>
-								• ${incidentCount} incident${incidentCount === 1 ? "" : "s"}
+								• ${totalIncidents} incident${totalIncidents === 1 ? "" : "s"}
 						</span>`
 						: ""
 				}</div>
@@ -391,8 +400,8 @@
 			let settingsMap = new Map();
 
 			if (apiKey) {
-				// Fetch monitors, settings, and tags in parallel
-				const [monitorsResponse, settingsResponse, tagsResponse] = await Promise.all([
+				// Fetch monitors, settings, tags, and regions in parallel
+				const [monitorsResponse, settingsResponse, tagsResponse, regionsResponse] = await Promise.all([
 					fetch(endpoint, {
 						headers: { "X-CSRF-Token": Craft.csrfTokenValue },
 					}),
@@ -408,17 +417,34 @@
 							Accept: "application/json",
 						},
 					}),
+					fetch("/actions/upsnap/regions/list", {
+						headers: {
+							"X-CSRF-Token": Craft.csrfTokenValue,
+							Accept: "application/json",
+						},
+					}),
 				]);
 
 				const monitorsJson = await monitorsResponse.json();
 				const settingsJson = await settingsResponse.json();
 				const tagsJson = await tagsResponse.json();
+				const regionsJson = await regionsResponse.json();
 
 				// Build tags map for lookup
 				if (tagsJson.success && Array.isArray(tagsJson.data)) {
 					tagsMap.clear();
 					tagsJson.data.forEach((tag) => {
 						tagsMap.set(tag.id, tag);
+					});
+				}
+
+				// Build region names map for tooltip
+				regionNameMap.clear();
+				if (regionsJson.success && Array.isArray(regionsJson.data)) {
+					regionsJson.data.forEach((region) => {
+						const id = region.id ?? region.slug ?? region;
+						const name = region.name ?? region.label ?? String(id);
+						regionNameMap.set(String(id), String(name));
 					});
 				}
 
@@ -453,17 +479,22 @@
 				});
 
 				// ------------------------------------
-				// FETCH + MERGE UPTIME STATS
+				// FETCH + MERGE UPTIME STATS + INCIDENT STATS (parallel)
 				// ------------------------------------
 				let uptimeStats = [];
+				let incidentStats = [];
 				try {
-					uptimeStats = await fetchUptimeStats();
+					[uptimeStats, incidentStats] = await Promise.all([
+						fetchUptimeStats().catch((e) => { console.warn('Failed to load uptime stats:', e); return []; }),
+						fetchIncidentStats().catch((e) => { console.warn('Failed to load incident stats:', e); return []; }),
+					]);
 				} catch (e) {
-					console.warn('Failed to load uptime stats:', e);
+					console.warn('Failed to load stats:', e);
 				}
 
 				// enrich monitors
 				monitors = mergeUptimeStats(monitors, uptimeStats);
+				monitors = matchIncidentStats(monitors, incidentStats);
 			}
 
 			const monitorCount = monitors.length;
@@ -507,7 +538,9 @@
 				b.addEventListener("click", handleSetPrimary);
 			});
 
-			// set incidents button handlers
+			// set incidents button handlers + region tooltip
+			initiateRegionTooltip();
+			wireRegionTooltips(tbody);
 			tbody.querySelectorAll(".monitor-incidents-link").forEach((el) => {
 				el.addEventListener("click", (e) => {
 					e.stopPropagation();
@@ -546,6 +579,134 @@
 	 *
 	 * @return {Promise<Array<object>>} A promise that resolves to an array of uptime stats objects.
 	 */
+	/**
+	 * Fetches region-wise incident stats for all monitors (last 24 hours).
+	 *
+	 * @returns {Promise<Array>} Array of { monitor_id, regions } objects
+	 */
+	async function fetchIncidentStats() {
+		const res = await fetch(
+			'/actions/upsnap/incidents/incident-stats',
+			{
+				headers: {
+					'X-CSRF-Token': Craft.csrfTokenValue,
+					'X-Requested-With': 'XMLHttpRequest',
+				},
+			}
+		);
+
+		const json = await res.json();
+
+		if (!json.success) {
+			throw new Error(json.message || 'Failed to fetch incident stats');
+		}
+
+		return json.data?.stats || [];
+	}
+
+	/**
+	 * Attaches incident region data from the stats API to each monitor.
+	 *
+	 * @param {Array<Object>} monitors
+	 * @param {Array<Object>} incidentStats - Array of { monitor_id, regions }
+	 * @returns {Array<Object>}
+	 */
+	function matchIncidentStats(monitors, incidentStats) {
+		if (!Array.isArray(incidentStats) || incidentStats.length === 0) {
+			return monitors;
+		}
+		return monitors.map((monitor) => {
+			const stat = incidentStats.find((s) => s.monitor_id === monitor.id);
+			if (stat && Array.isArray(stat.regions)) {
+				return { ...monitor, incident_regions: stat.regions };
+			}
+			return monitor;
+		});
+	}
+
+	/**
+	 * Creates the shared floating tooltip element and wires all delegation
+	 * listeners once per page load. Safe to call on every render cycle —
+	 * subsequent calls are no-ops because of the ID guard.
+	 */
+	function initiateRegionTooltip() {
+		if (document.getElementById('upsnap-region-tooltip')) return;
+
+		const tooltip = document.createElement('div');
+		tooltip.id = 'upsnap-region-tooltip';
+		tooltip.className = 'upsnap-region-tooltip';
+		document.body.appendChild(tooltip);
+
+		const hideTooltip = () => tooltip.classList.remove('visible');
+
+		const positionTooltip = (e) => {
+			const GAP = 12;
+			const tw = tooltip.offsetWidth;
+			const th = tooltip.offsetHeight;
+			const vw = window.innerWidth;
+			const vh = window.innerHeight;
+
+			let left = e.clientX + GAP;
+			let top  = e.clientY + GAP;
+
+			if (left + tw > vw - GAP) left = e.clientX - tw - GAP;
+			if (top  + th > vh - GAP) top  = e.clientY - th - GAP;
+
+			tooltip.style.left = left + 'px';
+			tooltip.style.top  = top  + 'px';
+		};
+
+		// Delegated mouseover — show when over a trigger, hide otherwise
+		document.addEventListener('mouseover', (e) => {
+			const trigger = e.target.closest('.monitor-incidents-link[data-region-stats]');
+			if (!trigger) {
+				hideTooltip();
+				return;
+			}
+
+			let regions;
+			try {
+				regions = JSON.parse(trigger.dataset.regionStats);
+			} catch {
+				hideTooltip();
+				return;
+			}
+
+			const rows = regions
+				.map((r) => {
+					const name = escapeHtml(regionNameMap.get(r.region_id) || r.region_id);
+					const count = r.incident_count || 0;
+					const cls = count > 0 ? 'upsnap-rtt-count--red' : 'upsnap-rtt-count--green';
+					return `<div class="upsnap-rtt-row"><span>${name}</span><span class="${cls}">${count}</span></div>`;
+				})
+				.join('');
+
+			tooltip.innerHTML = `
+				<div class="upsnap-rtt-header">Incidents by region (24h)</div>
+				${rows}
+			`;
+
+			tooltip.classList.add('visible');
+			positionTooltip(e);
+		});
+
+		// Follow cursor while visible
+		document.addEventListener('mousemove', (e) => {
+			if (tooltip.classList.contains('visible')) positionTooltip(e);
+		});
+
+		// Hide on click anywhere or any scroll
+		document.addEventListener('click', hideTooltip);
+		document.addEventListener('scroll', hideTooltip, true);
+	}
+
+	/**
+	 * No-op — tooltip delegation is set up once in initiateRegionTooltip().
+	 * Kept so call sites don't need to change.
+	 */
+	function wireRegionTooltips(container) { // eslint-disable-line no-unused-vars
+	}
+
 	async function fetchUptimeStats() {
 		const res = await fetch(
 			Craft.getCpUrl('upsnap/monitors/uptime-stats'),

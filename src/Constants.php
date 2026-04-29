@@ -192,6 +192,7 @@ class Constants
                 'delete' => 'user/status-pages',
             ],
             'monitors_stats' => 'user/monitors/uptime-stats',
+            'incident_stats' => 'user/monitors/incidents/stats',
         ],
         'user' => [
             'details' => 'user/details',

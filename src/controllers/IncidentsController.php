@@ -162,4 +162,48 @@ class IncidentsController extends BaseController
             ]);
         }
     }
+
+    /**
+     * Fetches incident stats for monitors (all or single via ?monitor_id=<id>).
+     * Returns region-wise incident counts for the last 24 hours.
+     *
+     * @return Response
+     */
+    public function actionIncidentStats(): Response
+    {
+        $endpoint = Constants::MICROSERVICE_ENDPOINTS['monitors']['incident_stats'];
+
+        try {
+            $params = [];
+            $monitorId = Craft::$app->getRequest()->getQueryParam('monitor_id');
+            if ($monitorId) {
+                $params['monitor_id'] = $monitorId;
+            }
+
+            $response = Upsnap::$plugin->apiService->get($endpoint, $params);
+
+            if (!is_array($response) || !isset($response['status'])) {
+                throw new \Exception(Craft::t('upsnap', 'Something went wrong while fetching incident stats.'));
+            }
+
+            if ($response['status'] !== 'success') {
+                $errorMsg = $response['message'] ?? Craft::t('upsnap', 'Failed to fetch incident stats.');
+                throw new \Exception($errorMsg);
+            }
+
+            return $this->asJson([
+                'success' => true,
+                'message' => Craft::t('upsnap', 'Incident stats fetched successfully.'),
+                'data' => [
+                    'stats' => $response['data'] ?? [],
+                ],
+            ]);
+        } catch (\Throwable $e) {
+            Craft::error("Incident stats fetch failed: {$e->getMessage()}", __METHOD__);
+            return $this->asJson([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ]);
+        }
+    }
 }
