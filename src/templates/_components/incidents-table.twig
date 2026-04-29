@@ -15,7 +15,8 @@
 			<table class="data fullwidth">
 				<thead>
 					<tr>
-						<th>Monitor</th>
+						<th class="incident-status-th"></th>
+										<th>Monitor</th>
 						<th>Region</th>
 						<th>Check Type</th>
 						<th>Status Code</th>
@@ -26,6 +27,12 @@
 				<tbody>
 					{% for incident in incidents %}
 						<tr>
+							<td class="incident-status-cell">
+								{% set isResolved = incident.status is defined and incident.status|lower == 'resolved' %}
+								<span class="incident-status-dot-wrap" data-tooltip="{{ isResolved ? 'Resolved' : 'Active' }}">
+									<span class="incident-status-dot {{ isResolved ? 'is-resolved' : 'is-active' }}"></span>
+								</span>
+							</td>
 							<td>
 								<strong>{{ incident.monitor_name }}</strong>
 							</td>

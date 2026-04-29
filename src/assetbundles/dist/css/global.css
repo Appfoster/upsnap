@@ -2236,3 +2236,78 @@
     font-weight: 600;
     font-variant-numeric: tabular-nums;
 }
+
+/* ── Incident Status Dot Column ─────────────────────────────────────────── */
+.incident-status-th {
+    width: 40px;
+    min-width: 40px;
+    max-width: 40px;
+}
+
+.incident-status-cell {
+    width: 40px;
+    min-width: 40px;
+    max-width: 40px;
+    text-align: center;
+    padding-left: 0;
+    padding-right: 0;
+}
+
+.incident-status-dot-wrap {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    cursor: default;
+}
+
+.incident-status-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.incident-status-dot.is-resolved {
+    background-color: #22c55e;
+}
+
+.incident-status-dot.is-active {
+    background-color: #ef4444;
+}
+
+/* CSS tooltip — shows on hover, placed above the dot */
+.incident-status-dot-wrap::before,
+.incident-status-dot-wrap::after {
+    position: absolute;
+    bottom: calc(100% + 6px);
+    left: 0;
+    transform: none;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.15s ease;
+    z-index: 9999;
+}
+
+.incident-status-dot-wrap::after {
+    content: attr(data-tooltip);
+    background: #1f2937;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 500;
+    white-space: nowrap;
+    padding: 3px 8px;
+    border-radius: 4px;
+}
+
+.incident-status-dot-wrap::before {
+    content: '';
+    bottom: calc(100% + 2px);
+    border: 4px solid transparent;
+    border-top-color: #1f2937;
+}
+
+.incident-status-dot-wrap:hover::before,
+.incident-status-dot-wrap:hover::after {
+    opacity: 1;
+}

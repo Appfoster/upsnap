@@ -150,6 +150,12 @@
     const buildRow = (inc) => {
         const tr = document.createElement('tr');
 
+        // Status dot
+        const isResolved = (inc.status || '').toLowerCase() === 'resolved';
+        const tdStatus = document.createElement('td');
+        tdStatus.className = 'incident-status-cell';
+        tdStatus.innerHTML = `<span class="incident-status-dot-wrap" data-tooltip="${isResolved ? 'Resolved' : 'Active'}"><span class="incident-status-dot ${isResolved ? 'is-resolved' : 'is-active'}"></span></span>`;
+
         // Check Type
         const tdType = document.createElement('td');
         const typeVal = inc.check_type || '';
@@ -176,7 +182,7 @@
         const ts = inc.timestamp || inc.occurred_at || inc.created_at || '';
         tdTime.innerHTML = `<time datetime="${escapeHtml(ts)}">${escapeHtml(formatDate(ts))}</time>`;
 
-        tr.append(tdType, tdRegion, tdMsg, tdCode, tdTime);
+        tr.append(tdStatus, tdType, tdRegion, tdMsg, tdCode, tdTime);
         return tr;
     };
 
