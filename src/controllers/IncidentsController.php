@@ -73,7 +73,6 @@ class IncidentsController extends BaseController
         }
 
         $endpoint = Constants::MICROSERVICE_ENDPOINTS['monitors']['export'];
-        Craft::error("Exporting incidents for monitor $monitorId as $fileType", __METHOD__);
 
         $params = array_filter([
             'monitor_id'  => $monitorId,
