@@ -136,6 +136,28 @@
         sel.value = preselect;
     };
 
+    const syncTimeRangeForMonitorSelection = () => {
+        const timeSel = el.timeframeSelect();
+        if (!timeSel) return false;
+
+        const isAllMonitors = !state.monitorId;
+        const last30DaysOption = timeSel.querySelector('option[value="1M"]');
+
+        if (!last30DaysOption) return false;
+
+        // Keep 30 days unavailable when "All Monitors" is selected.
+        last30DaysOption.disabled = isAllMonitors;
+        last30DaysOption.hidden = isAllMonitors;
+
+        if (isAllMonitors && state.timeRange === '1M') {
+            state.timeRange = '7D';
+            timeSel.value = '7D';
+            return true;
+        }
+
+        return false;
+    };
+
     /* ─── Build a table row ────────────────────────────────────────────────── */
     /* ─── Dummy data for empty-state preview ────────────────────────────── */
     const getDummyIncidents = () => [
@@ -715,6 +737,7 @@
             monSel.addEventListener('change', () => {
                 state.monitorId = monSel.value;
                 state.page = 1;
+                syncTimeRangeForMonitorSelection();
                 updateMonitorColumnVisibility();
                 fetchAndRender();
             });
@@ -775,6 +798,7 @@
     /* ─── Init ────────────────────────────────────────────────────────────── */
     const init = () => {
         populateMonitorSelect(cfg.monitors || []);
+        syncTimeRangeForMonitorSelection();
         bindSortHeaders();
         updateSortIcons();
         bindFilterDropdown();
