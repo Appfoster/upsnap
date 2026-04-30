@@ -415,6 +415,21 @@
     font-size: 1rem;
     font-weight: 600;
     color: #374151;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    line-height: 1.25;
+}
+
+.incident-detail-ai-title-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+}
+
+.incident-detail-ai-title-icon svg {
+    display: block;
 }
 
 .incident-detail-ai-list {

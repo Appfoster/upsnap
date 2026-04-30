@@ -286,6 +286,13 @@ Craft.Upsnap.Signup = {
 
 		var i18n = (window.Upsnap && window.Upsnap.settings && window.Upsnap.settings.signupI18n) || {};
 
+		var primaryMonitorModal = document.getElementById("primary-monitor-required-modal");
+		var primaryMonitorSelect = document.getElementById("primary-monitor-select");
+		var primaryMonitorError = document.getElementById("primary-monitor-error");
+		var primaryMonitorSaveBtn = document.getElementById("primary-monitor-save-btn");
+		var activeMonitorOptions = [];
+		var pendingRedirectUrl = "";
+
 		// Signup elements
 		var signupWrapper         = document.getElementById("signup-form-wrapper");
 		var fullnameInput         = document.getElementById("signup-fullname");
@@ -318,8 +325,324 @@ Craft.Upsnap.Signup = {
 			return /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/.test(val);
 		}
 
-		function showErr(el, msg) { el.textContent = msg; el.style.display = "block"; }
-		function clearErr(el)     { el.textContent = "";  el.style.display = "none";  }
+		function showErr(el, msg) {
+			if (!el) return;
+			el.textContent = msg;
+			el.style.display = "block";
+		}
+
+		function clearErr(el) {
+			if (!el) return;
+			el.textContent = "";
+			el.style.display = "none";
+		}
+
+		function getDefaultRedirectUrl(redirectUrl) {
+			return redirectUrl || Craft.getCpUrl("upsnap/settings") + "#monitors-tab";
+		}
+
+		function checkMonitorsAndCreateIfNeeded(redirectUrl) {
+			var actionUrl = Craft.getActionUrl("upsnap/monitors/list");
+
+			fetch(actionUrl, {
+				headers: { "X-CSRF-Token": Craft.csrfTokenValue },
+			})
+				.then(function (r) { return r.json(); })
+				.then(function (response) {
+					var data = response && response.data ? response.data : {};
+					var monitors = Array.isArray(data.monitors) ? data.monitors : (Array.isArray(data) ? data : []);
+					var hasMonitors = monitors.length > 0;
+
+					if (!hasMonitors) {
+						Craft.cp.displayNotice(i18n.creatingFirstMonitor || "No monitors found. Creating your first monitor...");
+						createFirstMonitorAndRedirect(redirectUrl);
+						return;
+					}
+
+					window.location.href = getDefaultRedirectUrl(redirectUrl);
+					window.location.reload();
+				})
+				.catch(function (err) {
+					console.error("Failed to fetch monitors:", err);
+					createFirstMonitorAndRedirect(redirectUrl);
+				});
+		}
+
+		function normalizeMonitorOptionsFromListResponse(response) {
+			var data = response && response.data ? response.data : {};
+			var monitors = Array.isArray(data.monitors) ? data.monitors : (Array.isArray(data) ? data : []);
+
+			return monitors
+				.map(function (monitor) {
+					var id = monitor && monitor.id ? String(monitor.id) : "";
+					if (!id) return null;
+
+					var serviceType = monitor.service_type || "website";
+					var meta = monitor.config && monitor.config.meta ? monitor.config.meta : {};
+					var url = meta.url || "";
+					var host = meta.host || "";
+					var port = meta.port || "";
+					var fallbackLabel = serviceType === "port"
+						? (host && port ? host + ":" + port : (host || id))
+						: (url || id);
+
+					return {
+						id: id,
+						name: monitor.name || "",
+						label: monitor.name || fallbackLabel,
+						monitoringUrl: url,
+						serviceType: serviceType,
+					};
+				})
+				.filter(Boolean);
+		}
+
+		function resolvePrimaryRequirementClientSide(redirectUrl) {
+			var actionUrl = Craft.getActionUrl("upsnap/monitors/list");
+			var currentMonitorId = "";
+			var currentMonitorIdInput = document.getElementById("monitorId");
+
+			if (currentMonitorIdInput && currentMonitorIdInput.value) {
+				currentMonitorId = String(currentMonitorIdInput.value).trim();
+			}
+
+			fetch(actionUrl, {
+				headers: { "X-CSRF-Token": Craft.csrfTokenValue },
+			})
+				.then(function (r) { return r.json(); })
+				.then(function (response) {
+					var options = normalizeMonitorOptionsFromListResponse(response);
+
+					if (options.length === 0) {
+						createFirstMonitorAndRedirect(redirectUrl);
+						return;
+					}
+
+					var hasMatchingPrimary = currentMonitorId
+						? options.some(function (option) { return String(option.id) === currentMonitorId; })
+						: false;
+
+					if (!hasMatchingPrimary) {
+						showPrimaryMonitorModal(options, redirectUrl);
+						return;
+					}
+
+					window.location.href = getDefaultRedirectUrl(redirectUrl);
+					window.location.reload();
+				})
+				.catch(function () {
+					checkMonitorsAndCreateIfNeeded(redirectUrl);
+				});
+		}
+
+		function createFirstMonitorAndRedirect(redirectUrl) {
+			sessionStorage.setItem("upsnap_creating_first_monitor", "true");
+			window.location.href = getDefaultRedirectUrl(redirectUrl);
+
+			setTimeout(function () {
+				fetch(Craft.getActionUrl("upsnap/settings/create-first-monitor"), {
+					method: "POST",
+					headers: {
+						"X-CSRF-Token": Craft.csrfTokenValue,
+						"Accept": "application/json",
+					},
+					body: JSON.stringify({}),
+				})
+					.then(function (r) { return r.json(); })
+					.then(function (data) {
+						if (data && data.success) {
+							window.location.reload();
+						}
+					})
+					.catch(function (err) {
+						console.error("Failed to create first monitor:", err);
+						sessionStorage.removeItem("upsnap_creating_first_monitor");
+					});
+			}, 100);
+		}
+
+		function isPrimaryModalVisible() {
+			return !!(primaryMonitorModal && !primaryMonitorModal.classList.contains("hidden"));
+		}
+
+		function getSelectedPrimaryMonitorOption() {
+			if (!primaryMonitorSelect) return null;
+			var selectedId = primaryMonitorSelect.value;
+			if (!selectedId) return null;
+
+			for (var i = 0; i < activeMonitorOptions.length; i += 1) {
+				if (String(activeMonitorOptions[i].id) === String(selectedId)) {
+					return activeMonitorOptions[i];
+				}
+			}
+
+			return null;
+		}
+
+		function togglePrimaryMonitorSaveButton() {
+			if (!primaryMonitorSaveBtn || !primaryMonitorSelect) return;
+			primaryMonitorSaveBtn.disabled = !primaryMonitorSelect.value;
+		}
+
+		function showPrimaryMonitorModal(monitorOptions, redirectUrl) {
+			if (!primaryMonitorModal || !primaryMonitorSelect || !primaryMonitorSaveBtn) {
+				checkMonitorsAndCreateIfNeeded(redirectUrl);
+				return;
+			}
+
+			activeMonitorOptions = Array.isArray(monitorOptions) ? monitorOptions : [];
+			if (activeMonitorOptions.length === 0) {
+				checkMonitorsAndCreateIfNeeded(redirectUrl);
+				return;
+			}
+
+			pendingRedirectUrl = getDefaultRedirectUrl(redirectUrl);
+			clearErr(primaryMonitorError);
+
+			primaryMonitorSelect.innerHTML = "";
+			var placeholderOption = document.createElement("option");
+			placeholderOption.value = "";
+			placeholderOption.textContent = i18n.primaryMonitorPlaceholder || "Select a monitor";
+			primaryMonitorSelect.appendChild(placeholderOption);
+
+			activeMonitorOptions.forEach(function (option) {
+				var id = option && option.id ? String(option.id) : "";
+				if (!id) return;
+
+				var text = option.label || option.name || id;
+				var el = document.createElement("option");
+				el.value = id;
+				el.textContent = text;
+				primaryMonitorSelect.appendChild(el);
+			});
+
+			primaryMonitorSelect.value = "";
+			togglePrimaryMonitorSaveButton();
+
+			primaryMonitorModal.classList.remove("hidden");
+			document.body.classList.add("upsnap-modal-open");
+		}
+
+		function hidePrimaryMonitorModal() {
+			if (!primaryMonitorModal) return;
+
+			primaryMonitorModal.classList.add("hidden");
+			document.body.classList.remove("upsnap-modal-open");
+			clearErr(primaryMonitorError);
+		}
+
+		function handleLoginSuccess(data) {
+			Craft.cp.displayNotice(data.message || i18n.loginSuccess || "Login successful!");
+
+			var requirement = data && data.primaryMonitorRequirement ? data.primaryMonitorRequirement : null;
+			var monitorOptions = requirement && Array.isArray(requirement.monitorOptions)
+				? requirement.monitorOptions
+				: [];
+			var hasCurrentMonitor = !!(requirement && requirement.currentMonitorId && String(requirement.currentMonitorId).trim() !== "");
+			var shouldRequireSelection = !!(requirement && requirement.requiresSelection === true);
+
+			if (!shouldRequireSelection && requirement && requirement.hasMonitors === true && !hasCurrentMonitor) {
+				shouldRequireSelection = true;
+			}
+
+			if (!requirement || requirement.canValidate !== true) {
+				resolvePrimaryRequirementClientSide(data.redirectUrl);
+				return;
+			}
+
+			if (requirement.hasMonitors === false) {
+				Craft.cp.displayNotice(i18n.creatingFirstMonitor || "No monitors found. Creating your first monitor...");
+				createFirstMonitorAndRedirect(data.redirectUrl);
+				return;
+			}
+
+			if (shouldRequireSelection) {
+				if (monitorOptions.length === 0) {
+					resolvePrimaryRequirementClientSide(data.redirectUrl);
+					return;
+				}
+
+				showPrimaryMonitorModal(monitorOptions, data.redirectUrl);
+				return;
+			}
+
+			window.location.href = getDefaultRedirectUrl(data.redirectUrl);
+			window.location.reload();
+		}
+
+		if (primaryMonitorSelect) {
+			primaryMonitorSelect.addEventListener("change", function () {
+				clearErr(primaryMonitorError);
+				togglePrimaryMonitorSaveButton();
+			});
+		}
+
+		document.addEventListener("keydown", function (event) {
+			if (!isPrimaryModalVisible()) return;
+
+			if (event.key === "Escape") {
+				event.preventDefault();
+				event.stopPropagation();
+			}
+		}, true);
+
+		if (primaryMonitorSaveBtn) {
+			primaryMonitorSaveBtn.addEventListener("click", function () {
+				var selectedOption = getSelectedPrimaryMonitorOption();
+				if (!selectedOption) {
+					showErr(primaryMonitorError, i18n.primaryMonitorRequired || "Please select a primary monitor.");
+					return;
+				}
+
+				clearErr(primaryMonitorError);
+				primaryMonitorSaveBtn.disabled = true;
+
+				var payload = {
+					monitorId: selectedOption.id,
+				};
+
+				if (selectedOption.serviceType !== "port" && selectedOption.monitoringUrl) {
+					payload.monitoringUrl = selectedOption.monitoringUrl;
+				}
+
+				fetch(Craft.getActionUrl("upsnap/settings/set-primary-monitor"), {
+					method: "POST",
+					headers: {
+						"Content-Type": "application/json",
+						"X-CSRF-Token": Craft.csrfTokenValue,
+						"Accept": "application/json",
+					},
+					body: JSON.stringify(payload),
+				})
+					.then(function (r) { return r.json(); })
+					.then(function (response) {
+						if (!response || !response.success) {
+							throw new Error((response && response.message) || (i18n.primaryMonitorSaveFailed || "Failed to save primary monitor."));
+						}
+
+						var monitorIdInput = document.getElementById("monitorId");
+						var monitoringUrlInput = document.getElementById("monitoringUrlInput");
+
+						if (monitorIdInput) {
+							monitorIdInput.value = selectedOption.id;
+						}
+						if (monitoringUrlInput && payload.monitoringUrl) {
+							monitoringUrlInput.value = payload.monitoringUrl;
+						}
+
+						Craft.cp.displayNotice(i18n.primaryMonitorSaved || "Primary monitor updated.");
+						hidePrimaryMonitorModal();
+						window.location.href = pendingRedirectUrl || Craft.getCpUrl("upsnap/settings") + "#monitors-tab";
+						window.location.reload();
+					})
+					.catch(function (err) {
+						showErr(primaryMonitorError, err.message || (i18n.unexpectedError || "An unexpected error occurred. Please try again."));
+					})
+					.finally(function () {
+						togglePrimaryMonitorSaveButton();
+					});
+			});
+		}
 
 		// Signup validation on blur
 		if (fullnameInput) {
@@ -434,10 +757,9 @@ Craft.Upsnap.Signup = {
 					.then(function (r) { return r.json(); })
 					.then(function (data) {
 						if (data.success) {
-							Craft.cp.displayNotice(data.message || "Login successful!");
-							
-							// Check if user has monitors
-							checkMonitorsAndCreateIfNeeded(data.redirectUrl);
+							handleLoginSuccess(data);
+							signinSubmitBtn.disabled    = false;
+							signinSubmitBtn.textContent = i18n.signInLabel || "Sign In";
 						} else {
 							var errs = data.errors || {};
 							if (errs.email)    showErr(signinEmailError,   Array.isArray(errs.email)    ? errs.email[0]    : errs.email);
@@ -455,68 +777,6 @@ Craft.Upsnap.Signup = {
 						signinSubmitBtn.disabled    = false;
 						signinSubmitBtn.textContent = i18n.signInLabel || "Sign In";
 					});
-
-			// Helper function to check monitors and create if needed
-			function checkMonitorsAndCreateIfNeeded(redirectUrl) {
-				const actionUrl = Craft.getActionUrl('upsnap/monitors/list');
-				
-				fetch(actionUrl, {
-					headers: { "X-CSRF-Token": Craft.csrfTokenValue },
-				})
-					.then(function (r) { return r.json(); })
-					.then(function (response) {
-						// Check if there are no monitors
-						const monitors = response.data?.monitors || [];
-						const hasMonitors = Array.isArray(monitors) && monitors.length > 0;
-						
-						if (!hasMonitors) {
-							Craft.cp.displayNotice("No monitors found. Creating your first monitor…");
-							// No monitors found, create the first one
-							createFirstMonitorAndRedirect(redirectUrl);
-						} else {
-							// User has monitors, redirect directly
-							window.location.href = redirectUrl || Craft.getCpUrl('upsnap/settings') + '#monitors-tab';
-							window.location.reload();
-						}
-					})
-					.catch(function (err) {
-						console.error('Failed to fetch monitors:', err);
-						// If we can't check, try to create monitor anyway
-						createFirstMonitorAndRedirect(redirectUrl);
-					});
-			}
-
-			// Helper function to create first monitor and show loading message
-			function createFirstMonitorAndRedirect(redirectUrl) {
-				// Set flag so monitors table knows to show loading message
-				sessionStorage.setItem('upsnap_creating_first_monitor', 'true');
-				
-				// Navigate to monitors tab first
-				window.location.href = redirectUrl || Craft.getCpUrl('upsnap/settings') + '#monitors-tab';
-				
-				// Create the monitor in background
-				setTimeout(function() {
-					fetch(Craft.getActionUrl('upsnap/settings/create-first-monitor'), {
-						method: 'POST',
-						headers: {
-							'X-CSRF-Token': Craft.csrfTokenValue,
-							'Accept': 'application/json',
-						},
-						body: JSON.stringify({}),
-					})
-						.then(function (r) { return r.json(); })
-						.then(function (data) {
-							if (data.success) {
-								// Monitor created successfully, reload the page to show it
-								window.location.reload();
-							} 
-						})
-						.catch(function (err) {
-							console.error('Failed to create first monitor:', err);
-							sessionStorage.removeItem('upsnap_creating_first_monitor');
-						});
-				}, 100);
-			}
 			});
 		}
 	},
