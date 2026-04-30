@@ -562,11 +562,11 @@
 	<div class="incident-detail-ai-columns">
 		<div class="incident-detail-ai-panel incident-detail-ai-panel--causes">
 			<h3 class="incident-detail-ai-panel-title">⚠ ${Craft.t("upsnap", "Likely Causes")}</h3>
-			<ul class="incident-detail-ai-list">${causesHtml}</ul>
+			<ul class="incident-detail-ai-list" style="list-style: disc; padding-left: 1.25rem; margin: 0;">${causesHtml}</ul>
 		</div>
 		<div class="incident-detail-ai-panel incident-detail-ai-panel--checks">
-			<h3 class="incident-detail-ai-panel-title">◎ ${Craft.t("upsnap", "What To Check")}</h3>
-			<ul class="incident-detail-ai-list">${checksHtml}</ul>
+			<h3 class="incident-detail-ai-panel-title"><span class="incident-detail-ai-title-icon" aria-hidden="true">${svgCheck}</span><span>${Craft.t("upsnap", "What To Check")}</span></h3>
+			<ul class="incident-detail-ai-list" style="list-style: disc; padding-left: 1.25rem; margin: 0;">${checksHtml}</ul>
 		</div>
 	</div>
 </div>`;
@@ -596,7 +596,7 @@
 		<p class="incident-detail-actions-subtitle">${Craft.t("upsnap", "Actionable steps to speed up incident resolution")}</p>
 	</div>
 	<ul class="incident-detail-actions-grid">
-		${actionItems.map((text) => `<li class="incident-detail-action-item"><span class="incident-detail-action-icon" aria-hidden="true">◌</span><span class="incident-detail-action-text">${escapeHtml(text)}</span></li>`).join("")}
+		${actionItems.map((text) => `<li class="incident-detail-action-item"><span class="incident-detail-action-icon" aria-hidden="true">${svgCheck}</span><span class="incident-detail-action-text">${escapeHtml(text)}</span></li>`).join("")}
 	</ul>
 </div>`;
 	};
