@@ -240,13 +240,17 @@ class SettingsController extends BaseController
         }
 
         try {
-            $result = Upsnap::getInstance()->settingsService->login($email, $password);
+            $settingsService = Upsnap::getInstance()->settingsService;
+            $result = $settingsService->login($email, $password);
 
             if (($result['status'] ?? '') === 'success') {
+                $primaryMonitorRequirement = $settingsService->getPrimaryMonitorRequirement();
+
                 return $this->asJson([
                     'success' => true,
                     'message' => Craft::t('upsnap', 'Login successful!'),
                     'redirectUrl' => UrlHelper::cpUrl(Constants::SUBNAV_ITEM_SETTINGS['url']) . '#monitors-tab',
+                    'primaryMonitorRequirement' => $primaryMonitorRequirement,
                 ]);
             }
 

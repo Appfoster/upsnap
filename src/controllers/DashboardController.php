@@ -29,6 +29,10 @@ class DashboardController extends BaseController
         $url = Upsnap::getMonitoringUrl();
         $settingsService = Upsnap::$plugin->settingsService;
         $settingsService->validateApiKey();
+        $primaryMonitorRequirement = $settingsService->getPrimaryMonitorRequirement();
+        $primaryMonitorNeedsSelection =
+            ($primaryMonitorRequirement['canValidate'] ?? false) === true
+            && ($primaryMonitorRequirement['requiresSelection'] ?? false) === true;
 
         $monitorId = $settingsService->getMonitorId();
         $monitorData = null; // default
@@ -96,6 +100,8 @@ class DashboardController extends BaseController
             'apiTokenStatus' => $settingsService->getApiTokenStatus(),
             'apiTokenStatuses' => Constants::API_KEY_STATUS,
             'upsnapDashboardUrl' => Constants::UPSNAP_DASHBOARD_URL,
+            'primaryMonitorNeedsSelection' => $primaryMonitorNeedsSelection,
+            'primaryMonitorRequirement' => $primaryMonitorRequirement,
         ];
 
         if (!$url) {

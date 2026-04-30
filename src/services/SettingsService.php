@@ -515,6 +515,114 @@ class SettingsService extends Component
     }
 
     /**
+     * Fetches user monitors and normalizes them for dropdown/select usage.
+     */
+    public function getPrimaryMonitorOptions(): array
+    {
+        $endpoint = Constants::MICROSERVICE_ENDPOINTS['monitors']['list'];
+
+        try {
+            $response = Upsnap::$plugin->apiService->get($endpoint, ['last_day_uptimes' => true]);
+
+            if (!is_array($response) || ($response['status'] ?? null) !== 'success') {
+                $errorMsg = is_array($response)
+                    ? ($response['message'] ?? Craft::t('upsnap', 'Failed to fetch monitors.'))
+                    : Craft::t('upsnap', 'Failed to fetch monitors.');
+
+                return [
+                    'success' => false,
+                    'message' => $errorMsg,
+                    'monitorOptions' => [],
+                ];
+            }
+
+            $data = $response['data'] ?? [];
+            $monitors = $data['monitors'] ?? $data;
+
+            if (!is_array($monitors)) {
+                $monitors = [];
+            }
+
+            $options = [];
+
+            foreach ($monitors as $monitor) {
+                $id = (string)($monitor['id'] ?? '');
+                if ($id === '') {
+                    continue;
+                }
+
+                $serviceType = (string)($monitor['service_type'] ?? 'website');
+                $name = trim((string)($monitor['name'] ?? ''));
+                $meta = $monitor['config']['meta'] ?? [];
+                $url = trim((string)($meta['url'] ?? ''));
+                $host = trim((string)($meta['host'] ?? ''));
+                $port = trim((string)($meta['port'] ?? ''));
+
+                $fallbackLabel = $serviceType === 'port'
+                    ? ($host !== '' && $port !== '' ? "{$host}:{$port}" : ($host !== '' ? $host : $id))
+                    : ($url !== '' ? $url : $id);
+
+                $options[] = [
+                    'id' => $id,
+                    'name' => $name,
+                    'label' => $name !== '' ? $name : $fallbackLabel,
+                    'monitoringUrl' => $url,
+                    'serviceType' => $serviceType,
+                ];
+            }
+
+            return [
+                'success' => true,
+                'message' => null,
+                'monitorOptions' => $options,
+            ];
+        } catch (\Throwable $e) {
+            Craft::error("Failed to fetch monitor options: {$e->getMessage()}", __METHOD__);
+
+            return [
+                'success' => false,
+                'message' => Craft::t('upsnap', 'Failed to fetch monitors.'),
+                'monitorOptions' => [],
+            ];
+        }
+    }
+
+    /**
+     * Determines if the current user must choose a primary monitor.
+     */
+    public function getPrimaryMonitorRequirement(): array
+    {
+        $currentMonitorId = $this->getMonitorId();
+        $monitorResult = $this->getPrimaryMonitorOptions();
+
+        if (!($monitorResult['success'] ?? false)) {
+            return [
+                'canValidate' => false,
+                'hasMonitors' => false,
+                'requiresSelection' => false,
+                'currentMonitorId' => $currentMonitorId,
+                'monitorOptions' => [],
+                'message' => $monitorResult['message'] ?? Craft::t('upsnap', 'Failed to validate primary monitor.'),
+            ];
+        }
+
+        $monitorOptions = $monitorResult['monitorOptions'] ?? [];
+        $monitorIds = array_map(static fn(array $option): string => (string)$option['id'], $monitorOptions);
+        $hasMonitors = !empty($monitorOptions);
+        $hasPrimaryMonitor = $currentMonitorId !== null && $currentMonitorId !== '';
+        $isPrimaryMonitorValid = $hasPrimaryMonitor && in_array((string)$currentMonitorId, $monitorIds, true);
+
+        return [
+            'canValidate' => true,
+            'hasMonitors' => $hasMonitors,
+            'requiresSelection' => $hasMonitors && !$isPrimaryMonitorValid,
+            'currentMonitorId' => $currentMonitorId,
+            'monitorOptions' => $monitorOptions,
+            'message' => null,
+        ];
+    }
+
+    /**
      * Step 1 of 3: Create account and return session token.
      * Session token is stored temporarily for use in subsequent steps.
      */

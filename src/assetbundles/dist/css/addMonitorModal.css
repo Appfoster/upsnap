@@ -3,6 +3,10 @@
   display: none;
 }
 
+body.upsnap-modal-open {
+  overflow: hidden;
+}
+
 /* Overlay background */
 .upsnap-modal__overlay {
   position: fixed;
@@ -51,6 +55,12 @@
 /* Body area */
 .upsnap-modal__body {
   padding: 18px;
+}
+
+.upsnap-modal__description {
+  margin-top: 0;
+  margin-bottom: 16px;
+  color: #4b5563;
 }
 
 /* Close icon */
