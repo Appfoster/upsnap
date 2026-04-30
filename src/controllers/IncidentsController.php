@@ -2,6 +2,7 @@
 
 namespace appfoster\upsnap\controllers;
 
+use appfoster\upsnap\assetbundles\IncidentDetailAsset;
 use appfoster\upsnap\assetbundles\IncidentsAsset;
 use appfoster\upsnap\Constants;
 use Craft;
@@ -13,7 +14,6 @@ class IncidentsController extends BaseController
     public function __construct($id, $module = null)
     {
         parent::__construct($id, $module);
-        IncidentsAsset::register($this->view);
     }
 
     /**
@@ -25,6 +25,8 @@ class IncidentsController extends BaseController
      */
     public function actionIndex(): Response
     {
+        IncidentsAsset::register($this->view);
+
         $settingsService = Upsnap::$plugin->settingsService;
         $settingsService->validateApiKey();
 
@@ -57,6 +59,73 @@ class IncidentsController extends BaseController
         ];
 
         return $this->renderTemplate('upsnap/incidents/_index', $variables);
+    }
+
+    /**
+     * Renders the incident detail page.
+     *
+     * GET upsnap/incidents/{incidentId}
+     */
+    public function actionView(int $incidentId): Response
+    {
+        IncidentDetailAsset::register($this->view);
+
+        $request   = Craft::$app->getRequest();
+        $monitorId = $request->getQueryParam('monitorId', '');
+
+        // Build back-link to incidents list, preserving monitor filter if present
+        $backParams = $monitorId ? ['monitor_id' => $monitorId] : [];
+        $cpIncidentsUrl = \craft\helpers\UrlHelper::cpUrl('upsnap/incidents', $backParams);
+
+        $variables = [
+            'title'                => Craft::t('upsnap', 'Incident Details'),
+            'selectedSubnavItem'   => 'incidents',
+            'incidentId'           => $incidentId,
+            'monitorId'            => $monitorId,
+            'detailEndpoint'       => \craft\helpers\UrlHelper::actionUrl('upsnap/incidents/detail'),
+            'regionsEndpoint'      => \craft\helpers\UrlHelper::actionUrl('upsnap/regions/list'),
+            'cpIncidentsUrl'       => $cpIncidentsUrl,
+            'monitorDetailBaseUrl' => \craft\helpers\UrlHelper::cpUrl('upsnap/monitors/detail/'),
+        ];
+
+        return $this->renderTemplate('upsnap/incidents/detail', $variables);
+    }
+
+    /**
+     * JSON proxy: fetches a single incident + its activity log from the microservice.
+     *
+     * GET upsnap/incidents/detail?incidentId=<id>
+     */
+    public function actionDetail(): Response
+    {
+        $request    = Craft::$app->getRequest();
+        $incidentId = $request->getRequiredQueryParam('incidentId');
+
+        $endpoint = Constants::MICROSERVICE_ENDPOINTS['monitors']['incident_detail'] . '/' . $incidentId;
+
+        try {
+            $response = Upsnap::$plugin->apiService->get($endpoint);
+
+            if (!is_array($response) || !isset($response['status'])) {
+                throw new \Exception(Craft::t('upsnap', 'Something went wrong while fetching the incident.'));
+            }
+
+            if ($response['status'] !== 'success') {
+                $errorMsg = $response['message'] ?? Craft::t('upsnap', 'Failed to fetch incident.');
+                throw new \Exception($errorMsg);
+            }
+
+            return $this->asJson([
+                'success' => true,
+                'data'    => $response['data'] ?? [],
+            ]);
+        } catch (\Throwable $e) {
+            Craft::error('Incident detail fetch failed: ' . $e->getMessage(), __METHOD__);
+            return $this->asJson([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ]);
+        }
     }
 
     /**

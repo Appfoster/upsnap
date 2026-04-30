@@ -138,8 +138,10 @@ class Upsnap extends Plugin
 
                     // Incidents Routes
                     Constants::SUBNAV_ITEM_INCIDENTS['url'] => 'upsnap/incidents/index',
-                    'upsnap/incidents/list'   => 'upsnap/incidents/list',
-                    'upsnap/incidents/export' => 'upsnap/incidents/export',
+                    'upsnap/incidents/list'                              => 'upsnap/incidents/list',
+                    'upsnap/incidents/export'                            => 'upsnap/incidents/export',
+                    'upsnap/incidents/detail'                            => 'upsnap/incidents/detail',
+                    'upsnap/incidents/<incidentId:\d+>'                  => 'upsnap/incidents/view',
 
                 ]);
             }

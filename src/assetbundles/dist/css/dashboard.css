@@ -560,6 +560,10 @@
     transition: background-color 0.15s ease;
 }
 
+.incidents-table-wrapper table.data tbody tr[data-href] {
+    cursor: pointer;
+}
+
 .incidents-table-wrapper table.data tbody tr:hover {
     background-color: #f9fafb;
 }

@@ -26,7 +26,7 @@
 				</thead>
 				<tbody>
 					{% for incident in incidents %}
-						<tr>
+						<tr{% if incident.id is defined and incident.id %} data-href="{{ cpUrl('upsnap/incidents/' ~ incident.id) }}" role="button" tabindex="0"{% endif %}>
 							<td class="incident-status-cell">
 								{% set isResolved = incident.status is defined and incident.status|lower == 'resolved' %}
 								<span class="incident-status-dot-wrap" data-tooltip="{{ isResolved ? 'Resolved' : 'Active' }}">

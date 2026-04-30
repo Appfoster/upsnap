@@ -188,6 +188,24 @@
         tdTime.innerHTML = `<time datetime="${escapeHtml(ts)}">${escapeHtml(formatDate(ts))}</time>`;
 
         tr.append(tdStatus, tdMonitor, tdType, tdRegion, tdMsg, tdCode, tdTime);
+
+        // Row navigation to incident detail page
+        if (inc.id) {
+            const incidentUrl = Craft.getCpUrl('upsnap/incidents/' + encodeURIComponent(inc.id))
+                + (inc.monitor_id ? '?monitorId=' + encodeURIComponent(inc.monitor_id) : '');
+            tr.style.cursor = 'pointer';
+            tr.setAttribute('tabindex', '0');
+            tr.setAttribute('role', 'button');
+            tr.setAttribute('aria-label', Craft.t('upsnap', 'View incident details'));
+            tr.addEventListener('click', () => { window.location.href = incidentUrl; });
+            tr.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    if (e.key === ' ') e.preventDefault();
+                    window.location.href = incidentUrl;
+                }
+            });
+        }
+
         return tr;
     };
 

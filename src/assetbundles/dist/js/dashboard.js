@@ -25,6 +25,7 @@ Craft.UpsnapDashboard = {
 		this.renderMonitorCards();
 		this.loadAndApplyRegionNames();
 		this.loadIncidentStatsCard();
+		this.initIncidentTableRowNavigation();
 
 		if (this.refreshBtn) {
 			this.refreshBtn.addEventListener("click", () => {
@@ -1313,6 +1314,21 @@ Craft.UpsnapDashboard = {
 		} catch (err) {
 			console.error('Failed to load region names for incidents table:', err);
 		}
+	},
+
+	initIncidentTableRowNavigation() {
+		document.querySelectorAll('#incidents-table-card tr[data-href]').forEach((tr) => {
+			tr.addEventListener('click', (e) => {
+				if (e.target.closest('a')) return;
+				window.location.href = tr.dataset.href;
+			});
+			tr.addEventListener('keydown', (e) => {
+				if (e.key === 'Enter' || e.key === ' ') {
+					if (e.key === ' ') e.preventDefault();
+					window.location.href = tr.dataset.href;
+				}
+			});
+		});
 	},
 };
 

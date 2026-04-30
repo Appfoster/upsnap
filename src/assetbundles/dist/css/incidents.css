@@ -504,3 +504,17 @@
 #incidents-table.incidents-table--all-monitors .incident-monitor-cell {
     display: table-cell;
 }
+
+/* ── Row navigation ─────────────────────────────────────────────────── */
+#incidents-table tbody tr[role="button"] {
+    cursor: pointer;
+}
+
+#incidents-table tbody tr[role="button"]:hover {
+    background: rgba(0, 0, 0, 0.03);
+}
+
+#incidents-table tbody tr[role="button"]:focus-visible {
+    outline: 2px solid var(--focus-ring, #0d78f2);
+    outline-offset: -2px;
+}
