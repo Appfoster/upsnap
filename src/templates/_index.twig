@@ -92,7 +92,7 @@
 			   {% set isWebsite = monitorData.service_type is not defined or monitorData.service_type == 'website' %}
 			   <div class="dashboard-wrapper">
 				   <div
-					   class="dashboard-left{% if not isWebsite %} fullwidth{% endif %}">
+					   class="dashboard-left">
 				<!-- ROW 1 -->
 				<div class="monitor-grid">
 					<div id="monitor-status-card" class="monitor-card skeleton"></div>
@@ -148,10 +148,21 @@
 				{% include 'upsnap/_components/incidents-table.twig' %}
 			</div>
 
-				   {% if isWebsite %}
-				   <div class="dashboard-right">
-					   <div id="upsnap-dashboard" class="dashboard-cards">
-						   <div id="reachability-card" class="stat-card skeleton">
+			   <div class="dashboard-right">
+				   <div id="upsnap-dashboard" class="dashboard-cards">
+
+					   {# Incident Stats Card — always shown #}
+					   <div id="incident-stats-card" class="stat-card skeleton">
+						   <div class="card-skeleton">
+							   <div class="skeleton-line" style="width:100%"></div>
+							   <div class="skeleton-line" style="width:85%"></div>
+							   <div class="skeleton-line" style="width:70%"></div>
+						   </div>
+						   <div class="card-content" hidden></div>
+					   </div>
+
+					   {% if isWebsite %}
+					   <div id="reachability-card" class="stat-card skeleton">
 							   <div class="card-header">
 								   <h3>REACHABILITY</h3>
 								   <hr>
@@ -222,9 +233,9 @@
 							   </div>
 							   <div class="card-content" hidden></div>
 						   </div>
-					   </div>
+					   {% endif %}
 				   </div>
-				   {% endif %}
-		</div>
+			   </div>
+		   </div>
 	{% endif %}
 {% endblock %}

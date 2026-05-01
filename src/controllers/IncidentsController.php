@@ -2,6 +2,7 @@
 
 namespace appfoster\upsnap\controllers;
 
+use appfoster\upsnap\assetbundles\IncidentDetailAsset;
 use appfoster\upsnap\assetbundles\IncidentsAsset;
 use appfoster\upsnap\Constants;
 use Craft;
@@ -13,7 +14,6 @@ class IncidentsController extends BaseController
     public function __construct($id, $module = null)
     {
         parent::__construct($id, $module);
-        IncidentsAsset::register($this->view);
     }
 
     /**
@@ -25,6 +25,8 @@ class IncidentsController extends BaseController
      */
     public function actionIndex(): Response
     {
+        IncidentsAsset::register($this->view);
+
         $settingsService = Upsnap::$plugin->settingsService;
         $settingsService->validateApiKey();
 
@@ -60,6 +62,73 @@ class IncidentsController extends BaseController
     }
 
     /**
+     * Renders the incident detail page.
+     *
+     * GET upsnap/incidents/{incidentId}
+     */
+    public function actionView(int $incidentId): Response
+    {
+        IncidentDetailAsset::register($this->view);
+
+        $request   = Craft::$app->getRequest();
+        $monitorId = $request->getQueryParam('monitorId', '');
+
+        // Build back-link to incidents list, preserving monitor filter if present
+        $backParams = $monitorId ? ['monitor_id' => $monitorId] : [];
+        $cpIncidentsUrl = \craft\helpers\UrlHelper::cpUrl('upsnap/incidents', $backParams);
+
+        $variables = [
+            'title'                => Craft::t('upsnap', 'Incident Details'),
+            'selectedSubnavItem'   => 'incidents',
+            'incidentId'           => $incidentId,
+            'monitorId'            => $monitorId,
+            'detailEndpoint'       => \craft\helpers\UrlHelper::actionUrl('upsnap/incidents/detail'),
+            'regionsEndpoint'      => \craft\helpers\UrlHelper::actionUrl('upsnap/regions/list'),
+            'cpIncidentsUrl'       => $cpIncidentsUrl,
+            'monitorDetailBaseUrl' => \craft\helpers\UrlHelper::cpUrl('upsnap/monitors/detail/'),
+        ];
+
+        return $this->renderTemplate('upsnap/incidents/detail', $variables);
+    }
+
+    /**
+     * JSON proxy: fetches a single incident + its activity log from the microservice.
+     *
+     * GET upsnap/incidents/detail?incidentId=<id>
+     */
+    public function actionDetail(): Response
+    {
+        $request    = Craft::$app->getRequest();
+        $incidentId = $request->getRequiredQueryParam('incidentId');
+
+        $endpoint = Constants::MICROSERVICE_ENDPOINTS['monitors']['incident_detail'] . '/' . $incidentId;
+
+        try {
+            $response = Upsnap::$plugin->apiService->get($endpoint);
+
+            if (!is_array($response) || !isset($response['status'])) {
+                throw new \Exception(Craft::t('upsnap', 'Something went wrong while fetching the incident.'));
+            }
+
+            if ($response['status'] !== 'success') {
+                $errorMsg = $response['message'] ?? Craft::t('upsnap', 'Failed to fetch incident.');
+                throw new \Exception($errorMsg);
+            }
+
+            return $this->asJson([
+                'success' => true,
+                'data'    => $response['data'] ?? [],
+            ]);
+        } catch (\Throwable $e) {
+            Craft::error('Incident detail fetch failed: ' . $e->getMessage(), __METHOD__);
+            return $this->asJson([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
      * Stream a CSV or PDF export.
      */
     public function actionExport(): Response
@@ -68,17 +137,10 @@ class IncidentsController extends BaseController
         $monitorId = $request->getQueryParam('monitorId');
         $fileType  = $request->getQueryParam('file_type', 'csv');
 
-        if (!$monitorId) {
-            return $this->asJson(['success' => false, 'message' => 'monitorId is required.']);
-        }
-
-        $endpoint = str_replace(
-            '{monitorId}',
-            $monitorId,
-            Constants::MICROSERVICE_ENDPOINTS['monitors']['export']
-        );
+        $endpoint = Constants::MICROSERVICE_ENDPOINTS['monitors']['export'];
 
         $params = array_filter([
+            'monitor_id'  => $monitorId ?: null,
             'start_time' => $request->getQueryParam('start_time'),
             'end_time'   => $request->getQueryParam('end_time'),
             'type'       => $request->getQueryParam('type'),
@@ -159,6 +221,50 @@ class IncidentsController extends BaseController
         } catch (\Throwable $e) {
             Craft::error('Incidents fetch failed: ' . $e->getMessage(), __METHOD__);
 
+            return $this->asJson([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * Fetches incident stats for monitors (all or single via ?monitor_id=<id>).
+     * Returns region-wise incident counts for the last 24 hours.
+     *
+     * @return Response
+     */
+    public function actionIncidentStats(): Response
+    {
+        $endpoint = Constants::MICROSERVICE_ENDPOINTS['monitors']['incident_stats'];
+
+        try {
+            $params = [];
+            $monitorId = Craft::$app->getRequest()->getQueryParam('monitor_id');
+            if ($monitorId) {
+                $params['monitor_id'] = $monitorId;
+            }
+
+            $response = Upsnap::$plugin->apiService->get($endpoint, $params);
+
+            if (!is_array($response) || !isset($response['status'])) {
+                throw new \Exception(Craft::t('upsnap', 'Something went wrong while fetching incident stats.'));
+            }
+
+            if ($response['status'] !== 'success') {
+                $errorMsg = $response['message'] ?? Craft::t('upsnap', 'Failed to fetch incident stats.');
+                throw new \Exception($errorMsg);
+            }
+
+            return $this->asJson([
+                'success' => true,
+                'message' => Craft::t('upsnap', 'Incident stats fetched successfully.'),
+                'data' => [
+                    'stats' => $response['data'] ?? [],
+                ],
+            ]);
+        } catch (\Throwable $e) {
+            Craft::error("Incident stats fetch failed: {$e->getMessage()}", __METHOD__);
             return $this->asJson([
                 'success' => false,
                 'message' => $e->getMessage(),

@@ -438,6 +438,11 @@ Craft.Upsnap.StatusPages = {
 			return false;
 		}
 
+		if (name.length > 100) {
+			Craft.cp.displayError("Name must be 100 characters or fewer.");
+			return false;
+		}
+
 		if (!this.selectedMonitors.size) {
 			Craft.cp.displayError("Select at least one monitor.");
 			return false;

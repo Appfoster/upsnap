@@ -189,6 +189,8 @@ settingsUrl: "{{ cpUrl('upsnap/settings') }}"
 				<table class="data fullwidth" id="incidents-table">
 					<thead>
 						<tr>
+							<th class="incidents-th incident-status-th"></th>
+							<th class="incidents-th incidents-th--monitor">{{ 'Monitor'|t('upsnap') }}</th>
 							<th class="incidents-th incidents-th--sortable" data-sort-key="check_type">
 								{{ 'Check Type'|t('upsnap') }}
 								<span class="incidents-sort-icon incidents-sort-icon--none" aria-hidden="true">
@@ -220,7 +222,7 @@ settingsUrl: "{{ cpUrl('upsnap/settings') }}"
 					</thead>
 					<tbody id="incidents-tbody">
 						<tr>
-							<td colspan="5" class="incidents-empty-cell">
+							<td colspan="7" class="incidents-empty-cell">
 								<span class="spinner"></span>
 								<span>{{ 'Loading incidents…'|t('upsnap') }}</span>
 							</td>

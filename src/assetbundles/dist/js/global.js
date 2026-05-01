@@ -6,66 +6,81 @@
 window.UpsnapUtils = window.UpsnapUtils || {};
 
 /**
- * Aggregates response time data based on the selected time range
- * to reduce the number of data points and improve performance
- *
- * Aggregation strategy:
- * - last_hour: No aggregation (raw data)
- * - last_24_hours: Hourly aggregation (1 hour intervals)
- * - last_7_days: 6-hour aggregation
- * - last_30_days: Daily aggregation
- * - last_90_days: Weekly aggregation
- *
- * @param {Array} data - Array of response time data points {timestamp, response_time}
- * @param {string} timeRange - The selected time range filter
- * @returns {Array} Aggregated data points
+ * Adaptive aggregation for response time data.
+ * Produces ~30 buckets dynamically based on actual data span.
  */
-window.UpsnapUtils.aggregateResponseTimeData = function(data, timeRange) {
+
+window.UpsnapUtils.aggregateResponseTimeData = function (data, timeRange) {
     if (!data || data.length === 0) return [];
 
-    // Filter out points with null timestamps
+    // Filter valid timestamps
     const validData = data.filter(point => point.timestamp !== null);
-
     if (validData.length === 0) return [];
 
-    let intervalSeconds = 0;
+    const TARGET_POINTS = 30;
 
-    // Determine the interval based on time range
-    switch (timeRange) {
-        case 'last_hour':
-            return validData; // No aggregation needed for hourly view
-        case 'last_24_hours':
-            intervalSeconds = 60 * 60; // 1 hour
-            break;
-        case 'last_7_days':
-            intervalSeconds = 60 * 60 * 6; // 6 hours
-            break;
-        case 'last_30_days':
-            intervalSeconds = 60 * 60 * 24; // 1 day
-            break;
-        case 'last_90_days':
-        case 'last_year':
-            intervalSeconds = 60 * 60 * 24 * 7; // 1 week
-            break;
-        default:
-            return validData;
+    const MIN_FLOOR_SECONDS = {
+        last_hour:     60,              // 1 min
+        last_24_hours: 60 * 5,          // 5 min
+        last_7_days:   60 * 5,
+        last_30_days:  60 * 10,
+        last_90_days:  60 * 30,
+        last_year:     60 * 30,
+    };
+
+    const MAX_CEIL_SECONDS = {
+        last_hour:     60 * 5,              // 5 min
+        last_24_hours: 60 * 60,             // 1 hr
+        last_7_days:   60 * 60 * 6,
+        last_30_days:  60 * 60 * 24,
+        last_90_days:  60 * 60 * 24 * 7,
+        last_year:     60 * 60 * 24 * 7,
+    };
+
+    // Fallback if unknown filter
+    if (!Object.prototype.hasOwnProperty.call(MIN_FLOOR_SECONDS, timeRange)) {
+        return validData;
     }
 
-    // Group data points into intervals
+    // Find min/max timestamps (single pass)
+    let minTs = validData[0].timestamp;
+    let maxTs = validData[0].timestamp;
+
+    for (let i = 1; i < validData.length; i++) {
+        if (validData[i].timestamp < minTs) minTs = validData[i].timestamp;
+        if (validData[i].timestamp > maxTs) maxTs = validData[i].timestamp;
+    }
+
+    const actualSpan = maxTs - minTs;
+
+    // If all timestamps same → no aggregation needed
+    if (actualSpan === 0) return validData;
+
+    // Adaptive interval
+    const candidateInterval = Math.ceil(actualSpan / TARGET_POINTS);
+
+    const intervalSeconds = Math.min(
+        Math.max(candidateInterval, MIN_FLOOR_SECONDS[timeRange]),
+        MAX_CEIL_SECONDS[timeRange]
+    );
+
+    // Grouping
     const groups = {};
 
     validData.forEach(point => {
-        const intervalStart = Math.floor(point.timestamp / intervalSeconds) * intervalSeconds;
+        const intervalStart =
+            Math.floor(point.timestamp / intervalSeconds) * intervalSeconds;
+
         if (!groups[intervalStart]) {
             groups[intervalStart] = [];
         }
+
         groups[intervalStart].push(point);
     });
 
-    // Calculate average response time for each interval
+    // Aggregate (average)
     const aggregated = Object.entries(groups)
         .map(([time, points]) => {
-            // Filter out null values before calculating average
             const validPoints = points.filter(p => p.response_time !== null);
 
             if (validPoints.length === 0) {
@@ -75,20 +90,35 @@ window.UpsnapUtils.aggregateResponseTimeData = function(data, timeRange) {
                 };
             }
 
-            const average = Math.round(
+            const avg = Math.round(
                 validPoints.reduce((sum, p) => sum + (p.response_time || 0), 0) /
-                    validPoints.length
+                validPoints.length
             );
 
             return {
                 timestamp: parseInt(time),
-                response_time: average,
+                response_time: avg,
             };
         })
         .sort((a, b) => a.timestamp - b.timestamp);
 
     return aggregated;
 };
+
+/**
+ * Canonical integration types
+ */
+window.UpsnapUtils.INTEGRATIONS_TYPES = {
+    webhook: { name: "webhook", label: "Webhook" },
+    google_chat: { name: "google_chat", label: "Google Chat" },
+    discord: { name: "discord", label: "Discord" },
+    mail: { name: "mail", label: "Email" },
+    slack: { name: "slack", label: "Slack" },
+    telegram: { name: "telegram", label: "Telegram" },
+    teams: { name: "teams", label: "Microsoft Teams" },
+    pagerduty: { name: "pagerduty", label: "PagerDuty" },
+    zapier: { name: "zapier", label: "Zapier" },
+}
 
 document.addEventListener("DOMContentLoaded", function () {
     // Global show-details functionality

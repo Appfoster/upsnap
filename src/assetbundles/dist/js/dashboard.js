@@ -24,6 +24,8 @@ Craft.UpsnapDashboard = {
 		this.initializeDashboard();
 		this.renderMonitorCards();
 		this.loadAndApplyRegionNames();
+		this.loadIncidentStatsCard();
+		this.initIncidentTableRowNavigation();
 
 		if (this.refreshBtn) {
 			this.refreshBtn.addEventListener("click", () => {
@@ -1151,27 +1153,157 @@ Craft.UpsnapDashboard = {
 		if (loader) loader.classList.add("hidden");
 	},
 
-	async loadAndApplyRegionNames() {
-		const endpoint = window.CraftPageData?.regionsEndpoint;
-		if (!endpoint) return;
+	/**
+	 * Fetches region-wise incident stats for the current monitor and renders the
+	 * incident stats card in the right sidebar.
+	 */
+	async loadIncidentStatsCard() {
+		const monitorId = this.monitorId;
+		const card = document.getElementById('incident-stats-card');
+		if (!card) return;
 
 		try {
-			const res = await fetch(endpoint, {
-				headers: {
-					'Accept': 'application/json',
-					'X-CSRF-Token': Craft.csrfTokenValue,
-				},
-			});
-			const json = await res.json();
+			if (!monitorId) throw new Error('No monitor ID');
 
-			if (!json.success || !json.data?.length) return;
+			const url = Craft.getActionUrl('upsnap/incidents/incident-stats', { monitor_id: monitorId });
+			const [regionMap, json] = await Promise.all([
+				this._fetchRegionMap(),
+				fetch(url, {
+					headers: {
+						'X-CSRF-Token': Craft.csrfTokenValue,
+						'Accept': 'application/json',
+					},
+				}).then((res) => res.json()),
+			]);
 
-			const regionMap = {};
-			json.data.forEach((region) => {
-				const id   = region.id   ?? region.slug  ?? region;
-				const name = region.name ?? region.label ?? String(id);
-				regionMap[String(id)] = String(name);
-			});
+			if (!json.success) throw new Error(json.message || 'Failed to fetch incident stats');
+
+			const stats = Array.isArray(json.data?.stats) ? json.data.stats : [];
+			const entry = stats.find((s) => s.monitor_id === monitorId) || stats[0];
+			const regions = Array.isArray(entry?.regions) ? entry.regions : [];
+
+			this._renderIncidentStatsCard(card, regions, monitorId, regionMap);
+		} catch (err) {
+			console.warn('Failed to load incident stats:', err);
+			this._renderIncidentStatsCardEmpty(card);
+		}
+	},
+
+	_renderIncidentStatsCard(card, regions, monitorId, regionMap) {
+		const total = regions.reduce((sum, r) => sum + (r.incident_count || 0), 0);
+
+		const badgeHtml = total > 0
+			? `<span class="is-badge is-badge--red is-badge--clickable" data-incidents-monitor-id="${this._escapeAttr(monitorId)}">${total} total</span>`
+			: `<span class="is-badge is-badge--green">All clear</span>`;
+
+		const getRegionName = (id) => (regionMap && regionMap[id]) ? regionMap[id] : id;
+
+		const rowsHtml = regions.length > 0
+			? regions.map((r) => {
+					const name = this._escapeHtml(getRegionName(r.region_id));
+					const count = r.incident_count || 0;
+					const cls = count > 0 ? 'is-count--red' : 'is-count--green';
+					return `<div class="is-region-row"><span class="is-region-name">${name}</span><span class="${cls}">${count}</span></div>`;
+				}).join('')
+			: `<p class="is-empty">No data available.</p>`;
+
+		const content = card.querySelector('.card-content');
+		const skeleton = card.querySelector('.card-skeleton');
+
+		card.classList.remove('skeleton');
+		if (skeleton) skeleton.hidden = true;
+		if (content) {
+			content.hidden = false;
+			content.innerHTML = `
+				<div class="is-header">
+					<span class="is-label">Incidents &middot; 24h</span>
+					${badgeHtml}
+				</div>
+				<hr class="is-divider">
+				${rowsHtml}
+			`;
+
+			// Wire badge click (only when total > 0)
+			if (total > 0) {
+				const badge = content.querySelector('.is-badge--clickable');
+				if (badge) {
+					badge.addEventListener('click', () => {
+						window.location.href = Craft.getCpUrl('upsnap/incidents', {
+							monitor_id: monitorId,
+							timeframe: '24_hours',
+						});
+					});
+				}
+			}
+		}
+	},
+
+	_renderIncidentStatsCardEmpty(card) {
+		const content = card.querySelector('.card-content');
+		const skeleton = card.querySelector('.card-skeleton');
+
+		card.classList.remove('skeleton');
+		if (skeleton) skeleton.hidden = true;
+		if (content) {
+			content.hidden = false;
+			content.innerHTML = `
+				<div class="is-header">
+					<span class="is-label">Incidents &middot; 24h</span>
+				</div>
+				<hr class="is-divider">
+				<p class="is-empty">No data available.</p>
+			`;
+		}
+	},
+
+	_escapeHtml(str) {
+		if (!str && str !== 0) return '';
+		return String(str).replace(/[&<>"']/g, (s) => ({
+			'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+		})[s]);
+	},
+
+	_escapeAttr(str) {
+		return this._escapeHtml(str);
+	},
+
+	/**
+	 * Lazily fetches the region id→name map and caches the promise so the
+	 * regions endpoint is only called once per page load regardless of how
+	 * many callers await it.
+	 */
+	_fetchRegionMap() {
+		if (!this._regionMapPromise) {
+			const endpoint = window.CraftPageData?.regionsEndpoint;
+			if (!endpoint) {
+				this._regionMapPromise = Promise.resolve({});
+			} else {
+				this._regionMapPromise = fetch(endpoint, {
+					headers: {
+						'Accept': 'application/json',
+						'X-CSRF-Token': Craft.csrfTokenValue,
+					},
+				})
+					.then((res) => res.json())
+					.then((json) => {
+						if (!json.success || !json.data?.length) return {};
+						const map = {};
+						json.data.forEach((region) => {
+							const id   = region.id   ?? region.slug  ?? region;
+							const name = region.name ?? region.label ?? String(id);
+							map[String(id)] = String(name);
+						});
+						return map;
+					})
+					.catch(() => ({}));
+			}
+		}
+		return this._regionMapPromise;
+	},
+
+	async loadAndApplyRegionNames() {
+		try {
+			const regionMap = await this._fetchRegionMap();
 
 			document
 				.querySelectorAll('#incidents-table-card .region-badge')
@@ -1182,6 +1314,21 @@ Craft.UpsnapDashboard = {
 		} catch (err) {
 			console.error('Failed to load region names for incidents table:', err);
 		}
+	},
+
+	initIncidentTableRowNavigation() {
+		document.querySelectorAll('#incidents-table-card tr[data-href]').forEach((tr) => {
+			tr.addEventListener('click', (e) => {
+				if (e.target.closest('a')) return;
+				window.location.href = tr.dataset.href;
+			});
+			tr.addEventListener('keydown', (e) => {
+				if (e.key === 'Enter' || e.key === ' ') {
+					if (e.key === ' ') e.preventDefault();
+					window.location.href = tr.dataset.href;
+				}
+			});
+		});
 	},
 };
 

@@ -492,3 +492,29 @@
     background: rgba(0,0,0,.05);
     color: var(--link-color, #0d78f2);
 }
+
+
+/* ── Monitor column — visible only in "All Monitors" mode ──────────────── */
+.incidents-th--monitor,
+.incident-monitor-cell {
+    display: none;
+}
+
+#incidents-table.incidents-table--all-monitors .incidents-th--monitor,
+#incidents-table.incidents-table--all-monitors .incident-monitor-cell {
+    display: table-cell;
+}
+
+/* ── Row navigation ─────────────────────────────────────────────────── */
+#incidents-table tbody tr[role="button"] {
+    cursor: pointer;
+}
+
+#incidents-table tbody tr[role="button"]:hover {
+    background: rgba(0, 0, 0, 0.03);
+}
+
+#incidents-table tbody tr[role="button"]:focus-visible {
+    outline: 2px solid var(--focus-ring, #0d78f2);
+    outline-offset: -2px;
+}

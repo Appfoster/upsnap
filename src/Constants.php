@@ -182,8 +182,9 @@ class Constants
             'histogram' => 'user/monitors/{monitorId}/histogram',
             'response_time' => 'user/monitors/{monitorId}/response-time',
             'uptime_stats' => 'user/monitors/{monitorId}/uptime-stats',
-            'incidents' => 'user/monitors/incidents',
-            'export'    => 'user/monitors/{monitorId}/incidents/export',
+            'incidents'        => 'user/monitors/incidents',
+            'incident_detail'  => 'user/monitors/incidents',
+            'export'           => 'user/monitors/incidents/export',
             'status-page' => [
                 'list' => 'user/status-pages',
                 'detail' => 'user/status-pages',
@@ -192,6 +193,7 @@ class Constants
                 'delete' => 'user/status-pages',
             ],
             'monitors_stats' => 'user/monitors/uptime-stats',
+            'incident_stats' => 'user/monitors/incidents/stats',
         ],
         'user' => [
             'details' => 'user/details',

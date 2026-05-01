@@ -145,11 +145,27 @@ Craft.Upsnap.Monitor = {
 				this.removeKeyword(keyword);
 			});
 		});
+
+		// On edit form, enforce limit for already-loaded keywords
+		const hiddenInput = document.getElementById("keywordsHidden");
+		if (hiddenInput) {
+			try {
+				const existing = JSON.parse(hiddenInput.value || "[]");
+				if (existing.length >= 2) {
+					this._setKeywordInputDisabled(true);
+				}
+			} catch (e) {}
+		}
 	},
 	addKeyword(keyword) {
 		keyword = keyword.trim();
 		if (!keyword) {
 			Craft.cp.displayError("Keyword cannot be empty");
+			return;
+		}
+
+		if (keyword.length > 100) {
+			Craft.cp.displayError("Keyword must be 100 characters or fewer");
 			return;
 		}
 
@@ -162,6 +178,12 @@ Craft.Upsnap.Monitor = {
 			keywords = JSON.parse(hiddenInput.value || "[]");
 		} catch (e) {
 			keywords = [];
+		}
+
+		// Check max 2 keywords
+		if (keywords.length >= 2) {
+			Craft.cp.displayError("Maximum of 2 keywords allowed");
+			return;
 		}
 
 		// Check for duplicate
@@ -255,6 +277,12 @@ Craft.Upsnap.Monitor = {
 		card.appendChild(gridDiv);
 		card.appendChild(caseLabel);
 		keywordsList.appendChild(card);
+
+		// Disable input once limit is reached
+		const updatedKeywords = JSON.parse(hiddenInput.value || "[]");
+		if (updatedKeywords.length >= 2) {
+			this._setKeywordInputDisabled(true);
+		}
 	},
 	removeKeyword(keyword) {
 		const keywordsList = document.getElementById("keywords-list");
@@ -276,6 +304,31 @@ Craft.Upsnap.Monitor = {
 
 		keywords = keywords.filter((k) => k !== keyword);
 		hiddenInput.value = JSON.stringify(keywords);
+
+		// Re-enable input if under the limit
+		if (keywords.length < 2) {
+			this._setKeywordInputDisabled(false);
+		}
+	},
+	_setKeywordInputDisabled(disabled) {
+		const keywordInput = document.getElementById("keywordInput");
+		const inputContainer = document.getElementById("keywords-input-container");
+
+		if (keywordInput) keywordInput.disabled = disabled;
+
+		if (!inputContainer) return;
+		let noticeEl = document.getElementById("keyword-limit-notice");
+		if (disabled) {
+			if (!noticeEl) {
+				noticeEl = document.createElement("p");
+				noticeEl.id = "keyword-limit-notice";
+				noticeEl.style.cssText = "margin-top:-10px;margin-bottom:10px;font-size:12px;color:#b91c1c;";
+				noticeEl.textContent = "Maximum of 2 keywords allowed. Remove one to add another.";
+				inputContainer.insertAdjacentElement("afterend", noticeEl);
+			}
+		} else if (noticeEl) {
+			noticeEl.remove();
+		}
 	},
 	bindMonitorUrlListener() {
 		const field =
@@ -1226,6 +1279,15 @@ Craft.Upsnap.Monitor = {
 			return false;
 		}
 
+		// Max length check for name fields
+		if ((id === "name" || id === "portName" || id === "keywordName") && value.length > 100) {
+			if (field) {
+				field.classList.add("has-errors");
+				if (errorList) errorList.innerHTML = "<li>Name must be 100 characters or fewer</li>";
+			}
+			return false;
+		}
+
 		// URL-specific validation (for website and keyword monitors)
 		if (
 			(id === "url" || id === "keywordUrl") &&
@@ -1256,6 +1318,15 @@ Craft.Upsnap.Monitor = {
 
 		// Host validation - no protocol or paths
 		if (id === "portHost") {
+			if (value.length < 2) {
+				if (field) {
+					field.classList.add("has-errors");
+					if (errorList)
+						errorList.innerHTML =
+							"<li>Please enter a valid domain name or IP address (minimum 2 characters)</li>";
+				}
+				return false;
+			}
 			if (
 				value.includes("://") ||
 				value.includes("/") ||
