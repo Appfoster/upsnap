@@ -60,6 +60,7 @@
 
 {# 5 min for now #}
 {% set MAX_MONITOR_INTERVAL_SECONDS = 86400 %}
+{% set _logoBaseUrl = craft.app.assetManager.getPublishedUrl('@upsnapRoot/assets/images/logo', true) %}
 
 
 {% block content %}
@@ -608,6 +609,12 @@
 	</div>
 
 	<script>
+		window.Upsnap = window.Upsnap || {};
+		window.Upsnap.settings = {
+			...(window.Upsnap.settings || {}),
+			logoBaseUrl: {{ (_logoBaseUrl ?? '')|json_encode|raw }}
+		};
+
 		window.preSelectedChannelIds = {{ monitor ? monitor.channelIds|json_encode|raw : '[]' }};
 		window.CraftPageData = {
 			title: {{ title|json_encode|raw }},

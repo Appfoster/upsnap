@@ -653,9 +653,9 @@ Craft.UpsnapDashboard = {
 
 					let colorClass = "";
 					if (bucket.uptime === null) colorClass = "bar-gray";
-					else if (bucket.uptime === 0) colorClass = "bar-red";
-					else if (bucket.uptime >= 1) colorClass = "bar-green";
-					else if (bucket.uptime >= 0.99) colorClass = "bar-yellow";
+					else if (bucket.uptime >= 0.99) colorClass = "bar-green";
+					else if (bucket.uptime >= 0.95) colorClass = "bar-yellow";
+					else if (bucket.uptime > 0) colorClass = "bar-orange";
 					else colorClass = "bar-red";
 
 					return `

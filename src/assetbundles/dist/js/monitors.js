@@ -31,6 +31,8 @@ if (Craft && Craft.cp) {
 }
 
 Craft.Upsnap.Monitor = {
+	supportedChannelTypesByType: null,
+
 	init() {
 		this.registerLoadIntegrations();
 		this.registerAdvancedSettingsAccordion();
@@ -680,6 +682,10 @@ Craft.Upsnap.Monitor = {
 			spinner.classList.remove("hidden");
 
 			try {
+				if (!this.supportedChannelTypesByType) {
+					await this.loadSupportedChannelTypes();
+				}
+
 				const response = await Craft.sendActionRequest(
 					"POST",
 					"upsnap/monitor-notification-channels/list",
@@ -699,6 +705,54 @@ Craft.Upsnap.Monitor = {
 		const renderTable = (channels) => {
 			tbody.innerHTML = "";
 
+			const escapeHtml = (text) => {
+				if (text === null || text === undefined) return "";
+				return String(text)
+					.replace(/&/g, "&amp;")
+					.replace(/</g, "&lt;")
+					.replace(/>/g, "&gt;")
+					.replace(/\"/g, "&quot;")
+					.replace(/'/g, "&#039;");
+			};
+
+			const isChannelActive = (channel) => {
+				return (
+					channel?.is_enabled !== false &&
+					channel?.is_enabled !== 0 &&
+					channel?.is_enabled !== "0"
+				);
+			};
+
+			const getTypeIconName = (channelType) => {
+				const supported =
+					this.supportedChannelTypesByType?.[channelType] || null;
+				return supported?.icon || channelType;
+			};
+
+			const getIntegrationIcon = (iconName) => {
+				const fallbackSvg =
+					'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"></rect><path d="M3 7l9 6 9-6"></path></svg>';
+
+				const logoBaseUrl = window?.Upsnap?.settings?.logoBaseUrl || "";
+
+				if (!iconName || !logoBaseUrl) {
+					return `<span class="monitor-integration-icon-fallback">${fallbackSvg}</span>`;
+				}
+
+				const normalizedName = iconName.toLowerCase().replace(/_/g, "-");
+				const humanName = iconName
+					.replace(/[_-]+/g, " ")
+					.trim()
+					.replace(/\b\w/g, (c) => c.toUpperCase());
+
+				return `<img
+					src="${logoBaseUrl}/${normalizedName}.png"
+					alt="${escapeHtml(humanName)} integration"
+					class="monitor-integration-icon-img"
+					onerror="this.style.display='none';this.nextElementSibling.style.display='inline-flex'"
+				/><span class="monitor-integration-icon-fallback" aria-hidden="true" style="display:none">${fallbackSvg}</span>`;
+			};
+
 			if (!channels.length) {
 				table.style.display = "none";
 				noMsg.classList.remove("hidden");
@@ -706,6 +760,12 @@ Craft.Upsnap.Monitor = {
 			}
 
 			channels.forEach((c) => {
+				const statusClass = isChannelActive(c) ? "active" : "inactive";
+				const statusText = isChannelActive(c) ? "Active" : "Inactive";
+				const iconMarkup = getIntegrationIcon(
+					getTypeIconName(c.channel_type),
+				);
+
 				const row = document.createElement("tr");
 				row.innerHTML = `
 					<td class="thin">
@@ -716,7 +776,13 @@ Craft.Upsnap.Monitor = {
 							data-id="${c.id}"
 						>
 					</td>
-					<td>${c.name}</td>
+					<td>
+						<div class="monitor-channel-name-wrap">
+							<span class="monitor-integration-icon" aria-hidden="true">${iconMarkup}</span>
+							<span class="monitor-channel-name">${escapeHtml(c.name)}</span>
+							<span class="channel-status ${statusClass}">${statusText}</span>
+						</div>
+					</td>
 					<td>${formatChannelType(c.channel_type)}</td>
 				`;
 				tbody.appendChild(row);
@@ -745,7 +811,8 @@ Craft.Upsnap.Monitor = {
 		};
 
 		const formatChannelType = (type) => {
-			return type
+			if (!type) return "";
+			return String(type)
 				.replace("_", " ")
 				.replace(/\b\w/g, (l) => l.toUpperCase());
 		};
@@ -777,6 +844,33 @@ Craft.Upsnap.Monitor = {
 				cb.dispatchEvent(new Event("change"));
 			});
 		});
+	},
+	async loadSupportedChannelTypes() {
+		if (this.supportedChannelTypesByType) {
+			return this.supportedChannelTypesByType;
+		}
+
+		this.supportedChannelTypesByType = {};
+
+		try {
+			const response = await Craft.sendActionRequest(
+				"GET",
+				"upsnap/monitor-notification-channels/list-supported-types",
+			);
+			const channels = response?.data?.data?.channels;
+
+			if (Array.isArray(channels)) {
+				channels.forEach((channelType) => {
+					if (channelType?.type) {
+						this.supportedChannelTypesByType[channelType.type] = channelType;
+					}
+				});
+			}
+		} catch (error) {
+			console.error("Failed to load supported channel types:", error);
+		}
+
+		return this.supportedChannelTypesByType;
 	},
 	disableSavebtn() {
 		const saveBtn = document.getElementById("save-monitor");
