@@ -1,5 +1,6 @@
 {% extends '_layouts/cp' %}
 {% import '_includes/forms' as forms %}
+{% set _logoBaseUrl = craft.app.assetManager.getPublishedUrl('@upsnapRoot/assets/images/logo', true) %}
 
 {% block actionButton %}
 	<div class="buttons">
@@ -27,6 +28,11 @@
 
 {% block content %}
 	<script>
+		window.Upsnap = window.Upsnap || {};
+		window.Upsnap.settings = {
+			...(window.Upsnap.settings || {}),
+			logoBaseUrl: {{ (_logoBaseUrl ?? '')|json_encode|raw }}
+		};
 
 		window.CraftPageData = {
 			title: {{ title|json_encode|raw }},
@@ -157,6 +163,22 @@
 							   <div class="skeleton-line" style="width:100%"></div>
 							   <div class="skeleton-line" style="width:85%"></div>
 							   <div class="skeleton-line" style="width:70%"></div>
+						   </div>
+						   <div class="card-content" hidden></div>
+					   </div>
+
+					   {# Connected Channels Card — always shown #}
+					   <div id="connected-channels-card" class="stat-card skeleton">
+						   <div class="card-header ccc-card-header">
+							   <div class="ccc-card-title-row">
+								   <h3>CONNECTED CHANNELS</h3>
+								   <a id="connected-channels-count-pill" class="ccc-count-pill hidden" href="#"></a>
+							   </div>
+							   <hr>
+						   </div>
+						   <div class="card-skeleton">
+							   <div class="skeleton-line" style="width:100%"></div>
+							   <div class="skeleton-line" style="width:72%"></div>
 						   </div>
 						   <div class="card-content" hidden></div>
 					   </div>

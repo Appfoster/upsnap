@@ -113,12 +113,133 @@ window.UpsnapUtils.INTEGRATIONS_TYPES = {
     google_chat: { name: "google_chat", label: "Google Chat" },
     discord: { name: "discord", label: "Discord" },
     mail: { name: "mail", label: "Email" },
+    email: { name: "mail", label: "Email" },
     slack: { name: "slack", label: "Slack" },
     telegram: { name: "telegram", label: "Telegram" },
     teams: { name: "teams", label: "Microsoft Teams" },
     pagerduty: { name: "pagerduty", label: "PagerDuty" },
     zapier: { name: "zapier", label: "Zapier" },
-}
+};
+
+window.UpsnapUtils.humanizeToken = function (str) {
+    if (!str) return "";
+    return String(str)
+        .replace(/[_-]+/g, " ")
+        .trim()
+        .replace(/\b\w/g, (c) => c.toUpperCase());
+};
+
+window.UpsnapUtils.normalizeIntegrationType = function (type) {
+    if (!type) return "";
+    const raw = String(type).toLowerCase().trim().replace(/-/g, "_");
+
+    const aliases = {
+        email: "mail",
+        googlechat: "google_chat",
+        microsoft_teams: "teams",
+        ms_teams: "teams",
+    };
+
+    if (aliases[raw]) return aliases[raw];
+    if (raw.includes("google") && raw.includes("chat")) return "google_chat";
+    return raw;
+};
+
+window.UpsnapUtils.getIntegrationMeta = function (type) {
+    const normalized = window.UpsnapUtils.normalizeIntegrationType(type);
+    const map = window.UpsnapUtils.INTEGRATIONS_TYPES || {};
+
+    if (map[normalized]) {
+        return map[normalized];
+    }
+
+    return {
+        name: normalized || "integration",
+        label: window.UpsnapUtils.humanizeToken(normalized || "Integration"),
+    };
+};
+
+window.UpsnapUtils.getIntegrationIcon = function (type, options = {}) {
+    const fallbackSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"></rect><path d="M3 7l9 6 9-6"></path></svg>';
+
+    const logoBaseUrl = options.logoBaseUrl || window?.Upsnap?.settings?.logoBaseUrl || "";
+    const imgClass = options.imgClass || "integration-icon-img";
+    const fallbackClass = options.fallbackClass || "integration-icon-fallback";
+
+    const meta = window.UpsnapUtils.getIntegrationMeta(type);
+    const iconName = meta?.name || window.UpsnapUtils.normalizeIntegrationType(type);
+
+    if (!iconName || !logoBaseUrl) {
+        return `<span class="${fallbackClass}">${fallbackSvg}</span>`;
+    }
+
+    const normalizedName = iconName.toLowerCase().replace(/_/g, "-");
+    const humanName = meta?.label || window.UpsnapUtils.humanizeToken(iconName);
+
+    return `<img
+        src="${logoBaseUrl}/${normalizedName}.png"
+        alt="${humanName} integration"
+        class="${imgClass}"
+        onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"
+    /><span class="${fallbackClass}" aria-hidden="true" style="display:none">${fallbackSvg}</span>`;
+};
+
+window.UpsnapUtils.getNotificationChannelDisplayInfo = function (channel, fallback = "Configured") {
+    if (!channel || typeof channel !== "object") return fallback;
+
+    const channelType = window.UpsnapUtils.normalizeIntegrationType(channel.channel_type);
+    const cfg = channel.config || {};
+
+    switch (channelType) {
+        case "mail":
+            return cfg?.recipients?.to || "No email configured";
+        case "discord":
+            if (cfg.webhook_url) {
+                try {
+                    const url = new URL(cfg.webhook_url);
+                    const parts = url.pathname.split("/");
+                    if (parts.length >= 4 && parts[3]) {
+                        return `Discord Webhook (${parts[3]})`;
+                    }
+                } catch (e) {}
+                return "Discord Webhook";
+            }
+            return "No webhook configured";
+        case "google_chat":
+            if (cfg.webhook_url) {
+                try {
+                    const url = new URL(cfg.webhook_url);
+                    const match = url.pathname.match(/\/spaces\/([^/]+)/);
+                    if (match?.[1]) {
+                        return `Google Chat Space (${match[1]})`;
+                    }
+                } catch (e) {}
+                return "Google Chat Webhook";
+            }
+            return "No webhook configured";
+        case "telegram":
+            if (cfg.chat_id && cfg.bot_token) {
+                return `${cfg.chat_id} (${String(cfg.bot_token).substring(0, 4)}***)`;
+            }
+            return cfg.chat_id || "No bot configured";
+        case "slack":
+            if (cfg.webhook_url) {
+                try {
+                    const url = new URL(cfg.webhook_url);
+                    const parts = url.pathname.split("/");
+                    if (parts.length >= 4 && parts[3]) {
+                        return `Slack Webhook (${parts[3]})`;
+                    }
+                } catch (e) {}
+                return "Slack Webhook";
+            }
+            return "No webhook configured";
+        case "webhook":
+            return cfg.webhook_url || "No webhook configured";
+        default:
+            return fallback;
+    }
+};
 
 document.addEventListener("DOMContentLoaded", function () {
     // Global show-details functionality

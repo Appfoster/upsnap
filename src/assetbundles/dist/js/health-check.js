@@ -948,7 +948,7 @@ function registerReachabilityJs() {
                         </tr>
                         <tr>
                             <td class="details-label">Redirect Paths</td>
-                            <td class="details-value">${details?.redirects?.length ? details.redirects.map((url, i) => i === 0 ? url : `<span style="color:#999;user-select:none;">→ </span>${url}`).join('<br>') : '–'}</td>
+                            <td class="details-value">${details?.redirects?.length ? details.redirects.map((url, i) => i === 0 ? url : `<span style="color:#999;user-select:none;">→ </span>${url}`).join('<br>') : 'No redirects'}</td>
                         </tr>
                         <tr>
                             <td class="details-label">Resolved IPs</td>
@@ -961,10 +961,6 @@ function registerReachabilityJs() {
                         <tr>
                             <td class="details-label">Content Type</td>
                             <td class="details-value">${details?.contentType ?? '–'}</td>
-                        </tr>
-                        <tr>
-                            <td class="details-label">Content Length</td>
-                            <td class="details-value">${details?.contentLength ? details.contentLength + ' bytes' : '–'}</td>
                         </tr>
                     </table>
 
