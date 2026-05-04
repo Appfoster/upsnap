@@ -218,3 +218,26 @@ body.upsnap-modal-open {
   width: 16px;
   height: 16px;
 }
+
+/* Timeout slider layout */
+.timeout-slider-half {
+  max-width: 50%;
+}
+
+.timeout-row-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 2rem;
+  margin-bottom: 0.5rem;
+}
+
+@media (max-width: 900px) {
+  .timeout-slider-half {
+    max-width: 100%;
+  }
+
+  .timeout-row-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+}

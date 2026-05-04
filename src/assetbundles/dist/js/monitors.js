@@ -1150,7 +1150,9 @@ Craft.Upsnap.Monitor = {
 			config: {
 				meta: {
 					url: url,
-					timeout: 30,
+					timeout: this.getSeconds(
+						"websiteTimeoutMonitoringInterval",
+					),
 					follow_redirects: true,
 				},
 				services: {

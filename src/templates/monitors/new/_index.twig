@@ -20,13 +20,11 @@
 ] %}
 
 {% set timeoutIntervals = [
-    { label: '1s', value: 1, unit: 'second' },
     { label: '5s', value: 5, unit: 'second' },
-    { label: '10s', value: 10, unit: 'second' },
     { label: '15s', value: 15, unit: 'second' },
-    { label: '20s', value: 20, unit: 'second' },
-    { label: '25s', value: 25, unit: 'second' },
-    { label: '30s', value: 30, unit: 'second' }
+	{ label: '30s', value: 30, unit: 'second' },
+	{ label: '45s', value: 45, unit: 'second' },
+	{ label: '60s', value: 60, unit: 'second' }
 ] %}
 
 {% set lighthouseIntervals = [
@@ -165,6 +163,18 @@
 					}) }}
 
 					<div id="advanced-settings" style="{% if not (monitor ? (monitor.enabled ?? false) : false) %}display:none;{% endif %}">
+<div class="timeout-slider-half">
+						{% include 'upsnap/_components/interval-slider.twig' with {
+							id: 'websiteTimeout',
+							name: 'websiteTimeout',
+							value: monitor ? (monitor.websiteTimeout ?? 30) : 30,
+							partitions: timeoutIntervals,
+							minMonitorIntervalSeconds: 1,
+							label: 'Request Timeout',
+							description: 'The request timeout is {exact time} seconds.'
+						} %}
+					</div>
+
 						<h3 id="healthcheck-settings-title" class="heading">Healthcheck Settings</h3>
 						<hr>
 
@@ -203,7 +213,7 @@
 									{% include 'upsnap/_components/interval-slider.twig' with {
 										id: 'brokenLinks',
 										name: 'brokenLinksMonitoringInterval',
-										value: monitor ? (monitor.brokenLinksMonitoringInterval ?? 300) : 300,
+										value: monitor ? (monitor.brokenLinksMonitoringInterval ?? 86400) : 86400,
 										partitions: defaultIntervals,
 										minMonitorIntervalSeconds: MIN_MONITOR_INTERVAL_SECONDS
 									} %}
@@ -225,7 +235,7 @@
 									{% include 'upsnap/_components/interval-slider.twig' with {
 										id: 'mixedContent',
 										name: 'mixedContentMonitoringInterval',
-										value: monitor ? (monitor.mixedContentMonitoringInterval ?? 300) : 300,
+										value: monitor ? (monitor.mixedContentMonitoringInterval ?? 86400) : 86400,
 										partitions: defaultIntervals,
 										minMonitorIntervalSeconds: MIN_MONITOR_INTERVAL_SECONDS
 									} %}
@@ -245,7 +255,7 @@
 									{% include 'upsnap/_components/interval-slider.twig' with {
 										id: 'domain',
 										name: 'domainMonitoringInterval',
-										value: monitor ? (monitor.domainMonitoringInterval ?? 300) : 300,
+										value: monitor ? (monitor.domainMonitoringInterval ?? 86400) : 86400,
 										partitions: defaultIntervals,
 										minMonitorIntervalSeconds: MIN_MONITOR_INTERVAL_SECONDS
 									} %}
@@ -275,7 +285,7 @@
 									{% include 'upsnap/_components/interval-slider.twig' with {
 										id: 'securityCertificates',
 										name: 'securityCertificatesMonitoringInterval',
-										value: monitor ? (monitor.securityCertificatesMonitoringInterval ?? 300) : 300,
+										value: monitor ? (monitor.securityCertificatesMonitoringInterval ?? 86400) : 86400,
 										partitions: defaultIntervals,
 										minMonitorIntervalSeconds: MIN_MONITOR_INTERVAL_SECONDS
 									} %}
@@ -418,25 +428,30 @@
 					}) }}
 
 					<div id="port-advanced-settings" style="{% if not (monitor ? (monitor.portEnabled ?? false) : false) %}display:none;{% endif %}">
-						{% include 'upsnap/_components/interval-slider.twig' with {
-							id: 'portTimeout',
-							name: 'portTimeout',
-							value: monitor ? (monitor.portTimeout ?? 5) : 5,
-							partitions: timeoutIntervals,
-							minMonitorIntervalSeconds: 1,
-							label: 'Request Timeout',
-							description: 'The request timeout is {exact time} seconds.'
-						} %}
-
-						{% include 'upsnap/_components/interval-slider.twig' with {
-							id: 'portMonitorInterval',
-							name: 'portMonitorInterval',
-							value: monitor ? (monitor.portMonitorInterval ?? 300) : 300,
-							partitions: defaultIntervals,
-							minMonitorIntervalSeconds: MIN_MONITOR_INTERVAL_SECONDS,
-							label: 'Check Interval',
-							description: 'Your monitor will be checked every {exact time}.'
-						} %}
+					<div class="timeout-row-grid">
+						<div>
+							{% include 'upsnap/_components/interval-slider.twig' with {
+								id: 'portTimeout',
+								name: 'portTimeout',
+								value: monitor ? (monitor.portTimeout ?? 30) : 30,
+								partitions: timeoutIntervals,
+								minMonitorIntervalSeconds: 1,
+								label: 'Request Timeout',
+								description: 'The request timeout is {exact time} seconds.'
+							} %}
+						</div>
+						<div>
+							{% include 'upsnap/_components/interval-slider.twig' with {
+								id: 'portMonitorInterval',
+								name: 'portMonitorInterval',
+								value: monitor ? (monitor.portMonitorInterval ?? 300) : 300,
+								partitions: defaultIntervals,
+								minMonitorIntervalSeconds: MIN_MONITOR_INTERVAL_SECONDS,
+								label: 'Check Interval',
+								description: 'Your monitor will be checked every {exact time}.'
+							} %}
+						</div>
+					</div>
 					</div>
 				</div>
 			</div>
@@ -561,25 +576,30 @@
 					}) }}
 
 					<div id="keyword-advanced-settings" style="{% if not (monitor ? (monitor.keywordEnabled ?? false) : false) %}display:none;{% endif %}">
-						{% include 'upsnap/_components/interval-slider.twig' with {
-							id: 'keywordTimeout',
-							name: 'keywordTimeout',
-							value: monitor ? (monitor.keywordTimeout ?? 30) : 30,
-							partitions: timeoutIntervals,
-							minMonitorIntervalSeconds: 1,
-							label: 'Request Timeout',
-							description: 'The request timeout is {exact time} seconds.'
-						} %}
-
-						{% include 'upsnap/_components/interval-slider.twig' with {
-							id: 'keywordMonitorInterval',
-							name: 'keywordMonitorInterval',
-							value: monitor ? (monitor.keywordMonitorInterval ?? 300) : 300,
-							partitions: defaultIntervals,
-							minMonitorIntervalSeconds: MIN_MONITOR_INTERVAL_SECONDS,
-							label: 'Check Interval',
-							description: 'Your monitor will be checked every {exact time}.'
-						} %}
+<div class="timeout-row-grid">
+						<div>
+							{% include 'upsnap/_components/interval-slider.twig' with {
+								id: 'keywordTimeout',
+								name: 'keywordTimeout',
+								value: monitor ? (monitor.keywordTimeout ?? 30) : 30,
+								partitions: timeoutIntervals,
+								minMonitorIntervalSeconds: 1,
+								label: 'Request Timeout',
+								description: 'The request timeout is {exact time} seconds.'
+							} %}
+						</div>
+						<div>
+							{% include 'upsnap/_components/interval-slider.twig' with {
+								id: 'keywordMonitorInterval',
+								name: 'keywordMonitorInterval',
+								value: monitor ? (monitor.keywordMonitorInterval ?? 300) : 300,
+								partitions: defaultIntervals,
+								minMonitorIntervalSeconds: MIN_MONITOR_INTERVAL_SECONDS,
+								label: 'Check Interval',
+								description: 'Your monitor will be checked every {exact time}.'
+							} %}
+						</div>
+					</div>
 
 						{{ forms.lightswitchField({
 							label: "Follow Redirects",
