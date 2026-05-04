@@ -136,6 +136,16 @@
         sel.value = preselect;
     };
 
+    const applyTimeframeFromUrl = () => {
+        const urlTimeframe = new URLSearchParams(window.location.search).get('timeframe');
+        const validValues = ['24h', '7D', '1M'];
+        if (urlTimeframe && validValues.includes(urlTimeframe)) {
+            state.timeRange = urlTimeframe;
+            const timeSel = el.timeframeSelect();
+            if (timeSel) timeSel.value = urlTimeframe;
+        }
+    };
+
     const syncTimeRangeForMonitorSelection = () => {
         const timeSel = el.timeframeSelect();
         if (!timeSel) return false;
@@ -469,6 +479,7 @@
         url.searchParams.set('page_size',  state.pageSize);
         url.searchParams.set('sort_by',    state.sortBy);
         url.searchParams.set('sort_order', state.sortOrder);
+        console.log('Fetching incidents with params:', Object.fromEntries(url.searchParams.entries()));
 
         if (state.search)            url.searchParams.set('search',     state.search);
         if (state.checkTypes.length) url.searchParams.set('check_type', state.checkTypes.join(','));
@@ -798,6 +809,7 @@
     /* ─── Init ────────────────────────────────────────────────────────────── */
     const init = () => {
         populateMonitorSelect(cfg.monitors || []);
+        applyTimeframeFromUrl();
         syncTimeRangeForMonitorSelection();
         bindSortHeaders();
         updateSortIcons();

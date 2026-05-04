@@ -947,17 +947,20 @@ Craft.UpsnapDashboard = {
 			this.renderSingleUptimeStatCard(
 				"Last 24h",
 				null,
-				"uptime-day-card"
+				"uptime-day-card",
+				"24h"
 			);
 			this.renderSingleUptimeStatCard(
 				"Last Week",
 				null,
-				"uptime-week-card"
+				"uptime-week-card",
+				"7D"
 			);
 			this.renderSingleUptimeStatCard(
 				"Last 30 Days",
 				null,
-				"uptime-month-card"
+				"uptime-month-card",
+				"1M"
 			);
 			return;
 		}
@@ -981,17 +984,20 @@ Craft.UpsnapDashboard = {
 			this.renderSingleUptimeStatCard(
 				"Last 24h",
 				stats?.day,
-				"uptime-day-card"
+				"uptime-day-card",
+				"24h"
 			);
 			this.renderSingleUptimeStatCard(
 				"Last Week",
 				stats?.week,
-				"uptime-week-card"
+				"uptime-week-card",
+				"7D"
 			);
 			this.renderSingleUptimeStatCard(
 				"Last 30 Days",
 				stats?.month,
-				"uptime-month-card"
+				"uptime-month-card",
+				"1M"
 			);
 		} catch (err) {
 			console.error("Failed to fetch uptime stats:", err);
@@ -1000,22 +1006,25 @@ Craft.UpsnapDashboard = {
 			this.renderSingleUptimeStatCard(
 				"Last 24h",
 				null,
-				"uptime-day-card"
+				"uptime-day-card",
+				"24h"
 			);
 			this.renderSingleUptimeStatCard(
 				"Last Week",
 				null,
-				"uptime-week-card"
+				"uptime-week-card",
+				"7D"
 			);
 			this.renderSingleUptimeStatCard(
 				"Last 30 Days",
 				null,
-				"uptime-month-card"
+				"uptime-month-card",
+				"1M"
 			);
 		}
 	},
 
-	renderSingleUptimeStatCard(label, stats, elementId) {
+	renderSingleUptimeStatCard(label, stats, elementId, timeframe) {
 		const card = document.getElementById(elementId);
 		if (!card) return;
 
@@ -1059,7 +1068,7 @@ Craft.UpsnapDashboard = {
 			if (!this.monitorId) return;
 			const url = Craft.getCpUrl('upsnap/incidents', {
 				monitor_id: this.monitorId,
-				timeframe: '24_hours',
+				timeframe: timeframe || '24h',
 			});
 
 			window.location.href = url;
@@ -1230,7 +1239,7 @@ Craft.UpsnapDashboard = {
 					badge.addEventListener('click', () => {
 						window.location.href = Craft.getCpUrl('upsnap/incidents', {
 							monitor_id: monitorId,
-							timeframe: '24_hours',
+							timeframe: '24h',
 						});
 					});
 				}
