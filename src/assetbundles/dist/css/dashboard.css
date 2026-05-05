@@ -128,9 +128,15 @@
 
 .status-message {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     gap: 8px;
     margin: 4px 0;
+}
+
+.dashboard-right .status-message .status-icon {
+    margin-right: 0;
+    margin-top: 2px;
+    flex-shrink: 0;
 }
 
 .status-message-dashboard {

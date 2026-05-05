@@ -18,11 +18,14 @@
 				{% endif %}
 			</select>
 		</div>
-		<div class="btngroup">
-			<button type="button" class="btn submit" data-icon="refresh" id="refresh-btn">
-				{{ 'Refresh'|t('upsnap') }}
-			</button>
-		</div>
+		{% set hasApiKey = apiKey is not empty %}
+		{% if hasApiKey %}
+			<div class="btngroup">
+				<button type="button" class="btn submit" data-icon="refresh" id="refresh-btn">
+					{{ 'Refresh'|t('upsnap') }}
+				</button>
+			</div>
+		{% endif %}
 	</div>
 {% endblock %}
 
