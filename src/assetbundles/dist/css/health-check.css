@@ -644,6 +644,42 @@
     line-height: 1.4;
 }
 
+.cert-field-value--validity {
+    word-break: normal;
+}
+
+.validity-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    padding: 4px 12px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.2;
+    white-space: nowrap;
+}
+
+.validity-pill--valid {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.validity-pill--warning {
+    background: #fef9c3;
+    color: #854d0e;
+}
+
+.validity-pill--expired {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+.validity-pill--neutral {
+    background: #e5e7eb;
+    color: #4b5563;
+}
+
 .cert-field-value.mono {
     font-family: Monaco, Consolas, 'Courier New', monospace;
     background: #f8f9fa;

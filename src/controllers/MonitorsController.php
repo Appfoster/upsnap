@@ -461,7 +461,7 @@ class MonitorsController extends Controller
             case 'port':
                 $formatted['portHost'] = $meta['host'] ?? '';
                 $formatted['portNumber'] = $meta['port'] ?? '';
-                $formatted['portTimeout'] = $meta['timeout'] ?? 5;
+                $formatted['portTimeout'] = $meta['timeout'] ?? 30;
                 $formatted['portEnabled'] = $services['port_check']['enabled'] ?? false;
                 $formatted['portMonitorInterval'] = $services['port_check']['monitor_interval'] ?? 300;
                 break;
@@ -495,13 +495,14 @@ class MonitorsController extends Controller
             case 'website':
             default:
                 $formatted['url'] = $meta['url'] ?? '';
+                $formatted['websiteTimeout'] = $meta['timeout'] ?? 30;
 
                 // Health checks
                 $formatted['brokenLinksEnabled'] = $services['broken_links']['enabled'] ?? false;
-                $formatted['brokenLinksMonitoringInterval'] = $services['broken_links']['monitor_interval'] ?? "300";
+                $formatted['brokenLinksMonitoringInterval'] = $services['broken_links']['monitor_interval'] ?? "86400";
 
                 $formatted['mixedContentEnabled'] = $services['mixed_content']['enabled'] ?? false;
-                $formatted['mixedContentMonitoringInterval'] = $services['mixed_content']['monitor_interval'] ?? "300";
+                $formatted['mixedContentMonitoringInterval'] = $services['mixed_content']['monitor_interval'] ?? "86400";
 
                 $formatted['lighthouseEnabled'] = $services['lighthouse']['enabled'] ?? false;
                 $formatted['lighthouseMonitoringInterval'] = $services['lighthouse']['monitor_interval'] ?? "86400";
@@ -511,11 +512,11 @@ class MonitorsController extends Controller
                 $formatted['reachabilityMonitoringInterval'] = $services['uptime']['monitor_interval'] ?? "300";
 
                 $formatted['domainEnabled'] = $services['domain']['enabled'] ?? false;
-                $formatted['domainMonitoringInterval'] = $services['domain']['monitor_interval'] ?? "300";
+                $formatted['domainMonitoringInterval'] = $services['domain']['monitor_interval'] ?? "86400";
                 $formatted['domainDaysBeforeExpiryAlert'] = $services['domain']['notify_days_before_expiry'] ?? 7;
 
                 $formatted['securityCertificatesEnabled'] = $services['ssl']['enabled'] ?? false;
-                $formatted['securityCertificatesMonitoringInterval'] = $services['ssl']['monitor_interval'] ?? "300";
+                $formatted['securityCertificatesMonitoringInterval'] = $services['ssl']['monitor_interval'] ?? "86400";
                 $formatted['sslDaysBeforeExpiryAlert'] = $services['ssl']['notify_days_before_expiry'] ?? 7;
                 break;
         }

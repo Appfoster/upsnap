@@ -179,9 +179,8 @@ class IncidentsController extends BaseController
         $rawTimeRange = $request->getQueryParam('time_range', '24h');
         $timeRange = match(strtolower($rawTimeRange)) {
             '7d'  => '7D',
-            '30d' => '30D',
-            '1m'  => '30D',
-            '90d' => '90D',
+            '1m'  => '1M',
+            '3m' => '3M',
             default => $rawTimeRange,
         };
 

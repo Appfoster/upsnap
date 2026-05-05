@@ -550,7 +550,7 @@
 
 					const url = Craft.getCpUrl("upsnap/incidents", {
 						monitor_id: monitorId,
-						timeframe: "24_hours",
+						timeframe: "24h",
 					});
 
 					window.location.href = url;

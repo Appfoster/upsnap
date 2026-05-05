@@ -175,3 +175,69 @@ body.upsnap-modal-open {
 .port-field {
   margin-top: 1rem;
 }
+
+.monitor-channel-name-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.monitor-channel-name {
+  font-weight: 500;
+  color: #1f2937;
+}
+
+.monitor-integration-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.monitor-integration-icon-img {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+  display: block;
+}
+
+.monitor-integration-icon-fallback {
+  width: 18px;
+  height: 18px;
+  color: #6b7280;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.monitor-integration-icon-fallback svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* Timeout slider layout */
+.timeout-slider-half {
+  max-width: 50%;
+}
+
+.timeout-row-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 2rem;
+  margin-bottom: 0.5rem;
+}
+
+@media (max-width: 900px) {
+  .timeout-slider-half {
+    max-width: 100%;
+  }
+
+  .timeout-row-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+}

@@ -25,12 +25,16 @@ Craft.UpsnapDashboard = {
 		this.renderMonitorCards();
 		this.loadAndApplyRegionNames();
 		this.loadIncidentStatsCard();
+		this.loadConnectedChannelsCard();
 		this.initIncidentTableRowNavigation();
 
 		if (this.refreshBtn) {
 			this.refreshBtn.addEventListener("click", () => {
 				this.runWithRefreshButton(this.refreshBtn, () =>
-					this.initializeDashboard()
+					Promise.all([
+						this.initializeDashboard(),
+						this.loadConnectedChannelsCard(),
+					])
 				);
 			});
 		}
@@ -653,9 +657,9 @@ Craft.UpsnapDashboard = {
 
 					let colorClass = "";
 					if (bucket.uptime === null) colorClass = "bar-gray";
-					else if (bucket.uptime === 0) colorClass = "bar-red";
-					else if (bucket.uptime >= 1) colorClass = "bar-green";
-					else if (bucket.uptime >= 0.99) colorClass = "bar-yellow";
+					else if (bucket.uptime >= 0.99) colorClass = "bar-green";
+					else if (bucket.uptime >= 0.95) colorClass = "bar-yellow";
+					else if (bucket.uptime > 0) colorClass = "bar-orange";
 					else colorClass = "bar-red";
 
 					return `
@@ -947,17 +951,20 @@ Craft.UpsnapDashboard = {
 			this.renderSingleUptimeStatCard(
 				"Last 24h",
 				null,
-				"uptime-day-card"
+				"uptime-day-card",
+				"24h"
 			);
 			this.renderSingleUptimeStatCard(
 				"Last Week",
 				null,
-				"uptime-week-card"
+				"uptime-week-card",
+				"7D"
 			);
 			this.renderSingleUptimeStatCard(
 				"Last 30 Days",
 				null,
-				"uptime-month-card"
+				"uptime-month-card",
+				"1M"
 			);
 			return;
 		}
@@ -981,17 +988,20 @@ Craft.UpsnapDashboard = {
 			this.renderSingleUptimeStatCard(
 				"Last 24h",
 				stats?.day,
-				"uptime-day-card"
+				"uptime-day-card",
+				"24h"
 			);
 			this.renderSingleUptimeStatCard(
 				"Last Week",
 				stats?.week,
-				"uptime-week-card"
+				"uptime-week-card",
+				"7D"
 			);
 			this.renderSingleUptimeStatCard(
 				"Last 30 Days",
 				stats?.month,
-				"uptime-month-card"
+				"uptime-month-card",
+				"1M"
 			);
 		} catch (err) {
 			console.error("Failed to fetch uptime stats:", err);
@@ -1000,22 +1010,25 @@ Craft.UpsnapDashboard = {
 			this.renderSingleUptimeStatCard(
 				"Last 24h",
 				null,
-				"uptime-day-card"
+				"uptime-day-card",
+				"24h"
 			);
 			this.renderSingleUptimeStatCard(
 				"Last Week",
 				null,
-				"uptime-week-card"
+				"uptime-week-card",
+				"7D"
 			);
 			this.renderSingleUptimeStatCard(
 				"Last 30 Days",
 				null,
-				"uptime-month-card"
+				"uptime-month-card",
+				"1M"
 			);
 		}
 	},
 
-	renderSingleUptimeStatCard(label, stats, elementId) {
+	renderSingleUptimeStatCard(label, stats, elementId, timeframe) {
 		const card = document.getElementById(elementId);
 		if (!card) return;
 
@@ -1059,7 +1072,7 @@ Craft.UpsnapDashboard = {
 			if (!this.monitorId) return;
 			const url = Craft.getCpUrl('upsnap/incidents', {
 				monitor_id: this.monitorId,
-				timeframe: '24_hours',
+				timeframe: timeframe || '24h',
 			});
 
 			window.location.href = url;
@@ -1230,7 +1243,7 @@ Craft.UpsnapDashboard = {
 					badge.addEventListener('click', () => {
 						window.location.href = Craft.getCpUrl('upsnap/incidents', {
 							monitor_id: monitorId,
-							timeframe: '24_hours',
+							timeframe: '24h',
 						});
 					});
 				}
@@ -1253,6 +1266,206 @@ Craft.UpsnapDashboard = {
 				<hr class="is-divider">
 				<p class="is-empty">No data available.</p>
 			`;
+		}
+	},
+
+	getMonitorChannelIds() {
+		const monitor = window.CraftPageData?.monitorData || {};
+
+		if (Array.isArray(monitor.channel_ids)) {
+			return monitor.channel_ids.map((id) => String(id));
+		}
+
+		if (Array.isArray(monitor.channelIds)) {
+			return monitor.channelIds.map((id) => String(id));
+		}
+
+		if (Array.isArray(monitor.notification_channels)) {
+			return monitor.notification_channels
+				.map((channel) => channel?.id)
+				.filter((id) => id !== null && id !== undefined)
+				.map((id) => String(id));
+		}
+
+		return [];
+	},
+
+	renderConnectedChannelsCardEmpty(card) {
+		const content = card.querySelector('.card-content');
+		const skeleton = card.querySelector('.card-skeleton');
+		this.setConnectedChannelsCountPill(card, 0);
+
+		card.classList.remove('skeleton');
+		if (skeleton) skeleton.hidden = true;
+		if (!content) return;
+
+		content.hidden = false;
+		content.innerHTML = `
+			<div class="ccc-empty-state">
+				<span class="ccc-empty-icon" aria-hidden="true">
+					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+						<path d="M9.5 17h5"></path>
+						<path d="M10.5 5.25a6 6 0 0 1 10.33 4.2v3.8l1.2 2.4a1 1 0 0 1-.9 1.45H7.77"></path>
+						<path d="M3 3l18 18"></path>
+					</svg>
+				</span>
+				<span>No notification channels attached.</span>
+			</div>
+		`;
+	},
+
+	setConnectedChannelsCountPill(card, count, href = null) {
+		const countPill = card.querySelector('#connected-channels-count-pill');
+		if (!countPill) return;
+
+		if (count > 0 && href) {
+			countPill.textContent = `${count} ${count === 1 ? 'channel' : 'channels'}`;
+			countPill.href = href;
+			countPill.classList.remove('hidden');
+			return;
+		}
+
+		countPill.textContent = '';
+		countPill.removeAttribute('href');
+		countPill.classList.add('hidden');
+	},
+
+	buildChannelTooltipHtml(channelType, channels) {
+		const integrationMeta = window.UpsnapUtils?.getIntegrationMeta
+			? window.UpsnapUtils.getIntegrationMeta(channelType)
+			: {
+				label: this._escapeHtml(channelType || 'Integration'),
+			  };
+
+		const label = this._escapeHtml(integrationMeta?.label || channelType || 'Integration');
+
+		const getStatusHtml = (isEnabled) => {
+			const statusClass = isEnabled ? 'active' : 'inactive';
+			const statusText = isEnabled ? 'Active' : 'Inactive';
+			return `<span class="ccc-tooltip-status ${statusClass}">${statusText}</span>`;
+		};
+
+		const rowsHtml = channels
+			.map((channel, idx) => {
+				const name = this._escapeHtml(channel?.name || 'Unnamed channel');
+				const info = window.UpsnapUtils?.getNotificationChannelDisplayInfo
+					? window.UpsnapUtils.getNotificationChannelDisplayInfo(channel, 'Configured')
+					: 'Configured';
+
+				const isEnabled = channel?.is_enabled !== false;
+
+				return `
+					<div class="ccc-tooltip-item ${idx > 0 ? 'with-divider' : ''}">
+						<div class="ccc-tooltip-item-row">
+							<span class="ccc-tooltip-name">${name}</span>
+							${channels.length > 1 ? getStatusHtml(isEnabled) : ''}
+						</div>
+						<div class="ccc-tooltip-info">${this._escapeHtml(info)}</div>
+					</div>
+				`;
+			})
+			.join('');
+
+		const headingStatus = channels.length === 1
+			? getStatusHtml(channels[0]?.is_enabled !== false)
+			: '';
+
+		return `
+			<div class="ccc-tooltip-inner">
+				<div class="ccc-tooltip-head">
+					<span>${label}</span>
+					${headingStatus}
+				</div>
+				${rowsHtml}
+			</div>
+		`;
+	},
+
+	renderConnectedChannelsCard(card, channels) {
+		const content = card.querySelector('.card-content');
+		const skeleton = card.querySelector('.card-skeleton');
+		if (!content) return;
+
+		const grouped = channels.reduce((acc, channel) => {
+			const key = String(channel?.channel_type || 'integration');
+			if (!acc[key]) acc[key] = [];
+			acc[key].push(channel);
+			return acc;
+		}, {});
+
+		const groups = Object.entries(grouped);
+		const count = channels.length;
+		const settingsUrl = `${Craft.getCpUrl('upsnap/settings')}#notification-channels-tab`;
+
+		const groupsHtml = groups
+			.map(([type, list]) => {
+				const iconMarkup = window.UpsnapUtils?.getIntegrationIcon
+					? window.UpsnapUtils.getIntegrationIcon(type, {
+						imgClass: 'ccc-icon-img',
+						fallbackClass: 'ccc-icon-fallback',
+					})
+					: '';
+
+				const tooltip = this.buildChannelTooltipHtml(type, list);
+
+				return `
+					<div class="ccc-icon-group" tabindex="0" aria-label="${this._escapeAttr(type)} channels">
+						<div class="ccc-icon-circle">${iconMarkup}</div>
+						${list.length > 1 ? `<span class="ccc-count-dot">${list.length}</span>` : ''}
+						<div class="ccc-tooltip" role="tooltip">${tooltip}</div>
+					</div>
+				`;
+			})
+			.join('');
+
+		card.classList.remove('skeleton');
+		if (skeleton) skeleton.hidden = true;
+		content.hidden = false;
+
+		if (count === 0) {
+			this.renderConnectedChannelsCardEmpty(card);
+			return;
+		}
+
+		this.setConnectedChannelsCountPill(card, count, settingsUrl);
+
+		content.innerHTML = `
+			<div class="ccc-groups-row">
+				${groupsHtml}
+			</div>
+		`;
+	},
+
+	async loadConnectedChannelsCard() {
+		const card = document.getElementById('connected-channels-card');
+		if (!card) return;
+
+		try {
+			const monitorChannelIds = this.getMonitorChannelIds();
+			if (!monitorChannelIds.length) {
+				this.renderConnectedChannelsCardEmpty(card);
+				return;
+			}
+
+			const monitorChannelIdSet = new Set(monitorChannelIds.map((id) => String(id)));
+
+			const response = await Craft.sendActionRequest(
+				'POST',
+				'upsnap/monitor-notification-channels/list'
+			);
+
+			const channels = Array.isArray(response?.data?.data?.channels)
+				? response.data.data.channels
+				: [];
+
+			const filtered = channels.filter((channel) =>
+				monitorChannelIdSet.has(String(channel?.id))
+			);
+
+			this.renderConnectedChannelsCard(card, filtered);
+		} catch (err) {
+			console.warn('Failed to load connected channels:', err);
+			this.renderConnectedChannelsCardEmpty(card);
 		}
 	},
 

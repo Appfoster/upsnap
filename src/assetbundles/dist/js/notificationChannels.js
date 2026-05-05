@@ -375,31 +375,15 @@
 		 * the base URL is not available (mirrors the Next.js onError pattern).
 		 */
 		getIntegrationIcon(iconName) {
-			const fallbackSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"></rect><path d="M3 7l9 6 9-6"></path></svg>';
-
-			const logoBaseUrl = window?.Upsnap?.settings?.logoBaseUrl || '';
-
-			if (!iconName || !logoBaseUrl) {
-				return fallbackSvg;
+			if (window.UpsnapUtils?.getIntegrationIcon) {
+				return window.UpsnapUtils.getIntegrationIcon(iconName, {
+					logoBaseUrl: window?.Upsnap?.settings?.logoBaseUrl || '',
+					imgClass: 'integration-icon-img',
+					fallbackClass: 'integration-icon-fallback',
+				});
 			}
 
-			// Normalise: lowercase, underscores → hyphens (matches file names)
-			const normalizedName = iconName.toLowerCase().replace(/_/g, '-');
-
-			// Human-readable alt text
-			const humanName = iconName
-				.replace(/[_-]+/g, ' ')
-				.trim()
-				.replace(/\b\w/g, c => c.toUpperCase());
-
-			// Render the PNG with a hidden sibling SVG revealed on error,
-			// exactly mirroring the React onError → setHasError pattern.
-			return `<img
-				src="${logoBaseUrl}/${normalizedName}.png"
-				alt="${humanName} integration"
-				class="integration-icon-img"
-				onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"
-			/><span class="integration-icon-fallback" aria-hidden="true" style="display:none">${fallbackSvg}</span>`;
+			return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"></rect><path d="M3 7l9 6 9-6"></path></svg>';
 		}
 
 		/**
