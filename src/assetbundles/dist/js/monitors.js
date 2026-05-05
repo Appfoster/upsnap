@@ -333,15 +333,79 @@ Craft.Upsnap.Monitor = {
 		}
 	},
 	bindMonitorUrlListener() {
-		const field =
+		const websiteField =
 			document.getElementById("url") ||
 			document.querySelector('input[name="url"]');
-		if (!field) return;
-		this.enforceHttpsHealthchecks();
+		const keywordField =
+			document.getElementById("keywordUrl") ||
+			document.querySelector('input[name="keywordUrl"]');
 
-		field.addEventListener("input", () => {
+		if (websiteField) {
 			this.enforceHttpsHealthchecks();
+			websiteField.addEventListener("input", () => {
+				this.enforceHttpsHealthchecks();
+			});
+			this.bindUrlPasteSanitizer(websiteField, {
+				onAfterPaste: () => this.enforceHttpsHealthchecks(),
+			});
+		}
+
+		if (keywordField) {
+			this.bindUrlPasteSanitizer(keywordField);
+		}
+	},
+	bindUrlPasteSanitizer(field, options = {}) {
+		if (!field) return;
+
+		field.addEventListener("paste", (event) => {
+			const pastedText = event.clipboardData?.getData("text") || "";
+			if (!pastedText) return;
+
+			if (!this.shouldSanitizeUrlPaste(field, pastedText)) {
+				return;
+			}
+
+			const sanitized = this.sanitizeUrlPasteText(pastedText);
+			if (sanitized === pastedText) return;
+
+			event.preventDefault();
+			this.insertTextAtCursor(field, sanitized);
+
+			if (typeof options.onAfterPaste === "function") {
+				options.onAfterPaste();
+			}
 		});
+	},
+	shouldSanitizeUrlPaste(field, pastedText) {
+		const start = field.selectionStart ?? field.value.length;
+		const end = field.selectionEnd ?? start;
+		const currentValue = field.value || "";
+
+		const nextRawValue =
+			currentValue.slice(0, start) +
+			pastedText +
+			currentValue.slice(end);
+
+		// Only sanitize when paste would create a duplicated protocol
+		// such as "https://https://example.com" or "http://https://example.com".
+		return /^\s*https?:\/\/\s*https?:\/\//i.test(nextRawValue);
+	},
+	sanitizeUrlPasteText(value) {
+		return String(value).replace(/^\s*https?:\/\//i, "");
+	},
+	insertTextAtCursor(input, text) {
+		const start = input.selectionStart ?? input.value.length;
+		const end = input.selectionEnd ?? start;
+		const currentValue = input.value;
+
+		input.value =
+			currentValue.slice(0, start) +
+			text +
+			currentValue.slice(end);
+
+		const nextPosition = start + text.length;
+		input.setSelectionRange(nextPosition, nextPosition);
+		input.dispatchEvent(new Event("input", { bubbles: true }));
 	},
 	getMonitorUrl() {
 		const field =
