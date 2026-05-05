@@ -149,9 +149,7 @@ Craft.UpsnapDashboard = {
 
 		const icon = status === "ok" ? "✓" : status === "error" ? "✗" : "!";
 
-		const formattedCheckedAt = checkedAt
-			? new Date(checkedAt).toLocaleString()
-			: "N/A";
+		const formattedCheckedAt = window.UpsnapUtils.formatDateDisplay(checkedAt);
 
 		content.innerHTML = `
 			<div class="card-body">
@@ -159,7 +157,10 @@ Craft.UpsnapDashboard = {
 					<span class="status-icon ${statusClass}">${icon}</span>
 					${message ?? "Something Went Wrong!"}
 				</p>
-				<p><strong>Last checked at:</strong> ${formattedCheckedAt}</p>
+				<p>
+					<strong>Last checked at:</strong>
+					<span title="DD/MM/YY">${formattedCheckedAt}</span>
+				</p>
 			</div>
 			<div class="card-footer">
 				<button class="fetch-recent-btn" type="button" data-icon="refresh">
@@ -545,7 +546,7 @@ Craft.UpsnapDashboard = {
 			timestamp = data.last_check_at;
 		}
 
-		const lastCheck = new Date(timestamp).toLocaleString();
+		const lastCheck = window.UpsnapUtils.formatDateDisplay(timestamp);
 
 		const intervalSeconds =
 			data?.config?.services?.uptime?.monitor_interval;
@@ -558,7 +559,7 @@ Craft.UpsnapDashboard = {
 		card.innerHTML = `
 			<div class="card-header">Last check</div>
 			<div class="card-body">
-				${lastCheck}<br>
+				<span title="DD/MM/YY">${lastCheck}</span><br>
 				${
 					!isDisabled && intervalMinutes
 						? `<span class="gray">Checked Every ${intervalMinutes}m</span>`

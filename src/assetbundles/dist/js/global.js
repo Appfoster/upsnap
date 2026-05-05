@@ -129,6 +129,15 @@ window.UpsnapUtils.humanizeToken = function (str) {
         .replace(/\b\w/g, (c) => c.toUpperCase());
 };
 
+window.UpsnapUtils.formatDateDisplay = function (dateValue) {
+    if (!dateValue) return "N/A";
+
+    const date = new Date(dateValue);
+    if (Number.isNaN(date.getTime())) return "N/A";
+
+    return date.toLocaleString();
+};
+
 window.UpsnapUtils.normalizeIntegrationType = function (type) {
     if (!type) return "";
     const raw = String(type).toLowerCase().trim().replace(/-/g, "_");

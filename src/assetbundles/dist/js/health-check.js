@@ -1938,8 +1938,12 @@ function renderStatusContainer(data) {
 
     let formattedDate = '';
     if (checkedAt) {
-        const date = new Date(checkedAt);
-        formattedDate = date.toLocaleString();
+        if (window.UpsnapUtils && typeof window.UpsnapUtils.formatDateDisplay === 'function') {
+            formattedDate = window.UpsnapUtils.formatDateDisplay(checkedAt);
+        } else {
+            const date = new Date(checkedAt);
+            formattedDate = date.toLocaleString();
+        }
     }
 
     let statusClass = 'warning';
@@ -1969,7 +1973,7 @@ function renderStatusContainer(data) {
 
                 ${formattedDate ? `
                     <div class="status-checked-at">
-                        Last checked: ${formattedDate}
+                        Last checked: <span title="DD/MM/YY">${formattedDate}</span>
                     </div>
                 ` : ''}
             </div>
