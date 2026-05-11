@@ -560,8 +560,6 @@ class MonitorsController extends Controller
     public function actionHistogramData(string $monitorId): Response
     {
         // Release the PHP session write lock so concurrent dashboard AJAX calls
-        // (histogram, response-time, uptime-stats, health-checks) run in parallel
-        // rather than queuing behind each other.
         Craft::$app->getSession()->close();
 
         $request = Craft::$app->getRequest();
