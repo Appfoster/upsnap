@@ -646,6 +646,9 @@ class HealthCheckController extends BaseController
             }
 
             $monitor = $response['data']['monitor'] ?? null;
+            if (!is_array($monitor)) {
+                return Upsnap::getMonitoringUrl();
+            }
             $settingsEndpoint = Constants::MICROSERVICE_ENDPOINTS['monitors']['settings'];
             $settingsResponse = Upsnap::$plugin->apiService->get($settingsEndpoint, ['id' => $monitorId]);
             $config = (isset($settingsResponse['status']) && $settingsResponse['status'] === 'success')
