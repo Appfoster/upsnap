@@ -5,19 +5,48 @@ namespace appfoster\upsnap\controllers;
 use appfoster\upsnap\assetbundles\MonitorsAsset;
 use appfoster\upsnap\Constants;
 use Craft;
-use craft\web\Controller;
 use yii\web\Response;
 use appfoster\upsnap\Upsnap;
 use yii\web\NotFoundHttpException;
 
-class MonitorsController extends Controller
+class MonitorsController extends BaseController
 {
-    protected array|bool|int $allowAnonymous = false;
 
     public function __construct($id, $module = null)
     {
         parent::__construct($id, $module);
         MonitorsAsset::register($this->view);
+    }
+
+    /**
+     * Render the monitors listing page.
+     * GET upsnap/monitors
+     */
+    public function actionIndex(): Response
+    {
+        $settingsService = Upsnap::$plugin->settingsService;
+        $settingsService->validateApiKey();
+
+        $userDetails = null;
+        if ($settingsService->getApiKey()) {
+            $userDetails = $settingsService->getUserDetails();
+        }
+
+        $variables = [
+            'title' => Constants::SUBNAV_ITEM_MONITORS['label'],
+            'selectedSubnavItem' => Constants::SUBNAV_ITEM_MONITORS['key'],
+            'apiKey' => $settingsService->getApiKey(),
+            'apiTokenStatus' => $settingsService->getApiTokenStatus(),
+            'apiTokenStatuses' => Constants::API_KEY_STATUS,
+            'upsnapDashboardUrl' => Constants::getWebAppUrl('webapp'),
+            'userDetails' => $userDetails,
+            'subscriptionTypes' => Constants::SUBSCRIPTION_TYPES,
+            'settings' => [
+                'monitoringUrl' => $settingsService->getMonitoringUrl(),
+            ],
+        ];
+
+        return $this->renderTemplate('upsnap/monitors/_index', $variables);
     }
 
     public function actionCreate(): Response
@@ -559,6 +588,9 @@ class MonitorsController extends Controller
 
     public function actionHistogramData(string $monitorId): Response
     {
+        // Release the PHP session write lock so concurrent dashboard AJAX calls
+        Craft::$app->getSession()->close();
+
         $request = Craft::$app->getRequest();
 
         $params = array_merge(
@@ -591,6 +623,8 @@ class MonitorsController extends Controller
 
     public function actionResponseTimeData(string $monitorId): Response
     {
+        Craft::$app->getSession()->close();
+
         $request = Craft::$app->getRequest();
 
         $params = array_merge(
@@ -623,6 +657,8 @@ class MonitorsController extends Controller
 
     public function actionUptimeStatsData(string $monitorId): Response
     {
+        Craft::$app->getSession()->close();
+
         $request = Craft::$app->getRequest();
 
         $params = array_merge(

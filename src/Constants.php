@@ -110,6 +110,18 @@ class Constants
         'url' => 'upsnap/incidents',
         'template' => 'upsnap/incidents/_index'
     ];
+    const SUBNAV_ITEM_MONITORS = [
+        'label' => 'Monitors',
+        'key' => 'monitors',
+        'url' => 'upsnap/monitors',
+        'template' => 'upsnap/monitors/_index'
+    ];
+    const SUBNAV_ITEM_NOTIFICATION_CHANNELS = [
+        'label' => 'Notification Channels',
+        'key' => 'notification-channels',
+        'url' => 'upsnap/notification-channels',
+        'template' => 'upsnap/notification-channels/_index'
+    ];
     const SUBNAV_ITEM_SETTINGS = [
         'label' => 'Settings',
         'key' => 'settings',
@@ -137,6 +149,14 @@ class Constants
         self::SUBNAV_ITEM_INCIDENTS['key'] => [
             'label' => self::SUBNAV_ITEM_INCIDENTS['label'],
             'url' => self::SUBNAV_ITEM_INCIDENTS['url']
+        ],
+        self::SUBNAV_ITEM_MONITORS['key'] => [
+            'label' => self::SUBNAV_ITEM_MONITORS['label'],
+            'url' => self::SUBNAV_ITEM_MONITORS['url']
+        ],
+        self::SUBNAV_ITEM_NOTIFICATION_CHANNELS['key'] => [
+            'label' => self::SUBNAV_ITEM_NOTIFICATION_CHANNELS['label'],
+            'url' => self::SUBNAV_ITEM_NOTIFICATION_CHANNELS['url']
         ],
         self::SUBNAV_ITEM_SETTINGS['key'] => [
             'label' => self::SUBNAV_ITEM_SETTINGS['label'],

@@ -942,7 +942,7 @@ Craft.Upsnap.Monitor = {
 						});
 					}
 
-					window.location.href = Craft.getCpUrl(`upsnap/settings`);
+					window.location.href = Craft.getCpUrl(`upsnap/monitors`);
 				} else {
 					Craft.cp.displayError(data.message || "Failed.");
 				}

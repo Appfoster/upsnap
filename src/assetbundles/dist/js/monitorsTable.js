@@ -308,7 +308,7 @@
 			}
 
 			craftNotice("Primary monitor updated.");
-			window.location.href = Craft.getCpUrl(`upsnap/settings`);
+			window.location.href = Craft.getCpUrl(`upsnap/monitors`);
 
 			// Update hidden fields so page state matches
 			if (monitoringUrlField()) monitoringUrlField().value = url;
@@ -954,7 +954,7 @@
 				}
 
 				craftNotice(json.message || "Deleted");
-				window.location.href = Craft.getCpUrl(`upsnap/settings`);
+				window.location.href = Craft.getCpUrl(`upsnap/monitors`);
 			} catch (err) {
 				console.error("Bulk delete error", err);
 				craftError(err.message || err);

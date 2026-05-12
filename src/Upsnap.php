@@ -121,6 +121,9 @@ class Upsnap extends Plugin
                     Constants::SUBNAV_ITEM_MIXED_CONTENT['url'] => 'upsnap/health-check/mixed-content',
                     Constants::SUBNAV_ITEM_STATUS_PAGE['url'] => 'upsnap/status-page/index',
 
+                    // Monitors & Notification Channels Routes
+                    Constants::SUBNAV_ITEM_MONITORS['url'] => 'upsnap/monitors/index',
+                    Constants::SUBNAV_ITEM_NOTIFICATION_CHANNELS['url'] => 'upsnap/notification-channels/index',
 
                     // Setting Route
                     Constants::SUBNAV_ITEM_SETTINGS['url'] => 'upsnap/settings/index',

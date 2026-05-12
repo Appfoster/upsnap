@@ -1,29 +1,5 @@
 {# upsnap/_components/monitorsTable.twig #}
 <div id="upsnap-monitors-wrap" data-endpoint="/actions/upsnap/monitors/list" data-selected="{{ settings.monitoringUrl ?? '' }}">
-	<div class="flex" style="justify-content: flex-end; margin-bottom: 8px;">
-		<div class="btn menubtn settings icon" id="upsnap-actions-menubtn"></div>
-		<div class="menu" id="upsnap-actions-menu">
-			<ul>
-				<li>
-					<a class="edit-monitor disabled" id="upsnap-edit-btn">Edit</a>
-				</li>
-			</ul>
-			<hr>
-			<ul>
-				<li><a class="error delete-monitor disabled" id="upsnap-delete-btn" data-confirm="Are you sure you want to delete selected monitors?">Delete</a></li>
-			</ul>
-		</div>
-		{# Add Monitor Button #}
-		<button
-			type="button"
-			id="add-monitor-btn"
-			class="btn submit add icon"
-			onclick="window.location.href='{{ url('upsnap/monitors/new') }}'"
-		>
-			Add Monitor
-		</button>
-
-	</div>
 	<table class="data" id="upsnap-monitors-table" cellspacing="0" cellpadding="0" role="grid" style="width: 100%;">
 		<thead>
 			<tr>
