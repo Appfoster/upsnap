@@ -25,7 +25,7 @@ class HealthCheckController extends BaseController
     {
         $request = Craft::$app->getRequest();
         $isAjax = $request->getIsAjax();
-        $url = Upsnap::getMonitoringUrl();
+        $url = $this->resolveRequestMonitoringUrl();
         $forceFetch = $request->getBodyParam('force_fetch', false);
 
 
@@ -123,7 +123,7 @@ class HealthCheckController extends BaseController
 
         $request = Craft::$app->getRequest();
         $isAjax = $request->getIsAjax();
-        $url = Upsnap::getMonitoringUrl();
+        $url = $this->resolveRequestMonitoringUrl();
         $forceFetch = $request->getBodyParam('force_fetch', false);
 
         if (!$url) {
@@ -205,7 +205,7 @@ class HealthCheckController extends BaseController
     {
         $request = Craft::$app->getRequest();
         $isAjax = $request->getIsAjax();
-        $url = Upsnap::getMonitoringUrl();
+        $url = $this->resolveRequestMonitoringUrl();
         $forceFetch = $request->getBodyParam('force_fetch', false);
 
         if (!$url) {
@@ -291,7 +291,7 @@ class HealthCheckController extends BaseController
     {
         $request = Craft::$app->getRequest();
         $isAjax = $request->getIsAjax();
-        $url = Upsnap::getMonitoringUrl();
+        $url = $this->resolveRequestMonitoringUrl();
         $forceFetch = $request->getBodyParam('force_fetch', false);
 
         if (!$url) {
@@ -371,7 +371,7 @@ class HealthCheckController extends BaseController
         $data = [];
         $request = Craft::$app->getRequest();
         $isAjax = $request->getIsAjax();
-        $url = Upsnap::getMonitoringUrl();
+        $url = $this->resolveRequestMonitoringUrl();
         $forceFetch = $request->getBodyParam('force_fetch', false);
         $monitorData = null;
 
@@ -383,7 +383,8 @@ class HealthCheckController extends BaseController
         if (!$isAjax) {
             try {
                 $settingsService = Upsnap::$plugin->settingsService;
-                $monitorId = $settingsService->getMonitorId();
+                $requestedMonitorId = (string)($request->getBodyParam('monitor_id') ?? $request->getQueryParam('monitor_id', ''));
+                $monitorId = $requestedMonitorId !== '' ? $requestedMonitorId : $settingsService->getMonitorId();
                 if ($monitorId) {
                     $endpoint = Constants::MICROSERVICE_ENDPOINTS['monitors']['view'] . '/' . $monitorId;
                     $response = Upsnap::$plugin->apiService->get($endpoint);
@@ -460,7 +461,7 @@ class HealthCheckController extends BaseController
         $data = [];
         $request = Craft::$app->getRequest();
         $isAjax = $request->getIsAjax();
-        $url = Upsnap::getMonitoringUrl();
+        $url = $this->resolveRequestMonitoringUrl();
         $forceFetch = $request->getBodyParam('force_fetch', false);
 
         if (!$url) {
@@ -622,5 +623,50 @@ class HealthCheckController extends BaseController
         }
 
         return str_starts_with(strtolower(trim($url)), 'https://');
+    }
+
+    /**
+     * Resolve monitoring URL for health-check requests.
+     * If monitor_id is provided, resolve URL from selected monitor settings; otherwise fallback to primary monitor URL.
+     */
+    private function resolveRequestMonitoringUrl(): ?string
+    {
+        $request = Craft::$app->getRequest();
+        $monitorId = (string)($request->getBodyParam('monitor_id') ?? $request->getQueryParam('monitor_id', ''));
+
+        if ($monitorId === '') {
+            return Upsnap::getMonitoringUrl();
+        }
+
+        try {
+            $endpoint = Constants::MICROSERVICE_ENDPOINTS['monitors']['view'] . '/' . $monitorId;
+            $response = Upsnap::$plugin->apiService->get($endpoint);
+            if (!isset($response['status']) || $response['status'] !== 'success') {
+                return Upsnap::getMonitoringUrl();
+            }
+
+            $monitor = $response['data']['monitor'] ?? null;
+            if (!is_array($monitor)) {
+                return Upsnap::getMonitoringUrl();
+            }
+            $settingsEndpoint = Constants::MICROSERVICE_ENDPOINTS['monitors']['settings'];
+            $settingsResponse = Upsnap::$plugin->apiService->get($settingsEndpoint, ['id' => $monitorId]);
+            $config = (isset($settingsResponse['status']) && $settingsResponse['status'] === 'success')
+                ? ($settingsResponse['data']['settings'] ?? [])
+                : [];
+
+            $meta = $config['meta'] ?? [];
+            if (($monitor['service_type'] ?? null) === 'port') {
+                $host = $meta['host'] ?? '';
+                $port = $meta['port'] ?? '';
+                return $host && $port ? "$host:$port" : ($host ?: $port);
+            }
+
+            $url = trim((string)($meta['url'] ?? ''));
+            return $url !== '' ? $url : Upsnap::getMonitoringUrl();
+        } catch (\Throwable $e) {
+            Craft::error("Failed to resolve monitor URL from monitor_id {$monitorId}: {$e->getMessage()}", __METHOD__);
+            return Upsnap::getMonitoringUrl();
+        }
     }
 }

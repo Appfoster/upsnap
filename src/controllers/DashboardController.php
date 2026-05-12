@@ -7,6 +7,7 @@ use appfoster\upsnap\Constants;
 use appfoster\upsnap\services\HealthCheckService;
 use appfoster\upsnap\Upsnap;
 use Craft;
+use yii\web\Response;
 
 class DashboardController extends BaseController
 {
@@ -26,6 +27,7 @@ class DashboardController extends BaseController
      */
     public function actionIndex(): \yii\web\Response
     {
+        $request = Craft::$app->getRequest();
         $url = Upsnap::getMonitoringUrl();
         $settingsService = Upsnap::$plugin->settingsService;
         $settingsService->validateApiKey();
@@ -34,47 +36,23 @@ class DashboardController extends BaseController
             ($primaryMonitorRequirement['canValidate'] ?? false) === true
             && ($primaryMonitorRequirement['requiresSelection'] ?? false) === true;
 
-        $monitorId = $settingsService->getMonitorId();
-        $monitorData = null; // default
+        $primaryMonitorId = $settingsService->getMonitorId();
+        $requestedMonitorId = (string)$request->getQueryParam('monitor_id', '');
 
-        // Try to fetch monitor data only if monitorId exists
-        if ($monitorId) {
-            try {
-                $endpoint = Constants::MICROSERVICE_ENDPOINTS['monitors']['view'] . '/' . $monitorId;
-                $response = Upsnap::$plugin->apiService->get($endpoint);
+        $monitorOptionsResult = $settingsService->getPrimaryMonitorOptions();
+        $monitorOptions = $monitorOptionsResult['monitorOptions'] ?? [];
+        $monitorIds = array_map(static fn(array $option): string => (string)($option['id'] ?? ''), $monitorOptions);
 
-                if (isset($response['status']) && $response['status'] === 'success') {
-                    $monitorData = $response['data']['monitor'] ?? null;
+        $activeMonitorId = $primaryMonitorId;
+        if ($requestedMonitorId !== '' && in_array($requestedMonitorId, $monitorIds, true)) {
+            $activeMonitorId = $requestedMonitorId;
+        }
 
-                    // Fetch config/settings from the separate settings API
-                    $settingsEndpoint = Constants::MICROSERVICE_ENDPOINTS['monitors']['settings'];
-                    $settingsResponse = Upsnap::$plugin->apiService->get($settingsEndpoint, ['id' => $monitorId]);
-
-                    $config = [];
-                    if (isset($settingsResponse['status']) && $settingsResponse['status'] === 'success') {
-                        $config = $settingsResponse['data']['settings'] ?? [];
-                    } else {
-                        Craft::error("Settings fetch failed: invalid response", __METHOD__);
-                    }
-
-                    // Merge config into monitor data
-                    if ($monitorData) {
-                        $monitorData['config'] = $config;
-                    }
-
-                    // If monitor is port type, set $url to host:port
-                    if ($monitorData && ($monitorData['service_type'] ?? null) === 'port') {
-                        $meta = $config['meta'] ?? [];
-                        $host = $meta['host'] ?? '';
-                        $port = $meta['port'] ?? '';
-                        $url = $host && $port ? "$host:$port" : ($host ?: $port);
-                    }
-                } else {
-                    Craft::error("Monitor fetch failed: invalid response", __METHOD__);
-                }
-            } catch (\Throwable $e) {
-                Craft::error("Monitor fetch failed: {$e->getMessage()}", __METHOD__);
-            }
+        $monitorData = null;
+        if ($activeMonitorId) {
+            $context = $this->resolveMonitorContext((string)$activeMonitorId);
+            $monitorData = $context['monitorData'];
+            $url = $context['monitorUrl'] ?: $url;
         }
 
         // Fetch recent incidents
@@ -93,8 +71,10 @@ class DashboardController extends BaseController
             'title' => Constants::SUBNAV_ITEM_DASHBOARD['label'],
             'selectedSubnavItem' => Constants::SUBNAV_ITEM_DASHBOARD['key'],
             'url' => $url,
-            'monitorId' => $monitorId,
+            'monitorId' => $activeMonitorId,
             'monitorData' => $monitorData,
+            'monitorOptions' => $monitorOptions,
+            'primaryMonitorId' => $primaryMonitorId,
             'incidents' => $incidents,
             'apiKey' => $settingsService->getApiKey(),
             'apiTokenStatus' => $settingsService->getApiTokenStatus(),
@@ -110,5 +90,101 @@ class DashboardController extends BaseController
         }
 
         return $this->renderTemplate('upsnap/_index', $variables);
+    }
+
+    /**
+     * Fetch selected monitor context for dashboard monitor switching.
+     */
+    public function actionMonitorContext(): Response
+    {
+        $request = Craft::$app->getRequest();
+        $settingsService = Upsnap::$plugin->settingsService;
+
+        $settingsService->validateApiKey();
+
+        $monitorId = (string)($request->getBodyParam('monitor_id') ?? $request->getQueryParam('monitor_id', ''));
+        if ($monitorId === '') {
+            return $this->asJson([
+                'success' => false,
+                'message' => 'Missing monitor_id.',
+            ]);
+        }
+
+        $monitorOptionsResult = $settingsService->getPrimaryMonitorOptions();
+        $monitorOptions = $monitorOptionsResult['monitorOptions'] ?? [];
+        $isAllowed = in_array($monitorId, array_map(static fn(array $option): string => (string)($option['id'] ?? ''), $monitorOptions), true);
+
+        if (!$isAllowed) {
+            return $this->asJson([
+                'success' => false,
+                'message' => 'Invalid monitor_id.',
+            ]);
+        }
+
+        $context = $this->resolveMonitorContext($monitorId);
+        if (!$context['monitorData']) {
+            return $this->asJson([
+                'success' => false,
+                'message' => 'Unable to load selected monitor.',
+            ]);
+        }
+
+        return $this->asJson([
+            'success' => true,
+            'message' => 'Monitor context fetched successfully.',
+            'data' => [
+                'monitorId' => $monitorId,
+                'monitorData' => $context['monitorData'],
+                'monitorUrl' => $context['monitorUrl'],
+            ],
+        ]);
+    }
+
+    /**
+     * Resolve monitor details + settings and derive monitor URL for dashboard rendering.
+     */
+    private function resolveMonitorContext(string $monitorId): array
+    {
+        $monitorData = null;
+        $monitorUrl = '';
+
+        try {
+            $endpoint = Constants::MICROSERVICE_ENDPOINTS['monitors']['view'] . '/' . $monitorId;
+            $response = Upsnap::$plugin->apiService->get($endpoint);
+
+            if (isset($response['status']) && $response['status'] === 'success') {
+                $monitorData = $response['data']['monitor'] ?? null;
+
+                $settingsEndpoint = Constants::MICROSERVICE_ENDPOINTS['monitors']['settings'];
+                $settingsResponse = Upsnap::$plugin->apiService->get($settingsEndpoint, ['id' => $monitorId]);
+
+                $config = [];
+                if (isset($settingsResponse['status']) && $settingsResponse['status'] === 'success') {
+                    $config = $settingsResponse['data']['settings'] ?? [];
+                }
+
+                if ($monitorData) {
+                    $monitorData['config'] = $config;
+
+                    $serviceType = $monitorData['service_type'] ?? null;
+                    $meta = $config['meta'] ?? [];
+
+                    if ($serviceType === 'port') {
+                        $host = $meta['host'] ?? '';
+                        $port = $meta['port'] ?? '';
+                        $monitorUrl = $host && $port ? "$host:$port" : ($host ?: $port);
+                    } else {
+                        $monitorUrl = (string)($meta['url'] ?? '');
+                    }
+                }
+            }
+        } catch (\Throwable $e) {
+            Craft::error("Monitor context fetch failed: {$e->getMessage()}", __METHOD__);
+        }
+
+        return [
+            'monitorData' => $monitorData,
+            'monitorUrl' => $monitorUrl,
+        ];
     }
 }

@@ -32,6 +32,11 @@ function showCraftMessage(type, message) {
     }
 }
 
+function getSelectedMonitorId() {
+    const urlMonitorId = new URLSearchParams(window.location.search).get('monitor_id');
+    return urlMonitorId || window.CraftPageData?.monitorId || window.CraftPageData?.monitorData?.id || null;
+}
+
 function registerBrokenLinksJs() {
     const refreshBtn = document.getElementById("refresh-btn");
     const statusContainerWrapper = document.getElementById("status-container-wrapper");
@@ -81,7 +86,8 @@ function registerBrokenLinksJs() {
     function loadBrokenLinks(forceFetch = false) {
         Craft.sendActionRequest('POST', 'upsnap/health-check/broken-links', {
             data: {
-				force_fetch: forceFetch
+				force_fetch: forceFetch,
+				monitor_id: getSelectedMonitorId()
 			}
         })
             .then(response => {
@@ -314,7 +320,8 @@ function registerDomainCheckJs() {
     function fetchDomainData(forceFetch = false) {
         return Craft.sendActionRequest('POST', 'upsnap/health-check/domain-check', {
             data: {
-				force_fetch: forceFetch
+				force_fetch: forceFetch,
+				monitor_id: getSelectedMonitorId()
 			}
         })
             .then(response => {
@@ -482,7 +489,7 @@ function registerLighthouseJs() {
     // Function to fetch lighthouse data
     function fetchLighthouseData(device = 'desktop', forceFetch = false) {
         return Craft.sendActionRequest('POST', 'upsnap/health-check/lighthouse', {
-            data: { device: device, force_fetch: forceFetch }
+            data: { device: device, force_fetch: forceFetch, monitor_id: getSelectedMonitorId() }
         })
             .then(response => {
                 if (response?.data?.success === 'ok') {
@@ -723,7 +730,8 @@ function registerMixedContentJs() {
     function fetchMixedContentData(forceFetch = false) {
         return Craft.sendActionRequest('POST', 'upsnap/health-check/mixed-content', {
             data: {
-				force_fetch: forceFetch
+				force_fetch: forceFetch,
+				monitor_id: getSelectedMonitorId()
 			}
         })
             .then(response => {
@@ -893,7 +901,8 @@ function registerReachabilityJs() {
         return Craft.sendActionRequest('POST', 'upsnap/health-check/reachability', {			
             data: {
                 region: region,
-				force_fetch: forceFetch
+                force_fetch: forceFetch,
+                monitor_id: getSelectedMonitorId()
 			}})
                 .then(response => {
                     if (response?.data?.success === 'ok') {
@@ -1669,7 +1678,8 @@ function registerSecurityCertificatesJs() {
     function fetchSecurityCertificatesData(forceFetch = false) {
         return Craft.sendActionRequest('POST', 'upsnap/health-check/security-certificates', {
             data: {
-				force_fetch: forceFetch
+				force_fetch: forceFetch,
+				monitor_id: getSelectedMonitorId()
 			}
         })
             .then(response => {
@@ -1938,8 +1948,12 @@ function renderStatusContainer(data) {
 
     let formattedDate = '';
     if (checkedAt) {
-        const date = new Date(checkedAt);
-        formattedDate = date.toLocaleString();
+        if (window.UpsnapUtils && typeof window.UpsnapUtils.formatDateDisplay === 'function') {
+            formattedDate = window.UpsnapUtils.formatDateDisplay(checkedAt);
+        } else {
+            const date = new Date(checkedAt);
+            formattedDate = date.toLocaleString();
+        }
     }
 
     let statusClass = 'warning';
@@ -1969,7 +1983,7 @@ function renderStatusContainer(data) {
 
                 ${formattedDate ? `
                     <div class="status-checked-at">
-                        Last checked: ${formattedDate}
+                        Last checked: <span title="DD/MM/YY">${formattedDate}</span>
                     </div>
                 ` : ''}
             </div>

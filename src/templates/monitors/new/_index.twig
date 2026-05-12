@@ -42,8 +42,8 @@
 ] %}
 
 {% set keywordMatchOptions = [
-    { label: 'Exists', value: 'must_contain' },
-    { label: 'Does not exist', value: 'must_not_contain' }
+    { label: 'Start incident when keyword exists', value: 'must_contain' },
+    { label: 'Start incident when keyword does not exist', value: 'must_not_contain' }
 ] %}
 
 
@@ -502,25 +502,47 @@
 					{# Keywords will be populated here as cards #}
 				{% if monitor and monitor.keywords is defined and monitor.keywords %}
 					{% for keyword in monitor.keywords %}
-						<div class="keyword-card" data-keyword="{{ keyword.text }}" style="border: 1px solid #e0e0e0; padding: 15px; border-radius: 5px; background: #fafafa;">
-							<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-								<strong>{{ keyword.text }}</strong>
-								<button type="button" class="remove-keyword" data-keyword="{{ keyword.text }}" style="background: none; border: none; cursor: pointer; padding: 0; font-size: 16px; color: #d32f2f;">✕</button>
+						<div class="keyword-card" data-keyword="{{ keyword.text }}">
+							<div class="keyword-card__header">
+								<span class="keyword-chip-wrap">
+								<span class="keyword-chip-label">Keyword:</span>
+								<span class="keyword-chip">{{ keyword.text }}</span>
+							</span>
+								<button type="button" class="remove-keyword keyword-card__remove" data-keyword="{{ keyword.text }}" aria-label="Remove keyword">
+									<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+								</button>
 							</div>
-							<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-								<select class="keyword-match-condition" data-keyword="{{ keyword.text }}" style="padding: 8px; border: 1px solid #ddd; border-radius: 3px;">
-									<option value="must_contain" {% if keyword.matchCondition == 'must_contain' %}selected{% endif %}>Exists</option>
-									<option value="must_not_contain" {% if keyword.matchCondition == 'must_not_contain' %}selected{% endif %}>Does not exist</option>
-								</select>
-								<label style="display: flex; align-items: center; gap: 8px;">
-									<input type="checkbox" class="keyword-is-regex" data-keyword="{{ keyword.text }}" {% if keyword.isRegex %}checked{% endif %} style="cursor: pointer;">
-									<span>Regex</span>
-								</label>
+							<div class="keyword-card__controls">
+								<div class="keyword-card__match-wrap">
+									<span class="keyword-card__match-label">Match type</span>
+									<select class="keyword-match-condition keyword-card__select" data-keyword="{{ keyword.text }}">
+										<option value="must_contain" {% if keyword.matchCondition == 'must_contain' %}selected{% endif %}>Start incident when keyword exists</option>
+										<option value="must_not_contain" {% if keyword.matchCondition == 'must_not_contain' %}selected{% endif %}>Start incident when keyword does not exist</option>
+									</select>
+								</div>
+								<div class="keyword-card__toggles">
+									<div class="keyword-toggle">
+										<label class="keyword-toggle__switch">
+											<input type="checkbox" class="keyword-is-regex" data-keyword="{{ keyword.text }}" {% if keyword.isRegex %}checked{% endif %}>
+											<span class="keyword-toggle__slider"></span>
+										</label>
+										<div class="keyword-toggle__text">
+											<span class="keyword-toggle__label">Regex</span>
+											<span class="keyword-toggle__desc">Use regular expression matching</span>
+										</div>
+									</div>
+									<div class="keyword-toggle">
+										<label class="keyword-toggle__switch">
+											<input type="checkbox" class="keyword-case-sensitive" data-keyword="{{ keyword.text }}" {% if keyword.caseSensitive %}checked{% endif %}>
+											<span class="keyword-toggle__slider"></span>
+										</label>
+										<div class="keyword-toggle__text">
+											<span class="keyword-toggle__label">Case Sensitive</span>
+											<span class="keyword-toggle__desc">Match exact letter case</span>
+										</div>
+									</div>
+								</div>
 							</div>
-							<label style="display: flex; align-items: center; gap: 8px; margin-top: 8px;">
-								<input type="checkbox" class="keyword-case-sensitive" data-keyword="{{ keyword.text }}" {% if keyword.caseSensitive %}checked{% endif %} style="cursor: pointer;">
-								<span>Case Sensitive</span>
-							</label>
 						</div>
 					{% endfor %}
 				{% endif %}

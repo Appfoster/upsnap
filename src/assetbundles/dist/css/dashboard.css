@@ -128,9 +128,15 @@
 
 .status-message {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     gap: 8px;
     margin: 4px 0;
+}
+
+.dashboard-right .status-message .status-icon {
+    margin-right: 0;
+    margin-top: 2px;
+    flex-shrink: 0;
 }
 
 .status-message-dashboard {
@@ -486,6 +492,14 @@
 }
 
 /* Region Dropdown Styles */
+.monitor-selector-group {
+    margin-right: 12px;
+}
+
+.monitor-selector-group select {
+    min-width: 220px;
+}
+
 .region-selector-group {
     margin-right: 12px;
 }
@@ -1056,4 +1070,85 @@
 .ccc-empty-icon svg {
     width: 16px;
     height: 16px;
+}
+/* ===========================================================
+   Keyword Filters Banner (below page title, above dashboard grid)
+   =========================================================== */
+.kf-banner {
+    padding: 0;
+    margin: 0 0 14px;
+}
+
+.kf-banner__header {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.kf-banner__heading {
+    font-size: 12px;
+    font-weight: 700;
+    color: #111827;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+}
+
+.kf-match-pill {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 600;
+    color: #374151;
+    background: #f3f4f6;
+    border: 1px solid #e5e7eb;
+    border-radius: 999px;
+    padding: 2px 10px;
+    white-space: nowrap;
+}
+
+.kf-banner__body {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.kf-banner__line {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 5px;
+}
+
+.kf-label {
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: none;
+    white-space: nowrap;
+}
+
+.kf-label--must-contain {
+    color: #15803d;
+}
+
+.kf-label--must-not-contain {
+    color: #b91c1c;
+}
+
+.kf-keyword-text {
+    font-size: 13px;
+    font-weight: 500;
+    color: #374151;
+    word-break: break-word;
+}
+
+.kf-banner--title {
+    margin-top: 6px;
+}
+
+.kf-colon {
+    font-size: 13px;
+    font-weight: 700;
+    color: #4b5563;
 }
