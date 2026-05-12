@@ -135,9 +135,9 @@
 	align-items: center;
 	padding-top	: 12rem !important;
 	gap: 10px;
-	background: rgba(255, 255, 255, 0.72);
-	backdrop-filter: blur(2px);
-	-webkit-backdrop-filter: blur(2px);
+	background: transparent;
+	backdrop-filter: none;
+	-webkit-backdrop-filter: none;
 	padding: 24px;
 	text-align: center;
 	pointer-events: all;
@@ -164,7 +164,12 @@
 	min-height: 50rem;
 }
 .menu-btn {
-	padding-bottom: 2px !important;
+	padding-bottom: 0 !important;
+}
+
+.menu-btn:after {
+	margin-inline-start: 0 !important;
+	inset-block-start: -1px !important;
 }
 
 /* Password protection */

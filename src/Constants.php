@@ -20,6 +20,11 @@ class Constants
     public const API_BASE_URL_DEFAULT = 'https://api.upsnap.ai';
     public const UPSNAP_DASHBOARD_URL = 'https://app.upsnap.ai';
     public const UPSNAP_STATS_PAGE_URL = 'https://stats.upsnap.ai';
+    public const API_BASE_URL_DEFAULT_DEV = 'https://upsnap.appfoster.site';
+    public const UPSNAP_DASHBOARD_URL_DEV= 'https://upsnap-app.appfoster.site';
+    public const UPSNAP_STATS_PAGE_URL_DEV = 'https://stats.appfoster.site';
+    public const APP_ENV_DEV_VALUE = 'dev';
+
     public const API_VERSION = 'v1';
     // API Endpoints
     public const ENDPOINT_HEALTHCHECK = 'healthcheck';
@@ -254,5 +259,23 @@ class Constants
     public static function getAPIBaseUrl(): string
     {
         return App::env('UPSNAP_API_BASE_URL') ?? self::API_BASE_URL_DEFAULT;
+    }
+
+    public static function getWebAppUrl(string $key): ?string
+    {
+        $isDevEnvironment = App::env('CRAFT_ENVIRONMENT') === self::APP_ENV_DEV_VALUE;
+        $urlMap = $isDevEnvironment
+            ? [
+                'website' => self::API_BASE_URL_DEFAULT_DEV,
+                'webapp' => self::UPSNAP_DASHBOARD_URL_DEV,
+                'stats-pages' => self::UPSNAP_STATS_PAGE_URL_DEV,
+            ]
+            : [
+                'website' => self::API_BASE_URL_DEFAULT,
+                'webapp' => self::UPSNAP_DASHBOARD_URL,
+                'stats-pages' => self::UPSNAP_STATS_PAGE_URL,
+            ];
+
+        return $urlMap[$key] ?? null;
     }
 }
