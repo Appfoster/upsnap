@@ -4,6 +4,19 @@
 
 {% block actionButton %}
 	<div class="buttons">
+		{% set hasApiKey = apiKey is not empty %}
+		{% set hasMonitors = monitorOptions is defined and monitorOptions|length > 0 %}
+		<div class="btngroup select monitor-selector-group" {% if not hasMonitors %}title="No monitors available"{% endif %}>
+			<select id="monitorDropdown" {% if not hasMonitors %}class="disabled" disabled{% endif %}>
+				{% if hasMonitors %}
+					{% for monitor in monitorOptions %}
+						<option value="{{ monitor.id }}" {% if monitor.id == monitorId %}selected{% endif %}>{{ monitor.label }}</option>
+					{% endfor %}
+				{% else %}
+					<option value="">No monitors</option>
+				{% endif %}
+			</select>
+		</div>
 		{% set hasRegions = monitorData and monitorData.regions and monitorData.regions|length > 0 %}
 		<div class="btngroup select region-selector-group" {% if not hasRegions %}title="Register to check out region-based monitoring"{% endif %}>
 			<select id="regionDropdown" {% if not hasRegions %}class="disabled" disabled{% endif %}>
@@ -18,7 +31,6 @@
 				{% endif %}
 			</select>
 		</div>
-		{% set hasApiKey = apiKey is not empty %}
 		{% if hasApiKey %}
 			<div class="btngroup">
 				<button type="button" class="btn submit" data-icon="refresh" id="refresh-btn">
@@ -41,6 +53,8 @@
 			title: {{ title|json_encode|raw }},
 			monitorUrl: {{ url|json_encode|raw }},
 			monitorId: {{ monitorId|json_encode|raw }},
+			primaryMonitorId: {{ primaryMonitorId|json_encode|raw }},
+			monitorOptions: {{ (monitorOptions ?? [])|json_encode|raw }},
 			monitorData: {{ monitorData|json_encode|raw }},
 			apiKey : {{ apiKey|json_encode|raw }},
 			apiTokenStatus: {{ (apiTokenStatus ?? 'unknown')|json_encode|raw }},
@@ -186,7 +200,6 @@
 						   <div class="card-content" hidden></div>
 					   </div>
 
-					   {% if isWebsite %}
 					   <div id="reachability-card" class="stat-card skeleton">
 							   <div class="card-header">
 								   <h3>REACHABILITY</h3>
@@ -258,7 +271,6 @@
 							   </div>
 							   <div class="card-content" hidden></div>
 						   </div>
-					   {% endif %}
 				   </div>
 			   </div>
 		   </div>

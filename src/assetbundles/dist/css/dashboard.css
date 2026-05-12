@@ -492,6 +492,14 @@
 }
 
 /* Region Dropdown Styles */
+.monitor-selector-group {
+    margin-right: 12px;
+}
+
+.monitor-selector-group select {
+    min-width: 220px;
+}
+
 .region-selector-group {
     margin-right: 12px;
 }

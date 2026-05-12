@@ -3,14 +3,32 @@ Craft.UpsnapDashboard = {
 	currentResponseTimeFilter: "last_24_hours",
 	responseChartInstance: null,
 	monitorId: null, // Store monitor ID for API calls
+	monitorDropdown: null,
 	selectedRegionId: null, // Store selected region ID for API calls
+	isMonitorSwitching: false,
 
 	init() {
 		this.refreshBtn = document.getElementById("refresh-btn");
+		this.monitorDropdown = document.getElementById("monitorDropdown");
 		this.regionDropdown = document.getElementById("regionDropdown");
 
 		// Extract monitor ID from page data
-		this.monitorId = window.CraftPageData?.monitorData?.id;
+		this.monitorId =
+			window.CraftPageData?.monitorId ||
+			window.CraftPageData?.monitorData?.id ||
+			null;
+
+		if (this.monitorDropdown) {
+			if (this.monitorId) {
+				this.monitorDropdown.value = this.monitorId;
+			} else {
+				this.monitorId = this.monitorDropdown.value || null;
+			}
+
+			this.monitorDropdown.addEventListener("change", (e) => {
+				this.onMonitorChange(e.target.value);
+			});
+		}
 
 		// Initialize region dropdown if available
 		if (this.regionDropdown) {
@@ -27,16 +45,190 @@ Craft.UpsnapDashboard = {
 		this.loadIncidentStatsCard();
 		this.loadConnectedChannelsCard();
 		this.initIncidentTableRowNavigation();
+		this.refreshGlobalMonitorHeader();
 
 		if (this.refreshBtn) {
 			this.refreshBtn.addEventListener("click", () => {
 				this.runWithRefreshButton(this.refreshBtn, () =>
 					Promise.all([
 						this.initializeDashboard(),
+						this.loadIncidentStatsCard(),
 						this.loadConnectedChannelsCard(),
 					])
 				);
 			});
+		}
+	},
+
+	async onMonitorChange(selectedMonitorId) {
+		if (!selectedMonitorId || selectedMonitorId === this.monitorId || this.isMonitorSwitching) {
+			return;
+		}
+
+		this.isMonitorSwitching = true;
+		if (this.monitorDropdown) this.monitorDropdown.disabled = true;
+
+		try {
+			const context = await this.fetchMonitorContext(selectedMonitorId);
+			if (!context?.monitorData) {
+				throw new Error("No monitor context returned");
+			}
+
+			window.CraftPageData = window.CraftPageData || {};
+			window.CraftPageData.monitorId = context.monitorId;
+			window.CraftPageData.monitorData = context.monitorData;
+			window.CraftPageData.monitorUrl = context.monitorUrl || "";
+			delete window.CraftPageData.reachabilityData;
+
+			this.monitorId = context.monitorId;
+			this.updateMonitorQueryParam(context.monitorId);
+			this.rebuildRegionDropdown(context.monitorData);
+			this.refreshGlobalMonitorHeader();
+			this.showMonitorSwitchLoaders();
+
+			await Promise.all([
+				this.initializeDashboard(),
+				Promise.resolve(this.renderMonitorCards()),
+				this.loadIncidentStatsCard(),
+				this.loadConnectedChannelsCard(),
+				this.loadAndApplyRegionNames(),
+			]);
+		} catch (err) {
+			const msg = err?.message || "Failed to switch monitor";
+			if (Craft?.cp?.displayError) {
+				Craft.cp.displayError(msg);
+			}
+			console.error("Failed to switch monitor:", err);
+
+			if (this.monitorDropdown && this.monitorId) {
+				this.monitorDropdown.value = this.monitorId;
+			}
+		} finally {
+			this.isMonitorSwitching = false;
+			if (this.monitorDropdown) this.monitorDropdown.disabled = false;
+		}
+	},
+
+	showMonitorSwitchLoaders() {
+		this.showSimpleCardLoader("monitor-status-card", "Current Status");
+		this.showSimpleCardLoader("monitor-last-check-card", "Last check");
+		this.showSimpleCardLoader("monitor-24h-card", "Last 24 hours");
+
+		this.showUptimeCardLoader("uptime-day-card", "Last 24h");
+		this.showUptimeCardLoader("uptime-week-card", "Last Week");
+		this.showUptimeCardLoader("uptime-month-card", "Last 30 Days");
+
+		this.showStatCardLoader("incident-stats-card");
+		this.showStatCardLoader("connected-channels-card");
+	},
+
+	showSimpleCardLoader(cardId, title) {
+		const card = document.getElementById(cardId);
+		if (!card) return;
+
+		card.classList.add("skeleton");
+		card.innerHTML = `
+			<div class="card-header">${title}</div>
+			<div class="card-skeleton">
+				<div class="skeleton-line"></div>
+				<div class="skeleton-line"></div>
+			</div>
+		`;
+	},
+
+	showUptimeCardLoader(cardId, title) {
+		const card = document.getElementById(cardId);
+		if (!card) return;
+
+		card.classList.add("skeleton");
+		card.innerHTML = `
+			<div class="card-header">${title}</div>
+			<div class="card-skeleton">
+				<div class="skeleton-line"></div>
+				<div class="skeleton-line"></div>
+			</div>
+			<div class="card-content" hidden></div>
+		`;
+	},
+
+	showStatCardLoader(cardId) {
+		const card = document.getElementById(cardId);
+		if (!card) return;
+
+		const skeleton = card.querySelector(".card-skeleton");
+		const content = card.querySelector(".card-content");
+
+		card.classList.add("skeleton");
+		if (skeleton) skeleton.hidden = false;
+		if (content) content.hidden = true;
+	},
+
+	async fetchMonitorContext(monitorId) {
+		const response = await Craft.sendActionRequest(
+			"POST",
+			"upsnap/dashboard/monitor-context",
+			{
+				data: {
+					monitor_id: monitorId,
+				},
+			}
+		);
+
+		const payload = response?.data;
+		if (!payload?.success || !payload?.data) {
+			throw new Error(payload?.message || "Unable to load selected monitor");
+		}
+
+		return payload.data;
+	},
+
+	updateMonitorQueryParam(monitorId) {
+		try {
+			const url = new URL(window.location.href);
+			if (monitorId) {
+				url.searchParams.set("monitor_id", monitorId);
+			} else {
+				url.searchParams.delete("monitor_id");
+			}
+			window.history.replaceState({}, "", url.toString());
+		} catch (e) {
+			console.warn("Unable to update monitor_id query param", e);
+		}
+	},
+
+	rebuildRegionDropdown(monitorData) {
+		if (!this.regionDropdown) return;
+
+		const regions = Array.isArray(monitorData?.regions) ? monitorData.regions : [];
+		this.regionDropdown.innerHTML = "";
+
+		if (!regions.length) {
+			const opt = document.createElement("option");
+			opt.value = "";
+			opt.textContent = "Select Region";
+			this.regionDropdown.appendChild(opt);
+			this.regionDropdown.disabled = true;
+			this.regionDropdown.classList.add("disabled");
+			this.selectedRegionId = "";
+			return;
+		}
+
+		regions.forEach((region) => {
+			const opt = document.createElement("option");
+			opt.value = region.id;
+			opt.textContent = region.name;
+			if (region.is_primary) opt.selected = true;
+			this.regionDropdown.appendChild(opt);
+		});
+
+		this.regionDropdown.disabled = false;
+		this.regionDropdown.classList.remove("disabled");
+		this.selectedRegionId = this.regionDropdown.value || "";
+	},
+
+	refreshGlobalMonitorHeader() {
+		if (typeof window.UpsnapRefreshDashboardHeader === "function") {
+			window.UpsnapRefreshDashboardHeader();
 		}
 	},
 	
@@ -85,6 +277,30 @@ Craft.UpsnapDashboard = {
 	isWebsiteMonitor() {
 		const serviceType = window.CraftPageData?.monitorData?.service_type || "website";
 		return serviceType === "website";
+	},
+
+	syncWebsiteCardsVisibility() {
+		const websiteCardIds = [
+			"reachability-card",
+			"ssl-card",
+			"broken-links-card",
+			"domain-check-card",
+			"mixed-content-card",
+			"lighthouse-card",
+		];
+
+		const shouldShow = this.isWebsiteMonitor();
+		websiteCardIds.forEach((cardId) => {
+			const card = document.getElementById(cardId);
+			if (!card) return;
+
+			if (shouldShow) {
+				card.classList.remove("hidden");
+				return;
+			}
+
+			card.classList.add("hidden");
+		});
 	},
 
 	isHttpsMonitor() {
@@ -148,6 +364,7 @@ Craft.UpsnapDashboard = {
 				: "warning";
 
 		const icon = status === "ok" ? "✓" : status === "error" ? "✗" : "!";
+		const resolvedDetailUrl = this.appendMonitorIdToUrl(detailUrl);
 
 		const formattedCheckedAt = window.UpsnapUtils.formatDateDisplay(checkedAt);
 
@@ -166,7 +383,7 @@ Craft.UpsnapDashboard = {
 				<button class="fetch-recent-btn" type="button" data-icon="refresh">
 					Check Now
 				</button>
-				<a href="${detailUrl}" class="detail-link" rel="noopener">
+				<a href="${resolvedDetailUrl}" class="detail-link" rel="noopener">
 					View Details →
 				</a>
 			</div>
@@ -184,6 +401,32 @@ Craft.UpsnapDashboard = {
 					forceFetch: true,
 				});
 			});
+	},
+
+	appendMonitorIdToUrl(detailUrl) {
+		if (!detailUrl) {
+			return "#";
+		}
+
+		if (!this.monitorId) {
+			return detailUrl;
+		}
+
+		try {
+			const parsedUrl = new URL(detailUrl, window.location.href);
+			parsedUrl.searchParams.set("monitor_id", this.monitorId);
+
+			if (/^https?:\/\//i.test(detailUrl)) {
+				return parsedUrl.toString();
+			}
+
+			return `${parsedUrl.pathname}${parsedUrl.search}${parsedUrl.hash}`;
+		} catch (error) {
+			const separator = detailUrl.includes("?") ? "&" : "?";
+			return `${detailUrl}${separator}monitor_id=${encodeURIComponent(
+				this.monitorId
+			)}`;
+		}
 	},
 
 	showSkeleton(cardId) {
@@ -230,6 +473,7 @@ Craft.UpsnapDashboard = {
 			data: {
 				force_fetch: forceFetch,
 				region: this.selectedRegionId,
+				monitor_id: this.monitorId,
 			},
 		})
 			.then((response) => {
@@ -279,6 +523,8 @@ Craft.UpsnapDashboard = {
 	},
 
 	initializeDashboard() {
+		this.syncWebsiteCardsVisibility();
+
 		// Only fetch healthcheck data for website monitors
 		if (!this.isWebsiteMonitor()) {
 			return Promise.resolve();
@@ -1033,24 +1279,22 @@ Craft.UpsnapDashboard = {
 		const card = document.getElementById(elementId);
 		if (!card) return;
 
-		const content = card.querySelector(".card-content");
-		const skeleton = card.querySelector(".card-skeleton");
-
-		if (!stats) {
-			this.renderNoDataCard(card, label);
-			return;
-		}
-
 		const pct = stats?.uptime_percentage ?? null;
 		const incidents = stats?.incident_count ?? 0;
-
 		const color = this.uptimeColor(pct);
 
 		card.classList.remove("skeleton");
-		if (skeleton) skeleton.hidden = true;
-		if (content) content.hidden = false;
 
-		content.innerHTML = `
+		if (!stats) {
+			card.innerHTML = `
+				<div class="card-header">${label}</div>
+				<div class="card-body gray">No data available</div>
+			`;
+			return;
+		}
+
+		card.innerHTML = `
+			<div class="card-header">${label}</div>
 			<div class="card-body ${color}">
 				${pct !== null ? pct + "%" : "N/A"}
 			</div>

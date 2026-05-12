@@ -2,6 +2,8 @@
 
 namespace appfoster\upsnap\services;
 
+use Craft;
+use craft\helpers\UrlHelper;
 use craft\web\Response;
 use appfoster\upsnap\Upsnap;
 
@@ -25,7 +27,15 @@ class HealthCheckService
             'selectedSubnavItem' => $subnavItem['key']
 		];
 		if($isAjax) {
-			$data['url'] = $subnavItem['url'];
+			$data['url'] = UrlHelper::cpUrl($subnavItem['url']);
+
+			$monitorId = Craft::$app->getRequest()->getBodyParam('monitor_id')
+				?: Craft::$app->getRequest()->getQueryParam('monitor_id');
+
+			if ($monitorId) {
+				$separator = strpos($data['url'], '?') === false ? '?' : '&';
+				$data['url'] .= $separator . 'monitor_id=' . urlencode((string)$monitorId);
+			}
 		}
 		return $data;
 	}
