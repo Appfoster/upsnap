@@ -276,7 +276,7 @@ document.addEventListener("DOMContentLoaded", function () {
     // Global Craft CP Page Title Enhancer
     // ----------------------------------------
     if (window.CraftPageData && window.CraftPageData.title && window.CraftPageData.monitorUrl) {
-        const { title, monitorUrl } = window.CraftPageData;
+        const { title, monitorUrl, monitorData } = window.CraftPageData;
         const heading = document.querySelector('#page-title h1, #page-heading');
         if (heading) {
             // Clean the display URL (remove protocol, www, and path)
@@ -292,6 +292,78 @@ document.addEventListener("DOMContentLoaded", function () {
                     (${displayUrl})
                 </a>
             `;
+
+            // For keyword monitors, render filters directly below the Craft title area.
+            if (monitorData && monitorData.service_type === "keyword") {
+                const keywordService = monitorData?.config?.services?.keyword || {};
+                const keywords = Array.isArray(keywordService.keywords)
+                    ? keywordService.keywords
+                    : [];
+
+                const escapeHtml = (value) => String(value)
+                    .replace(/&/g, "&amp;")
+                    .replace(/</g, "&lt;")
+                    .replace(/>/g, "&gt;")
+                    .replace(/\"/g, "&quot;")
+                    .replace(/'/g, "&#39;");
+
+                const matchText = keywordService.match_all ? "All must match" : "Any must match";
+
+                const keywordItemsHtml = keywords
+                    .map((kw) => {
+                        const isMustNotContain = kw?.type === "must_not_contain";
+                        const labelClass = isMustNotContain
+                            ? "kf-label--must-not-contain"
+                            : "kf-label--must-contain";
+                        const labelText = isMustNotContain
+                            ? "Must not contain"
+                            : "Must contain";
+                        const keywordText = escapeHtml(kw?.text || "");
+
+                        return `
+                            <div class="kf-banner__line">
+                                <span class="kf-label ${labelClass}">${labelText}</span>
+                                <span class="kf-colon">:</span>
+                                <span class="kf-keyword-text">&quot;${keywordText}&quot;</span>
+                            </div>
+                        `;
+                    })
+                    .join("");
+
+                const bannerHtml = `
+                    <div id="keyword-filters-banner" class="kf-banner kf-banner--title">
+                        <div class="kf-banner__header">
+                            <span class="kf-banner__heading">KEYWORD FILTERS</span>
+                            <span class="kf-match-pill">${matchText}</span>
+                        </div>
+                        <div class="kf-banner__body">
+                            ${keywordItemsHtml}
+                        </div>
+                    </div>
+                `;
+
+                const existingBanner = document.getElementById("keyword-filters-banner");
+                if (existingBanner) {
+                    existingBanner.remove();
+                }
+
+                const contentRoot = document.getElementById("content");
+                if (contentRoot && contentRoot.parentNode) {
+                    // Render outside the main content block, right below title/actions row.
+                    contentRoot.insertAdjacentHTML("beforebegin", bannerHtml);
+                } else {
+                    const statusWrapper = document.getElementById("status-container-wrapper");
+                    if (statusWrapper && statusWrapper.parentNode) {
+                        statusWrapper.insertAdjacentHTML("beforebegin", bannerHtml);
+                        return;
+                    }
+
+                    const titleContainer = heading.closest("#page-title") || heading.parentElement;
+                    if (titleContainer && titleContainer.parentNode) {
+                        titleContainer.insertAdjacentHTML("afterend", bannerHtml);
+                    }
+                }
+            }
         }
     }
 });

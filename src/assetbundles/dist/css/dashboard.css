@@ -1067,27 +1067,24 @@
    Keyword Filters Banner (below page title, above dashboard grid)
    =========================================================== */
 .kf-banner {
-    background: #fff;
-    border: 1px solid #e5e7eb;
-    border-radius: 10px;
-    padding: 14px 18px;
-    margin-bottom: 16px;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+    padding: 0;
+    margin: 0 0 14px;
 }
 
-.kf-banner__inner {
+.kf-banner__header {
     display: flex;
     align-items: center;
     flex-wrap: wrap;
-    gap: 10px 14px;
+    gap: 8px;
+    margin-bottom: 8px;
 }
 
 .kf-banner__heading {
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 700;
-    color: #677486;
+    color: #111827;
     text-transform: uppercase;
-    letter-spacing: 0.06em;
+    letter-spacing: 0.02em;
     white-space: nowrap;
 }
 
@@ -1098,30 +1095,28 @@
     color: #374151;
     background: #f3f4f6;
     border: 1px solid #e5e7eb;
-    border-radius: 20px;
+    border-radius: 999px;
     padding: 2px 10px;
     white-space: nowrap;
 }
 
-.kf-banner__divider {
-    width: 1px;
-    height: 18px;
-    background: #e5e7eb;
-    align-self: center;
-    flex-shrink: 0;
+.kf-banner__body {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
 }
 
-.kf-banner__item {
-    display: inline-flex;
+.kf-banner__line {
+    display: flex;
     align-items: center;
+    flex-wrap: wrap;
     gap: 5px;
 }
 
 .kf-label {
-    font-size: 11px;
+    font-size: 13px;
     font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
+    text-transform: none;
     white-space: nowrap;
 }
 
@@ -1137,6 +1132,15 @@
     font-size: 13px;
     font-weight: 500;
     color: #374151;
-    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-    word-break: break-all;
+    word-break: break-word;
+}
+
+.kf-banner--title {
+    margin-top: 6px;
+}
+
+.kf-colon {
+    font-size: 13px;
+    font-weight: 700;
+    color: #4b5563;
 }
