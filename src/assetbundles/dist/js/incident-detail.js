@@ -382,7 +382,7 @@
 
     <div class="incident-detail-header__meta">
         ${checkType ? `<span class="incident-detail-meta-item"><span class="incident-detail-meta-label">${Craft.t("upsnap", "Check Type")}:</span> ${escapeHtml(checkType.charAt(0).toUpperCase() + checkType.slice(1))}</span>` : ""}
-        ${occurred ? `<span class="incident-detail-meta-item"><span class="incident-detail-meta-label">${Craft.t("upsnap", "Occurred")}:</span> <time datetime="${escapeHtml(occurred)}">${escapeHtml(formatDateDisplay(occurred))}</time></span>` : ""}
+		${occurred ? `<span class="incident-detail-meta-item"><span class="incident-detail-meta-label">${Craft.t("upsnap", "Occurred")}:</span> <time datetime="${escapeHtml(occurred)}" title="DD/MM/YY">${escapeHtml(formatDateDisplay(occurred))}</time></span>` : ""}
         ${errorCode ? `<span class="status-code-badge status-${escapeHtml(codeColor)}">${escapeHtml(String(errorCode))}</span>` : ""}
         <button class="incident-detail-copy-icon-btn" type="button" title="${Craft.t("upsnap", "Copy incident details")}" aria-label="${Craft.t("upsnap", "Copy incident details")}">
             <svg viewBox="0 0 16 16" fill="currentColor" width="15" height="15" aria-hidden="true"><path d="M4 1.5H3a2 2 0 00-2 2V14a2 2 0 002 2h10a2 2 0 002-2V3.5a2 2 0 00-2-2h-1v1h1a1 1 0 011 1V14a1 1 0 01-1 1H3a1 1 0 01-1-1V3.5a1 1 0 011-1h1v-1z"/><path d="M9.5 1a.5.5 0 01.5.5v1a.5.5 0 01-.5.5h-3a.5.5 0 01-.5-.5v-1a.5.5 0 01.5-.5h3zm-3-1A1.5 1.5 0 005 1.5v1A1.5 1.5 0 006.5 4h3A1.5 1.5 0 0011 2.5v-1A1.5 1.5 0 009.5 0h-3z"/></svg>
@@ -486,11 +486,13 @@
 			// Section: Timing
 			{
 				label: Craft.t("upsnap", "Start Time"),
-				value: formatDateDisplay(startTs),
+				html: `<span title="DD/MM/YY">${escapeHtml(formatDateDisplay(startTs))}</span>`,
 			},
 			{
 				label: Craft.t("upsnap", "End Time"),
-				value: endTs ? formatDateDisplay(endTs) : "-",
+				html: endTs
+					? `<span title="DD/MM/YY">${escapeHtml(formatDateDisplay(endTs))}</span>`
+					: "-",
 			},
 			{
 				label: Craft.t("upsnap", "Duration"),
