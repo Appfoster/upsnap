@@ -99,7 +99,33 @@
 	{% else %}
 
 			   {% set isWebsite = monitorData.service_type is not defined or monitorData.service_type == 'website' %}
-			   <div class="dashboard-wrapper">
+			                              {# Keyword Filters Banner — shown for keyword monitors only #}
+                           {% set isKeywordMonitor = monitorData.service_type is defined and monitorData.service_type == 'keyword' %}
+                           {% if isKeywordMonitor %}
+                                   {% set kwService = monitorData.config.services.keyword ?? null %}
+                                   {% set kwKeywords = kwService.keywords ?? [] %}
+                                   {% set kwMatchAll = kwService.match_all ?? 1 %}
+                                   <div id="keyword-filters-banner" class="kf-banner">
+                                           <div class="kf-banner__inner">
+                                                   <span class="kf-banner__heading">{{ 'KEYWORD FILTERS'|t('upsnap') }}</span>
+                                                   <span class="kf-match-pill">{% if kwMatchAll %}{{ 'All must match'|t('upsnap') }}{% else %}{{ 'Any must match'|t('upsnap') }}{% endif %}</span>
+                                                   {% if kwKeywords|length > 0 %}
+                                                           <span class="kf-banner__divider"></span>
+                                                           {% for kw in kwKeywords %}
+                                                                   <span class="kf-banner__item">
+                                                                           {% if kw.type == 'must_not_contain' %}
+                                                                                   <span class="kf-label kf-label--must-not-contain">{{ 'Must not contain:'|t('upsnap') }}</span>
+                                                                           {% else %}
+                                                                                   <span class="kf-label kf-label--must-contain">{{ 'Must contain:'|t('upsnap') }}</span>
+                                                                           {% endif %}
+                                                                           <span class="kf-keyword-text">'{{ kw.text }}'</span>
+                                                                   </span>
+                                                           {% endfor %}
+                                                   {% endif %}
+                                           </div>
+                                   </div>
+                           {% endif %}
+                           <div class="dashboard-wrapper">
 				   <div
 					   class="dashboard-left">
 				<!-- ROW 1 -->
