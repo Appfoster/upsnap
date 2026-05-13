@@ -109,6 +109,7 @@ class MonitorNotificationChannelsController extends Controller
         $channelId = $request->getBodyParam('channelId');
         $label = $request->getBodyParam('label');
         $config = $request->getBodyParam('config', []);
+        $isEnabled = $request->getBodyParam('isEnabled', true);
 
         if (!$channelId || !$label || empty($config)) {
             return $this->asJson([
@@ -122,7 +123,8 @@ class MonitorNotificationChannelsController extends Controller
         try {
             $payload = [
                 'name' => $label,
-                'config' => $config,
+                    'config' => $config,
+                    'is_enabled' => $isEnabled
             ];
 
             $response = $this->apiService->put($endpoint, $payload);
