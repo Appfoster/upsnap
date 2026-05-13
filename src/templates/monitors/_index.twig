@@ -64,6 +64,10 @@
 				{{ ' to add monitors and manage your website monitoring.'|t('upsnap') }}
 			</p>
 		</div>
+        		<p>{{ 'Example Monitor Page'|t('upsnap') }}</p>
+		<div class="zilch register-message">
+			<img class="placeholder-image" src="{{ view.getAssetManager().getPublishedUrl( '@appfoster/upsnap/../resources/images/monitor-page-placeholder.png', true ) }}" alt="{{ 'Monitor page placeholder'|t('upsnap') }}"/>
+		</div>
 	{% elseif hasApiKey and not isActiveApiToken %}
 		{# ── Case 2 & 4: API key exists but expired / suspended / deleted ── #}
 		<div class="sp-preview-table-wrapper">

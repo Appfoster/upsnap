@@ -14,16 +14,16 @@
 {% block content %}
 	<script>
 		window.Upsnap = window.Upsnap || {};
-		window.Upsnap.settings = {
-			monitoringUrl: {{ (settings.monitoringUrl ?? '')|json_encode|raw }},
-			apiKey: {{ apiKey|json_encode|raw }},
-			isActiveApiToken: {{ isActiveApiToken ? 'true' : 'false' }},
-			apiTokenStatus: {{ apiTokenStatus|json_encode|raw }},
-			apiTokenStatuses: {{ apiTokenStatuses|json_encode|raw }},
-			userDetails: {{ userDetails|json_encode|raw }},
-			subscriptionTypes: {{ subscriptionTypes|json_encode|raw }},
-			logoBaseUrl: {{ logoBaseUrl|json_encode|raw }}
-		};
+window.Upsnap.settings = {
+monitoringUrl: {{ (settings.monitoringUrl ?? '')|json_encode|raw }},
+apiKey: {{ apiKey|json_encode|raw }},
+isActiveApiToken: {{ isActiveApiToken ? 'true' : 'false' }},
+apiTokenStatus: {{ apiTokenStatus|json_encode|raw }},
+apiTokenStatuses: {{ apiTokenStatuses|json_encode|raw }},
+userDetails: {{ userDetails|json_encode|raw }},
+subscriptionTypes: {{ subscriptionTypes|json_encode|raw }},
+logoBaseUrl: {{ logoBaseUrl|json_encode|raw }}
+};
 	</script>
 
 	{% if not hasApiKey %}
@@ -40,12 +40,17 @@
 				{{ ' to set up notification channels and receive alerts.'|t('upsnap') }}
 			</p>
 		</div>
+		<p>{{ 'Notification Channels Example'|t('upsnap') }}</p>
+		<div class="zilch register-message">
+			<img class="placeholder-image" src="{{ view.getAssetManager().getPublishedUrl( '@appfoster/upsnap/../resources/images/notifications-page-placeholder.png', true ) }}" alt="{{ 'Notification channels page placeholder'|t('upsnap') }}"/>
+		</div>
+
 	{% elseif hasApiKey and not isActiveApiToken %}
 		{# ── Case 2 & 4: API key exists but expired / suspended / deleted ── #}
 		<div class="sp-preview-table-wrapper">
 			<div class="sp-preview-gate">
-				<svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-					<path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+				<svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" fill="none" viewbox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+					<path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"/>
 				</svg>
 				<h3>
 					{% if apiTokenStatus == apiTokenStatuses.account_expired %}

@@ -2311,3 +2311,12 @@
 .incident-status-dot-wrap:hover::after {
     opacity: 1;
 }
+
+.zilch {
+    color: var(--light-text-color);
+    font-size: 20px;
+    line-height: 24px;
+    padding-block: 5px;
+    padding-inline: 0;
+    text-align: center;
+}
