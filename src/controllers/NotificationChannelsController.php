@@ -4,7 +4,6 @@ namespace appfoster\upsnap\controllers;
 
 use appfoster\upsnap\assetbundles\NotificationChannelsAsset;
 use appfoster\upsnap\Constants;
-use Craft;
 use yii\web\Response;
 use appfoster\upsnap\Upsnap;
 

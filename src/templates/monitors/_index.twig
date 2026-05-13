@@ -39,6 +39,7 @@
 		window.Upsnap = window.Upsnap || {};
 		window.Upsnap.settings = {
 			monitoringUrl: {{ (settings.monitoringUrl ?? '')|json_encode|raw }},
+            monitorId : {{ (settings.monitorId ?? '')|json_encode|raw }},
 			apiKey: {{ apiKey|json_encode|raw }},
 			isActiveApiToken: {{ isActiveApiToken ? 'true' : 'false' }},
 			apiTokenStatus: {{ apiTokenStatus|json_encode|raw }},
@@ -83,7 +84,7 @@
 	{% else %}
 		{# ── Case 3: API key active ────────────────────────────────────── #}
 		{% include "upsnap/_components/monitorsTable.twig" %}
-		<input type="hidden" id="monitorId" name="monitorId" value="">
-		<input type="hidden" id="monitoringUrlInput" name="monitoringUrlInput" value="">
+		<input type="hidden" id="monitorId" name="monitorId" value="{{ settings.monitorId ?? '' }}">
+		<input type="hidden" id="monitoringUrlInput" name="monitoringUrlInput" value="{{ settings.monitoringUrl ?? '' }}">
 	{% endif %}
 {% endblock %}

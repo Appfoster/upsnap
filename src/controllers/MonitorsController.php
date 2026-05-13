@@ -43,6 +43,7 @@ class MonitorsController extends BaseController
             'subscriptionTypes' => Constants::SUBSCRIPTION_TYPES,
             'settings' => [
                 'monitoringUrl' => $settingsService->getMonitoringUrl(),
+                'monitorId' => $settingsService->getMonitorId()
             ],
         ];
 
