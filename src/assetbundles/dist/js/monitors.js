@@ -836,13 +836,17 @@ Craft.Upsnap.Monitor = {
 			}
 
 			channels.forEach((c) => {
-				const statusClass = isChannelActive(c) ? "active" : "inactive";
-				const statusText = isChannelActive(c) ? "Active" : "Inactive";
+				const active = isChannelActive(c);
+				const statusClass = active ? "active" : "inactive";
+				const statusText = active ? "Active" : "Inactive";
 				const iconMarkup = getIntegrationIcon(
 					getTypeIconName(c.channel_type),
 				);
+				const disabledAttr = active ? "" : 'disabled title="This channel is inactive. Enable it from the Notification Channels page to select it."';
+				const rowClass = active ? "" : " channel-row-inactive";
 
 				const row = document.createElement("tr");
+				row.className = rowClass.trim();
 				row.innerHTML = `
 					<td class="thin">
 						<input 
@@ -850,6 +854,7 @@ Craft.Upsnap.Monitor = {
 							class="channel-checkbox" 
 							value="${c.id}"
 							data-id="${c.id}"
+							${disabledAttr}
 						>
 					</td>
 					<td>
@@ -857,6 +862,7 @@ Craft.Upsnap.Monitor = {
 							<span class="monitor-integration-icon" aria-hidden="true">${iconMarkup}</span>
 							<span class="monitor-channel-name">${escapeHtml(c.name)}</span>
 							<span class="channel-status ${statusClass}">${statusText}</span>
+							${!active ? '<span class="channel-inactive-hint">Enable from <a href="/admin/upsnap/notification-channels" target="_blank">Notification Channels</a> to select</span>' : ""}
 						</div>
 					</td>
 					<td>${formatChannelType(c.channel_type)}</td>
@@ -867,7 +873,7 @@ Craft.Upsnap.Monitor = {
 			table.style.display = "table";
 
 			// Add event listeners to individual checkboxes
-			const checkboxes = tbody.querySelectorAll(".channel-checkbox");
+			const checkboxes = tbody.querySelectorAll(".channel-checkbox:not(:disabled)");
 
 			checkboxes.forEach((cb) => {
 				cb.addEventListener("change", () => {
@@ -901,21 +907,59 @@ Craft.Upsnap.Monitor = {
 				const checkbox = tbody.querySelector(
 					`.channel-checkbox[data-id="${id}"]`,
 				);
-				if (checkbox) checkbox.checked = true;
+				if (!checkbox) return;
+
+				if (checkbox.disabled) {
+					// Channel is inactive but was previously selected.
+					// Re-enable so the user can uncheck it, but mark with a warning.
+					checkbox.disabled = false;
+					checkbox.removeAttribute("title");
+					const row = checkbox.closest("tr");
+					if (row) {
+						row.classList.add("channel-row-inactive-selected");
+						const hint = row.querySelector(".channel-inactive-hint");
+						if (hint) {
+							hint.textContent = "Inactive \u2014 won\u2019t send notifications until re-enabled. Uncheck to remove.";
+							hint.classList.remove("channel-inactive-hint");
+							hint.classList.add("channel-inactive-hint--warning");
+						}
+					}
+
+					// When unchecked, re-disable and restore to the standard inactive state
+					checkbox.addEventListener("change", function onInactiveUncheck() {
+						if (!checkbox.checked) {
+							checkbox.disabled = true;
+							checkbox.setAttribute("title", "This channel is inactive. Enable it from the Notification Channels page to select it.");
+							if (row) {
+								row.classList.remove("channel-row-inactive-selected");
+								row.classList.add("channel-row-inactive");
+								const hint = row.querySelector(".channel-inactive-hint--warning");
+								if (hint) {
+									hint.innerHTML = 'Enable from <a href="/admin/upsnap/notification-channels" target="_blank">Notification Channels</a> to select';
+									hint.classList.remove("channel-inactive-hint--warning");
+									hint.classList.add("channel-inactive-hint");
+								}
+							}
+							checkbox.removeEventListener("change", onInactiveUncheck);
+						}
+					});
+				}
+
+				checkbox.checked = true;
 			});
 
-			// After selecting saved ones, update "select all"
-			const checkboxes = tbody.querySelectorAll(".channel-checkbox");
+			// After selecting saved ones, update "select all" (only count enabled checkboxes)
+			const checkboxes = tbody.querySelectorAll(".channel-checkbox:not(:disabled)");
 			const all = checkboxes.length;
 			const checked = [...checkboxes].filter((cb) => cb.checked).length;
 
-			selectAll.checked = checked === all;
+			selectAll.checked = all > 0 && checked === all;
 		};
 
-		// SELECT ALL
+		// SELECT ALL (only toggles enabled checkboxes)
 		selectAll.addEventListener("change", (e) => {
 			const checked = e.target.checked;
-			tbody.querySelectorAll(".channel-checkbox").forEach((cb) => {
+			tbody.querySelectorAll(".channel-checkbox:not(:disabled)").forEach((cb) => {
 				cb.checked = checked;
 				cb.dispatchEvent(new Event("change"));
 			});
