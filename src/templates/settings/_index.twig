@@ -7,20 +7,15 @@
 {% set showHealthchecks = showHealthchecks ?? false %}
 {% set isActiveApiToken = apiTokenStatus is same as(apiTokenStatuses.active) ? true : false %}
 
-{% if showHealthchecks %}
-	{% set tabs = [
-		{ label: "API Key"|t('upsnap'), url: '#api-tab', class: 'sel' }
-	] %}
-{% else %}
-	{% set tabs = [
-		{ label: "Register/Sign In"|t('upsnap'), url: '#register-signin-tab', class: 'sel' }
-	] %}
-{% endif %}
+{% set tabs = [
+	{ label: "Register/Sign In"|t('upsnap'), url: '#register-signin-tab', class: showHealthchecks ? 'hidden' : 'sel' },
+	{ label: "API Key Management"|t('upsnap'), url: '#api-tab', class: showHealthchecks ? 'sel' : '' }
+] %}
 
 
 {% block actionButton %}
 	<div class="flex smallgap">
-		<button id="save-button" type="submit" form="settings-form" class="btn submit"{{ not showHealthchecks ? ' style="display:none;"' : '' }}>
+		<button id="save-button" type="submit" form="settings-form" class="btn submit">
 			{{ "Save"|t('upsnap') }}
 		</button>
 	</div>
