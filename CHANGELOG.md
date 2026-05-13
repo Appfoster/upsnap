@@ -4,12 +4,18 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
-## [1.1.7] - 2026-05-04
+## [1.1.7] - 2026-05-13
 ### Added
-- **Connected Channels Card**: New dashboard card showing the total count of connected notification channels and integrations, with a link to view details.
+- **Separate Sidebar Menus for Monitors and Notification Channels**  
+  Moved Monitors and Notification Channels into dedicated sidebar menu items for improved navigation and usability.
+- **Connected Channels Dashboard Card**  
+  Added a new dashboard card displaying the total number of connected notification channels and integrations, with quick access to detailed views.
+- **Monitor Selection Dropdown on Dashboard**  
+  Added a monitor selection dropdown to the dashboard, allowing users to quickly switch between monitors and view their details without leaving the page.
 
 ### Chore
-- Minor bug fixes and UI refinements.
+- Reduced dashboard loading time for a smoother and faster user experience.
+- General UI refinements and minor bug fixes.
 
 ## [1.1.6] - 2026-05-01
 ### Added
