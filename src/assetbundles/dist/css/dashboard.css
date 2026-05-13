@@ -492,6 +492,41 @@
 }
 
 /* Region Dropdown Styles */
+.dashboard-action-buttons {
+    align-items: flex-end;
+}
+
+.selector-with-label {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+}
+
+.upsnap-select-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: #4b5563;
+    margin: 0;
+    white-space: nowrap;
+}
+
+.monitor-selector-group {
+    margin-right: 12px;
+}
+
+.monitor-selector-group select {
+    min-width: 220px;
+}
+
+.monitor-selector-group {
+    margin-right: 12px;
+}
+
+.monitor-selector-group select {
+    min-width: 220px;
+}
+
 .monitor-selector-group {
     margin-right: 12px;
 }

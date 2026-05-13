@@ -3,33 +3,39 @@
 {% set _logoBaseUrl = craft.app.assetManager.getPublishedUrl('@upsnapRoot/assets/images/logo', true) %}
 
 {% block actionButton %}
-	<div class="buttons">
+	<div class="buttons dashboard-action-buttons">
 		{% set hasApiKey = apiKey is not empty %}
 		{% set hasMonitors = monitorOptions is defined and monitorOptions|length > 0 %}
-		<div class="btngroup select monitor-selector-group" {% if not hasMonitors %} title="No monitors available" {% endif %}>
-			<select id="monitorDropdown" {% if not hasMonitors %} class="disabled" disabled {% endif %}>
-				{% if hasMonitors %}
-					{% for monitor in monitorOptions %}
-						<option value="{{ monitor.id }}" {% if monitor.id == monitorId %} selected {% endif %}>{{ monitor.label }}</option>
-					{% endfor %}
-				{% else %}
-					<option value="">No monitors</option>
-				{% endif %}
-			</select>
+		<div class="selector-with-label">
+			<label class="upsnap-select-label" for="monitorDropdown">{{ 'Monitor'|t('upsnap') }}</label>
+			<div class="btngroup select monitor-selector-group" {% if not hasMonitors %} title="No monitors available" {% endif %}>
+				<select id="monitorDropdown" {% if not hasMonitors %} class="disabled" disabled {% endif %}>
+					{% if hasMonitors %}
+						{% for monitor in monitorOptions %}
+							<option value="{{ monitor.id }}" {% if monitor.id == monitorId %} selected {% endif %}>{{ monitor.label }}</option>
+						{% endfor %}
+					{% else %}
+						<option value="">No monitors</option>
+					{% endif %}
+				</select>
+			</div>
 		</div>
 		{% set hasRegions = monitorData and monitorData.regions and monitorData.regions|length > 0 %}
-		<div class="btngroup select region-selector-group" {% if not hasRegions %} title="Register to check out region-based monitoring" {% endif %}>
-			<select id="regionDropdown" {% if not hasRegions %} class="disabled" disabled {% endif %}>
-				{% if hasRegions %}
-					{% for region in monitorData.regions %}
-						<option value="{{ region.id }}" {% if region.is_primary %} selected {% endif %}>
-							{{ region.name }}
-						</option>
-					{% endfor %}
-				{% else %}
-					<option value="">Select Region</option>
-				{% endif %}
-			</select>
+		<div class="selector-with-label">
+			<label class="upsnap-select-label" for="regionDropdown">{{ 'Region'|t('upsnap') }}</label>
+			<div class="btngroup select region-selector-group" {% if not hasRegions %} title="Register to check out region-based monitoring" {% endif %}>
+				<select id="regionDropdown" {% if not hasRegions %} class="disabled" disabled {% endif %}>
+					{% if hasRegions %}
+						{% for region in monitorData.regions %}
+							<option value="{{ region.id }}" {% if region.is_primary %} selected {% endif %}>
+								{{ region.name }}
+							</option>
+						{% endfor %}
+					{% else %}
+						<option value="">Select Region</option>
+					{% endif %}
+				</select>
+			</div>
 		</div>
 		{% if hasApiKey %}
 			<div class="btngroup">

@@ -1,6 +1,8 @@
 {% include "upsnap/_components/addNotificationChannelModal.twig" %}
 
-<div id="notification-channels-tab" class="tab-content hidden">
+{% set isStandalonePage = isStandalonePage ?? false %}
+
+<div id="notification-channels-tab" class="tab-content{{ isStandalonePage ? '' : ' hidden' }}">
 	<div
 		id="integrations-page" class="integrations-container">
 		{# Left Sidebar - Categories #}

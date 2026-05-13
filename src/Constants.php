@@ -20,6 +20,11 @@ class Constants
     public const API_BASE_URL_DEFAULT = 'https://api.upsnap.ai';
     public const UPSNAP_DASHBOARD_URL = 'https://app.upsnap.ai';
     public const UPSNAP_STATS_PAGE_URL = 'https://stats.upsnap.ai';
+    public const API_BASE_URL_DEFAULT_DEV = 'https://upsnap.appfoster.site';
+    public const UPSNAP_DASHBOARD_URL_DEV= 'https://upsnap-app.appfoster.site';
+    public const UPSNAP_STATS_PAGE_URL_DEV = 'https://stats.appfoster.site';
+    public const APP_ENV_DEV_VALUE = 'dev';
+
     public const API_VERSION = 'v1';
     // API Endpoints
     public const ENDPOINT_HEALTHCHECK = 'healthcheck';
@@ -105,6 +110,18 @@ class Constants
         'url' => 'upsnap/incidents',
         'template' => 'upsnap/incidents/_index'
     ];
+    const SUBNAV_ITEM_MONITORS = [
+        'label' => 'Monitors',
+        'key' => 'monitors',
+        'url' => 'upsnap/monitors',
+        'template' => 'upsnap/monitors/_index'
+    ];
+    const SUBNAV_ITEM_NOTIFICATION_CHANNELS = [
+        'label' => 'Notification Channels',
+        'key' => 'notification-channels',
+        'url' => 'upsnap/notification-channels',
+        'template' => 'upsnap/notification-channels/_index'
+    ];
     const SUBNAV_ITEM_SETTINGS = [
         'label' => 'Settings',
         'key' => 'settings',
@@ -125,13 +142,21 @@ class Constants
             'label' => self::SUBNAV_ITEM_DASHBOARD['label'],
             'url' => self::SUBNAV_ITEM_DASHBOARD['url']
         ],
-        self::SUBNAV_ITEM_STATUS_PAGE['key'] => [
-            'label' => self::SUBNAV_ITEM_STATUS_PAGE['label'],
-            'url' => self::SUBNAV_ITEM_STATUS_PAGE['url']
+        self::SUBNAV_ITEM_MONITORS['key'] => [
+            'label' => self::SUBNAV_ITEM_MONITORS['label'],
+            'url' => self::SUBNAV_ITEM_MONITORS['url']
         ],
         self::SUBNAV_ITEM_INCIDENTS['key'] => [
             'label' => self::SUBNAV_ITEM_INCIDENTS['label'],
             'url' => self::SUBNAV_ITEM_INCIDENTS['url']
+        ],
+        self::SUBNAV_ITEM_STATUS_PAGE['key'] => [
+            'label' => self::SUBNAV_ITEM_STATUS_PAGE['label'],
+            'url' => self::SUBNAV_ITEM_STATUS_PAGE['url']
+        ],
+        self::SUBNAV_ITEM_NOTIFICATION_CHANNELS['key'] => [
+            'label' => self::SUBNAV_ITEM_NOTIFICATION_CHANNELS['label'],
+            'url' => self::SUBNAV_ITEM_NOTIFICATION_CHANNELS['url']
         ],
         self::SUBNAV_ITEM_SETTINGS['key'] => [
             'label' => self::SUBNAV_ITEM_SETTINGS['label'],
@@ -254,5 +279,23 @@ class Constants
     public static function getAPIBaseUrl(): string
     {
         return App::env('UPSNAP_API_BASE_URL') ?? self::API_BASE_URL_DEFAULT;
+    }
+
+    public static function getWebAppUrl(string $key): ?string
+    {
+        $isDevEnvironment = App::env('CRAFT_ENVIRONMENT') === self::APP_ENV_DEV_VALUE;
+        $urlMap = $isDevEnvironment
+            ? [
+                'website' => self::API_BASE_URL_DEFAULT_DEV,
+                'webapp' => self::UPSNAP_DASHBOARD_URL_DEV,
+                'stats-pages' => self::UPSNAP_STATS_PAGE_URL_DEV,
+            ]
+            : [
+                'website' => self::API_BASE_URL_DEFAULT,
+                'webapp' => self::UPSNAP_DASHBOARD_URL,
+                'stats-pages' => self::UPSNAP_STATS_PAGE_URL,
+            ];
+
+        return $urlMap[$key] ?? null;
     }
 }

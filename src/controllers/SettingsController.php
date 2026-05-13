@@ -115,7 +115,7 @@ class SettingsController extends BaseController
             [
                 'settings' => $settings,
                 'showHealthchecks' => $service->getApiKey() !== null,
-                'upsnapDashboardUrl' => Constants::UPSNAP_DASHBOARD_URL,
+                'upsnapDashboardUrl' => Constants::getWebAppUrl('webapp'),
                 'title' => Constants::SUBNAV_ITEM_SETTINGS['label'],
                 'selectedSubnavItem' => Constants::SUBNAV_ITEM_SETTINGS['key'],
                 'apiTokenStatus' => $service->getApiTokenStatus(),
