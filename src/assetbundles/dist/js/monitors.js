@@ -370,11 +370,18 @@ Craft.Upsnap.Monitor = {
 				return;
 			}
 
+			const hasPastedProtocol = /^\s*https?:\/\//i.test(pastedText);
 			const sanitized = this.sanitizeUrlPasteText(pastedText);
-			if (sanitized === pastedText) return;
+			if (!hasPastedProtocol && sanitized === pastedText) return;
 
 			event.preventDefault();
-			this.insertTextAtCursor(field, sanitized);
+			if (hasPastedProtocol) {
+				field.value = pastedText.trim();
+				field.dispatchEvent(new Event("input", { bubbles: true }));
+				field.setSelectionRange(field.value.length, field.value.length);
+			} else {
+				this.insertTextAtCursor(field, sanitized);
+			}
 
 			if (typeof options.onAfterPaste === "function") {
 				options.onAfterPaste();
