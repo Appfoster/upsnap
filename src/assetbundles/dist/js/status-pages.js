@@ -692,12 +692,85 @@ Craft.Upsnap.StatusPages = {
 			}
 		);
 	},
-	confirmDelete(statusPageId) {
-		if (
-			!confirm(
-				"Are you sure you want to delete this status page? This action cannot be undone."
-			)
-		) {
+	showCraftConfirmModal({
+		title = "Confirm deletion",
+		message = "Are you sure?",
+		confirmLabel = "Delete",
+		cancelLabel = "Cancel",
+	}) {
+		return new Promise((resolve) => {
+			let settled = false;
+			const settle = (confirmed) => {
+				if (settled) return;
+				settled = true;
+				resolve(confirmed);
+			};
+
+			// Prefer Craft's built-in confirm modal helper when available.
+			if (Craft?.ui?.createConfirmModal) {
+				Craft.ui.createConfirmModal({
+					title,
+					message,
+					confirmLabel,
+					cancelLabel,
+					destructive: true,
+					onConfirm: () => settle(true),
+					onCancel: () => settle(false),
+				});
+				return;
+			}
+
+			const modalElement = document.createElement("div");
+			modalElement.className = "modal fitted";
+			modalElement.innerHTML = `
+				<div class="body">
+					<div class="content">
+						<h1>${Craft.escapeHtml(title)}</h1>
+						<p>${Craft.escapeHtml(message)}</p>
+					</div>
+				</div>
+				<div class="footer">
+					<div class="buttons right">
+						<button type="button" class="btn upsnap-modal-cancel">${Craft.escapeHtml(cancelLabel)}</button>
+						<button type="button" class="btn submit upsnap-modal-confirm">${Craft.escapeHtml(confirmLabel)}</button>
+					</div>
+				</div>
+			`;
+
+			document.body.appendChild(modalElement);
+
+			const $modal = $(modalElement);
+			const modal = new Garnish.Modal($modal, {
+				onHide: () => {
+					settle(false);
+					$modal.remove();
+				},
+			});
+
+			const cancelButton = modalElement.querySelector(".upsnap-modal-cancel");
+			const confirmButton =
+				modalElement.querySelector(".upsnap-modal-confirm");
+
+			cancelButton?.addEventListener("click", () => {
+				settle(false);
+				modal.hide();
+			});
+
+			confirmButton?.addEventListener("click", () => {
+				settle(true);
+				modal.hide();
+			});
+		});
+	},
+	async confirmDelete(statusPageId) {
+		const confirmed = await this.showCraftConfirmModal({
+			title: "Delete status page",
+			message:
+				"Are you sure you want to delete this status page? This action cannot be undone.",
+			confirmLabel: "Delete",
+		});
+
+		if (!confirmed) {
 			return;
 		}
 
