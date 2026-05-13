@@ -1302,6 +1302,18 @@ Craft.Upsnap.Monitor = {
 							"mixedContentMonitoringInterval",
 						),
 					},
+					lighthouse : {
+						enabled: isEnabled("lighthouseEnabled"),
+						monitor_interval: this.getSeconds(
+							"lighthouseMonitoringInterval",
+						),
+					},
+					domain: {
+						enabled: isEnabled("domainEnabled"),
+						monitor_interval: this.getSeconds(
+							"domainMonitoringInterval",
+						),
+					}
 				},
 			},
 			regions: basePayload.regions,

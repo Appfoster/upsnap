@@ -32,7 +32,9 @@
     { label: '2d', value: 2, unit: 'day' },
     { label: '5d', value: 5, unit: 'day' },
     { label: '7d', value: 7, unit: 'day' },
-    { label: '10d', value: 10, unit: 'day' }
+	{ label: '10d', value: 10, unit: 'day' },
+	{ label: '15d', value: 15, unit: 'day' },
+	{ label: '30d', value: 30, unit: 'day' }
 ] %}
 
 {% set monitorTypeOptions = [
@@ -214,7 +216,7 @@
 										id: 'brokenLinks',
 										name: 'brokenLinksMonitoringInterval',
 										value: monitor ? (monitor.brokenLinksMonitoringInterval ?? 86400) : 86400,
-										partitions: defaultIntervals,
+										partitions: lighthouseIntervals,
 										minMonitorIntervalSeconds: MIN_MONITOR_INTERVAL_SECONDS
 									} %}
 								</div>
@@ -236,7 +238,7 @@
 										id: 'mixedContent',
 										name: 'mixedContentMonitoringInterval',
 										value: monitor ? (monitor.mixedContentMonitoringInterval ?? 86400) : 86400,
-										partitions: defaultIntervals,
+										partitions: lighthouseIntervals,
 										minMonitorIntervalSeconds: MIN_MONITOR_INTERVAL_SECONDS
 									} %}
 								</div>
@@ -246,6 +248,7 @@
 							<div class="healthcheck-section">
 								{{ forms.lightswitchField({
 									label: "Domain Expiry Check"|t('upsnap'),
+									instructions: "Monitor your domain's expiry date and get alerts before it expires."|t('upsnap'),
 									id: 'domainEnabled',
 									name: 'domainEnabled',
 									on: monitor ? (monitor.domainEnabled ?? true) : true,
@@ -256,7 +259,7 @@
 										id: 'domain',
 										name: 'domainMonitoringInterval',
 										value: monitor ? (monitor.domainMonitoringInterval ?? 86400) : 86400,
-										partitions: defaultIntervals,
+										partitions: lighthouseIntervals,
 										minMonitorIntervalSeconds: MIN_MONITOR_INTERVAL_SECONDS
 									} %}
 									{{ forms.selectField({
@@ -276,6 +279,7 @@
 							<div class="healthcheck-section  http-disabled">
 								{{ forms.lightswitchField({
 									label: "SSL Certificate Check"|t('upsnap'),
+									instructions: "Monitor your SSL certificate's expiry date and get alerts before it expires."|t('upsnap'),
 									id: 'sslEnabled',
 									name: 'sslEnabled',
 									on: monitor ? (monitor.securityCertificatesEnabled ?? true) : true,
@@ -286,7 +290,7 @@
 										id: 'securityCertificates',
 										name: 'securityCertificatesMonitoringInterval',
 										value: monitor ? (monitor.securityCertificatesMonitoringInterval ?? 86400) : 86400,
-										partitions: defaultIntervals,
+										partitions: lighthouseIntervals,
 										minMonitorIntervalSeconds: MIN_MONITOR_INTERVAL_SECONDS
 									} %}
 									{{ forms.selectField({
