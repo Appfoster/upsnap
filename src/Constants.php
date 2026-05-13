@@ -142,17 +142,17 @@ class Constants
             'label' => self::SUBNAV_ITEM_DASHBOARD['label'],
             'url' => self::SUBNAV_ITEM_DASHBOARD['url']
         ],
-        self::SUBNAV_ITEM_STATUS_PAGE['key'] => [
-            'label' => self::SUBNAV_ITEM_STATUS_PAGE['label'],
-            'url' => self::SUBNAV_ITEM_STATUS_PAGE['url']
+        self::SUBNAV_ITEM_MONITORS['key'] => [
+            'label' => self::SUBNAV_ITEM_MONITORS['label'],
+            'url' => self::SUBNAV_ITEM_MONITORS['url']
         ],
         self::SUBNAV_ITEM_INCIDENTS['key'] => [
             'label' => self::SUBNAV_ITEM_INCIDENTS['label'],
             'url' => self::SUBNAV_ITEM_INCIDENTS['url']
         ],
-        self::SUBNAV_ITEM_MONITORS['key'] => [
-            'label' => self::SUBNAV_ITEM_MONITORS['label'],
-            'url' => self::SUBNAV_ITEM_MONITORS['url']
+        self::SUBNAV_ITEM_STATUS_PAGE['key'] => [
+            'label' => self::SUBNAV_ITEM_STATUS_PAGE['label'],
+            'url' => self::SUBNAV_ITEM_STATUS_PAGE['url']
         ],
         self::SUBNAV_ITEM_NOTIFICATION_CHANNELS['key'] => [
             'label' => self::SUBNAV_ITEM_NOTIFICATION_CHANNELS['label'],
