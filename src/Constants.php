@@ -216,6 +216,7 @@ class Constants
                 'create' => 'user/status-pages',
                 'update' => 'user/status-pages',
                 'delete' => 'user/status-pages',
+                'upload' => 'user/status-pages/{id}/upload',
             ],
             'monitors_stats' => 'user/monitors/uptime-stats',
             'incident_stats' => 'user/monitors/incidents/stats',
@@ -279,6 +280,52 @@ class Constants
     public static function getAPIBaseUrl(): string
     {
         return App::env('UPSNAP_API_BASE_URL') ?? self::API_BASE_URL_DEFAULT;
+    }
+
+    // Status Page Global Assets
+    public const STATUS_PAGE_GLOBAL_ASSET_BASE_URL_DEFAULT = 'https://upsnap-develop.s3.us-east-1.amazonaws.com';
+
+    public const STATUS_PAGE_GLOBAL_ASSET_PATHS = [
+        'favicon' => 'global/favicon.png',
+        'logo'    => 'global/icon.svg',
+    ];
+
+    public static function buildStatusPageGlobalAssetUrl(string $path): string
+    {
+        $base = self::STATUS_PAGE_GLOBAL_ASSET_BASE_URL_DEFAULT;
+        return "{$base}/{$path}";
+    }
+
+    public static function getDefaultCustomization(): array
+    {
+        return [
+            'header' => [
+                'title'        => 'Upsnap | Shared Status Page',
+                'company_name' => 'Upsnap',
+                'description'  => 'We monitor everything 24/7',
+            ],
+            'asset_urls' => [
+                'favicon' => self::buildStatusPageGlobalAssetUrl(self::STATUS_PAGE_GLOBAL_ASSET_PATHS['favicon']),
+                'logo'    => self::buildStatusPageGlobalAssetUrl(self::STATUS_PAGE_GLOBAL_ASSET_PATHS['logo']),
+            ],
+            'links' => [
+                'support_url' => 'https://upsnap.ai/contact',
+                'privacy_url' => 'https://upsnap.ai/privacy',
+                'tos_url'     => 'https://upsnap.ai/terms',
+            ],
+            'footer' => [
+                'footer_text'        => 'Stay informed with live uptime, maintenance updates, and incident reports via Upsnap.',
+                'contact_email'      => 'support@upsnap.ai',
+                'copyright_text'     => '© 2026 UpSnap Monitoring. All rights reserved.',
+                'display_powered_by' => true,
+            ],
+            'password_prompt' => 'This status page is password protected. Please enter the password to continue.',
+            'display_config'  => [
+                'accent_color'           => '#212121',
+                'show_uptime_percentage' => true,
+                'history_range_days'     => 90,
+            ],
+        ];
     }
 
     public static function getWebAppUrl(string $key): ?string

@@ -2,12 +2,13 @@
 
 namespace appfoster\upsnap\controllers;
 
-use appfoster\upsnap\assetbundles\DashboardAsset;
 use appfoster\upsnap\assetbundles\StatusPageAsset;
 use appfoster\upsnap\Constants;
 use appfoster\upsnap\services\HealthCheckService;
 use appfoster\upsnap\Upsnap;
+use GuzzleHttp\Psr7\Utils;
 use yii\web\NotFoundHttpException;
+use yii\web\UploadedFile;
 
 use yii\web\Response;
 use Craft;
@@ -43,7 +44,8 @@ class StatusPageController extends BaseController
             'apiTokenStatuses' => Constants::API_KEY_STATUS,
             'upsnapDashboardUrl' => Constants::getWebAppUrl('webapp'),
             'upsnapStatsPageUrl' => Constants::getWebAppUrl('stats-pages'),
-            'userDetails' => $userDetails
+            'userDetails' => $userDetails,
+            'defaultCustomization' => Constants::getDefaultCustomization(),
         ];
 
         return $this->renderTemplate('upsnap/status-page/_index', $variables);
@@ -94,6 +96,7 @@ class StatusPageController extends BaseController
             'subscriptionTypes' => Constants::SUBSCRIPTION_TYPES,
             'apiTokenStatuses' => Constants::API_KEY_STATUS,
             'userDetails' => $userDetails,
+            'defaultCustomization' => Constants::getDefaultCustomization(),
         ];
 
         if ($statusPageId) {
@@ -134,11 +137,12 @@ class StatusPageController extends BaseController
             $payload = $request->getRequiredBodyParam('payload');
 
             $payloadArray = json_decode($payload, true);
-            if (!$payloadArray) {
+            if (!is_array($payloadArray)) {
                 throw new \Exception('Invalid JSON payload.');
             }
 
             $statusPageId = $payloadArray['statusPageId'] ?? null;
+            unset($payloadArray['statusPageId']);
 
             $endpoint = $statusPageId
                 ? Constants::MICROSERVICE_ENDPOINTS['monitors']['status-page']['update'] . '/' . $statusPageId
@@ -161,6 +165,76 @@ class StatusPageController extends BaseController
             ]);
         } catch (\Throwable $e) {
             Craft::error("Status page save failed: {$e->getMessage()}", __METHOD__);
+
+            return $this->asJson([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    public function actionUpload(): Response
+    {
+        $this->requirePostRequest();
+        $request = Craft::$app->getRequest();
+
+        try {
+            $statusPageId = $request->getRequiredBodyParam('statusPageId');
+            $type = $request->getRequiredBodyParam('type');
+
+            if (!in_array($type, ['logo', 'favicon'], true)) {
+                throw new \Exception(Craft::t('upsnap', 'Invalid upload type.'));
+            }
+
+            $file = UploadedFile::getInstanceByName('file');
+            if (!$file) {
+                throw new \Exception(Craft::t('upsnap', 'File is required.'));
+            }
+
+            $allowedExtensions = $type === 'logo'
+                ? ['jpg', 'jpeg', 'png']
+                : ['png', 'gif', 'ico'];
+
+            $fileExtension = strtolower((string) $file->extension);
+            if (!in_array($fileExtension, $allowedExtensions, true)) {
+                throw new \Exception(Craft::t('upsnap', 'Invalid file format.'));
+            }
+
+            if ((int) $file->size > 150 * 1024) {
+                throw new \Exception(Craft::t('upsnap', 'File must be 150 KB or smaller.'));
+            }
+
+            $endpointTemplate = Constants::MICROSERVICE_ENDPOINTS['monitors']['status-page']['upload'];
+            $endpoint = str_replace('{id}', (string) $statusPageId, $endpointTemplate);
+
+            $multipart = [
+                [
+                    'name' => 'type',
+                    'contents' => $type,
+                ],
+                [
+                    'name' => 'file',
+                    'contents' => Utils::tryFopen($file->tempName, 'r'),
+                    'filename' => $file->name,
+                    'headers' => [
+                        'Content-Type' => $file->type ?: 'application/octet-stream',
+                    ],
+                ],
+            ];
+
+            $response = Upsnap::$plugin->apiService->postMultipart($endpoint, $multipart);
+
+            if (($response['status'] ?? null) !== 'success') {
+                throw new \Exception($response['message'] ?? Craft::t('upsnap', 'Failed to upload file.'));
+            }
+
+            return $this->asJson([
+                'success' => true,
+                'message' => Craft::t('upsnap', 'File uploaded successfully.'),
+                'data' => $response['data'] ?? [],
+            ]);
+        } catch (\Throwable $e) {
+            Craft::error("Status page upload failed: {$e->getMessage()}", __METHOD__);
 
             return $this->asJson([
                 'success' => false,

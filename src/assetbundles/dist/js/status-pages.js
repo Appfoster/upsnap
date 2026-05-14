@@ -11,6 +11,10 @@ Craft.Upsnap.StatusPages = {
 	monitors: [],
 	pillsContainer: null,
 	statusPagesCount: 0,
+	assetState: {
+		logo: { file: null, removed: false, changed: false, currentUrl: "" },
+		favicon: { file: null, removed: false, changed: false, currentUrl: "" },
+	},
 
 	init() {
 		this.cacheElements();
@@ -27,15 +31,87 @@ Craft.Upsnap.StatusPages = {
 	initForm() {
 		this.form = document.getElementById("status-page-form");
 		this.nameInput = document.getElementById("name");
-		this.isProtectedInput = document.getElementById("is_protected");
 		this.passwordInput = document.getElementById("password");
+		this.passwordPromptInput = document.getElementById("password_prompt");
 		this.multiSelectContainer = document.getElementById(
 			"monitor-multiselect"
 		);
 
+		this.headerTitleInput = document.getElementById("custom_header_title");
+		this.headerCompanyNameInput = document.getElementById(
+			"custom_header_company_name"
+		);
+		this.headerDescriptionInput = document.getElementById(
+			"custom_header_description"
+		);
+		this.footerTextInput = document.getElementById("custom_footer_text");
+		this.contactEmailInput = document.getElementById(
+			"custom_footer_contact_email"
+		);
+		this.copyrightInput = document.getElementById(
+			"custom_footer_copyright_text"
+		);
+		this.supportUrlInput = document.getElementById("custom_links_support_url");
+		this.privacyUrlInput = document.getElementById("custom_links_privacy_url");
+		this.tosUrlInput = document.getElementById("custom_links_tos_url");
+		this.accentColorInput = document.getElementById("custom_display_accent_color");
+		this.accentColorHexInput = document.getElementById(
+			"custom_display_accent_color_hex"
+		);
+		this.accentColorSwatch = document.getElementById(
+			"custom_display_accent_color_swatch"
+		);
+		this.historyRangeDaysInput = document.getElementById(
+			"custom_display_history_range_days"
+		);
+
+		this.logoFileInput = document.getElementById("logo_file");
+		this.faviconFileInput = document.getElementById("favicon_file");
+		this.logoPreview = document.getElementById("logo-preview");
+		this.faviconPreview = document.getElementById("favicon-preview");
+		this.logoRemoveBtn = document.getElementById("logo_remove_btn");
+		this.faviconRemoveBtn = document.getElementById("favicon_remove_btn");
+
+		this.mode =
+			window.Upsnap?.formMode ||
+			(window.Upsnap?.statusPage?.id ? "edit" : "add");
+		this.isEditMode = this.mode === "edit";
+		this.wasProtected = window.Upsnap?.statusPage?.is_protected === true;
+
+		this.initializeAssetState();
+		this.renderAssetPreviews();
+
 		this.fetchMonitors();
 		this.registerFormSubmit();
 		this.registerPasswordProtection();
+		this.registerAccentColorEvents();
+		this.registerAssetEvents();
+		this.registerCharCounters();
+	},
+
+	registerCharCounters() {
+		if (!this.form) return;
+
+		const fields = this.form.querySelectorAll(
+			"input[maxlength], textarea[maxlength]"
+		);
+
+		fields.forEach((input) => {
+			const maxlength = parseInt(input.getAttribute("maxlength"), 10);
+			if (!maxlength) return;
+
+			const counter = document.createElement("div");
+			counter.className = "upsnap-char-counter";
+			counter.textContent = `${input.value.length}/${maxlength}`;
+
+			const inputWrapper = input.closest(".input");
+			const insertAfter = inputWrapper || input;
+			insertAfter.after(counter);
+
+			input.addEventListener("input", () => {
+				counter.textContent = `${input.value.length}/${maxlength}`;
+			});
+		});
 	},
 
 	cacheElements() {
@@ -342,97 +418,162 @@ Craft.Upsnap.StatusPages = {
 		saveBtn.disabled = false;
 		saveBtn.classList.remove("disabled");
 	},
-	registerFormSubmit() {
-		this.form.addEventListener("submit", (e) => {
-			e.preventDefault();
-
-			const name = this.nameInput.value.trim();
-			
-			// Get the lightswitch button and its hidden input
-			const lightswitchBtn = document.getElementById("is_protected");
-			const hiddenInput = lightswitchBtn?.querySelector('input[type="hidden"]');
-			// Check the hidden input value OR the aria-checked attribute
-			const isProtected = hiddenInput?.value === "1" || lightswitchBtn?.getAttribute("aria-checked") === "true";
-			
-			const password = this.passwordInput.value;
-			
-			// Determine if we're in edit mode and what the original protection status was
-			const isEditMode = !!window.Upsnap?.statusPage?.id;
-			const wasProtected = window.Upsnap?.statusPage?.is_protected === true;
-			const isPasswordDirty = password.length > 0;
-
-			// Validate form
-			if (!this.validateForm(name, isProtected, password, isEditMode, wasProtected, isPasswordDirty)) {
-				return;
-			}
-
-			// Build the base payload
-			const payload = {
-				statusPageId: window.Upsnap?.statusPage?.id,
-				name,
-				monitor_ids: Array.from(this.selectedMonitors.keys()),
-				is_published: true,
-			};
-
-			// Handle is_protected and password fields based on mode and state
-			if (isEditMode) {
-				if (wasProtected) {
-					// Case 1: Status page WAS protected
-					if (isPasswordDirty) {
-						// User updated the password - send both fields
-						payload.is_protected = true;
-						payload.password = password;
-					}
-					// If password is not dirty, don't send is_protected or password at all
-					// This allows updating name/monitors without affecting protection
-					
-					// Edge case: User toggled protection OFF
-					if (!isProtected) {
-						payload.is_protected = false;
-						// Don't send password when disabling protection
-					}
-				} else {
-					// Case 2: Status page WAS NOT protected
-					if (isProtected) {
-						// User enabled protection - send both fields
-						payload.is_protected = true;
-						payload.password = password;
-					}
-				}
-			} else {
-				// Create mode
-				if (isProtected) {
-					payload.is_protected = true;
-					payload.password = password;
-				}
-			}
-
-			this.disableSavebtn();
-			this.saveStatusPage(payload);
-			this.enableSavebtn();
-		});
-	},
-
-	saveStatusPage(payload) {
-		Craft.postActionRequest(
-			"upsnap/status-page/save",
-			{
-				payload: JSON.stringify(payload),
-			},
-			(response) => {
-				if (!response || !response.success) {
-					Craft.cp.displayError(
-						response?.message || "Failed to save status page."
-					);
-					return;
-				}
-
-				Craft.cp.displayNotice(response.message);
-				window.location.href = Craft.getUrl("upsnap/status-page");
-			}
+	getLightswitchState(elementId) {
+		const lightswitchBtn = document.getElementById(elementId);
+		if (!lightswitchBtn) return false;
+		const hiddenInput = lightswitchBtn.querySelector('input[type="hidden"]');
+		return (
+			hiddenInput?.value === "1" ||
+			lightswitchBtn.getAttribute("aria-checked") === "true"
 		);
 	},
-	validateForm(name, isProtected, password, isEditMode, wasProtected, isPasswordDirty) {
+	registerFormSubmit() {
+		this.form.addEventListener("submit", async (e) => {
+			e.preventDefault();
+
+			const payload = this.buildSavePayload();
+			if (!payload) return;
+
+			this.disableSavebtn();
+			try {
+				const saveResult = await this.saveStatusPage(payload);
+				const savedStatusPageId =
+					saveResult?.data?.id ||
+					saveResult?.data?.status_page?.id ||
+					window.Upsnap?.statusPage?.id;
+
+				if (savedStatusPageId) {
+					await this.uploadSelectedAssets(savedStatusPageId);
+				}
+
+				Craft.cp.displayNotice(
+					saveResult?.message || "Status page saved successfully."
+				);
+				window.location.href = Craft.getUrl("upsnap/status-page");
+			} catch (error) {
+				Craft.cp.displayError(error?.message || "Failed to save status page.");
+			} finally {
+				this.enableSavebtn();
+			}
+		});
+	},
+	saveStatusPage(payload) {
+		return new Promise((resolve, reject) => {
+			Craft.postActionRequest(
+				"upsnap/status-page/save",
+				{
+					payload: JSON.stringify(payload),
+				},
+				(response) => {
+					if (!response || !response.success) {
+						reject(
+							new Error(response?.message || "Failed to save status page.")
+						);
+						return;
+					}
+					resolve(response);
+				}
+			);
+		});
+	},
+	buildSavePayload() {
+		const name = this.nameInput.value.trim();
+		const isProtected = this.getLightswitchState("is_protected");
+		const password = this.passwordInput.value;
+		const passwordPrompt = (this.passwordPromptInput.value || "").trim();
+		const isPasswordDirty = password.length > 0;
+
+		if (
+			!this.validateForm({
+				name,
+				isProtected,
+				password,
+				passwordPrompt,
+				isPasswordDirty,
+			})
+		) {
+			return null;
+		}
+
+		const payload = {
+			statusPageId: window.Upsnap?.statusPage?.id,
+			name,
+			monitor_ids: Array.from(this.selectedMonitors.keys()),
+			is_published: true,
+			is_protected: isProtected,
+			password: null,
+			customization: this.buildCustomizationPayload(isProtected),
+		};
+
+		if (this.isEditMode) {
+			if (this.wasProtected && !isProtected) {
+				payload.password = null;
+			} else if (isProtected && isPasswordDirty) {
+				payload.password = password;
+			} else if (!this.wasProtected && isProtected) {
+				payload.password = password;
+			}
+		} else if (isProtected) {
+			payload.password = password;
+		}
+
+		return payload;
+	},
+	buildCustomizationPayload(isProtected) {
+		const poweredBy = this.getLightswitchState("custom_footer_display_powered_by");
+		const customization = {
+			header: {
+				title: (this.headerTitleInput.value || "").trim(),
+				company_name: (this.headerCompanyNameInput.value || "").trim(),
+				description: (this.headerDescriptionInput.value || "").trim(),
+			},
+			asset_urls: {
+				favicon: this.assetState.favicon.removed
+					? ""
+					: this.assetState.favicon.currentUrl,
+				logo: this.assetState.logo.removed
+					? ""
+					: this.assetState.logo.currentUrl,
+			},
+			links: {
+				support_url: (this.supportUrlInput.value || "").trim(),
+				privacy_url: (this.privacyUrlInput.value || "").trim(),
+				tos_url: (this.tosUrlInput.value || "").trim(),
+			},
+			footer: {
+				footer_text: (this.footerTextInput.value || "").trim(),
+				contact_email: (this.contactEmailInput.value || "").trim(),
+				copyright_text: (this.copyrightInput.value || "").trim(),
+				display_powered_by: poweredBy,
+			},
+			password_prompt: isProtected
+				? (this.passwordPromptInput.value || "").trim()
+				: "",
+			display_config: {
+				accent_color: (this.accentColorHexInput.value || "").trim(),
+				show_uptime_percentage: true,
+				history_range_days: Number(this.historyRangeDaysInput.value),
+			},
+		};
+
+		if (this.isEditMode) {
+			const changedAssetUrls = {};
+			if (this.assetState.logo.changed) {
+				changedAssetUrls.logo = customization.asset_urls.logo;
+			}
+			if (this.assetState.favicon.changed) {
+				changedAssetUrls.favicon = customization.asset_urls.favicon;
+			}
+			if (Object.keys(changedAssetUrls).length) {
+				customization.asset_urls = changedAssetUrls;
+			} else {
+				delete customization.asset_urls;
+			}
+		}
+
+		return customization;
+	},
+	validateForm({ name, isProtected, password, passwordPrompt, isPasswordDirty }) {
 		if (!name) {
 			Craft.cp.displayError("Name is required.");
 			return false;
@@ -448,44 +589,130 @@ Craft.Upsnap.StatusPages = {
 			return false;
 		}
 
-		// Password validation logic based on mode and protection status
-		if (isEditMode) {
-			if (wasProtected) {
-				// Case 1: Was protected
-				// Password NOT required - user can just update name/monitors
-				// But if password is provided, validate it
-				if (isPasswordDirty && !this.validatePassword(password)) {
-					return false;
-				}
-			} else {
-				// Case 2: Was NOT protected
-				if (isProtected) {
-					// User is enabling protection - password IS required
-					if (!password) {
-						Craft.cp.displayError("Password is required when enabling page protection.");
-						return false;
-					}
-					if (!this.validatePassword(password)) {
-						return false;
-					}
-				}
+		if (isProtected) {
+			if (!this.isEditMode && !password) {
+				Craft.cp.displayError(
+					"Password is required when page protection is enabled."
+				);
+				return false;
 			}
-		} else {
-			// Create mode
-			if (isProtected) {
-				if (!password) {
-					Craft.cp.displayError("Password is required when page protection is enabled.");
-					return false;
-				}
-				if (!this.validatePassword(password)) {
-					return false;
-				}
+
+			if (this.isEditMode && !this.wasProtected && !password) {
+				Craft.cp.displayError(
+					"Password is required when enabling page protection."
+				);
+				return false;
 			}
+
+			if (isPasswordDirty && !this.validatePassword(password)) {
+				return false;
+			}
+		}
+
+		if (passwordPrompt.length > 100) {
+			Craft.cp.displayError(
+				"Password Prompt Message must be 100 characters or fewer."
+			);
+			return false;
+		}
+
+		const title = (this.headerTitleInput.value || "").trim();
+		const companyName = (this.headerCompanyNameInput.value || "").trim();
+		const headerDescription = (this.headerDescriptionInput.value || "").trim();
+		const footerText = (this.footerTextInput.value || "").trim();
+		const contactEmail = (this.contactEmailInput.value || "").trim();
+		const copyrightText = (this.copyrightInput.value || "").trim();
+		const supportUrl = (this.supportUrlInput.value || "").trim();
+		const privacyUrl = (this.privacyUrlInput.value || "").trim();
+		const tosUrl = (this.tosUrlInput.value || "").trim();
+		const accentColor = (this.accentColorHexInput.value || "").trim();
+		const historyDays = Number(this.historyRangeDaysInput.value);
+
+		if (!title) {
+			Craft.cp.displayError("Page Title is required.");
+			return false;
+		}
+
+		if (title.length > 50) {
+			Craft.cp.displayError("Page Title must be 50 characters or fewer.");
+			return false;
+		}
+
+		if (companyName.length > 25) {
+			Craft.cp.displayError("Company Name must be 25 characters or fewer.");
+			return false;
+		}
+
+		if (headerDescription.length > 100) {
+			Craft.cp.displayError(
+				"Header Description must be 100 characters or fewer."
+			);
+			return false;
+		}
+
+		if (footerText.length > 100) {
+			Craft.cp.displayError("Footer Text must be 100 characters or fewer.");
+			return false;
+		}
+
+		if (copyrightText.length > 50) {
+			Craft.cp.displayError("Copyright Text must be 50 characters or fewer.");
+			return false;
+		}
+
+		if (contactEmail.length > 255) {
+			Craft.cp.displayError(
+				"Contact Email must be 255 characters or fewer."
+			);
+			return false;
+		}
+
+		if (contactEmail && !this.isValidEmail(contactEmail)) {
+			Craft.cp.displayError("Contact Email must be a valid email address.");
+			return false;
+		}
+
+		if (!this.validateOptionalUrl(supportUrl, "Support URL")) return false;
+		if (!this.validateOptionalUrl(privacyUrl, "Privacy Policy URL")) return false;
+		if (!this.validateOptionalUrl(tosUrl, "Terms of Service URL")) return false;
+
+		if (!/^#[0-9A-Fa-f]{6}$/.test(accentColor)) {
+			Craft.cp.displayError("Accent Color must be in #RRGGBB format.");
+			return false;
+		}
+
+		if (![7, 30, 90].includes(historyDays)) {
+			Craft.cp.displayError(
+				"History Range Days must be one of: 7, 30, or 90."
+			);
+			return false;
 		}
 
 		return true;
 	},
+	validateOptionalUrl(value, label) {
+		if (!value) return true;
 
+		if (value.length > 1080) {
+			Craft.cp.displayError(`${label} must be 1080 characters or fewer.`);
+			return false;
+		}
+
+		try {
+			const parsed = new URL(value);
+			if (!["http:", "https:"].includes(parsed.protocol)) {
+				Craft.cp.displayError(`${label} must start with http:// or https://.`);
+				return false;
+			}
+			return true;
+		} catch {
+			Craft.cp.displayError(`${label} must be a valid URL.`);
+			return false;
+		}
+	},
+	isValidEmail(value) {
+		return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+	},
 	validatePassword(password) {
 		if (password.length < 8) {
 			Craft.cp.displayError("Password must be at least 8 characters long.");
@@ -506,50 +733,283 @@ Craft.Upsnap.StatusPages = {
 
 		return true;
 	},
-
 	registerPasswordProtection() {
-		// The lightswitch is a <button> element, not an input
 		const lightswitchBtn = document.getElementById("is_protected");
-		if (!lightswitchBtn || !this.passwordInput) return;
+		if (!lightswitchBtn || !this.passwordInput || !this.passwordPromptInput) return;
 
-		// Get the hidden input inside the lightswitch button
 		const hiddenInput = lightswitchBtn.querySelector('input[type="hidden"]');
-		
-		// Get the password field container - Craft wraps inputs in a .field div
 		const passwordField = this.passwordInput.closest(".field");
-		if (!passwordField) {
-			console.error("Password field container not found");
-			return;
-		}
+		const promptField = this.passwordPromptInput.closest(".field");
+		if (!passwordField || !promptField) return;
 
-		// Function to update password field visibility
-		const updatePasswordFieldVisibility = () => {
-			// Check the hidden input value OR the aria-checked attribute
-			const isProtected = hiddenInput?.value === "1" || lightswitchBtn.getAttribute("aria-checked") === "true";
-			
+		const updateVisibility = () => {
+			const isProtected = this.getLightswitchState("is_protected");
 			if (isProtected) {
 				passwordField.style.display = "block";
 				passwordField.classList.remove("hidden");
+				promptField.style.display = "block";
+				promptField.classList.remove("hidden");
+				this.passwordPromptInput.disabled = false;
 			} else {
 				passwordField.style.display = "none";
 				passwordField.classList.add("hidden");
-				this.passwordInput.value = ""; // Clear password when protection is disabled
+				promptField.style.display = "none";
+				promptField.classList.add("hidden");
+				this.passwordInput.value = "";
+				this.passwordPromptInput.disabled = true;
 			}
 		};
 
-		// Listen to the lightswitch button click
 		lightswitchBtn.addEventListener("click", () => {
-			// Delay to let Craft update the aria-checked and hidden input value
-			setTimeout(updatePasswordFieldVisibility, 50);
+			setTimeout(updateVisibility, 50);
 		});
 
-		// Also listen for any change events on the hidden input
 		if (hiddenInput) {
-			hiddenInput.addEventListener("change", updatePasswordFieldVisibility);
+			hiddenInput.addEventListener("change", updateVisibility);
 		}
 
-		// Set initial state
-		updatePasswordFieldVisibility();
+		updateVisibility();
+	},
+	registerAccentColorEvents() {
+		if (!this.accentColorInput || !this.accentColorHexInput || !this.accentColorSwatch) {
+			return;
+		}
+
+		const syncFromColorInput = () => {
+			const color = this.accentColorInput.value;
+			this.accentColorHexInput.value = color;
+			this.accentColorSwatch.style.backgroundColor = color;
+		};
+
+		const syncFromHexInput = () => {
+			const hex = (this.accentColorHexInput.value || "").trim();
+			if (/^#[0-9A-Fa-f]{6}$/.test(hex)) {
+				this.accentColorInput.value = hex;
+				this.accentColorSwatch.style.backgroundColor = hex;
+			}
+		};
+
+		this.accentColorInput.addEventListener("input", syncFromColorInput);
+		this.accentColorHexInput.addEventListener("input", syncFromHexInput);
+		syncFromHexInput();
+	},
+	initializeAssetState() {
+		const customization =
+			window.Upsnap?.statusPage?.customization ||
+			window.Upsnap?.defaultCustomization ||
+			{};
+		const assetUrls = customization.asset_urls || {};
+
+		this.assetState.logo.currentUrl = assetUrls.logo || "";
+		this.assetState.favicon.currentUrl = assetUrls.favicon || "";
+	},
+	registerAssetEvents() {
+		if (this.logoFileInput) {
+			this.logoFileInput.addEventListener("change", async () => {
+				const file = this.logoFileInput.files?.[0] || null;
+				await this.handleAssetSelection("logo", file);
+			});
+		}
+
+		if (this.faviconFileInput) {
+			this.faviconFileInput.addEventListener("change", async () => {
+				const file = this.faviconFileInput.files?.[0] || null;
+				await this.handleAssetSelection("favicon", file);
+			});
+		}
+
+		if (this.logoRemoveBtn) {
+			this.logoRemoveBtn.addEventListener("click", () => this.removeAsset("logo"));
+		}
+
+		if (this.faviconRemoveBtn) {
+			this.faviconRemoveBtn.addEventListener("click", () =>
+				this.removeAsset("favicon")
+			);
+		}
+	},
+	async handleAssetSelection(type, file) {
+		if (!file) return;
+
+		const rules =
+			type === "logo"
+				? {
+					allowedExt: ["jpg", "jpeg", "png"],
+					allowedMime: ["image/jpeg", "image/png"],
+					maxWidth: 400,
+					maxHeight: 200,
+				}
+				: {
+					allowedExt: ["png", "gif", "ico"],
+					allowedMime: [
+						"image/png",
+						"image/gif",
+						"image/x-icon",
+						"image/vnd.microsoft.icon",
+					],
+					maxWidth: 96,
+					maxHeight: 96,
+				};
+
+		const extension = (file.name.split(".").pop() || "").toLowerCase();
+		if (!rules.allowedExt.includes(extension) && !rules.allowedMime.includes(file.type)) {
+			Craft.cp.displayError(`Invalid ${type} file type.`);
+			this.clearAssetInput(type);
+			return;
+		}
+
+		if (file.size > 150 * 1024) {
+			Craft.cp.displayError(
+				`${type === "logo" ? "Logo" : "Favicon"} must be 150 KB or smaller.`
+			);
+			this.clearAssetInput(type);
+			return;
+		}
+
+		const dimensionsValid = await this.validateImageDimensions(
+			file,
+			rules.maxWidth,
+			rules.maxHeight
+		);
+
+		if (!dimensionsValid) {
+			Craft.cp.displayError(
+				`${type === "logo" ? "Logo" : "Favicon"} must be at most ${rules.maxWidth}x${rules.maxHeight}px.`
+			);
+			this.clearAssetInput(type);
+			return;
+		}
+
+		this.assetState[type].file = file;
+		this.assetState[type].changed = true;
+		this.assetState[type].removed = false;
+		this.renderAssetPreviews();
+	},
+	clearAssetInput(type) {
+		if (type === "logo" && this.logoFileInput) this.logoFileInput.value = "";
+		if (type === "favicon" && this.faviconFileInput) this.faviconFileInput.value = "";
+	},
+	removeAsset(type) {
+		this.assetState[type].file = null;
+		this.assetState[type].removed = true;
+		this.assetState[type].changed = true;
+		this.assetState[type].currentUrl = "";
+		this.clearAssetInput(type);
+		this.renderAssetPreviews();
+	},
+	renderAssetPreviews() {
+		this.renderAssetPreview("logo", this.logoPreview);
+		this.renderAssetPreview("favicon", this.faviconPreview);
+	},
+	renderAssetPreview(type, targetEl) {
+		if (!targetEl) return;
+		targetEl.innerHTML = "";
+		const state = this.assetState[type];
+
+		if (state.file) {
+			const url = URL.createObjectURL(state.file);
+			const img = document.createElement("img");
+			img.src = url;
+			img.alt = `${type} preview`;
+			img.className = "upsnap-asset-image";
+			targetEl.appendChild(img);
+			return;
+		}
+
+		if (state.currentUrl) {
+			const img = document.createElement("img");
+			img.src = state.currentUrl;
+			img.alt = `${type} preview`;
+			img.className = "upsnap-asset-image";
+			targetEl.appendChild(img);
+			return;
+		}
+
+		targetEl.innerHTML = '<span class="light">No asset selected</span>';
+	},
+	validateImageDimensions(file, maxWidth, maxHeight) {
+		return new Promise((resolve) => {
+			const img = new Image();
+			const objectUrl = URL.createObjectURL(file);
+
+			img.onload = () => {
+				URL.revokeObjectURL(objectUrl);
+				resolve(img.width <= maxWidth && img.height <= maxHeight);
+			};
+
+			img.onerror = () => {
+				URL.revokeObjectURL(objectUrl);
+				resolve(false);
+			};
+
+			img.src = objectUrl;
+		});
+	},
+	async uploadSelectedAssets(statusPageId) {
+		const failures = [];
+
+		if (this.assetState.logo.file) {
+			try {
+				const data = await this.uploadSingleAsset(
+					statusPageId,
+					"logo",
+					this.assetState.logo.file
+				);
+				const logoUrl = data?.url || data?.logo || data?.asset_url || data?.asset?.url;
+				if (logoUrl) this.assetState.logo.currentUrl = logoUrl;
+			} catch (error) {
+				failures.push(error?.message || "Failed to upload logo.");
+			}
+		}
+
+		if (this.assetState.favicon.file) {
+			try {
+				const data = await this.uploadSingleAsset(
+					statusPageId,
+					"favicon",
+					this.assetState.favicon.file
+				);
+				const faviconUrl =
+					data?.url || data?.favicon || data?.asset_url || data?.asset?.url;
+				if (faviconUrl) this.assetState.favicon.currentUrl = faviconUrl;
+			} catch (error) {
+				failures.push(error?.message || "Failed to upload favicon.");
+			}
+		}
+
+		if (failures.length) {
+			Craft.cp.displayError(failures.join(" "));
+		}
+	},
+	uploadSingleAsset(statusPageId, type, file) {
+		const formData = new FormData();
+		formData.append(Craft.csrfTokenName, Craft.csrfTokenValue);
+		formData.append("statusPageId", String(statusPageId));
+		formData.append("type", type);
+		formData.append("file", file);
+
+		return fetch(Craft.getActionUrl("upsnap/status-page/upload"), {
+			method: "POST",
+			headers: {
+				Accept: "application/json",
+				"X-Requested-With": "XMLHttpRequest",
+			},
+			body: formData,
+		})
+			.then((response) => response.json())
+			.then((response) => {
+				if (!response?.success) {
+					throw new Error(response?.message || `Failed to upload ${type}.`);
+				}
+				return response.data || {};
+			})
+			.catch((error) => {
+				const message =
+					error?.response?.data?.message ||
+					error?.message ||
+					`Failed to upload ${type}.`;
+				throw new Error(message);
+			});
 	},
 
 	registerTableActions() {
