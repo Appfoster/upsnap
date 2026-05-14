@@ -68,6 +68,24 @@ class ApiService extends Component
     }
 
     /**
+     * Make a multipart POST request
+     */
+    public function postMultipart(string $endpoint, array $multipartParts = [], array $headers = []): ?array
+    {
+        try {
+            $response = $this->client->post($endpoint, [
+                'headers' => array_merge($this->getHeaders(), $headers),
+                'multipart' => $multipartParts,
+            ]);
+
+            return json_decode((string) $response->getBody(), true);
+        } catch (RequestException $e) {
+            Craft::error("API multipart POST failed: " . $e->getMessage(), __METHOD__);
+            throw $e;
+        }
+    }
+
+    /**
      * Make a PUT request
      */
     public function put(string $endpoint, array $body = []): ?array

@@ -4,16 +4,27 @@
     { html: "<a href='" ~ url('upsnap') ~ "' class='thumb cp-icon'><svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 576 512' focusable='false' aria-hidden='true'><path d='M575.8 255.5c0 18-15 32.1-32 32.1l-32 0 .7 160.2c0 2.7-.2 5.4-.5 8.1l0 16.2c0 22.1-17.9 40-40 40l-16 0c-1.1 0-2.2 0-3.3-.1c-1.4 .1-2.8 .1-4.2 .1L416 512l-24 0c-22.1 0-40-17.9-40-40l0-24 0-64c0-17.7-14.3-32-32-32l-64 0c-17.7 0-32 14.3-32 32l0 64 0 24c0 22.1-17.9 40-40 40l-24 0-31.9 0c-1.5 0-3-.1-4.5-.2c-1.2 .1-2.4 .2-3.6 .2l-16 0c-22.1 0-40-17.9-40-40l0-112c0-.9 0-1.9 .1-2.8l0-69.7-32 0c-18 0-32-14-32-32.1c0-9 3-17 10-24L266.4 8c7-7 15-8 22-8s15 2 21 7L564.8 231.5c8 7 12 15 11 24z'></path></svg></a>" },
     { label: 'Status Page', url: url('upsnap/status-page')}
 ] %}
+{% set tabs = [
+    { label: 'General', url: '#general-tab', class: 'sel' },
+    { label: 'Customization', url: '#customization-tab' }
+] %}
+{% if mode == 'edit' and statusPage and statusPage.id %}
+    {% set tabs = tabs|merge([
+        { label: 'Announcements', url: '#announcements-tab' }
+    ]) %}
+{% endif %}
 
 
 {% block content %}
 	<script>
-		window.Upsnap = {
-statusPage: {{ statusPage|json_encode|raw }}
-};
+        window.Upsnap = window.Upsnap || {};
+        window.Upsnap.statusPage = {{ statusPage|json_encode|raw }};
+        window.Upsnap.defaultCustomization = {{ defaultCustomization|json_encode|raw }};
+        window.Upsnap.formMode = {{ mode|json_encode|raw }};
 	</script>
-	<form id="status-page-form">
-		{{ forms.textField({
+    <form id="status-page-form" novalidate>
+        <div id="general-tab" class="tab-content">
+            {{ forms.textField({
                 label: "Status Page Name",
                 id: "name",
                 name: "name",
@@ -23,24 +34,22 @@ statusPage: {{ statusPage|json_encode|raw }}
                 errors: []
             }) }}
 
-		<div class="field">
-			<div class="heading">
-				<label required>Monitors<span class="required" aria-hidden="true"></span>
-				</label>
+            <div class="field">
+                <div class="heading">
+                    <label required>Monitors<span class="required" aria-hidden="true"></span></label>
+                </div>
+                <div id="monitor-multiselect"></div>
+            </div>
 
-			</div>
-
-			<div id="monitor-multiselect"></div>
-		</div>
-		{{ forms.lightswitchField({
-            label: "Password Protect Status Page",
+            {{ forms.lightswitchField({
+            label: "Password Protected",
             instructions: "Require a password to view this status page.",
             id: "is_protected",
             name: "is_protected",
             on: statusPage ? (statusPage.is_protected ?? false) : false
         }) }}
 
-		{{ forms.passwordField({
+            {{ forms.passwordField({
             label: "Password",
             id: "password",
             name: "password",
@@ -49,9 +58,334 @@ statusPage: {{ statusPage|json_encode|raw }}
             autocomplete: "new-password",
             instructions: "Minimum 8 characters with uppercase, lowercase, number, and special character."
         }) }}
+
+		    {{ forms.textareaField({
+            label: "Password Prompt Message",
+            id: "password_prompt",
+            name: "password_prompt",
+            rows: 3,
+            maxlength: 100,
+            instructions: "Shown on the protected status page. Maximum 100 characters.",
+            value: statusPage and statusPage.customization and statusPage.customization.password_prompt is defined
+                ? statusPage.customization.password_prompt
+                : defaultCustomization.password_prompt
+        }) }}
+        </div>
+
+        <div id="customization-tab" class="tab-content hidden">
+            <h2>Header</h2>
+            {{ forms.textField({
+                label: "Page Title",
+                id: "custom_header_title",
+                name: "custom_header_title",
+                required: true,
+                maxlength: 50,
+                value: statusPage and statusPage.customization and statusPage.customization.header and statusPage.customization.header.title is defined
+                    ? statusPage.customization.header.title
+                    : defaultCustomization.header.title
+            }) }}
+
+            {{ forms.textField({
+                label: "Company Name",
+                id: "custom_header_company_name",
+                name: "custom_header_company_name",
+                maxlength: 25,
+                value: statusPage and statusPage.customization and statusPage.customization.header and statusPage.customization.header.company_name is defined
+                    ? statusPage.customization.header.company_name
+                    : defaultCustomization.header.company_name
+            }) }}
+
+            {{ forms.textareaField({
+                label: "Header Description",
+                id: "custom_header_description",
+                name: "custom_header_description",
+                rows: 3,
+                maxlength: 100,
+                value: statusPage and statusPage.customization and statusPage.customization.header and statusPage.customization.header.description is defined
+                    ? statusPage.customization.header.description
+                    : defaultCustomization.header.description
+            }) }}
+
+            <h2>Assets</h2>
+            <div class="upsnap-assets-grid">
+                <div class="upsnap-asset-card" data-asset="logo">
+                    <h3>Logo</h3>
+                    <p class="light">Accepted: jpg, jpeg, png. Max 150 KB. Max 400x200.</p>
+                    <div id="logo-preview" class="upsnap-asset-preview"></div>
+                    <div class="upsnap-asset-actions">
+                        <input type="file" id="logo_file" accept=".jpg,.jpeg,.png,image/jpeg,image/png">
+                        <button type="button" class="btn" id="logo_remove_btn">Remove</button>
+                    </div>
+                </div>
+
+                <div class="upsnap-asset-card" data-asset="favicon">
+                    <h3>Favicon</h3>
+                    <p class="light">Accepted: png, gif, ico. Max 150 KB. Max 96x96.</p>
+                    <div id="favicon-preview" class="upsnap-asset-preview"></div>
+                    <div class="upsnap-asset-actions">
+                        <input type="file" id="favicon_file" accept=".png,.gif,.ico,image/png,image/gif,image/x-icon,image/vnd.microsoft.icon">
+                        <button type="button" class="btn" id="favicon_remove_btn">Remove</button>
+                    </div>
+                </div>
+            </div>
+
+            <h2>Footer</h2>
+            <div class="upsnap-two-col-grid">
+                <div>
+                    {{ forms.textField({
+                        label: "Footer Text",
+                        id: "custom_footer_text",
+                        name: "custom_footer_text",
+                        maxlength: 100,
+                        value: statusPage and statusPage.customization and statusPage.customization.footer and statusPage.customization.footer.footer_text is defined
+                            ? statusPage.customization.footer.footer_text
+                            : defaultCustomization.footer.footer_text
+                    }) }}
+
+                    {{ forms.textField({
+                        label: "Contact Email",
+                        id: "custom_footer_contact_email",
+                        name: "custom_footer_contact_email",
+                        type: 'email',
+                        maxlength: 255,
+                        value: statusPage and statusPage.customization and statusPage.customization.footer and statusPage.customization.footer.contact_email is defined
+                            ? statusPage.customization.footer.contact_email
+                            : defaultCustomization.footer.contact_email
+                    }) }}
+
+                    {{ forms.textField({
+                        label: "Copyright Text",
+                        id: "custom_footer_copyright_text",
+                        name: "custom_footer_copyright_text",
+                        maxlength: 50,
+                        value: statusPage and statusPage.customization and statusPage.customization.footer and statusPage.customization.footer.copyright_text is defined
+                            ? statusPage.customization.footer.copyright_text
+                            : defaultCustomization.footer.copyright_text
+                    }) }}
+
+                    {{ forms.lightswitchField({
+                        label: "Powered by Upsnap",
+                        id: "custom_footer_display_powered_by",
+                        name: "custom_footer_display_powered_by",
+                        on: statusPage and statusPage.customization and statusPage.customization.footer and statusPage.customization.footer.display_powered_by is defined
+                            ? statusPage.customization.footer.display_powered_by
+                            : defaultCustomization.footer.display_powered_by
+                    }) }}
+                </div>
+
+                <div>
+                    {{ forms.textField({
+                        label: "Support URL",
+                        id: "custom_links_support_url",
+                        name: "custom_links_support_url",
+                        type: 'url',
+                        maxlength: 1080,
+                        value: statusPage and statusPage.customization and statusPage.customization.links and statusPage.customization.links.support_url is defined
+                            ? statusPage.customization.links.support_url
+                            : defaultCustomization.links.support_url
+                    }) }}
+
+                    {{ forms.textField({
+                        label: "Privacy Policy URL",
+                        id: "custom_links_privacy_url",
+                        name: "custom_links_privacy_url",
+                        type: 'url',
+                        maxlength: 1080,
+                        value: statusPage and statusPage.customization and statusPage.customization.links and statusPage.customization.links.privacy_url is defined
+                            ? statusPage.customization.links.privacy_url
+                            : defaultCustomization.links.privacy_url
+                    }) }}
+
+                    {{ forms.textField({
+                        label: "Terms of Service URL",
+                        id: "custom_links_tos_url",
+                        name: "custom_links_tos_url",
+                        type: 'url',
+                        maxlength: 1080,
+                        value: statusPage and statusPage.customization and statusPage.customization.links and statusPage.customization.links.tos_url is defined
+                            ? statusPage.customization.links.tos_url
+                            : defaultCustomization.links.tos_url
+                    }) }}
+                </div>
+            </div>
+
+            <h2>Display Settings</h2>
+            <div class="upsnap-display-row">
+                <div class="upsnap-color-field">
+                    <label for="custom_display_accent_color">Accent Color</label>
+                    <div class="upsnap-color-controls">
+                        <input type="color" id="custom_display_accent_color" value="{{ statusPage and statusPage.customization and statusPage.customization.display_config and statusPage.customization.display_config.accent_color is defined ? statusPage.customization.display_config.accent_color : defaultCustomization.display_config.accent_color }}">
+                        <input type="text" class="text" id="custom_display_accent_color_hex" maxlength="7" value="{{ statusPage and statusPage.customization and statusPage.customization.display_config and statusPage.customization.display_config.accent_color is defined ? statusPage.customization.display_config.accent_color : defaultCustomization.display_config.accent_color }}">
+                        <span class="upsnap-color-swatch" id="custom_display_accent_color_swatch"></span>
+                    </div>
+                </div>
+
+                {{ forms.selectField({
+                    label: "History Range Days",
+                    id: "custom_display_history_range_days",
+                    name: "custom_display_history_range_days",
+                    options: [
+                        { label: '7 days', value: 7 },
+                        { label: '30 days', value: 30 },
+                        { label: '90 days', value: 90 }
+                    ],
+                    value: statusPage and statusPage.customization and statusPage.customization.display_config and statusPage.customization.display_config.history_range_days is defined
+                        ? statusPage.customization.display_config.history_range_days
+                        : defaultCustomization.display_config.history_range_days
+                }) }}
+            </div>
+        </div>
+
+        {% if mode == 'edit' and statusPage and statusPage.id %}
+        <div id="announcements-tab" class="tab-content hidden" data-status-page-id="{{ statusPage.id }}">
+            <div class="upsnap-announcements-header">
+                <div>
+                    <h2>Announcements</h2>
+                    <p class="light">Manage announcements for your status page.</p>
+                </div>
+                <button type="button" class="btn submit" id="announcements-add-btn">Add</button>
+            </div>
+
+            <div id="announcements-error" class="upsnap-announcements-error hidden"></div>
+
+            <table id="announcements-table" class="data fullwidth">
+                <thead>
+                    <tr>
+                        <th>Title</th>
+                        <th>Type</th>
+                        <th>Status</th>
+                        <th>Start Date</th>
+                        <th>End Date</th>
+                        <th class="thin">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="announcements-tbody">
+                    <tr id="announcements-loading-row" class="upsnap-announcements-empty-row">
+                        <td colspan="6" class="upsnap-announcements-empty-cell">Loading announcements...</td>
+                    </tr>
+                    <tr id="announcements-empty-row" class="upsnap-announcements-empty-row hidden">
+                        <td colspan="6" class="upsnap-announcements-empty-cell">No announcements found.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div id="announcement-modal" class="upsnap-modal hidden" role="dialog" aria-modal="true" aria-labelledby="announcement-modal-title">
+            <div class="upsnap-modal__overlay" data-close-modal="announcement"></div>
+            <div class="upsnap-modal__container">
+                <div class="upsnap-modal__header">
+                    <h2 id="announcement-modal-title" class="upsnap-modal__title">Add Announcement</h2>
+                    <button type="button" class="upsnap-modal__close" id="announcement-modal-close" aria-label="Close">&times;</button>
+                </div>
+                <div class="upsnap-modal__body">
+                    <input type="hidden" id="announcement_id" value="">
+
+                    <div class="field">
+                        <div class="heading">
+                            <label for="announcement_title">Title <span class="required" aria-hidden="true"></span></label>
+                        </div>
+                        <div class="input ltr">
+                            <input type="text" class="text fullwidth" id="announcement_title" maxlength="100" required>
+                        </div>
+                    </div>
+
+                    <div class="field">
+                        <div class="heading">
+                            <label for="announcement_message">Message <span class="required" aria-hidden="true"></span></label>
+                        </div>
+                        <div class="input ltr">
+                            <textarea class="text fullwidth" id="announcement_message" rows="4" maxlength="500" required></textarea>
+                        </div>
+                    </div>
+
+                    <div class="upsnap-two-col-grid flex">
+                        <div class="field flex-grow">
+                            <div class="heading">
+                                <label for="announcement_start_at">Start Date &amp; Time</label>
+                            </div>
+                            <div class="input ltr">
+                                <input type="text" class="text fullwidth" id="announcement_start_at" autocomplete="off" placeholder="Select start date and time">
+                            </div>
+                        </div>
+
+                        <div class="field flex-grow">
+                            <div class="heading">
+                                <label for="announcement_end_at">End Date &amp; Time</label>
+                            </div>
+                            <div class="input ltr">
+                                <input type="text" class="text fullwidth" id="announcement_end_at" autocomplete="off" placeholder="Select end date and time">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="upsnap-three-col-grid flex">
+                        <div class="field flex-grow">
+                            <div class="heading">
+                                <label for="announcement_type">Type <span class="required" aria-hidden="true"></span></label>
+                            </div>
+                            <div class="input ltr">
+                                <div class="select">
+                                    <select id="announcement_type" required>
+                                        <option value="info">Info</option>
+                                        <option value="warning">Warning</option>
+                                        <option value="critical">Critical</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="field flex-grow">
+                            <div class="heading">
+                                <label for="announcement_status">Status</label>
+                            </div>
+                            <div class="input ltr">
+                                <div class="select">
+                                    <select id="announcement_status">
+                                        <option value="active">Active</option>
+                                        <option value="inactive">Inactive</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="field flex-grow">
+                            {{ forms.lightswitchField({
+                                label: "Dismissible",
+                                id: "announcement_is_dismissible",
+                                name: "announcement_is_dismissible",
+                                on: true
+                            }) }}
+                        </div>
+                    </div>
+                </div>
+                <div class="upsnap-modal__footer">
+                    <button type="button" class="btn" id="announcement-cancel-btn">Cancel</button>
+                    <button type="button" class="btn submit" id="announcement-save-btn">Save</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="announcement-delete-modal" class="upsnap-modal hidden" role="dialog" aria-modal="true" aria-labelledby="announcement-delete-title">
+            <div class="upsnap-modal__overlay" data-close-modal="announcement-delete"></div>
+            <div class="upsnap-modal__container">
+                <div class="upsnap-modal__header">
+                    <h2 id="announcement-delete-title" class="upsnap-modal__title">Delete Announcement</h2>
+                    <button type="button" class="upsnap-modal__close" id="announcement-delete-close" aria-label="Close">&times;</button>
+                </div>
+                <div class="upsnap-modal__body">
+                    <p>Are you sure you want to delete this announcement?</p>
+                </div>
+                <div class="upsnap-modal__footer">
+                    <button type="button" class="btn" id="announcement-delete-cancel-btn">Cancel</button>
+                    <button type="button" class="btn submit" id="announcement-delete-confirm-btn">Delete</button>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
 		<div class="buttons">
-			<button type="submit" id='status-page-btn' class="btn submit">
-				Save Status Page
+            <button type="submit" id='status-page-btn' class="btn submit{% if mode == 'edit' %} hidden{% endif %}">
+				Save
 			</button>
 		</div>
 	</form>

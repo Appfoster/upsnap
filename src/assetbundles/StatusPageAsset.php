@@ -11,9 +11,11 @@ class StatusPageAsset extends BaseAsset
 
         $this->js = [
             'js/status-pages.js',
+            'js/flatpickr.min.js',
         ];
         $this->css = [
-            'css/status-page.css'
+            'css/status-page.css',
+            'css/flatpickr.min.css',
         ];
     }
 }

@@ -32,7 +32,9 @@
     { label: '2d', value: 2, unit: 'day' },
     { label: '5d', value: 5, unit: 'day' },
     { label: '7d', value: 7, unit: 'day' },
-    { label: '10d', value: 10, unit: 'day' }
+	{ label: '10d', value: 10, unit: 'day' },
+	{ label: '15d', value: 15, unit: 'day' },
+	{ label: '30d', value: 30, unit: 'day' }
 ] %}
 
 {% set monitorTypeOptions = [
@@ -163,8 +165,8 @@
 					}) }}
 
 					<div id="advanced-settings" style="{% if not (monitor ? (monitor.enabled ?? false) : false) %}display:none;{% endif %}">
-<div class="timeout-slider-half">
-						{% include 'upsnap/_components/interval-slider.twig' with {
+						<div class="timeout-slider-half">
+							{% include 'upsnap/_components/interval-slider.twig' with {
 							id: 'websiteTimeout',
 							name: 'websiteTimeout',
 							value: monitor ? (monitor.websiteTimeout ?? 30) : 30,
@@ -173,7 +175,7 @@
 							label: 'Request Timeout',
 							description: 'The request timeout is {exact time} seconds.'
 						} %}
-					</div>
+						</div>
 
 						<h3 id="healthcheck-settings-title" class="heading">Healthcheck Settings</h3>
 						<hr>
@@ -214,7 +216,7 @@
 										id: 'brokenLinks',
 										name: 'brokenLinksMonitoringInterval',
 										value: monitor ? (monitor.brokenLinksMonitoringInterval ?? 86400) : 86400,
-										partitions: defaultIntervals,
+										partitions: lighthouseIntervals,
 										minMonitorIntervalSeconds: MIN_MONITOR_INTERVAL_SECONDS
 									} %}
 								</div>
@@ -236,7 +238,7 @@
 										id: 'mixedContent',
 										name: 'mixedContentMonitoringInterval',
 										value: monitor ? (monitor.mixedContentMonitoringInterval ?? 86400) : 86400,
-										partitions: defaultIntervals,
+										partitions: lighthouseIntervals,
 										minMonitorIntervalSeconds: MIN_MONITOR_INTERVAL_SECONDS
 									} %}
 								</div>
@@ -246,6 +248,7 @@
 							<div class="healthcheck-section">
 								{{ forms.lightswitchField({
 									label: "Domain Expiry Check"|t('upsnap'),
+									instructions: "Monitor your domain's expiry date and get alerts before it expires."|t('upsnap'),
 									id: 'domainEnabled',
 									name: 'domainEnabled',
 									on: monitor ? (monitor.domainEnabled ?? true) : true,
@@ -256,7 +259,7 @@
 										id: 'domain',
 										name: 'domainMonitoringInterval',
 										value: monitor ? (monitor.domainMonitoringInterval ?? 86400) : 86400,
-										partitions: defaultIntervals,
+										partitions: lighthouseIntervals,
 										minMonitorIntervalSeconds: MIN_MONITOR_INTERVAL_SECONDS
 									} %}
 									{{ forms.selectField({
@@ -276,6 +279,7 @@
 							<div class="healthcheck-section  http-disabled">
 								{{ forms.lightswitchField({
 									label: "SSL Certificate Check"|t('upsnap'),
+									instructions: "Monitor your SSL certificate's expiry date and get alerts before it expires."|t('upsnap'),
 									id: 'sslEnabled',
 									name: 'sslEnabled',
 									on: monitor ? (monitor.securityCertificatesEnabled ?? true) : true,
@@ -286,7 +290,7 @@
 										id: 'securityCertificates',
 										name: 'securityCertificatesMonitoringInterval',
 										value: monitor ? (monitor.securityCertificatesMonitoringInterval ?? 86400) : 86400,
-										partitions: defaultIntervals,
+										partitions: lighthouseIntervals,
 										minMonitorIntervalSeconds: MIN_MONITOR_INTERVAL_SECONDS
 									} %}
 									{{ forms.selectField({
@@ -300,9 +304,7 @@
 								</div>
 							</div>
 
-							<div class="healthcheck-section http-disabled"
-								data-disabled-reason="{{ 'These checks are not available for non HTTPS URLs.'|t('upsnap') }}"
->
+							<div class="healthcheck-section http-disabled" data-disabled-reason="{{ 'These checks are not available for non HTTPS URLs.'|t('upsnap') }}">
 								{{ forms.lightswitchField({
 									label: "Lighthouse Performance Check"|t('upsnap'),
 									instructions: "Monitor site performance"|t('upsnap'),
@@ -428,9 +430,9 @@
 					}) }}
 
 					<div id="port-advanced-settings" style="{% if not (monitor ? (monitor.portEnabled ?? false) : false) %}display:none;{% endif %}">
-					<div class="timeout-row-grid">
-						<div>
-							{% include 'upsnap/_components/interval-slider.twig' with {
+						<div class="timeout-row-grid">
+							<div>
+								{% include 'upsnap/_components/interval-slider.twig' with {
 								id: 'portTimeout',
 								name: 'portTimeout',
 								value: monitor ? (monitor.portTimeout ?? 30) : 30,
@@ -439,9 +441,9 @@
 								label: 'Request Timeout',
 								description: 'The request timeout is {exact time} seconds.'
 							} %}
-						</div>
-						<div>
-							{% include 'upsnap/_components/interval-slider.twig' with {
+							</div>
+							<div>
+								{% include 'upsnap/_components/interval-slider.twig' with {
 								id: 'portMonitorInterval',
 								name: 'portMonitorInterval',
 								value: monitor ? (monitor.portMonitorInterval ?? 300) : 300,
@@ -450,8 +452,8 @@
 								label: 'Check Interval',
 								description: 'Your monitor will be checked every {exact time}.'
 							} %}
+							</div>
 						</div>
-					</div>
 					</div>
 				</div>
 			</div>
@@ -491,70 +493,89 @@
 			</div>
 
 			<div class="field">
-				<div class="heading">
-					<label>Keywords / Text<span class="required" aria-hidden="true"></span></label>
-				</div>
-				<div id="keywords-input-container" style="display: flex; gap: 10px; margin-bottom: 15px;">
-					<input type="text" id="keywordInput" class="text" placeholder="Enter keyword" style="flex: 1; padding: 8px;">
-					<button type="button" id="add-keyword-btn" class="btn" style="padding: 8px 16px;">+</button>
-				</div>
-				<div id="keywords-list" style="display: flex; flex-direction: column; gap: 15px;">
-					{# Keywords will be populated here as cards #}
-				{% if monitor and monitor.keywords is defined and monitor.keywords %}
-					{% for keyword in monitor.keywords %}
-						<div class="keyword-card" data-keyword="{{ keyword.text }}">
-							<div class="keyword-card__header">
-								<span class="keyword-chip-wrap">
-								<span class="keyword-chip-label">Keyword:</span>
-								<span class="keyword-chip">{{ keyword.text }}</span>
-							</span>
-								<button type="button" class="remove-keyword keyword-card__remove" data-keyword="{{ keyword.text }}" aria-label="Remove keyword">
-									<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
-								</button>
+				<div style="display: flex; gap: 20px; align-items: flex-start;">
+					<div style="flex: 0 0 70%; max-width: 70%;">
+						<div class="field">
+							<div class="heading">
+								<label>Keywords / Text<span class="required" aria-hidden="true"></span>
+								</label>
 							</div>
-							<div class="keyword-card__controls">
-								<div class="keyword-card__match-wrap">
-									<span class="keyword-card__match-label">Match type</span>
-									<select class="keyword-match-condition keyword-card__select" data-keyword="{{ keyword.text }}">
-										<option value="must_contain" {% if keyword.matchCondition == 'must_contain' %}selected{% endif %}>Start incident when keyword exists</option>
-										<option value="must_not_contain" {% if keyword.matchCondition == 'must_not_contain' %}selected{% endif %}>Start incident when keyword does not exist</option>
-									</select>
-								</div>
-								<div class="keyword-card__toggles">
-									<div class="keyword-toggle">
-										<label class="keyword-toggle__switch">
-											<input type="checkbox" class="keyword-is-regex" data-keyword="{{ keyword.text }}" {% if keyword.isRegex %}checked{% endif %}>
-											<span class="keyword-toggle__slider"></span>
-										</label>
-										<div class="keyword-toggle__text">
-											<span class="keyword-toggle__label">Regex</span>
-											<span class="keyword-toggle__desc">Use regular expression matching</span>
-										</div>
-									</div>
-									<div class="keyword-toggle">
-										<label class="keyword-toggle__switch">
-											<input type="checkbox" class="keyword-case-sensitive" data-keyword="{{ keyword.text }}" {% if keyword.caseSensitive %}checked{% endif %}>
-											<span class="keyword-toggle__slider"></span>
-										</label>
-										<div class="keyword-toggle__text">
-											<span class="keyword-toggle__label">Case Sensitive</span>
-											<span class="keyword-toggle__desc">Match exact letter case</span>
-										</div>
-									</div>
-								</div>
+							<div id="keywords-input-container" style="display: flex; gap: 10px; margin-bottom: 0;">
+								<input type="text" id="keywordInput" class="text" placeholder="Enter keyword" style="flex: 1; padding: 8px;">
+								<button type="button" id="add-keyword-btn" class="btn" style="padding: 8px 16px;">+</button>
 							</div>
 						</div>
-					{% endfor %}
+					</div>
+					<div style="flex: 0 0 30%; max-width: 30%; --field-margin: 0;">
+						<div style="margin-top: 0 !important;">
+							{{ forms.lightswitchField({
+							label: "Match All Keywords"|t('upsnap'),
+							instructions: "All keywords must match for the check to pass."|t('upsnap'),
+							id: "keywordMatchAll",
+							name: "keywordMatchAll",
+							on: monitor ? (monitor.keywordMatchAll ?? false) : false
+						}) }}
+						</div>
+					</div>
+				</div>
+				<div
+					id="keywords-list" style="display: flex; flex-direction: column; gap: 15px; margin-top: 15px;">
+					{# Keywords will be populated here as cards #}
+					{% if monitor and monitor.keywords is defined and monitor.keywords %}
+						{% for keyword in monitor.keywords %}
+							<div class="keyword-card" data-keyword="{{ keyword.text }}">
+								<div class="keyword-card__header">
+									<span class="keyword-chip-wrap">
+										<span class="keyword-chip-label">Keyword:</span>
+										<span class="keyword-chip">{{ keyword.text }}</span>
+									</span>
+									<button type="button" class="remove-keyword keyword-card__remove" data-keyword="{{ keyword.text }}" aria-label="Remove keyword">
+										<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+									</button>
+								</div>
+								<div class="keyword-card__controls">
+									<div class="keyword-card__match-wrap">
+										<span class="keyword-card__match-label">Match type</span>
+										<select class="keyword-match-condition keyword-card__select" data-keyword="{{ keyword.text }}">
+											<option value="must_contain" {% if keyword.matchCondition == 'must_contain' %} selected {% endif %}>Start incident when keyword exists</option>
+											<option value="must_not_contain" {% if keyword.matchCondition == 'must_not_contain' %} selected {% endif %}>Start incident when keyword does not exist</option>
+										</select>
+									</div>
+									<div class="keyword-card__toggles">
+										<div class="keyword-toggle">
+											<label class="keyword-toggle__switch">
+												<input type="checkbox" class="keyword-is-regex" data-keyword="{{ keyword.text }}" {% if keyword.isRegex %} checked {% endif %}>
+												<span class="keyword-toggle__slider"></span>
+											</label>
+											<div class="keyword-toggle__text">
+												<span class="keyword-toggle__label">Regex</span>
+												<span class="keyword-toggle__desc">Use regular expression matching</span>
+											</div>
+										</div>
+										<div class="keyword-toggle">
+											<label class="keyword-toggle__switch">
+												<input type="checkbox" class="keyword-case-sensitive" data-keyword="{{ keyword.text }}" {% if keyword.caseSensitive %} checked {% endif %}>
+												<span class="keyword-toggle__slider"></span>
+											</label>
+											<div class="keyword-toggle__text">
+												<span class="keyword-toggle__label">Case Sensitive</span>
+												<span class="keyword-toggle__desc">Match exact letter case</span>
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+						{% endfor %}
+					{% endif %}
+				</div>
+				{% set keywordTexts = [] %}
+				{% if monitor and monitor.keywords is defined and monitor.keywords %}
+					{% set keywordTexts = monitor.keywords|map(k => k.text) %}
 				{% endif %}
+				<input type="hidden" id="keywordsHidden" name="keywords" value='{{ keywordTexts|json_encode }}'>
 			</div>
-			{% set keywordTexts = [] %}
-			{% if monitor and monitor.keywords is defined and monitor.keywords %}
-				{% set keywordTexts = monitor.keywords|map(k => k.text) %}
-			{% endif %}
-			<input type="hidden" id="keywordsHidden" name="keywords" value='{{ keywordTexts|json_encode }}'>
-		</div>
 
-		<div id="keyword-notification-channels-accordion" class="field accordion-container">
+			<div id="keyword-notification-channels-accordion" class="field accordion-container">
 				<div class="heading">
 					<button type="button" id="keyword-integrations-trigger" class="accordion-trigger" aria-expanded="false" aria-controls="keyword-notification-channels-content">
 						<span class="accordion-arrow"></span>
@@ -598,9 +619,9 @@
 					}) }}
 
 					<div id="keyword-advanced-settings" style="{% if not (monitor ? (monitor.keywordEnabled ?? false) : false) %}display:none;{% endif %}">
-<div class="timeout-row-grid">
-						<div>
-							{% include 'upsnap/_components/interval-slider.twig' with {
+						<div class="timeout-row-grid">
+							<div>
+								{% include 'upsnap/_components/interval-slider.twig' with {
 								id: 'keywordTimeout',
 								name: 'keywordTimeout',
 								value: monitor ? (monitor.keywordTimeout ?? 30) : 30,
@@ -609,9 +630,9 @@
 								label: 'Request Timeout',
 								description: 'The request timeout is {exact time} seconds.'
 							} %}
-						</div>
-						<div>
-							{% include 'upsnap/_components/interval-slider.twig' with {
+							</div>
+							<div>
+								{% include 'upsnap/_components/interval-slider.twig' with {
 								id: 'keywordMonitorInterval',
 								name: 'keywordMonitorInterval',
 								value: monitor ? (monitor.keywordMonitorInterval ?? 300) : 300,
@@ -620,8 +641,8 @@
 								label: 'Check Interval',
 								description: 'Your monitor will be checked every {exact time}.'
 							} %}
+							</div>
 						</div>
-					</div>
 
 						{{ forms.lightswitchField({
 							label: "Follow Redirects",
@@ -631,13 +652,7 @@
 							on: monitor ? (monitor.keywordFollowRedirects ?? false) : false
 						}) }}
 
-						{{ forms.lightswitchField({
-							label: "Match All Keywords",
-							instructions: "All keywords must match for the check to pass. If disabled, matching any keyword is sufficient.",
-							id: "keywordMatchAll",
-							name: "keywordMatchAll",
-							on: monitor ? (monitor.keywordMatchAll ?? false) : false
-						}) }}
+
 					</div>
 				</div>
 			</div>
@@ -655,10 +670,10 @@
 		window.Upsnap.settings = {
 			...(window.Upsnap.settings || {}),
 			logoBaseUrl: {{ (_logoBaseUrl ?? '')|json_encode|raw }}
-		};
+			};
 
-		window.preSelectedChannelIds = {{ monitor ? monitor.channelIds|json_encode|raw : '[]' }};
-		window.CraftPageData = {
+			window.preSelectedChannelIds = {{ monitor ? monitor.channelIds|json_encode|raw : '[]' }};
+			window.CraftPageData = {
 			title: {{ title|json_encode|raw }},
 			monitorForm: true,
 			monitorData: {{ monitor ? monitor|json_encode|raw : 'null' }},
