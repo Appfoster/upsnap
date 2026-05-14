@@ -12,6 +12,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Added a new dashboard card displaying the total number of connected notification channels and integrations, with quick access to detailed views.
 - **Monitor Selection Dropdown on Dashboard**  
   Added a monitor selection dropdown to the dashboard, allowing users to quickly switch between monitors and view their details without leaving the page.
+- **Status Page Customization and Annoucments Management**  
+  Added a new section in the status page settings for customizing the status page appearance, including options for color schemes, layout, and branding. Also added an announcements management interface for creating and managing status page announcements.
 
 ### Chore
 - Reduced dashboard loading time for a smoother and faster user experience.
