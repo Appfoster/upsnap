@@ -384,7 +384,7 @@
         {% endif %}
 
 		<div class="buttons">
-			<button type="submit" id='status-page-btn' class="btn submit">
+            <button type="submit" id='status-page-btn' class="btn submit{% if mode == 'edit' %} hidden{% endif %}">
 				Save
 			</button>
 		</div>
