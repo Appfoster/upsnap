@@ -6,12 +6,18 @@
 ] %}
 {% set tabs = [
     { label: 'General', url: '#general-tab', class: 'sel' },
-    { label: 'Customization', url: '#customization-tab' },
-    { label: 'Announcements', url: '#announcements-tab' }
+    { label: 'Customization', url: '#customization-tab' }
 ] %}
+{% if mode == 'edit' and statusPage and statusPage.id %}
+    {% set tabs = tabs|merge([
+        { label: 'Announcements', url: '#announcements-tab' }
+    ]) %}
+{% endif %}
 
 
 {% block content %}
+	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.css">
+	<script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13"></script>
 	<script>
         window.Upsnap = window.Upsnap || {};
         window.Upsnap.statusPage = {{ statusPage|json_encode|raw }};
@@ -232,16 +238,156 @@
             </div>
         </div>
 
-        <div id="announcements-tab" class="tab-content hidden">
-            <div class="upsnap-announcements-placeholder">
-                <h2>Coming soon</h2>
-                <p class="light">Announcements UI and CRUD will be added in a follow-up update.</p>
+        {% if mode == 'edit' and statusPage and statusPage.id %}
+        <div id="announcements-tab" class="tab-content hidden" data-status-page-id="{{ statusPage.id }}">
+            <div class="upsnap-announcements-header">
+                <div>
+                    <h2>Announcements</h2>
+                    <p class="light">Manage announcements for your status page.</p>
+                </div>
+                <button type="button" class="btn submit" id="announcements-add-btn">Add</button>
+            </div>
+
+            <div id="announcements-error" class="upsnap-announcements-error hidden"></div>
+
+            <table id="announcements-table" class="data fullwidth">
+                <thead>
+                    <tr>
+                        <th>Title</th>
+                        <th>Type</th>
+                        <th>Status</th>
+                        <th>Start Date</th>
+                        <th>End Date</th>
+                        <th class="thin">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="announcements-tbody">
+                    <tr id="announcements-loading-row" class="upsnap-announcements-empty-row">
+                        <td colspan="6" class="upsnap-announcements-empty-cell">Loading announcements...</td>
+                    </tr>
+                    <tr id="announcements-empty-row" class="upsnap-announcements-empty-row hidden">
+                        <td colspan="6" class="upsnap-announcements-empty-cell">No announcements found.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div id="announcement-modal" class="upsnap-modal hidden" role="dialog" aria-modal="true" aria-labelledby="announcement-modal-title">
+            <div class="upsnap-modal__overlay" data-close-modal="announcement"></div>
+            <div class="upsnap-modal__container">
+                <div class="upsnap-modal__header">
+                    <h2 id="announcement-modal-title" class="upsnap-modal__title">Add Announcement</h2>
+                    <button type="button" class="upsnap-modal__close" id="announcement-modal-close" aria-label="Close">&times;</button>
+                </div>
+                <div class="upsnap-modal__body">
+                    <input type="hidden" id="announcement_id" value="">
+
+                    <div class="field">
+                        <div class="heading">
+                            <label for="announcement_title">Title <span class="required" aria-hidden="true"></span></label>
+                        </div>
+                        <div class="input ltr">
+                            <input type="text" class="text fullwidth" id="announcement_title" maxlength="100" required>
+                        </div>
+                    </div>
+
+                    <div class="field">
+                        <div class="heading">
+                            <label for="announcement_message">Message <span class="required" aria-hidden="true"></span></label>
+                        </div>
+                        <div class="input ltr">
+                            <textarea class="text fullwidth" id="announcement_message" rows="4" maxlength="500" required></textarea>
+                        </div>
+                    </div>
+
+                    <div class="upsnap-two-col-grid flex">
+                        <div class="field flex-grow">
+                            <div class="heading">
+                                <label for="announcement_start_at">Start Date &amp; Time</label>
+                            </div>
+                            <div class="input ltr">
+                                <input type="text" class="text fullwidth" id="announcement_start_at" autocomplete="off" placeholder="Select start date and time">
+                            </div>
+                        </div>
+
+                        <div class="field flex-grow">
+                            <div class="heading">
+                                <label for="announcement_end_at">End Date &amp; Time</label>
+                            </div>
+                            <div class="input ltr">
+                                <input type="text" class="text fullwidth" id="announcement_end_at" autocomplete="off" placeholder="Select end date and time">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="upsnap-three-col-grid flex">
+                        <div class="field flex-grow">
+                            <div class="heading">
+                                <label for="announcement_type">Type <span class="required" aria-hidden="true"></span></label>
+                            </div>
+                            <div class="input ltr">
+                                <div class="select">
+                                    <select id="announcement_type" required>
+                                        <option value="info">Info</option>
+                                        <option value="warning">Warning</option>
+                                        <option value="critical">Critical</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="field flex-grow">
+                            <div class="heading">
+                                <label for="announcement_status">Status</label>
+                            </div>
+                            <div class="input ltr">
+                                <div class="select">
+                                    <select id="announcement_status">
+                                        <option value="active">Active</option>
+                                        <option value="inactive">Inactive</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="field flex-grow">
+                            {{ forms.lightswitchField({
+                                label: "Dismissible",
+                                id: "announcement_is_dismissible",
+                                name: "announcement_is_dismissible",
+                                on: true
+                            }) }}
+                        </div>
+                    </div>
+                </div>
+                <div class="upsnap-modal__footer">
+                    <button type="button" class="btn" id="announcement-cancel-btn">Cancel</button>
+                    <button type="button" class="btn submit" id="announcement-save-btn">Save</button>
+                </div>
             </div>
         </div>
 
+        <div id="announcement-delete-modal" class="upsnap-modal hidden" role="dialog" aria-modal="true" aria-labelledby="announcement-delete-title">
+            <div class="upsnap-modal__overlay" data-close-modal="announcement-delete"></div>
+            <div class="upsnap-modal__container">
+                <div class="upsnap-modal__header">
+                    <h2 id="announcement-delete-title" class="upsnap-modal__title">Delete Announcement</h2>
+                    <button type="button" class="upsnap-modal__close" id="announcement-delete-close" aria-label="Close">&times;</button>
+                </div>
+                <div class="upsnap-modal__body">
+                    <p>Are you sure you want to delete this announcement?</p>
+                </div>
+                <div class="upsnap-modal__footer">
+                    <button type="button" class="btn" id="announcement-delete-cancel-btn">Cancel</button>
+                    <button type="button" class="btn submit" id="announcement-delete-confirm-btn">Delete</button>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
 		<div class="buttons">
 			<button type="submit" id='status-page-btn' class="btn submit">
-				Save Status Page
+				Save
 			</button>
 		</div>
 	</form>

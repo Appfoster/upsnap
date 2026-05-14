@@ -1,7 +1,7 @@
 <?php
 
 namespace appfoster\upsnap;
-use craft\helpers\App;
+use Craft\helpers\App;
 
 /**
  * Upsnap Constants
@@ -217,6 +217,13 @@ class Constants
                 'update' => 'user/status-pages',
                 'delete' => 'user/status-pages',
                 'upload' => 'user/status-pages/{id}/upload',
+                'announcements' => [
+                    'list' => 'user/status-pages/{statusPageId}/announcements',
+                    'detail' => 'user/status-pages/{statusPageId}/announcements/{announcementId}',
+                    'create' => 'user/status-pages/{statusPageId}/announcements',
+                    'update' => 'user/status-pages/{statusPageId}/announcements/{announcementId}',
+                    'delete' => 'user/status-pages/{statusPageId}/announcements/{announcementId}',
+                ],
             ],
             'monitors_stats' => 'user/monitors/uptime-stats',
             'incident_stats' => 'user/monitors/incidents/stats',
@@ -326,6 +333,22 @@ class Constants
                 'history_range_days'     => 90,
             ],
         ];
+    }
+
+    public static function buildStatusPageAnnouncementEndpoint(
+        string $key,
+        string $statusPageId,
+        ?string $announcementId = null
+    ): string {
+        $endpoint = self::MICROSERVICE_ENDPOINTS['monitors']['status-page']['announcements'][$key] ?? '';
+
+        $endpoint = str_replace('{statusPageId}', $statusPageId, $endpoint);
+
+        if ($announcementId !== null) {
+            $endpoint = str_replace('{announcementId}', $announcementId, $endpoint);
+        }
+
+        return $endpoint;
     }
 
     public static function getWebAppUrl(string $key): ?string

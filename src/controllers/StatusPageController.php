@@ -243,6 +243,176 @@ class StatusPageController extends BaseController
         }
     }
 
+    public function actionAnnouncementsList(): Response
+    {
+        $this->requirePostRequest();
+        $request = Craft::$app->getRequest();
+
+        $statusPageId = (string) $request->getBodyParam('statusPageId', '');
+        if ($statusPageId === '') {
+            return $this->asJson([
+                'success' => false,
+                'message' => Craft::t('upsnap', 'Status Page ID is required.'),
+            ]);
+        }
+
+        try {
+            $endpoint = Constants::buildStatusPageAnnouncementEndpoint('list', $statusPageId);
+            $response = Upsnap::$plugin->apiService->get($endpoint);
+
+            if (($response['status'] ?? null) !== 'success') {
+                throw new \Exception($response['message'] ?? 'Failed to fetch announcements.');
+            }
+
+            return $this->asJson([
+                'success' => true,
+                'message' => Craft::t('upsnap', 'Announcements fetched successfully.'),
+                'data' => [
+                    'announcements' => $response['data']['announcements'] ?? [],
+                ],
+            ]);
+        } catch (\Throwable $e) {
+            Craft::error("Announcements fetch failed: {$e->getMessage()}", __METHOD__);
+
+            return $this->asJson([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    public function actionAnnouncementDetail(): Response
+    {
+        $this->requirePostRequest();
+        $request = Craft::$app->getRequest();
+
+        $statusPageId = (string) $request->getBodyParam('statusPageId', '');
+        $announcementId = (string) $request->getBodyParam('announcementId', '');
+
+        if ($statusPageId === '' || $announcementId === '') {
+            return $this->asJson([
+                'success' => false,
+                'message' => Craft::t('upsnap', 'Status Page ID and Announcement ID are required.'),
+            ]);
+        }
+
+        try {
+            $endpoint = Constants::buildStatusPageAnnouncementEndpoint('detail', $statusPageId, $announcementId);
+            $response = Upsnap::$plugin->apiService->get($endpoint);
+
+            if (($response['status'] ?? null) !== 'success') {
+                throw new \Exception($response['message'] ?? 'Failed to fetch announcement details.');
+            }
+
+            return $this->asJson([
+                'success' => true,
+                'message' => Craft::t('upsnap', 'Announcement fetched successfully.'),
+                'data' => [
+                    'announcement' => $response['data']['announcement'] ?? null,
+                ],
+            ]);
+        } catch (\Throwable $e) {
+            Craft::error("Announcement detail fetch failed: {$e->getMessage()}", __METHOD__);
+
+            return $this->asJson([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    public function actionAnnouncementSave(): Response
+    {
+        $this->requirePostRequest();
+        $request = Craft::$app->getRequest();
+
+        try {
+            $payload = $request->getRequiredBodyParam('payload');
+            $payloadArray = json_decode($payload, true);
+
+            if (!is_array($payloadArray)) {
+                throw new \Exception('Invalid JSON payload.');
+            }
+
+            $statusPageId = (string) ($payloadArray['statusPageId'] ?? '');
+            $announcementId = isset($payloadArray['announcementId'])
+                ? (string) $payloadArray['announcementId']
+                : null;
+
+            if ($statusPageId === '') {
+                throw new \Exception('Status Page ID is required.');
+            }
+
+            unset($payloadArray['statusPageId'], $payloadArray['announcementId']);
+
+            if ($announcementId) {
+                $endpoint = Constants::buildStatusPageAnnouncementEndpoint('update', $statusPageId, $announcementId);
+                $response = Upsnap::$plugin->apiService->put($endpoint, $payloadArray);
+            } else {
+                $endpoint = Constants::buildStatusPageAnnouncementEndpoint('create', $statusPageId);
+                $response = Upsnap::$plugin->apiService->post($endpoint, $payloadArray);
+            }
+
+            if (($response['status'] ?? null) !== 'success') {
+                throw new \Exception($response['message'] ?? 'Failed to save announcement.');
+            }
+
+            return $this->asJson([
+                'success' => true,
+                'message' => $announcementId
+                    ? Craft::t('upsnap', 'Announcement updated successfully.')
+                    : Craft::t('upsnap', 'Announcement created successfully.'),
+                'data' => [
+                    'announcement' => $response['data']['announcement'] ?? null,
+                ],
+            ]);
+        } catch (\Throwable $e) {
+            Craft::error("Announcement save failed: {$e->getMessage()}", __METHOD__);
+
+            return $this->asJson([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    public function actionAnnouncementDelete(): Response
+    {
+        $this->requirePostRequest();
+        $request = Craft::$app->getRequest();
+
+        $statusPageId = (string) $request->getBodyParam('statusPageId', '');
+        $announcementId = (string) $request->getBodyParam('announcementId', '');
+
+        if ($statusPageId === '' || $announcementId === '') {
+            return $this->asJson([
+                'success' => false,
+                'message' => Craft::t('upsnap', 'Status Page ID and Announcement ID are required.'),
+            ]);
+        }
+
+        try {
+            $endpoint = Constants::buildStatusPageAnnouncementEndpoint('delete', $statusPageId, $announcementId);
+            $response = Upsnap::$plugin->apiService->delete($endpoint);
+
+            if (($response['status'] ?? null) !== 'success') {
+                throw new \Exception($response['message'] ?? 'Failed to delete announcement.');
+            }
+
+            return $this->asJson([
+                'success' => true,
+                'message' => Craft::t('upsnap', 'Announcement deleted successfully.'),
+            ]);
+        } catch (\Throwable $e) {
+            Craft::error("Announcement delete failed: {$e->getMessage()}", __METHOD__);
+
+            return $this->asJson([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ]);
+        }
+    }
+
     public function actionDelete(): Response
     {
         $this->requirePostRequest();

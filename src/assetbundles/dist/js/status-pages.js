@@ -15,6 +15,10 @@ Craft.Upsnap.StatusPages = {
 		logo: { file: null, removed: false, changed: false, currentUrl: "" },
 		favicon: { file: null, removed: false, changed: false, currentUrl: "" },
 	},
+	announcements: [],
+	announcementsLoaded: false,
+	announcementsLoading: false,
+	selectedAnnouncementId: null,
 
 	init() {
 		this.cacheElements();
@@ -81,12 +85,38 @@ Craft.Upsnap.StatusPages = {
 		this.initializeAssetState();
 		this.renderAssetPreviews();
 
+		this.registerTabVisibility();
 		this.fetchMonitors();
 		this.registerFormSubmit();
 		this.registerPasswordProtection();
 		this.registerAccentColorEvents();
 		this.registerAssetEvents();
+		this.initAnnouncements();
 		this.registerCharCounters();
+	},
+
+	registerTabVisibility() {
+		this.statusPageSaveBtn = document.getElementById("status-page-btn");
+		if (!this.statusPageSaveBtn) return;
+
+		const syncSaveButtonVisibility = () => {
+			const activeHash = window.location.hash || "#general-tab";
+			this.statusPageSaveBtn.classList.toggle(
+				"hidden",
+				activeHash === "#announcements-tab"
+			);
+		};
+
+		document
+			.querySelectorAll('a[href="#general-tab"], a[href="#customization-tab"], a[href="#announcements-tab"]')
+			.forEach((tabLink) => {
+				tabLink.addEventListener("click", () => {
+					requestAnimationFrame(syncSaveButtonVisibility);
+				});
+			});
+
+		window.addEventListener("hashchange", syncSaveButtonVisibility);
+		syncSaveButtonVisibility();
 	},
 
 	registerCharCounters() {
@@ -112,6 +142,681 @@ Craft.Upsnap.StatusPages = {
 				counter.textContent = `${input.value.length}/${maxlength}`;
 			});
 		});
+	},
+
+	initAnnouncements() {
+		if (!this.isEditMode) return;
+
+		this.announcementsStatusPageId = this.getStatusPageId();
+		if (!this.announcementsStatusPageId) return;
+
+		this.announcementsTab = document.getElementById("announcements-tab");
+		this.announcementsTable = document.getElementById("announcements-table");
+		this.announcementsTbody = document.getElementById("announcements-tbody");
+		this.announcementsErrorEl = document.getElementById("announcements-error");
+
+		this.announcementModal = document.getElementById("announcement-modal");
+		this.announcementModalTitle = document.getElementById(
+			"announcement-modal-title"
+		);
+		this.announcementIdInput = document.getElementById("announcement_id");
+		this.announcementTitleInput = document.getElementById("announcement_title");
+		this.announcementMessageInput = document.getElementById(
+			"announcement_message"
+		);
+		this.announcementTypeInput = document.getElementById("announcement_type");
+		this.announcementStartAtInput = document.getElementById(
+			"announcement_start_at"
+		);
+		this.announcementEndAtInput = document.getElementById("announcement_end_at");
+		this.announcementStatusInput = document.getElementById("announcement_status");
+		this.announcementSaveBtn = document.getElementById("announcement-save-btn");
+		this.announcementAddBtn = document.getElementById("announcements-add-btn");
+
+		this.announcementDeleteModal = document.getElementById(
+			"announcement-delete-modal"
+		);
+		this.announcementDeleteConfirmBtn = document.getElementById(
+			"announcement-delete-confirm-btn"
+		);
+
+		if (!this.announcementsTab || !this.announcementsTable || !this.announcementsTbody) {
+			return;
+		}
+
+		this.initAnnouncementDateTimePickers();
+
+		this.registerAnnouncementsEvents();
+		this.fetchAnnouncements();
+
+		const announcementsTabLink = document.querySelector(
+			'a[href="#announcements-tab"]'
+		);
+
+		announcementsTabLink?.addEventListener("click", () => {
+			if (!this.announcementsLoaded && !this.announcementsLoading) {
+				this.fetchAnnouncements();
+			}
+		});
+	},
+
+	getStatusPageId() {
+		return window.Upsnap?.statusPage?.id || null;
+	},
+
+	registerAnnouncementsEvents() {
+		this.announcementAddBtn?.addEventListener("click", () => {
+			this.openAnnouncementCreateModal();
+		});
+
+		document
+			.getElementById("announcement-modal-close")
+			?.addEventListener("click", () => this.closeAnnouncementModal());
+		document
+			.getElementById("announcement-cancel-btn")
+			?.addEventListener("click", () => this.closeAnnouncementModal());
+		document
+			.querySelector('[data-close-modal="announcement"]')
+			?.addEventListener("click", () => this.closeAnnouncementModal());
+
+		this.announcementSaveBtn?.addEventListener("click", () => {
+			this.saveAnnouncement();
+		});
+
+		this.announcementsTbody?.addEventListener("click", (event) => {
+			const actionBtn = event.target.closest("button[data-action]");
+			if (!actionBtn) return;
+
+			const action = actionBtn.dataset.action;
+			const announcementId = actionBtn.dataset.announcementId;
+			if (!announcementId) {
+				Craft.cp.displayError("Announcement ID is required.");
+				return;
+			}
+
+			if (action === "edit") {
+				this.openAnnouncementEditModal(announcementId);
+				return;
+			}
+
+			if (action === "delete") {
+				this.openAnnouncementDeleteModal(announcementId);
+			}
+		});
+
+		document
+			.getElementById("announcement-delete-close")
+			?.addEventListener("click", () => this.closeAnnouncementDeleteModal());
+		document
+			.getElementById("announcement-delete-cancel-btn")
+			?.addEventListener("click", () => this.closeAnnouncementDeleteModal());
+		document
+			.querySelector('[data-close-modal="announcement-delete"]')
+			?.addEventListener("click", () => this.closeAnnouncementDeleteModal());
+
+		this.announcementDeleteConfirmBtn?.addEventListener("click", () => {
+			this.deleteAnnouncement();
+		});
+	},
+
+	initAnnouncementDateTimePickers() {
+		if (typeof window.flatpickr !== "function") {
+			return;
+		}
+
+		const pickerConfig = {
+			enableTime: true,
+			time_24hr: true,
+			allowInput: true,
+			minuteIncrement: 1,
+			dateFormat: "Y-m-d\\TH:i",
+			altInput: true,
+			altFormat: "d/m/Y H:i",
+			disableMobile: true,
+		};
+
+		if (this.announcementStartAtPicker) {
+			this.announcementStartAtPicker.destroy();
+		}
+		if (this.announcementEndAtPicker) {
+			this.announcementEndAtPicker.destroy();
+		}
+
+		if (this.announcementStartAtInput) {
+			this.announcementStartAtPicker = window.flatpickr(
+				this.announcementStartAtInput,
+				pickerConfig
+			);
+		}
+
+		if (this.announcementEndAtInput) {
+			this.announcementEndAtPicker = window.flatpickr(
+				this.announcementEndAtInput,
+				pickerConfig
+			);
+		}
+	},
+
+	syncAnnouncementCharCounters() {
+		if (!this.announcementModal) return;
+		const fields = this.announcementModal.querySelectorAll(
+			"input[maxlength], textarea[maxlength]"
+		);
+		fields.forEach((input) => {
+			const maxlength = parseInt(input.getAttribute("maxlength"), 10);
+			if (!maxlength) return;
+			const counter = input
+				.closest(".field")
+				?.querySelector(".upsnap-char-counter");
+			if (counter) {
+				counter.textContent = `${input.value.length}/${maxlength}`;
+			}
+		});
+	},
+
+	setAnnouncementDateTimeValue(input, picker, value) {
+		if (picker) {
+			if (value) {
+				picker.setDate(value, true, "Y-m-d\\TH:i");
+			} else {
+				picker.clear();
+			}
+			return;
+		}
+
+		if (input) {
+			input.value = value || "";
+		}
+	},
+
+	setAnnouncementsLoading(isLoading) {
+		this.announcementsLoading = isLoading;
+		const loadingRow = document.getElementById("announcements-loading-row");
+		const emptyRow = document.getElementById("announcements-empty-row");
+		
+		if (isLoading) {
+			// Show loading row, hide empty row
+			if (loadingRow) loadingRow.classList.remove("hidden");
+			if (emptyRow) emptyRow.classList.add("hidden");
+		} else {
+			// Hide loading row, show empty row if no data
+			if (loadingRow) loadingRow.classList.add("hidden");
+		}
+	},
+
+	renderAnnouncementsError(message = "") {
+		if (!this.announcementsErrorEl) return;
+
+		if (!message) {
+			this.announcementsErrorEl.classList.add("hidden");
+			this.announcementsErrorEl.textContent = "";
+			return;
+		}
+
+		this.announcementsErrorEl.textContent = message;
+		this.announcementsErrorEl.classList.remove("hidden");
+	},
+
+	fetchAnnouncements() {
+		if (!this.announcementsStatusPageId) return;
+
+		this.setAnnouncementsLoading(true);
+		this.renderAnnouncementsError("");
+
+		Craft.postActionRequest(
+			"upsnap/status-page/announcements-list",
+			{ statusPageId: this.announcementsStatusPageId },
+			(response) => {
+				this.setAnnouncementsLoading(false);
+
+				if (!response || !response.success) {
+					const message =
+						response?.message || "Failed to load announcements.";
+					this.renderAnnouncementsError(message);
+					Craft.cp.displayError(message);
+					return;
+				}
+
+				this.announcements = response?.data?.announcements || [];
+				this.announcementsLoaded = true;
+				this.renderAnnouncementsTable();
+			}
+		);
+	},
+
+	getAnnouncementTypeMeta(type) {
+		switch (type) {
+			case "warning":
+				return { label: "Warning", className: "warning-pill", icon: "⚠" };
+			case "critical":
+				return { label: "Critical", className: "critical-pill", icon: "!" };
+			case "info":
+			default:
+				return { label: "Info", className: "info-pill", icon: "i" };
+		}
+	},
+
+	getAnnouncementStatusMeta(status) {
+		switch (status) {
+			case "active":
+				return { label: "Active", className: "active-pill" };
+			case "expired":
+				return { label: "Expired", className: "expired-pill" };
+			case "inactive":
+			default:
+				return { label: "Inactive", className: "inactive-pill" };
+		}
+	},
+
+	formatAnnouncementDate(value) {
+		if (!value) return "N/A";
+		const date = new Date(value);
+		if (Number.isNaN(date.getTime())) return "N/A";
+
+		return date.toLocaleString();
+	},
+
+	renderAnnouncementsTable() {
+		if (!this.announcementsTbody || !this.announcementsTable) return;
+
+		const emptyRow = document.getElementById("announcements-empty-row");
+		const loadingRow = document.getElementById("announcements-loading-row");
+		
+		// Clear all rows except the empty and loading state rows
+		const rows = Array.from(this.announcementsTbody.querySelectorAll("tr:not(#announcements-empty-row):not(#announcements-loading-row)"));
+		rows.forEach(row => row.remove());
+
+		if (!Array.isArray(this.announcements) || !this.announcements.length) {
+			// Show empty state, hide loading
+			if (emptyRow) emptyRow.classList.remove("hidden");
+			if (loadingRow) loadingRow.classList.add("hidden");
+			return;
+		}
+
+		// Hide both empty and loading rows when data is present
+		if (emptyRow) emptyRow.classList.add("hidden");
+		if (loadingRow) loadingRow.classList.add("hidden");
+
+		this.announcements.forEach((item) => {
+			const typeMeta = this.getAnnouncementTypeMeta(item.type);
+			const statusMeta = this.getAnnouncementStatusMeta(item.status);
+			const tr = document.createElement("tr");
+			tr.innerHTML = `
+				<td><strong>${Craft.escapeHtml(item.title || "")}</strong></td>
+				<td>
+					<span class="upsnap-announcement-chip type ${typeMeta.className}">
+						<span class="upsnap-announcement-chip-icon">${typeMeta.icon}</span>
+						${Craft.escapeHtml(typeMeta.label)}
+					</span>
+				</td>
+				<td>
+					<span class="upsnap-announcement-chip ${statusMeta.className}">
+						${Craft.escapeHtml(statusMeta.label)}
+					</span>
+				</td>
+				<td>${Craft.escapeHtml(this.formatAnnouncementDate(item.start_at))}</td>
+				<td>${Craft.escapeHtml(this.formatAnnouncementDate(item.end_at))}</td>
+				<td class="thin upsnap-announcement-actions">
+					<div class="upsnap-monitor-inline-actions" aria-label="Announcement row actions">
+						<button
+							type="button"
+							class="btn small icon upsnap-announcement-edit"
+							data-action="edit"
+							data-announcement-id="${Craft.escapeHtml(item.id || "")}"
+							title="Edit announcement"
+							aria-label="Edit announcement"
+						>
+							<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg>
+						</button>
+						<button
+							type="button"
+							class="btn small icon upsnap-announcement-delete"
+							data-action="delete"
+							data-announcement-id="${Craft.escapeHtml(item.id || "")}"
+							title="Delete announcement"
+							aria-label="Delete announcement"
+						>
+							<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+						</button>
+					</div>
+				</td>
+			`;
+			this.announcementsTbody.appendChild(tr);
+		});
+	},
+
+	openAnnouncementModal() {
+		if (!this.announcementModal) return;
+		this.announcementModal.classList.remove("hidden");
+		document.body.classList.add("upsnap-modal-open");
+	},
+
+	closeAnnouncementModal() {
+		if (!this.announcementModal) return;
+		this.announcementModal.classList.add("hidden");
+		document.body.classList.remove("upsnap-modal-open");
+	},
+
+	openAnnouncementCreateModal() {
+		if (!this.announcementModalTitle) return;
+
+		this.selectedAnnouncementId = null;
+		this.announcementModalTitle.textContent = "Add Announcement";
+		if (this.announcementSaveBtn) this.announcementSaveBtn.textContent = "Save";
+
+		if (this.announcementIdInput) this.announcementIdInput.value = "";
+		if (this.announcementTitleInput) this.announcementTitleInput.value = "";
+		if (this.announcementMessageInput) this.announcementMessageInput.value = "";
+		if (this.announcementTypeInput) this.announcementTypeInput.value = "info";
+		this.setAnnouncementDateTimeValue(
+			this.announcementStartAtInput,
+			this.announcementStartAtPicker,
+			""
+		);
+		this.setAnnouncementDateTimeValue(
+			this.announcementEndAtInput,
+			this.announcementEndAtPicker,
+			""
+		);
+		if (this.announcementStatusInput) this.announcementStatusInput.value = "active";
+
+		const dismissibleSwitch = document
+			.getElementById("announcement_is_dismissible")
+			?.querySelector('input[type="hidden"]');
+		if (dismissibleSwitch) dismissibleSwitch.value = "1";
+
+		this.syncAnnouncementCharCounters();
+		this.openAnnouncementModal();
+	},
+
+	openAnnouncementEditModal(announcementId) {
+		if (!announcementId) {
+			Craft.cp.displayError("Announcement ID is required.");
+			return;
+		}
+
+		Craft.postActionRequest(
+			"upsnap/status-page/announcement-detail",
+			{
+				statusPageId: this.announcementsStatusPageId,
+				announcementId,
+			},
+			(response) => {
+				if (!response || !response.success || !response?.data?.announcement) {
+					Craft.cp.displayError(
+						response?.message || "Failed to fetch announcement details."
+					);
+					return;
+				}
+
+				const announcement = response.data.announcement;
+				this.selectedAnnouncementId = announcement.id;
+				this.announcementModalTitle.textContent = "Edit Announcement";
+				if (this.announcementSaveBtn) this.announcementSaveBtn.textContent = "Update";
+
+				if (this.announcementIdInput) {
+					this.announcementIdInput.value = announcement.id || "";
+				}
+				if (this.announcementTitleInput) {
+					this.announcementTitleInput.value = announcement.title || "";
+				}
+				if (this.announcementMessageInput) {
+					this.announcementMessageInput.value = announcement.message || "";
+				}
+				if (this.announcementTypeInput) {
+					this.announcementTypeInput.value = this.normalizeAnnouncementType(
+						announcement.type
+					);
+				}
+				this.setAnnouncementDateTimeValue(
+					this.announcementStartAtInput,
+					this.announcementStartAtPicker,
+					this.toLocalDateTimeInputValue(announcement.start_at)
+				);
+				this.setAnnouncementDateTimeValue(
+					this.announcementEndAtInput,
+					this.announcementEndAtPicker,
+					this.toLocalDateTimeInputValue(announcement.end_at)
+				);
+				if (this.announcementStatusInput) {
+					this.announcementStatusInput.value =
+						this.normalizeAnnouncementStatusForForm(announcement.status);
+				}
+
+				const dismissibleSwitch = document
+					.getElementById("announcement_is_dismissible")
+					?.querySelector('input[type="hidden"]');
+				if (dismissibleSwitch) {
+					dismissibleSwitch.value = announcement.is_dismissible ? "1" : "";
+				}
+
+				this.syncAnnouncementCharCounters();
+				this.openAnnouncementModal();
+			}
+		);
+	},
+
+	normalizeAnnouncementType(type) {
+		if (["info", "warning", "critical"].includes(type)) {
+			return type;
+		}
+		return "info";
+	},
+
+	normalizeAnnouncementStatusForForm(status) {
+		if (status === "active") return "active";
+		if (status === "expired") return "inactive";
+		return "inactive";
+	},
+
+	toUtcIsoOrNull(localValue) {
+		if (!localValue) return null;
+
+		const normalizedValue = String(localValue).trim().replace(" ", "T");
+		const date = new Date(normalizedValue);
+		if (Number.isNaN(date.getTime())) return null;
+		return date.toISOString().replace(/\.\d{3}Z$/, "Z");
+	},
+
+	toLocalDateTimeInputValue(utcValue) {
+		if (!utcValue) return "";
+		const date = new Date(utcValue);
+		if (Number.isNaN(date.getTime())) return "";
+
+		const pad = (value) => String(value).padStart(2, "0");
+		const year = date.getFullYear();
+		const month = pad(date.getMonth() + 1);
+		const day = pad(date.getDate());
+		const hours = pad(date.getHours());
+		const minutes = pad(date.getMinutes());
+
+		return `${year}-${month}-${day}T${hours}:${minutes}`;
+	},
+
+	collectAnnouncementFormData() {
+		const title = (this.announcementTitleInput?.value || "").trim();
+		const message = (this.announcementMessageInput?.value || "").trim();
+		const type = this.normalizeAnnouncementType(this.announcementTypeInput?.value);
+		const startAt = this.announcementStartAtInput?.value || "";
+		const endAt = this.announcementEndAtInput?.value || "";
+		const status = this.announcementStatusInput?.value === "active" ? "active" : "inactive";
+
+		const dismissible = this.getLightswitchState("announcement_is_dismissible");
+
+		return {
+			title,
+			message,
+			type,
+			start_at: this.toUtcIsoOrNull(startAt),
+			end_at: this.toUtcIsoOrNull(endAt),
+			is_dismissible: dismissible,
+			status,
+		};
+	},
+
+	validateAnnouncementForm(data) {
+		if (!data.title) {
+			Craft.cp.displayError("Title is required.");
+			return false;
+		}
+
+		if (data.title.length > 100) {
+			Craft.cp.displayError("Title must be 100 characters or fewer.");
+			return false;
+		}
+
+		if (!data.message) {
+			Craft.cp.displayError("Message is required.");
+			return false;
+		}
+
+		if (data.message.length > 500) {
+			Craft.cp.displayError("Message must be 500 characters or fewer.");
+			return false;
+		}
+
+		if (!["info", "warning", "critical"].includes(data.type)) {
+			Craft.cp.displayError("Type must be one of info, warning, or critical.");
+			return false;
+		}
+
+		if (data.start_at && Number.isNaN(new Date(data.start_at).getTime())) {
+			Craft.cp.displayError("Start Date & Time must be a valid date.");
+			return false;
+		}
+
+		if (data.end_at && Number.isNaN(new Date(data.end_at).getTime())) {
+			Craft.cp.displayError("End Date & Time must be a valid date.");
+			return false;
+		}
+
+		if (
+			data.start_at &&
+			data.end_at &&
+			new Date(data.end_at).getTime() <= new Date(data.start_at).getTime()
+		) {
+			Craft.cp.displayError("End Date & Time must be after Start Date & Time.");
+			return false;
+		}
+
+		return true;
+	},
+
+	saveAnnouncement() {
+		if (!this.announcementsStatusPageId) {
+			Craft.cp.displayError("Status Page ID is required.");
+			return;
+		}
+
+		const data = this.collectAnnouncementFormData();
+		if (!this.validateAnnouncementForm(data)) return;
+
+		const payload = {
+			statusPageId: this.announcementsStatusPageId,
+			...data,
+		};
+
+		if (!payload.start_at) delete payload.start_at;
+		if (!payload.end_at) delete payload.end_at;
+
+		if (this.selectedAnnouncementId) {
+			payload.announcementId = this.selectedAnnouncementId;
+		}
+
+		if (this.announcementSaveBtn) {
+			this.announcementSaveBtn.disabled = true;
+			this.announcementSaveBtn.classList.add("disabled");
+		}
+
+		Craft.postActionRequest(
+			"upsnap/status-page/announcement-save",
+			{ payload: JSON.stringify(payload) },
+			(response) => {
+				if (this.announcementSaveBtn) {
+					this.announcementSaveBtn.disabled = false;
+					this.announcementSaveBtn.classList.remove("disabled");
+				}
+
+				if (!response || !response.success) {
+					Craft.cp.displayError(
+						response?.message || "Failed to save announcement."
+					);
+					return;
+				}
+
+				this.closeAnnouncementModal();
+				this.selectedAnnouncementId = null;
+				this.fetchAnnouncements();
+				Craft.cp.displayNotice(
+					response?.message || "Announcement saved successfully."
+				);
+			}
+		);
+	},
+
+	openAnnouncementDeleteModal(announcementId) {
+		this.selectedAnnouncementId = announcementId;
+		if (!this.announcementDeleteModal) return;
+		this.announcementDeleteModal.classList.remove("hidden");
+		document.body.classList.add("upsnap-modal-open");
+	},
+
+	closeAnnouncementDeleteModal() {
+		if (!this.announcementDeleteModal) return;
+		this.announcementDeleteModal.classList.add("hidden");
+		document.body.classList.remove("upsnap-modal-open");
+		if (this.announcementDeleteConfirmBtn) {
+			this.announcementDeleteConfirmBtn.disabled = false;
+			this.announcementDeleteConfirmBtn.classList.remove("disabled");
+			this.announcementDeleteConfirmBtn.textContent = "Delete";
+		}
+	},
+
+	deleteAnnouncement() {
+		if (!this.announcementsStatusPageId) {
+			Craft.cp.displayError("Status Page ID is required.");
+			return;
+		}
+
+		if (!this.selectedAnnouncementId) {
+			Craft.cp.displayError("Announcement ID is required.");
+			return;
+		}
+
+		if (this.announcementDeleteConfirmBtn) {
+			this.announcementDeleteConfirmBtn.disabled = true;
+			this.announcementDeleteConfirmBtn.classList.add("disabled");
+			this.announcementDeleteConfirmBtn.textContent = "Deleting...";
+		}
+
+		Craft.postActionRequest(
+			"upsnap/status-page/announcement-delete",
+			{
+				statusPageId: this.announcementsStatusPageId,
+				announcementId: this.selectedAnnouncementId,
+			},
+			(response) => {
+				if (!response || !response.success) {
+					if (this.announcementDeleteConfirmBtn) {
+						this.announcementDeleteConfirmBtn.disabled = false;
+						this.announcementDeleteConfirmBtn.classList.remove("disabled");
+						this.announcementDeleteConfirmBtn.textContent = "Delete";
+					}
+
+					Craft.cp.displayError(
+						response?.message || "Failed to delete announcement."
+					);
+					return;
+				}
+
+				this.closeAnnouncementDeleteModal();
+				this.selectedAnnouncementId = null;
+				this.fetchAnnouncements();
+				Craft.cp.displayNotice(
+					response?.message || "Announcement deleted successfully."
+				);
+			}
+		);
 	},
 
 	cacheElements() {
@@ -176,6 +881,17 @@ Craft.Upsnap.StatusPages = {
             </span>
         `;
 
+		const announcementIcon = `
+			<a
+				href="${Craft.getUrl(`upsnap/status-page/edit/${page.id}`)}#announcements-tab"
+				class="btn icon"
+				title="Create Announcement"
+				aria-label="Create Announcement"
+			>
+				<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 123.52 113.54" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" clip-rule="evenodd" d="M82.33,16.91c-1.07,0.88-2.65,0.74-3.54-0.34s-0.74-2.65,0.34-3.54L94.2,0.58c1.07-0.88,2.65-0.74,3.54,0.33 c0.88,1.07,0.74,2.65-0.34,3.54L82.33,16.91L82.33,16.91L82.33,16.91z M9.12,60.78c-1.66,0.49-2.88,1.57-3.69,3 c-0.93,1.65-1.35,3.78-1.32,6.06c0.01,0.98,0.11,1.99,0.28,3.01c0.17,1.03,0.43,2.06,0.75,3.07c0.33,1.02,0.73,2.01,1.2,2.96 c0.46,0.92,0.98,1.8,1.55,2.6l0,0c1.4,1.95,3.14,3.5,5.15,4.28c1.75,0.69,3.72,0.79,5.84,0.06l0.04-0.01 c0.24-0.08,0.48-0.11,0.72-0.09c0.17,0.01,0.34,0.04,0.51,0.09l0.05-0.02c0.57-0.19,1.16-0.37,1.74-0.55l1.59-0.49 c0.58-0.17,1.13-0.33,1.65-0.48c0.51-0.15,1.03-0.29,1.56-0.43c0.55-0.15,1.1-0.06,1.56,0.2l0.05,0.03 c0.43,0.26,0.76,0.68,0.91,1.21c0.03,0.09,0.04,0.16,0.05,0.24c0.14,0.63,0.31,1.28,0.43,1.91c1.09,4.88,2.15,9.58,3.56,13.39 c0.12,0.38,0.27,0.75,0.41,1.13c0.43,1.2,0.88,2.44,1.38,3.57c0.48,1.1,0.99,2.08,1.57,2.8l0,0.01c0.43,0.54,0.93,0.88,1.52,0.91 c0.65,0.03,1.46-0.28,2.48-1.07c0.44-0.41,0.84-0.76,1.25-1.11l0.09-0.08c1.2-1.04,2.4-2.07,2.92-3.48 c-0.08-0.06-0.17-0.12-0.27-0.17c-0.23-0.13-0.52-0.26-0.81-0.38l-0.03-0.01c-1.07-0.45-2.13-0.91-2.9-1.87 c-0.78-0.97-1.2-2.38-0.91-4.68c0.01-0.14,0.03-0.26,0.05-0.38c0.02-0.14,0.04-0.28,0.05-0.42c0.13-1.04,0.2-1.58,0.16-1.73l0-0.02 c-0.03-0.04-0.24-0.19-0.66-0.58c-0.12-0.11-0.25-0.22-0.36-0.34c-0.62-0.58-1.06-1.27-1.34-2.03c-0.31-0.84-0.43-1.76-0.42-2.72 c0.01-0.94,0.15-1.92,0.36-2.85c0.26-1.13,0.63-2.21,1-3.1l0.02-0.03c0.14-0.33,0.36-0.6,0.62-0.8c0.28-0.22,0.62-0.36,0.97-0.41 l0.02,0c7.57-1.05,13.68-0.91,18.81-0.25c4.63,0.6,8.44,1.61,11.83,2.57c-2.59-2.95-4.97-6.42-7.12-10.2 c-2.77-4.88-5.15-10.29-7.07-15.77c-1.94-5.54-3.41-11.16-4.33-16.4c-0.77-4.4-1.16-8.54-1.11-12.13 c-2.89,4.15-6.78,9.19-12.5,14.27c-6.53,5.79-15.45,11.63-28.01,16.25c-0.13,0.04-0.26,0.09-0.39,0.13l-0.06,0.1 c0,0,0.01-0.01-0.22,0.35l-0.02,0.03c-0.13,0.2-0.29,0.37-0.47,0.51l0,0c-0.2,0.15-0.42,0.27-0.66,0.34L9.12,60.78L9.12,60.78z M66.17,68.52c1.88,3.61,3.96,6.97,6.21,9.88c2.14,2.76,4.44,5.13,6.86,6.92l0.25,0.02c0.12,0.01,0.24,0.01,0.34,0l0.04,0 c0.19-0.01,0.38-0.04,0.58-0.1c0.19-0.06,0.39-0.15,0.6-0.27c0.51-0.52,0.93-1.2,1.27-2c0.38-0.88,0.66-1.92,0.84-3.08 c0.55-3.43,0.29-7.82-0.56-12.67c-0.93-5.3-2.58-11.13-4.66-16.84c-2.04-5.61-4.5-11.09-7.12-15.83 c-2.49-4.52-5.12-8.36-7.66-10.99c-0.95-0.99-1.87-1.78-2.74-2.35c-0.81-0.53-1.56-0.87-2.25-0.98l-0.02,0 c-0.16-0.03-0.29-0.04-0.39-0.05c-0.04,0,0-0.03-0.02-0.02l0,0c-0.01,0-0.01,0.02-0.06,0.06c-0.09,0.08-0.22,0.2-0.37,0.35 c-0.13,0.12-0.26,0.27-0.38,0.41l-0.04,0.08c-1.16,2.4-1.56,6.2-1.31,10.83c0.26,4.7,1.2,10.23,2.73,15.97 c4.35-1,7.75-0.08,10.09,1.87c1.37,1.14,2.36,2.62,2.97,4.27c0.6,1.64,0.82,3.45,0.64,5.26C71.67,62.82,69.76,66.34,66.17,68.52 L66.17,68.52z M78.89,89.41c-0.2,0.03-0.4,0.03-0.6,0c-0.19-0.03-0.38-0.08-0.56-0.17c-0.27-0.05-0.54-0.1-0.8-0.16 c-1.89-0.39-3.73-0.92-5.71-1.48l-0.13-0.04c-6.79-1.93-15.28-4.35-28.88-2.67c-0.18,0.52-0.33,1.08-0.45,1.63 c-0.12,0.58-0.19,1.16-0.2,1.69c0,0.42,0.04,0.81,0.13,1.13c0.07,0.24,0.18,0.44,0.33,0.58l0.24,0.22 c1.11,1.01,1.65,1.51,1.96,2.65c0.25,0.92,0.14,1.77-0.08,3.45c-0.03,0.23-0.05,0.46-0.09,0.69c-0.1,0.81,0.03,1.28,0.27,1.57 c0.25,0.3,0.68,0.49,1.12,0.67l0.05,0.02c1.4,0.6,2.8,1.21,3.52,3.2c0.08,0.18,0.13,0.38,0.15,0.58c0.02,0.2,0.02,0.4-0.02,0.61 l0,0.01c-0.31,1.61-0.97,2.84-1.8,3.89c-0.81,1.03-1.77,1.85-2.72,2.67l-0.22,0.19c-0.33,0.28-0.65,0.56-0.96,0.86l-0.16,0.14 c-2.17,1.73-4.02,2.35-5.65,2.18c-1.65-0.17-3.02-1.15-4.18-2.61c-0.8-1-1.46-2.23-2.05-3.54c-0.58-1.3-1.08-2.67-1.56-4 c-0.13-0.37-0.27-0.74-0.41-1.11c-1.48-3.99-2.57-8.84-3.69-13.85c-0.36,0.1-0.72,0.22-1.08,0.32c-0.56,0.17-1.11,0.33-1.64,0.5 c-0.54,0.17-1.07,0.34-1.59,0.5l-0.03,0.01c-0.08,0.02-0.14,0.05-0.19,0.07l-0.03,0.01c-0.38,0.16-0.66,0.27-0.98,0.3 c-0.29,0.03-0.56,0-0.88-0.12c-2.89,0.8-5.56,0.56-7.94-0.4c-2.7-1.1-5.02-3.15-6.86-5.72L4.5,83.86 c-0.69-0.99-1.31-2.05-1.86-3.17c-0.56-1.13-1.03-2.31-1.42-3.51c-0.39-1.2-0.69-2.43-0.89-3.66C0.13,72.3,0.02,71.08,0,69.88 c-0.03-3.02,0.56-5.88,1.87-8.19C3.05,59.62,4.81,58,7.2,57.1c0.09-0.14,0.16-0.26,0.24-0.36c0.13-0.17,0.27-0.32,0.46-0.48 l0.04-0.03c0.2-0.17,0.39-0.28,0.61-0.39c0.2-0.09,0.43-0.18,0.74-0.29l0.28-0.1c12.71-4.68,21.5-10.66,27.81-16.51 c6.31-5.85,10.15-11.57,12.92-15.73l0.06-0.09c1.55-2.32,2.8-4.17,4.05-5.42l0,0c0.32-0.32,0.6-0.58,0.9-0.8 c0.31-0.23,0.63-0.41,1-0.55c0.39-0.14,0.77-0.22,1.18-0.24c0.4-0.02,0.83,0.02,1.33,0.1c1.18,0.19,2.38,0.68,3.59,1.44 c1.23,0.77,2.47,1.82,3.7,3.1c2.74,2.84,5.56,6.94,8.21,11.73c2.76,4.98,5.34,10.7,7.46,16.55c2.18,6,3.9,12.14,4.87,17.77 c0.89,5.19,1.15,9.96,0.53,13.77c-0.26,1.6-0.67,3.06-1.24,4.32c-0.56,1.24-1.29,2.31-2.19,3.18c-0.04,0.04-0.09,0.08-0.13,0.12 c-0.06,0.04-0.12,0.09-0.18,0.13c-0.59,0.39-1.16,0.67-1.73,0.85c-0.58,0.19-1.16,0.28-1.74,0.31h-0.04c-0.2,0-0.39,0-0.57-0.01 C79.22,89.44,79.05,89.43,78.89,89.41L78.89,89.41z M103.5,78.48c-1.39,0.06-2.55-1.02-2.6-2.41c-0.06-1.39,1.02-2.55,2.41-2.6 l17.6-0.66c1.38-0.04,2.54,1.04,2.6,2.41c0.05,1.39-1.02,2.55-2.41,2.61L103.5,78.48L103.5,78.48L103.5,78.48z M103,61.38 c-1.38,0.18-2.64-0.79-2.82-2.15c-0.18-1.38,0.79-2.64,2.15-2.82l16.26-2.16c1.38-0.18,2.64,0.79,2.82,2.15 c0.18,1.38-0.79,2.64-2.15,2.82L103,61.38L103,61.38L103,61.38z M99.58,45.68c-1.31,0.45-2.75-0.24-3.2-1.55 c-0.46-1.31,0.24-2.75,1.55-3.2l16.67-5.79c1.31-0.47,2.75,0.24,3.2,1.55c0.46,1.31-0.24,2.75-1.55,3.2L99.58,45.68L99.58,45.68 L99.58,45.68z M91.72,30.57c-1.2,0.69-2.74,0.27-3.42-0.94c-0.69-1.2-0.27-2.73,0.94-3.42l15.8-9.06c1.2-0.69,2.74-0.27,3.42,0.94 c0.69,1.2,0.27,2.73-0.94,3.42L91.72,30.57L91.72,30.57L91.72,30.57z"/></svg>
+			</a>
+		`;
+
 		const lockIcon = page.is_protected 
 			? '<span data-icon="lock" class="status-page-lock-icon" title="Password Protected"></span>' 
 			: '';
@@ -191,8 +907,11 @@ Craft.Upsnap.StatusPages = {
             ${this.statusBadge(page.is_published)}
         </td>
         <td class="thin">
-            ${viewIcon}
-            ${this.actionMenu(page)}
+            <div class="upsnap-status-page-actions" aria-label="Status page row actions">
+                ${viewIcon}
+				${announcementIcon}
+                ${this.actionMenu(page)}
+            </div>
         </td>
     `;
 
