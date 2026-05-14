@@ -1,7 +1,7 @@
 <?php
 
 namespace appfoster\upsnap;
-use Craft\helpers\App;
+use craft\helpers\App;
 
 /**
  * Upsnap Constants
