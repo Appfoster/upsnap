@@ -22,7 +22,7 @@
         window.Upsnap.defaultCustomization = {{ defaultCustomization|json_encode|raw }};
         window.Upsnap.formMode = {{ mode|json_encode|raw }};
 	</script>
-	<form id="status-page-form">
+    <form id="status-page-form" novalidate>
         <div id="general-tab" class="tab-content">
             {{ forms.textField({
                 label: "Status Page Name",
