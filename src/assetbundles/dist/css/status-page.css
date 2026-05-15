@@ -507,3 +507,50 @@ body.upsnap-modal-open {
 .btn.icon:not(:empty, .btn-empty)::before, .btn.menubtn:not(.action-btn).icon.btn-empty::before, .btn.menubtn:not(.action-btn).icon:empty::before, .btn.menubtn:not(.action-btn)[data-icon].btn-empty::before, .btn.menubtn:not(.action-btn)[data-icon]:empty::before, .btn[data-icon]:not(:empty, .btn-empty)::before {
   margin-inline-end: 0px;
 }
+
+.upsnap-announcement-modal-fields.upsnap-modal__body {
+	padding: 20px 16px 16px;
+}
+
+.upsnap-announcement-title-row {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) auto;
+	column-gap: 16px;
+	align-items: start;
+	margin-bottom: 18px;
+}
+
+.upsnap-announcement-title-field {
+	margin: 0 !important;
+	min-width: 0;
+}
+
+.upsnap-announcement-dismissible-field {
+	margin-top: 2px;
+}
+
+.upsnap-modal-field-row {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 16px;
+	margin-bottom: 18px;
+}
+
+.upsnap-modal-field-row .field,
+.upsnap-three-col-grid .field {
+	margin: 0 !important;
+}
+
+.upsnap-announcement-modal-fields.upsnap-three-col-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-top: 0;
+}
+
+@media (max-width: 768px) {
+	.upsnap-announcement-title-row,
+	.upsnap-modal-field-row,
+	.upsnap-three-col-grid {
+		grid-template-columns: 1fr;
+	}
+}
