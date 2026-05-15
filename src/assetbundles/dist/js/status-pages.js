@@ -265,8 +265,6 @@ Craft.Upsnap.StatusPages = {
 		this.announcementTypeInput?.addEventListener("change",    revalidate);
 		this.announcementStartAtInput?.addEventListener("change", revalidate);
 		this.announcementStartAtInput?.addEventListener("input",  revalidate);
-		this.announcementEndAtInput?.addEventListener("change",   revalidate);
-		this.announcementEndAtInput?.addEventListener("input",    revalidate);
 	},
 
 	initAnnouncementDateTimePickers() {
@@ -336,7 +334,6 @@ Craft.Upsnap.StatusPages = {
 		const message = (this.announcementMessageInput?.value || "").trim();
 		const type    = this.announcementTypeInput?.value     || "";
 		const startAt = this.announcementStartAtInput?.value  || "";
-		const endAt   = this.announcementEndAtInput?.value    || "";
 
 		const titleOk   = title.length > 0 && title.length <= 100;
 		const messageOk = message.length > 0 && message.length <= 500;
@@ -348,13 +345,7 @@ Craft.Upsnap.StatusPages = {
 			!Number.isNaN(startDate.getTime()) &&
 			startDate >= new Date();
 
-		const endDate = new Date(endAt);
-		const endOk =
-			!!endAt &&
-			!Number.isNaN(endDate.getTime()) &&
-			endDate > startDate;
-
-		const valid = titleOk && messageOk && typeOk && startOk && endOk;
+		const valid = titleOk && messageOk && typeOk && startOk;
 		this.announcementSaveBtn.disabled = !valid;
 		this.announcementSaveBtn.classList.toggle("disabled", !valid);
 	},
