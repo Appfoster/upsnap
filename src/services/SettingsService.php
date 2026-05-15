@@ -522,7 +522,7 @@ class SettingsService extends Component
         $endpoint = Constants::MICROSERVICE_ENDPOINTS['monitors']['list'];
 
         try {
-            $response = Upsnap::$plugin->apiService->get($endpoint, ['last_day_uptimes' => true]);
+            $response = Upsnap::$plugin->apiService->get($endpoint);
 
             if (!is_array($response) || ($response['status'] ?? null) !== 'success') {
                 $errorMsg = is_array($response)

@@ -3,14 +3,34 @@ Craft.UpsnapDashboard = {
 	currentResponseTimeFilter: "last_24_hours",
 	responseChartInstance: null,
 	monitorId: null, // Store monitor ID for API calls
+	monitorDropdown: null,
 	selectedRegionId: null, // Store selected region ID for API calls
+	isMonitorSwitching: false,
+	monitorSwitchAbortController: null,
+	monitorSwitchRequestId: 0,
 
 	init() {
 		this.refreshBtn = document.getElementById("refresh-btn");
+		this.monitorDropdown = document.getElementById("monitorDropdown");
 		this.regionDropdown = document.getElementById("regionDropdown");
 
 		// Extract monitor ID from page data
-		this.monitorId = window.CraftPageData?.monitorData?.id;
+		this.monitorId =
+			window.CraftPageData?.monitorId ||
+			window.CraftPageData?.monitorData?.id ||
+			null;
+
+		if (this.monitorDropdown) {
+			if (this.monitorId) {
+				this.monitorDropdown.value = this.monitorId;
+			} else {
+				this.monitorId = this.monitorDropdown.value || null;
+			}
+
+			this.monitorDropdown.addEventListener("change", (e) => {
+				this.onMonitorChange(e.target.value);
+			});
+		}
 
 		// Initialize region dropdown if available
 		if (this.regionDropdown) {
@@ -25,14 +45,231 @@ Craft.UpsnapDashboard = {
 		this.renderMonitorCards();
 		this.loadAndApplyRegionNames();
 		this.loadIncidentStatsCard();
+		this.loadConnectedChannelsCard();
 		this.initIncidentTableRowNavigation();
+		this.refreshGlobalMonitorHeader();
 
 		if (this.refreshBtn) {
 			this.refreshBtn.addEventListener("click", () => {
 				this.runWithRefreshButton(this.refreshBtn, () =>
-					this.initializeDashboard()
+					Promise.all([
+						this.initializeDashboard(),
+						this.loadIncidentStatsCard(),
+						this.loadConnectedChannelsCard(),
+					])
 				);
 			});
+		}
+	},
+
+	async onMonitorChange(selectedMonitorId) {
+		if (!selectedMonitorId || selectedMonitorId === this.monitorId) {
+			return;
+		}
+
+		this.abortMonitorSwitchRequests();
+		const requestId = ++this.monitorSwitchRequestId;
+		const abortController = new AbortController();
+		this.monitorSwitchAbortController = abortController;
+		this.isMonitorSwitching = true;
+
+		try {
+			const context = await this.fetchMonitorContext(
+				selectedMonitorId,
+				abortController.signal
+			);
+
+			if (!this.isActiveMonitorSwitchRequest(requestId)) {
+				return;
+			}
+
+			if (!context?.monitorData) {
+				throw new Error("No monitor context returned");
+			}
+
+			window.CraftPageData = window.CraftPageData || {};
+			window.CraftPageData.monitorId = context.monitorId;
+			window.CraftPageData.monitorData = context.monitorData;
+			window.CraftPageData.monitorUrl = context.monitorUrl || "";
+			delete window.CraftPageData.reachabilityData;
+
+			this.monitorId = context.monitorId;
+			this.updateMonitorQueryParam(context.monitorId);
+			this.rebuildRegionDropdown(context.monitorData);
+			this.refreshGlobalMonitorHeader();
+			this.showMonitorSwitchLoaders();
+
+			await Promise.all([
+				this.initializeDashboard({ requestId, signal: abortController.signal }),
+				Promise.resolve(
+					this.renderMonitorCards({ requestId, signal: abortController.signal })
+				),
+				this.loadIncidentStatsCard({ requestId, signal: abortController.signal }),
+				this.loadConnectedChannelsCard({ requestId, signal: abortController.signal }),
+				this.loadAndApplyRegionNames(),
+			]);
+		} catch (err) {
+			if (this.isAbortError(err) || !this.isActiveMonitorSwitchRequest(requestId)) {
+				return;
+			}
+
+			const msg = err?.message || "Failed to switch monitor";
+			if (Craft?.cp?.displayError) {
+				Craft.cp.displayError(msg);
+			}
+			console.error("Failed to switch monitor:", err);
+
+			if (this.monitorDropdown && this.monitorId) {
+				this.monitorDropdown.value = this.monitorId;
+			}
+		} finally {
+			if (this.isActiveMonitorSwitchRequest(requestId)) {
+				this.isMonitorSwitching = false;
+				this.monitorSwitchAbortController = null;
+			}
+		}
+	},
+
+	isAbortError(error) {
+		return (
+			error?.name === "AbortError" ||
+			error?.code === "ERR_CANCELED" ||
+			error?.message === "canceled"
+		);
+	},
+
+	abortMonitorSwitchRequests() {
+		if (this.monitorSwitchAbortController) {
+			this.monitorSwitchAbortController.abort();
+			this.monitorSwitchAbortController = null;
+		}
+	},
+
+	isActiveMonitorSwitchRequest(requestId) {
+		return requestId === this.monitorSwitchRequestId;
+	},
+
+	showMonitorSwitchLoaders() {
+		this.showSimpleCardLoader("monitor-status-card", "Current Status");
+		this.showSimpleCardLoader("monitor-last-check-card", "Last check");
+		this.showSimpleCardLoader("monitor-24h-card", "Last 24 hours");
+
+		this.showUptimeCardLoader("uptime-day-card", "Last 24h");
+		this.showUptimeCardLoader("uptime-week-card", "Last Week");
+		this.showUptimeCardLoader("uptime-month-card", "Last 30 Days");
+
+		this.showStatCardLoader("incident-stats-card");
+		this.showStatCardLoader("connected-channels-card");
+	},
+
+	showSimpleCardLoader(cardId, title) {
+		const card = document.getElementById(cardId);
+		if (!card) return;
+
+		card.classList.add("skeleton");
+		card.innerHTML = `
+			<div class="card-header">${title}</div>
+			<div class="card-skeleton">
+				<div class="skeleton-line"></div>
+				<div class="skeleton-line"></div>
+			</div>
+		`;
+	},
+
+	showUptimeCardLoader(cardId, title) {
+		const card = document.getElementById(cardId);
+		if (!card) return;
+
+		card.classList.add("skeleton");
+		card.innerHTML = `
+			<div class="card-header">${title}</div>
+			<div class="card-skeleton">
+				<div class="skeleton-line"></div>
+				<div class="skeleton-line"></div>
+			</div>
+			<div class="card-content" hidden></div>
+		`;
+	},
+
+	showStatCardLoader(cardId) {
+		const card = document.getElementById(cardId);
+		if (!card) return;
+
+		const skeleton = card.querySelector(".card-skeleton");
+		const content = card.querySelector(".card-content");
+
+		card.classList.add("skeleton");
+		if (skeleton) skeleton.hidden = false;
+		if (content) content.hidden = true;
+	},
+
+	async fetchMonitorContext(monitorId, signal = null) {
+		const response = await Craft.sendActionRequest(
+			"POST",
+			"upsnap/dashboard/monitor-context",
+			{
+				data: {
+					monitor_id: monitorId,
+				},
+				signal,
+			}
+		);
+
+		const payload = response?.data;
+		if (!payload?.success || !payload?.data) {
+			throw new Error(payload?.message || "Unable to load selected monitor");
+		}
+
+		return payload.data;
+	},
+
+	updateMonitorQueryParam(monitorId) {
+		try {
+			const url = new URL(window.location.href);
+			if (monitorId) {
+				url.searchParams.set("monitor_id", monitorId);
+			} else {
+				url.searchParams.delete("monitor_id");
+			}
+			window.history.replaceState({}, "", url.toString());
+		} catch (e) {
+			console.warn("Unable to update monitor_id query param", e);
+		}
+	},
+
+	rebuildRegionDropdown(monitorData) {
+		if (!this.regionDropdown) return;
+
+		const regions = Array.isArray(monitorData?.regions) ? monitorData.regions : [];
+		this.regionDropdown.innerHTML = "";
+
+		if (!regions.length) {
+			const opt = document.createElement("option");
+			opt.value = "";
+			opt.textContent = "Select Region";
+			this.regionDropdown.appendChild(opt);
+			this.regionDropdown.disabled = true;
+			this.regionDropdown.classList.add("disabled");
+			this.selectedRegionId = "";
+			return;
+		}
+
+		regions.forEach((region) => {
+			const opt = document.createElement("option");
+			opt.value = region.id;
+			opt.textContent = region.name;
+			if (region.is_primary) opt.selected = true;
+			this.regionDropdown.appendChild(opt);
+		});
+
+		this.regionDropdown.disabled = false;
+		this.regionDropdown.classList.remove("disabled");
+		this.selectedRegionId = this.regionDropdown.value || "";
+	},
+
+	refreshGlobalMonitorHeader() {
+		if (typeof window.UpsnapRefreshDashboardHeader === "function") {
+			window.UpsnapRefreshDashboardHeader();
 		}
 	},
 	
@@ -63,9 +300,18 @@ Craft.UpsnapDashboard = {
 
 		// Re-fetch data with new region
 		const calls = [
-			this.render24hChartCard(window.CraftPageData?.monitorData),
-			this.renderResponseTimeCard(window.CraftPageData?.monitorData),
-			this.renderUptimeStatCards(),
+			this.render24hChartCard(window.CraftPageData?.monitorData, {
+				requestId: this.monitorSwitchRequestId,
+				signal: this.monitorSwitchAbortController?.signal || null,
+			}),
+			this.renderResponseTimeCard(window.CraftPageData?.monitorData, {
+				requestId: this.monitorSwitchRequestId,
+				signal: this.monitorSwitchAbortController?.signal || null,
+			}),
+			this.renderUptimeStatCards({
+				requestId: this.monitorSwitchRequestId,
+				signal: this.monitorSwitchAbortController?.signal || null,
+			}),
 		];
 
 		// Only fetch healthcheck data for website monitors
@@ -81,6 +327,30 @@ Craft.UpsnapDashboard = {
 	isWebsiteMonitor() {
 		const serviceType = window.CraftPageData?.monitorData?.service_type || "website";
 		return serviceType === "website";
+	},
+
+	syncWebsiteCardsVisibility() {
+		const websiteCardIds = [
+			"reachability-card",
+			"ssl-card",
+			"broken-links-card",
+			"domain-check-card",
+			"mixed-content-card",
+			"lighthouse-card",
+		];
+
+		const shouldShow = this.isWebsiteMonitor();
+		websiteCardIds.forEach((cardId) => {
+			const card = document.getElementById(cardId);
+			if (!card) return;
+
+			if (shouldShow) {
+				card.classList.remove("hidden");
+				return;
+			}
+
+			card.classList.add("hidden");
+		});
 	},
 
 	isHttpsMonitor() {
@@ -144,10 +414,9 @@ Craft.UpsnapDashboard = {
 				: "warning";
 
 		const icon = status === "ok" ? "✓" : status === "error" ? "✗" : "!";
+		const resolvedDetailUrl = this.appendMonitorIdToUrl(detailUrl);
 
-		const formattedCheckedAt = checkedAt
-			? new Date(checkedAt).toLocaleString()
-			: "N/A";
+		const formattedCheckedAt = window.UpsnapUtils.formatDateDisplay(checkedAt);
 
 		content.innerHTML = `
 			<div class="card-body">
@@ -155,13 +424,16 @@ Craft.UpsnapDashboard = {
 					<span class="status-icon ${statusClass}">${icon}</span>
 					${message ?? "Something Went Wrong!"}
 				</p>
-				<p><strong>Last checked at:</strong> ${formattedCheckedAt}</p>
+				<p>
+					<strong>Last checked at:</strong>
+					<span title="DD/MM/YY">${formattedCheckedAt}</span>
+				</p>
 			</div>
 			<div class="card-footer">
 				<button class="fetch-recent-btn" type="button" data-icon="refresh">
 					Check Now
 				</button>
-				<a href="${detailUrl}" class="detail-link" rel="noopener">
+				<a href="${resolvedDetailUrl}" class="detail-link" rel="noopener">
 					View Details →
 				</a>
 			</div>
@@ -179,6 +451,32 @@ Craft.UpsnapDashboard = {
 					forceFetch: true,
 				});
 			});
+	},
+
+	appendMonitorIdToUrl(detailUrl) {
+		if (!detailUrl) {
+			return "#";
+		}
+
+		if (!this.monitorId) {
+			return detailUrl;
+		}
+
+		try {
+			const parsedUrl = new URL(detailUrl, window.location.href);
+			parsedUrl.searchParams.set("monitor_id", this.monitorId);
+
+			if (/^https?:\/\//i.test(detailUrl)) {
+				return parsedUrl.toString();
+			}
+
+			return `${parsedUrl.pathname}${parsedUrl.search}${parsedUrl.hash}`;
+		} catch (error) {
+			const separator = detailUrl.includes("?") ? "&" : "?";
+			return `${detailUrl}${separator}monitor_id=${encodeURIComponent(
+				this.monitorId
+			)}`;
+		}
 	},
 
 	showSkeleton(cardId) {
@@ -219,15 +517,23 @@ Craft.UpsnapDashboard = {
 		cardTitle,
 		getMessage,
 		getStatus,
+		requestId = null,
+		signal = null,
 		forceFetch = false,
 	}) {
 		return Craft.sendActionRequest("POST", action, {
 			data: {
 				force_fetch: forceFetch,
 				region: this.selectedRegionId,
+				monitor_id: this.monitorId,
 			},
+			signal,
 		})
 			.then((response) => {
+				if (requestId !== null && !this.isActiveMonitorSwitchRequest(requestId)) {
+					return;
+				}
+
 				response = response?.data;
 				const data = response?.data;
 
@@ -261,6 +567,14 @@ Craft.UpsnapDashboard = {
 				});
 			})
 			.catch((error) => {
+				if (this.isAbortError(error)) {
+					return;
+				}
+
+				if (requestId !== null && !this.isActiveMonitorSwitchRequest(requestId)) {
+					return;
+				}
+
 				const msg = error.response?.data
 					? error.response.data.error || "Unknown error"
 					: error.message;
@@ -273,7 +587,9 @@ Craft.UpsnapDashboard = {
 			});
 	},
 
-	initializeDashboard() {
+	initializeDashboard({ requestId = null, signal = null } = {}) {
+		this.syncWebsiteCardsVisibility();
+
 		// Only fetch healthcheck data for website monitors
 		if (!this.isWebsiteMonitor()) {
 			return Promise.resolve();
@@ -285,6 +601,8 @@ Craft.UpsnapDashboard = {
 				action: "upsnap/health-check/reachability",
 				cardTitle: "Reachability",
 				cardId: "reachability-card",
+				requestId,
+				signal,
 			}),
 			// SSL
 			isHttps
@@ -292,6 +610,8 @@ Craft.UpsnapDashboard = {
 						action: "upsnap/health-check/security-certificates",
 						cardTitle: "Security Certificates",
 						cardId: "ssl-card",
+						requestId,
+						signal,
 				  })
 				: this.renderHttpsOnlyCard({
 						cardId: "ssl-card",
@@ -301,11 +621,15 @@ Craft.UpsnapDashboard = {
 				action: "upsnap/health-check/broken-links",
 				cardTitle: "Broken Links",
 				cardId: "broken-links-card",
+				requestId,
+				signal,
 			}),
 			this.fetchAndRenderCard({
 				action: "upsnap/health-check/domain-check",
 				cardTitle: "Domain Check",
 				cardId: "domain-check-card",
+				requestId,
+				signal,
 			}),
 			// Mixed Content
 			isHttps
@@ -313,6 +637,8 @@ Craft.UpsnapDashboard = {
 						action: "upsnap/health-check/mixed-content",
 						cardTitle: "Mixed Content",
 						cardId: "mixed-content-card",
+						requestId,
+						signal,
 				  })
 				: this.renderHttpsOnlyCard({
 						cardId: "mixed-content-card",
@@ -324,6 +650,8 @@ Craft.UpsnapDashboard = {
 						action: "upsnap/health-check/lighthouse",
 						cardTitle: "Lighthouse",
 						cardId: "lighthouse-card",
+						requestId,
+						signal,
 				  })
 				: this.renderHttpsOnlyCard({
 						cardId: "lighthouse-card",
@@ -334,7 +662,7 @@ Craft.UpsnapDashboard = {
 		return Promise.allSettled(calls);
 	},
 
-	async fetchAndRenderReachability() {
+	async fetchAndRenderReachability({ requestId = null, signal = null } = {}) {
 		// Only fetch for website monitors
 		if (!this.isWebsiteMonitor()) {
 			return Promise.resolve();
@@ -349,9 +677,13 @@ Craft.UpsnapDashboard = {
 				action: "upsnap/health-check/reachability",
 				cardTitle: "Reachability",
 				cardId: cardId,
+				requestId,
+				signal,
 			});
 		} catch (err) {
-			console.error("Failed to fetch reachability:", err);
+			if (!this.isAbortError(err)) {
+				console.error("Failed to fetch reachability:", err);
+			}
 		}
 	},
 
@@ -413,8 +745,12 @@ Craft.UpsnapDashboard = {
 	// ===========================================================
 	// API Fetch Helper
 	// ===========================================================
-	async fetchMonitorData(endpoint) {
+	async fetchMonitorData(endpoint, { requestId = null, signal = null } = {}) {
 		try {
+			if (requestId !== null && !this.isActiveMonitorSwitchRequest(requestId)) {
+				throw new Error("stale-monitor-switch-request");
+			}
+
 			// Add region parameter if selected
 			const separator = endpoint.includes('?') ? '&' : '?';
 			const regionParam = this.selectedRegionId ? `${separator}region=${encodeURIComponent(this.selectedRegionId)}` : '';
@@ -424,6 +760,7 @@ Craft.UpsnapDashboard = {
 				headers: {
 					"X-Requested-With": "XMLHttpRequest",
 				},
+				signal,
 			});
 
 			if (!res.ok) {
@@ -436,8 +773,16 @@ Craft.UpsnapDashboard = {
 				throw new Error(json.message || "Unknown error");
 			}
 
+			if (requestId !== null && !this.isActiveMonitorSwitchRequest(requestId)) {
+				throw new Error("stale-monitor-switch-request");
+			}
+
 			return json.data;
 		} catch (err) {
+			if (this.isAbortError(err) || err?.message === "stale-monitor-switch-request") {
+				throw err;
+			}
+
 			console.error(`Failed to fetch from ${endpoint}:`, err);
 			throw err;
 		}
@@ -541,7 +886,7 @@ Craft.UpsnapDashboard = {
 			timestamp = data.last_check_at;
 		}
 
-		const lastCheck = new Date(timestamp).toLocaleString();
+		const lastCheck = window.UpsnapUtils.formatDateDisplay(timestamp);
 
 		const intervalSeconds =
 			data?.config?.services?.uptime?.monitor_interval;
@@ -554,7 +899,7 @@ Craft.UpsnapDashboard = {
 		card.innerHTML = `
 			<div class="card-header">Last check</div>
 			<div class="card-body">
-				${lastCheck}<br>
+				<span title="DD/MM/YY">${lastCheck}</span><br>
 				${
 					!isDisabled && intervalMinutes
 						? `<span class="gray">Checked Every ${intervalMinutes}m</span>`
@@ -567,7 +912,7 @@ Craft.UpsnapDashboard = {
 	// ===========================================================
 	// 3. 24h Summary Card - NOW FETCHES FROM API
 	// ===========================================================
-	async render24hChartCard(monitorData) {
+	async render24hChartCard(monitorData, { requestId = null, signal = null } = {}) {
 		const card = document.getElementById("monitor-24h-card");
 		if (!card) return;
 		// Show skeleton while loading
@@ -596,8 +941,13 @@ Craft.UpsnapDashboard = {
 
 		try {
 			const data = await this.fetchMonitorData(
-				`/admin/upsnap/monitors/histogram/${this.monitorId}`
+				`/admin/upsnap/monitors/histogram/${this.monitorId}`,
+				{ requestId, signal }
 			);
+
+			if (requestId !== null && !this.isActiveMonitorSwitchRequest(requestId)) {
+				return;
+			}
 
 			const histogram = data?.histogram?.data ?? [];
 			const lastStatus = monitorData?.last_status;
@@ -653,9 +1003,9 @@ Craft.UpsnapDashboard = {
 
 					let colorClass = "";
 					if (bucket.uptime === null) colorClass = "bar-gray";
-					else if (bucket.uptime === 0) colorClass = "bar-red";
-					else if (bucket.uptime >= 1) colorClass = "bar-green";
-					else if (bucket.uptime >= 0.99) colorClass = "bar-yellow";
+					else if (bucket.uptime >= 0.99) colorClass = "bar-green";
+					else if (bucket.uptime >= 0.95) colorClass = "bar-yellow";
+					else if (bucket.uptime > 0) colorClass = "bar-orange";
 					else colorClass = "bar-red";
 
 					return `
@@ -684,6 +1034,10 @@ Craft.UpsnapDashboard = {
 
 			this.initHistogramTooltips();
 		} catch (err) {
+			if (this.isAbortError(err) || err?.message === "stale-monitor-switch-request") {
+				return;
+			}
+
 			card.classList.remove("skeleton");
 			card.innerHTML = `
 				<div class="card-header">Last 24 hours</div>
@@ -721,7 +1075,7 @@ Craft.UpsnapDashboard = {
 	// ===========================================================
 	// Response Time Area Chart - NOW FETCHES FROM API
 	// ===========================================================
-	async renderResponseTimeCard(monitorData) {
+	async renderResponseTimeCard(monitorData, { requestId = null, signal = null } = {}) {
 		this.showResponseChartLoader();
 		// Register no data plugin (safe-guard against double register)
 		if (!Chart.registry.plugins.get("noDataMessage")) {
@@ -775,8 +1129,13 @@ Craft.UpsnapDashboard = {
 				const queryParams = new URLSearchParams(range).toString();
 
 				const data = await this.fetchMonitorData(
-					`/admin/upsnap/monitors/response-time/${this.monitorId}?${queryParams}`
+					`/admin/upsnap/monitors/response-time/${this.monitorId}?${queryParams}`,
+					{ requestId, signal }
 				);
+
+				if (requestId !== null && !this.isActiveMonitorSwitchRequest(requestId)) {
+					return;
+				}
 
 				responseTime = data?.response_time_data;
 				points = responseTime?.chart_data || [];
@@ -869,7 +1228,7 @@ Craft.UpsnapDashboard = {
 					this.currentResponseTimeFilter = e.target.value;
 					this.showResponseChartLoader();
 					try {
-						await this.renderResponseTimeCard(monitorData);
+						await this.renderResponseTimeCard(monitorData, { requestId, signal });
 					} finally {
 						this.hideResponseChartLoader();
 					}
@@ -932,6 +1291,10 @@ Craft.UpsnapDashboard = {
 				},
 			});
 		} catch (err) {
+			if (this.isAbortError(err) || err?.message === "stale-monitor-switch-request") {
+				return;
+			}
+
 			card.classList.remove("skeleton");
 			console.error("Failed to render response time card:", err);
 		}
@@ -941,23 +1304,26 @@ Craft.UpsnapDashboard = {
 	// ===========================================================
 	// 4. Reusable Uptime Stats Card - NOW FETCHES FROM API
 	// ===========================================================
-	async renderUptimeStatCards() {
+	async renderUptimeStatCards({ requestId = null, signal = null } = {}) {
 		if (!this.monitorId) {
 			// Show error state for all cards
 			this.renderSingleUptimeStatCard(
 				"Last 24h",
 				null,
-				"uptime-day-card"
+				"uptime-day-card",
+				"24h"
 			);
 			this.renderSingleUptimeStatCard(
 				"Last Week",
 				null,
-				"uptime-week-card"
+				"uptime-week-card",
+				"7D"
 			);
 			this.renderSingleUptimeStatCard(
 				"Last 30 Days",
 				null,
-				"uptime-month-card"
+				"uptime-month-card",
+				"1M"
 			);
 			return;
 		}
@@ -973,70 +1339,83 @@ Craft.UpsnapDashboard = {
 
 		try {
 			const data = await this.fetchMonitorData(
-				`/admin/upsnap/monitors/uptime-stats/${this.monitorId}`
+				`/admin/upsnap/monitors/uptime-stats/${this.monitorId}`,
+				{ requestId, signal }
 			);
+
+			if (requestId !== null && !this.isActiveMonitorSwitchRequest(requestId)) {
+				return;
+			}
 
 			const stats = data?.uptime_stats ?? {};
 
 			this.renderSingleUptimeStatCard(
 				"Last 24h",
 				stats?.day,
-				"uptime-day-card"
+				"uptime-day-card",
+				"24h"
 			);
 			this.renderSingleUptimeStatCard(
 				"Last Week",
 				stats?.week,
-				"uptime-week-card"
+				"uptime-week-card",
+				"7D"
 			);
 			this.renderSingleUptimeStatCard(
 				"Last 30 Days",
 				stats?.month,
-				"uptime-month-card"
+				"uptime-month-card",
+				"1M"
 			);
 		} catch (err) {
+			if (this.isAbortError(err) || err?.message === "stale-monitor-switch-request") {
+				return;
+			}
+
 			console.error("Failed to fetch uptime stats:", err);
 
 			// Show error state for all cards
 			this.renderSingleUptimeStatCard(
 				"Last 24h",
 				null,
-				"uptime-day-card"
+				"uptime-day-card",
+				"24h"
 			);
 			this.renderSingleUptimeStatCard(
 				"Last Week",
 				null,
-				"uptime-week-card"
+				"uptime-week-card",
+				"7D"
 			);
 			this.renderSingleUptimeStatCard(
 				"Last 30 Days",
 				null,
-				"uptime-month-card"
+				"uptime-month-card",
+				"1M"
 			);
 		}
 	},
 
-	renderSingleUptimeStatCard(label, stats, elementId) {
+	renderSingleUptimeStatCard(label, stats, elementId, timeframe) {
 		const card = document.getElementById(elementId);
 		if (!card) return;
 
-		const content = card.querySelector(".card-content");
-		const skeleton = card.querySelector(".card-skeleton");
-
-		if (!stats) {
-			this.renderNoDataCard(card, label);
-			return;
-		}
-
 		const pct = stats?.uptime_percentage ?? null;
 		const incidents = stats?.incident_count ?? 0;
-
 		const color = this.uptimeColor(pct);
 
 		card.classList.remove("skeleton");
-		if (skeleton) skeleton.hidden = true;
-		if (content) content.hidden = false;
 
-		content.innerHTML = `
+		if (!stats) {
+			card.innerHTML = `
+				<div class="card-header">${label}</div>
+				<div class="card-body gray">No data available</div>
+			`;
+			return;
+		}
+
+		card.innerHTML = `
+			<div class="card-header">${label}</div>
 			<div class="card-body ${color}">
 				${pct !== null ? pct + "%" : "N/A"}
 			</div>
@@ -1059,7 +1438,7 @@ Craft.UpsnapDashboard = {
 			if (!this.monitorId) return;
 			const url = Craft.getCpUrl('upsnap/incidents', {
 				monitor_id: this.monitorId,
-				timeframe: '24_hours',
+				timeframe: timeframe || '24h',
 			});
 
 			window.location.href = url;
@@ -1111,7 +1490,7 @@ Craft.UpsnapDashboard = {
 	// ===========================================================
 	//  MAIN FUNCTION: Updated to use API calls
 	// ===========================================================
-	renderMonitorCards() {
+	renderMonitorCards({ requestId = null, signal = null } = {}) {
 		let data = window.CraftPageData?.monitorData;
 		data = this.appendPrimaryRegionStatus(data)
 
@@ -1121,9 +1500,9 @@ Craft.UpsnapDashboard = {
 		this.renderLastCheckCard(data);
 
 		// Render cards that fetch from API
-		this.render24hChartCard(data);
-		this.renderResponseTimeCard(data);
-		this.renderUptimeStatCards();
+		this.render24hChartCard(data, { requestId, signal });
+		this.renderResponseTimeCard(data, { requestId, signal });
+		this.renderUptimeStatCards({ requestId, signal });
 	},
 
 	getResponseTimeRange(filter) {
@@ -1157,7 +1536,7 @@ Craft.UpsnapDashboard = {
 	 * Fetches region-wise incident stats for the current monitor and renders the
 	 * incident stats card in the right sidebar.
 	 */
-	async loadIncidentStatsCard() {
+	async loadIncidentStatsCard({ requestId = null, signal = null } = {}) {
 		const monitorId = this.monitorId;
 		const card = document.getElementById('incident-stats-card');
 		if (!card) return;
@@ -1169,12 +1548,17 @@ Craft.UpsnapDashboard = {
 			const [regionMap, json] = await Promise.all([
 				this._fetchRegionMap(),
 				fetch(url, {
+					signal,
 					headers: {
 						'X-CSRF-Token': Craft.csrfTokenValue,
 						'Accept': 'application/json',
 					},
 				}).then((res) => res.json()),
 			]);
+
+			if (requestId !== null && !this.isActiveMonitorSwitchRequest(requestId)) {
+				return;
+			}
 
 			if (!json.success) throw new Error(json.message || 'Failed to fetch incident stats');
 
@@ -1184,6 +1568,14 @@ Craft.UpsnapDashboard = {
 
 			this._renderIncidentStatsCard(card, regions, monitorId, regionMap);
 		} catch (err) {
+			if (this.isAbortError(err)) {
+				return;
+			}
+
+			if (requestId !== null && !this.isActiveMonitorSwitchRequest(requestId)) {
+				return;
+			}
+
 			console.warn('Failed to load incident stats:', err);
 			this._renderIncidentStatsCardEmpty(card);
 		}
@@ -1230,7 +1622,7 @@ Craft.UpsnapDashboard = {
 					badge.addEventListener('click', () => {
 						window.location.href = Craft.getCpUrl('upsnap/incidents', {
 							monitor_id: monitorId,
-							timeframe: '24_hours',
+							timeframe: '24h',
 						});
 					});
 				}
@@ -1253,6 +1645,219 @@ Craft.UpsnapDashboard = {
 				<hr class="is-divider">
 				<p class="is-empty">No data available.</p>
 			`;
+		}
+	},
+
+	getMonitorChannelIds() {
+		const monitor = window.CraftPageData?.monitorData || {};
+
+		if (Array.isArray(monitor.channel_ids)) {
+			return monitor.channel_ids.map((id) => String(id));
+		}
+
+		if (Array.isArray(monitor.channelIds)) {
+			return monitor.channelIds.map((id) => String(id));
+		}
+
+		if (Array.isArray(monitor.notification_channels)) {
+			return monitor.notification_channels
+				.map((channel) => channel?.id)
+				.filter((id) => id !== null && id !== undefined)
+				.map((id) => String(id));
+		}
+
+		return [];
+	},
+
+	renderConnectedChannelsCardEmpty(card) {
+		const content = card.querySelector('.card-content');
+		const skeleton = card.querySelector('.card-skeleton');
+		this.setConnectedChannelsCountPill(card, 0);
+
+		card.classList.remove('skeleton');
+		if (skeleton) skeleton.hidden = true;
+		if (!content) return;
+
+		content.hidden = false;
+		content.innerHTML = `
+			<div class="ccc-empty-state">
+				<span class="ccc-empty-icon" aria-hidden="true">
+					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+						<path d="M9.5 17h5"></path>
+						<path d="M10.5 5.25a6 6 0 0 1 10.33 4.2v3.8l1.2 2.4a1 1 0 0 1-.9 1.45H7.77"></path>
+						<path d="M3 3l18 18"></path>
+					</svg>
+				</span>
+				<span>No notification channels attached.</span>
+			</div>
+		`;
+	},
+
+	setConnectedChannelsCountPill(card, count, href = null) {
+		const countPill = card.querySelector('#connected-channels-count-pill');
+		if (!countPill) return;
+
+		if (count > 0 && href) {
+			countPill.textContent = `${count} ${count === 1 ? 'channel' : 'channels'}`;
+			countPill.href = href;
+			countPill.classList.remove('hidden');
+			return;
+		}
+
+		countPill.textContent = '';
+		countPill.removeAttribute('href');
+		countPill.classList.add('hidden');
+	},
+
+	buildChannelTooltipHtml(channelType, channels) {
+		const integrationMeta = window.UpsnapUtils?.getIntegrationMeta
+			? window.UpsnapUtils.getIntegrationMeta(channelType)
+			: {
+				label: this._escapeHtml(channelType || 'Integration'),
+			  };
+
+		const label = this._escapeHtml(integrationMeta?.label || channelType || 'Integration');
+
+		const getStatusHtml = (isEnabled) => {
+			const statusClass = isEnabled ? 'active' : 'inactive';
+			const statusText = isEnabled ? 'Active' : 'Inactive';
+			return `<span class="ccc-tooltip-status ${statusClass}">${statusText}</span>`;
+		};
+
+		const rowsHtml = channels
+			.map((channel, idx) => {
+				const name = this._escapeHtml(channel?.name || 'Unnamed channel');
+				const info = window.UpsnapUtils?.getNotificationChannelDisplayInfo
+					? window.UpsnapUtils.getNotificationChannelDisplayInfo(channel, 'Configured')
+					: 'Configured';
+
+				const isEnabled = channel?.is_enabled !== false;
+
+				return `
+					<div class="ccc-tooltip-item ${idx > 0 ? 'with-divider' : ''}">
+						<div class="ccc-tooltip-item-row">
+							<span class="ccc-tooltip-name">${name}</span>
+							${channels.length > 1 ? getStatusHtml(isEnabled) : ''}
+						</div>
+						<div class="ccc-tooltip-info">${this._escapeHtml(info)}</div>
+					</div>
+				`;
+			})
+			.join('');
+
+		const headingStatus = channels.length === 1
+			? getStatusHtml(channels[0]?.is_enabled !== false)
+			: '';
+
+		return `
+			<div class="ccc-tooltip-inner">
+				<div class="ccc-tooltip-head">
+					<span>${label}</span>
+					${headingStatus}
+				</div>
+				${rowsHtml}
+			</div>
+		`;
+	},
+
+	renderConnectedChannelsCard(card, channels) {
+		const content = card.querySelector('.card-content');
+		const skeleton = card.querySelector('.card-skeleton');
+		if (!content) return;
+
+		const grouped = channels.reduce((acc, channel) => {
+			const key = String(channel?.channel_type || 'integration');
+			if (!acc[key]) acc[key] = [];
+			acc[key].push(channel);
+			return acc;
+		}, {});
+
+		const groups = Object.entries(grouped);
+		const count = channels.length;
+		const settingsUrl = `${Craft.getCpUrl('upsnap/settings')}#notification-channels-tab`;
+
+		const groupsHtml = groups
+			.map(([type, list]) => {
+				const iconMarkup = window.UpsnapUtils?.getIntegrationIcon
+					? window.UpsnapUtils.getIntegrationIcon(type, {
+						imgClass: 'ccc-icon-img',
+						fallbackClass: 'ccc-icon-fallback',
+					})
+					: '';
+
+				const tooltip = this.buildChannelTooltipHtml(type, list);
+
+				return `
+					<div class="ccc-icon-group" tabindex="0" aria-label="${this._escapeAttr(type)} channels">
+						<div class="ccc-icon-circle">${iconMarkup}</div>
+						${list.length > 1 ? `<span class="ccc-count-dot">${list.length}</span>` : ''}
+						<div class="ccc-tooltip" role="tooltip">${tooltip}</div>
+					</div>
+				`;
+			})
+			.join('');
+
+		card.classList.remove('skeleton');
+		if (skeleton) skeleton.hidden = true;
+		content.hidden = false;
+
+		if (count === 0) {
+			this.renderConnectedChannelsCardEmpty(card);
+			return;
+		}
+
+		this.setConnectedChannelsCountPill(card, count, settingsUrl);
+
+		content.innerHTML = `
+			<div class="ccc-groups-row">
+				${groupsHtml}
+			</div>
+		`;
+	},
+
+	async loadConnectedChannelsCard({ requestId = null, signal = null } = {}) {
+		const card = document.getElementById('connected-channels-card');
+		if (!card) return;
+
+		try {
+			const monitorChannelIds = this.getMonitorChannelIds();
+			if (!monitorChannelIds.length) {
+				this.renderConnectedChannelsCardEmpty(card);
+				return;
+			}
+
+			const monitorChannelIdSet = new Set(monitorChannelIds.map((id) => String(id)));
+
+			const response = await Craft.sendActionRequest(
+				'POST',
+				'upsnap/monitor-notification-channels/list',
+				{ signal }
+			);
+
+			if (requestId !== null && !this.isActiveMonitorSwitchRequest(requestId)) {
+				return;
+			}
+
+			const channels = Array.isArray(response?.data?.data?.channels)
+				? response.data.data.channels
+				: [];
+
+			const filtered = channels.filter((channel) =>
+				monitorChannelIdSet.has(String(channel?.id))
+			);
+
+			this.renderConnectedChannelsCard(card, filtered);
+		} catch (err) {
+			if (this.isAbortError(err)) {
+				return;
+			}
+
+			if (requestId !== null && !this.isActiveMonitorSwitchRequest(requestId)) {
+				return;
+			}
+
+			console.warn('Failed to load connected channels:', err);
+			this.renderConnectedChannelsCardEmpty(card);
 		}
 	},
 

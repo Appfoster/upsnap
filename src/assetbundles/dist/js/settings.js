@@ -632,7 +632,7 @@ Craft.Upsnap.Signup = {
 
 						Craft.cp.displayNotice(i18n.primaryMonitorSaved || "Primary monitor updated.");
 						hidePrimaryMonitorModal();
-						window.location.href = pendingRedirectUrl || Craft.getCpUrl("upsnap/settings") + "#monitors-tab";
+						window.location.href = pendingRedirectUrl || Craft.getCpUrl("upsnap/monitors") + "#monitors-tab";
 						window.location.reload();
 					})
 					.catch(function (err) {

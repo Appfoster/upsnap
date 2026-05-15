@@ -34,6 +34,77 @@
 		else alert(msg);
 	};
 
+	function showCraftConfirmModal({
+		title = "Confirm deletion",
+		message = "Are you sure?",
+		confirmLabel = "Delete",
+		cancelLabel = "Cancel",
+	}) {
+		return new Promise((resolve) => {
+			let settled = false;
+			const settle = (confirmed) => {
+				if (settled) return;
+				settled = true;
+				resolve(confirmed);
+			};
+
+			// Prefer Craft's built-in confirm modal helper when available.
+			if (Craft?.ui?.createConfirmModal) {
+				Craft.ui.createConfirmModal({
+					title,
+					message,
+					confirmLabel,
+					cancelLabel,
+					destructive: true,
+					onConfirm: () => settle(true),
+					onCancel: () => settle(false),
+				});
+				return;
+			}
+
+			const modalElement = document.createElement("div");
+			modalElement.className = "modal fitted";
+			modalElement.innerHTML = `
+				<div class="body">
+					<div class="content">
+						<h1>${Craft.escapeHtml(title)}</h1>
+						<p>${Craft.escapeHtml(message)}</p>
+					</div>
+				</div>
+				<div class="footer">
+					<div class="buttons right">
+						<button type="button" class="btn upsnap-modal-cancel">${Craft.escapeHtml(cancelLabel)}</button>
+						<button type="button" class="btn submit upsnap-modal-confirm">${Craft.escapeHtml(confirmLabel)}</button>
+					</div>
+				</div>
+			`;
+
+			document.body.appendChild(modalElement);
+
+			const $modal = $(modalElement);
+			const modal = new Garnish.Modal($modal, {
+				onHide: () => {
+					settle(false);
+					$modal.remove();
+				},
+			});
+
+			const cancelButton = modalElement.querySelector(".upsnap-modal-cancel");
+			const confirmButton =
+				modalElement.querySelector(".upsnap-modal-confirm");
+
+			cancelButton?.addEventListener("click", () => {
+				settle(false);
+				modal.hide();
+			});
+
+			confirmButton?.addEventListener("click", () => {
+				settle(true);
+				modal.hide();
+			});
+		});
+	}
+
 	// Update monitor object with primary region status data
 	const updateMonitorWithPrimaryRegionStatus = (monitor) => {
 		if (!monitor.regions || !Array.isArray(monitor.regions)) {
@@ -167,25 +238,42 @@
 
 		// primary column
 		const tdPrimary = document.createElement("td");
-		tdPrimary.className = "thin";
+		tdPrimary.className = "thin upsnap-monitor-actions-cell";
 
-		if (isSelected) {
-			tdPrimary.innerHTML = `
-			<button class="btn small upsnap-set-primary disabled"
+		const primaryActionLabel = isSelected ? "Selected" : "Set primary";
+		const primaryActionClass = isSelected
+			? "btn small upsnap-set-primary disabled"
+			: "btn small upsnap-set-primary";
+
+		tdPrimary.innerHTML = `
+			<div class="upsnap-monitor-actions-wrap">
+				<div class="upsnap-monitor-inline-actions" aria-label="Monitor row actions">
+					<button
+						type="button"
+						class="btn small icon upsnap-row-edit"
+						data-monitor-id="${monitor.id ?? ""}"
+						title="Edit monitor"
+						aria-label="Edit monitor"
+					>
+						<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg>
+					</button>
+					<button
+						type="button"
+						class="btn small icon upsnap-row-delete"
+						data-monitor-id="${monitor.id ?? ""}"
+						title="Delete monitor"
+						aria-label="Delete monitor"
+					>
+						<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+					</button>
+				</div>
+				<button class="${primaryActionClass}"
 					data-url="${escapeHtmlAttr(url)}"
 					data-service-type="${serviceType}">
-					Selected
+					${primaryActionLabel}
 				</button>
-			`;
-		} else {
-			tdPrimary.innerHTML = `
-				<button class="btn small upsnap-set-primary"
-					data-url="${escapeHtmlAttr(url)}"
-					data-service-type="${serviceType}">
-					Set primary
-				</button>
-			`;
-		}
+			</div>
+		`;
 
 		tr.appendChild(tdCheck);
 		tr.appendChild(tdMonitor);
@@ -308,7 +396,7 @@
 			}
 
 			craftNotice("Primary monitor updated.");
-			window.location.href = Craft.getCpUrl(`upsnap/settings`);
+			window.location.href = Craft.getCpUrl(`upsnap/monitors`);
 
 			// Update hidden fields so page state matches
 			if (monitoringUrlField()) monitoringUrlField().value = url;
@@ -341,6 +429,72 @@
 
 			// update bulk button states
 			updateBulkMenuState();
+		});
+	}
+
+	function handleRowEdit(e) {
+		const btn = e.currentTarget;
+		const monitorId = btn?.dataset?.monitorId;
+		if (!monitorId) {
+			craftError("Monitor ID not found.");
+			return;
+		}
+
+		window.location.href = Craft.getUrl(`upsnap/monitors/edit/${monitorId}`);
+	}
+
+	async function handleRowDelete(e) {
+		const btn = e.currentTarget;
+		const monitorId = btn?.dataset?.monitorId;
+		if (!monitorId) {
+			craftError("Monitor ID not found.");
+			return;
+		}
+
+		const confirmed = await showCraftConfirmModal({
+			title: "Delete monitor",
+			message: "Are you sure you want to delete this monitor? This action cannot be undone.",
+			confirmLabel: "Delete",
+		});
+
+		if (!confirmed) return;
+
+		btn.disabled = true;
+		btn.classList.add("loading");
+
+		try {
+			const res = await fetch("/actions/upsnap/monitors/delete", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+					"X-CSRF-Token": Craft.csrfTokenValue,
+				},
+				body: JSON.stringify({ monitorId }),
+			});
+
+			const json = await res.json();
+			if (!res.ok || !json.success) {
+				throw new Error(json.message || "Failed to delete monitor.");
+			}
+
+			craftNotice(json.message || "Monitor deleted.");
+			await loadAndRender();
+		} catch (err) {
+			console.error("Delete monitor error", err);
+			craftError(err.message || "Failed to delete monitor.");
+		} finally {
+			btn.classList.remove("loading");
+			btn.disabled = false;
+		}
+	}
+
+	function wireInlineRowActions(container) {
+		container.querySelectorAll(".upsnap-row-edit").forEach((btn) => {
+			btn.addEventListener("click", handleRowEdit);
+		});
+
+		container.querySelectorAll(".upsnap-row-delete").forEach((btn) => {
+			btn.addEventListener("click", handleRowDelete);
 		});
 	}
 
@@ -538,6 +692,8 @@
 				b.addEventListener("click", handleSetPrimary);
 			});
 
+			wireInlineRowActions(tbody);
+
 			// set incidents button handlers + region tooltip
 			initiateRegionTooltip();
 			wireRegionTooltips(tbody);
@@ -550,7 +706,7 @@
 
 					const url = Craft.getCpUrl("upsnap/incidents", {
 						monitor_id: monitorId,
-						timeframe: "24_hours",
+						timeframe: "24h",
 					});
 
 					window.location.href = url;
@@ -797,23 +953,16 @@
 				checked.length === checkboxes.length && checkboxes.length > 0;
 		}
 
-		const editBtn = document.getElementById("upsnap-edit-btn");
 		const deleteBtn = document.getElementById("upsnap-delete-btn");
 
 		// If menu isn't rendered yet, bail out safely
-		if (!editBtn || !deleteBtn) {
+		if (!deleteBtn) {
 			return;
 		}
 
-		editBtn.classList.add("disabled");
 		deleteBtn.classList.add("disabled");
 
-		if (checked.length === 1) {
-			editBtn.classList.remove("disabled");
-			deleteBtn.classList.remove("disabled");
-		}
-
-		if (checked.length > 1) {
+		if (checked.length > 0) {
 			deleteBtn.classList.remove("disabled");
 		}
 	}
@@ -891,11 +1040,10 @@
 	function initBulkMenu() {
 		const menuBtn = document.getElementById("upsnap-actions-menubtn");
 		const menu = document.getElementById("upsnap-actions-menu");
-		const editBtn = document.getElementById("upsnap-edit-btn");
 		const deleteBtn = document.getElementById("upsnap-delete-btn");
 
 		// If menu isn't rendered yet, stop and wait for loadAndRender to call it later
-		if (!menuBtn || !menu || !editBtn || !deleteBtn) {
+		if (!menuBtn || !menu || !deleteBtn) {
 			return;
 		}
 
@@ -932,7 +1080,13 @@
 				return;
 			}
 
-			if (!confirm("Delete selected monitors?")) return;
+			const confirmed = await showCraftConfirmModal({
+				title: "Delete selected monitors",
+				message: "Are you sure you want to delete the selected monitors? This action cannot be undone.",
+				confirmLabel: "Delete",
+			});
+
+			if (!confirmed) return;
 
 			try {
 				const res = await fetch(
@@ -954,33 +1108,13 @@
 				}
 
 				craftNotice(json.message || "Deleted");
-				window.location.href = Craft.getCpUrl(`upsnap/settings`);
+				window.location.href = Craft.getCpUrl(`upsnap/monitors`);
 			} catch (err) {
 				console.error("Bulk delete error", err);
 				craftError(err.message || err);
 			}
 		});
 
-		editBtn.addEventListener("click", () => {
-			if (editBtn.classList.contains("disabled")) return;
-
-			const checked = [
-				...document.querySelectorAll(".upsnap-row-checkbox"),
-			].filter((cb) => cb.checked);
-
-			if (checked.length !== 1) return;
-
-			const monitorId = checked[0].dataset.id;
-			if (!monitorId) {
-				craftError("Monitor ID not found.");
-				return;
-			}
-
-			// Redirect to edit page
-			window.location.href = Craft.getUrl(
-				`upsnap/monitors/edit/${monitorId}`,
-			);
-		});
 	}
 
 	async function fetchSingleMonitor(monitorId) {
@@ -1100,6 +1234,8 @@
 		newRow.querySelectorAll(".upsnap-set-primary").forEach((b) => {
 			b.addEventListener("click", handleSetPrimary);
 		});
+
+		wireInlineRowActions(newRow);
 	}
 
 	function consumeMonitorChangeQueue() {

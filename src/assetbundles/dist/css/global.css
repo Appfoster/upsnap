@@ -262,9 +262,9 @@
     align-items: center;
     justify-content: center;
     gap: 10px;
-    background: rgba(255, 255, 255, 0.72);
-    backdrop-filter: blur(2px);
-    -webkit-backdrop-filter: blur(2px);
+    background: transparent;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
     padding: 24px;
     text-align: center;
     pointer-events: all;
@@ -1300,6 +1300,37 @@
     color: #991b1b;
 }
 
+.channel-row-inactive {
+    opacity: 0.6;
+}
+
+.channel-row-inactive input[type="checkbox"]:disabled {
+    cursor: not-allowed;
+}
+
+.channel-inactive-hint {
+    font-size: 11px;
+    color: #6b7280;
+    margin-left: 6px;
+    font-style: italic;
+}
+
+.channel-inactive-hint a {
+    color: #3b82f6;
+    text-decoration: underline;
+}
+
+.channel-row-inactive-selected {
+    background-color: #fffbeb;
+}
+
+.channel-inactive-hint--warning {
+    font-size: 11px;
+    color: #b45309;
+    font-weight: 500;
+    margin-left: 6px;
+}
+
 .channel-details {
     font-size: 13px;
     color: #6b7280;
@@ -2189,6 +2220,74 @@
 }
 
 /* -------------------------------------------------------
+   Monitor row inline actions (monitors listing page)
+------------------------------------------------------- */
+.upsnap-monitor-actions-cell {
+    white-space: nowrap;
+}
+
+.upsnap-monitor-actions-wrap {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.upsnap-monitor-inline-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.upsnap-row-edit,
+.upsnap-row-delete {
+    min-width: 30px;
+    padding: 6px;
+    border-color: #d1d5db;
+    background: #fff;
+}
+
+.upsnap-row-edit {
+    color: #4b5563;
+}
+
+.upsnap-row-edit:hover,
+.upsnap-row-edit:focus {
+    color: #1f2937;
+    border-color: #9ca3af;
+}
+
+.upsnap-row-delete {
+    color: #b91c1c;
+}
+
+.upsnap-row-delete:hover,
+.upsnap-row-delete:focus {
+    color: #991b1b;
+    border-color: #fca5a5;
+}
+
+/* Keep custom confirm-modal button labels perfectly centered */
+.upsnap-modal-cancel,
+.upsnap-modal-confirm {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    line-height: 1;
+    min-height: 34px;
+    padding-top: 0;
+    padding-bottom: 0;
+}
+
+@media (max-width: 900px) {
+    .upsnap-monitor-actions-wrap {
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        gap: 6px;
+    }
+}
+
+/* -------------------------------------------------------
    Region tooltip (monitors listing page)
 ------------------------------------------------------- */
 .upsnap-region-tooltip {
@@ -2310,4 +2409,13 @@
 .incident-status-dot-wrap:hover::before,
 .incident-status-dot-wrap:hover::after {
     opacity: 1;
+}
+
+.zilch {
+    color: var(--light-text-color);
+    font-size: 20px;
+    line-height: 24px;
+    padding-block: 5px;
+    padding-inline: 0;
+    text-align: center;
 }

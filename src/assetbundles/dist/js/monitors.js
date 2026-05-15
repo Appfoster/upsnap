@@ -31,6 +31,8 @@ if (Craft && Craft.cp) {
 }
 
 Craft.Upsnap.Monitor = {
+	supportedChannelTypesByType: null,
+
 	init() {
 		this.registerLoadIntegrations();
 		this.registerAdvancedSettingsAccordion();
@@ -146,17 +148,37 @@ Craft.Upsnap.Monitor = {
 			});
 		});
 
-		// On edit form, enforce limit for already-loaded keywords
-		const hiddenInput = document.getElementById("keywordsHidden");
-		if (hiddenInput) {
-			try {
-				const existing = JSON.parse(hiddenInput.value || "[]");
-				if (existing.length >= 2) {
-					this._setKeywordInputDisabled(true);
-				}
-			} catch (e) {}
+		// Initialize the toggle state on form load
+		this.updateKeywordMatchAllToggle();
+	},
+
+	updateKeywordMatchAllToggle() {
+		const keywordsList = document.getElementById("keywords-list");
+		const keywordMatchAllWrapper = document.getElementById("keywordMatchAll");
+
+		if (!keywordsList || !keywordMatchAllWrapper) return;
+
+		// Count keyword cards
+		const keywordCount = keywordsList.querySelectorAll(".keyword-card").length;
+
+		// Disable toggle if less than 2 keywords, enable if 2 or more
+		const shouldDisable = keywordCount < 2;
+
+		// Mark as disabled using data attribute
+		keywordMatchAllWrapper.dataset.isDisabled = shouldDisable ? "true" : "false";
+
+		// Apply/remove visual styling
+		if (shouldDisable) {
+			keywordMatchAllWrapper.classList.add("disabled");
+			keywordMatchAllWrapper.style.pointerEvents = "none";
+			keywordMatchAllWrapper.style.opacity = "0.5";
+		} else {
+			keywordMatchAllWrapper.classList.remove("disabled");
+			keywordMatchAllWrapper.style.pointerEvents = "auto";
+			keywordMatchAllWrapper.style.opacity = "1";
 		}
 	},
+
 	addKeyword(keyword) {
 		keyword = keyword.trim();
 		if (!keyword) {
@@ -200,89 +222,132 @@ Craft.Upsnap.Monitor = {
 		const card = document.createElement("div");
 		card.className = "keyword-card";
 		card.dataset.keyword = keyword;
-		card.style.cssText =
-			"border: 1px solid #e0e0e0; padding: 15px; border-radius: 5px; background: #fafafa;";
 
+		// Header: chip + remove button
 		const headerDiv = document.createElement("div");
-		headerDiv.style.cssText =
-			"display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;";
+		headerDiv.className = "keyword-card__header";
 
-		const strong = document.createElement("strong");
-		strong.textContent = keyword;
+		const chipWrap = document.createElement("span");
+		chipWrap.className = "keyword-chip-wrap";
+
+		const chipLabel = document.createElement("span");
+		chipLabel.className = "keyword-chip-label";
+		chipLabel.textContent = "Keyword:";
+
+		const chip = document.createElement("span");
+		chip.className = "keyword-chip";
+		chip.textContent = keyword;
+
+		chipWrap.appendChild(chipLabel);
+		chipWrap.appendChild(chip);
 
 		const removeBtn = document.createElement("button");
 		removeBtn.type = "button";
-		removeBtn.className = "remove-keyword";
+		removeBtn.className = "remove-keyword keyword-card__remove";
 		removeBtn.dataset.keyword = keyword;
-		removeBtn.textContent = "✕";
-		removeBtn.style.cssText =
-			"background: none; border: none; cursor: pointer; padding: 0; font-size: 16px; color: #d32f2f;";
+		removeBtn.setAttribute("aria-label", "Remove keyword");
+		removeBtn.innerHTML =
+			'<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>';
 
 		removeBtn.addEventListener("click", (e) => {
 			e.preventDefault();
 			this.removeKeyword(keyword);
 		});
 
-		headerDiv.appendChild(strong);
+		headerDiv.appendChild(chipWrap);
 		headerDiv.appendChild(removeBtn);
 
-		// Grid container for match condition and regex
-		const gridDiv = document.createElement("div");
-		gridDiv.style.cssText =
-			"display: grid; grid-template-columns: 1fr 1fr; gap: 10px;";
+		// Controls row (match select + toggles)
+		const controlsDiv = document.createElement("div");
+		controlsDiv.className = "keyword-card__controls";
 
-		// Match condition select
+		// Match type wrapper
+		const matchWrap = document.createElement("div");
+		matchWrap.className = "keyword-card__match-wrap";
+
+		const matchLabel = document.createElement("span");
+		matchLabel.className = "keyword-card__match-label";
+		matchLabel.textContent = "Match type";
+
 		const matchSelect = document.createElement("select");
-		matchSelect.className = "keyword-match-condition";
+		matchSelect.className = "keyword-match-condition keyword-card__select";
 		matchSelect.dataset.keyword = keyword;
-		matchSelect.style.cssText =
-			"padding: 8px; border: 1px solid #ddd; border-radius: 3px;";
 		matchSelect.innerHTML = `
-			<option value="must_contain">Exists</option>
-			<option value="must_not_contain">Does not exist</option>
+			<option value="must_contain">Start incident when keyword exists</option>
+			<option value="must_not_contain">Start incident when keyword does not exist</option>
 		`;
 
-		// Regex checkbox
-		const regexLabel = document.createElement("label");
-		regexLabel.style.cssText =
-			"display: flex; align-items: center; gap: 8px;";
+		matchWrap.appendChild(matchLabel);
+		matchWrap.appendChild(matchSelect);
+
+		// Toggles row
+		const togglesDiv = document.createElement("div");
+		togglesDiv.className = "keyword-card__toggles";
+
+		// Regex toggle
+		const regexToggleWrap = document.createElement("div");
+		regexToggleWrap.className = "keyword-toggle";
+
+		const regexSwitchLabel = document.createElement("label");
+		regexSwitchLabel.className = "keyword-toggle__switch";
 
 		const regexCheckbox = document.createElement("input");
 		regexCheckbox.type = "checkbox";
 		regexCheckbox.className = "keyword-is-regex";
 		regexCheckbox.dataset.keyword = keyword;
-		regexCheckbox.style.cssText = "cursor: pointer;";
 
-		regexLabel.appendChild(regexCheckbox);
-		regexLabel.appendChild(document.createTextNode("Regex"));
+		const regexSlider = document.createElement("span");
+		regexSlider.className = "keyword-toggle__slider";
 
-		gridDiv.appendChild(matchSelect);
-		gridDiv.appendChild(regexLabel);
+		regexSwitchLabel.appendChild(regexCheckbox);
+		regexSwitchLabel.appendChild(regexSlider);
 
-		// Case sensitive checkbox
-		const caseLabel = document.createElement("label");
-		caseLabel.style.cssText =
-			"display: flex; align-items: center; gap: 8px; margin-top: 8px;";
+		const regexText = document.createElement("div");
+		regexText.className = "keyword-toggle__text";
+		regexText.innerHTML =
+			'<span class="keyword-toggle__label">Regex</span><span class="keyword-toggle__desc">Use regular expression matching</span>';
+
+		regexToggleWrap.appendChild(regexSwitchLabel);
+		regexToggleWrap.appendChild(regexText);
+
+		// Case sensitive toggle
+		const caseToggleWrap = document.createElement("div");
+		caseToggleWrap.className = "keyword-toggle";
+
+		const caseSwitchLabel = document.createElement("label");
+		caseSwitchLabel.className = "keyword-toggle__switch";
 
 		const caseCheckbox = document.createElement("input");
 		caseCheckbox.type = "checkbox";
 		caseCheckbox.className = "keyword-case-sensitive";
 		caseCheckbox.dataset.keyword = keyword;
-		caseCheckbox.style.cssText = "cursor: pointer;";
 
-		caseLabel.appendChild(caseCheckbox);
-		caseLabel.appendChild(document.createTextNode("Case Sensitive"));
+		const caseSlider = document.createElement("span");
+		caseSlider.className = "keyword-toggle__slider";
+
+		caseSwitchLabel.appendChild(caseCheckbox);
+		caseSwitchLabel.appendChild(caseSlider);
+
+		const caseText = document.createElement("div");
+		caseText.className = "keyword-toggle__text";
+		caseText.innerHTML =
+			'<span class="keyword-toggle__label">Case Sensitive</span><span class="keyword-toggle__desc">Match exact letter case</span>';
+
+		caseToggleWrap.appendChild(caseSwitchLabel);
+		caseToggleWrap.appendChild(caseText);
+
+		togglesDiv.appendChild(regexToggleWrap);
+		togglesDiv.appendChild(caseToggleWrap);
+
+		controlsDiv.appendChild(matchWrap);
+		controlsDiv.appendChild(togglesDiv);
 
 		card.appendChild(headerDiv);
-		card.appendChild(gridDiv);
-		card.appendChild(caseLabel);
+		card.appendChild(controlsDiv);
 		keywordsList.appendChild(card);
 
-		// Disable input once limit is reached
-		const updatedKeywords = JSON.parse(hiddenInput.value || "[]");
-		if (updatedKeywords.length >= 2) {
-			this._setKeywordInputDisabled(true);
-		}
+		// Update toggle state after adding keyword
+		this.updateKeywordMatchAllToggle();
 	},
 	removeKeyword(keyword) {
 		const keywordsList = document.getElementById("keywords-list");
@@ -305,41 +370,90 @@ Craft.Upsnap.Monitor = {
 		keywords = keywords.filter((k) => k !== keyword);
 		hiddenInput.value = JSON.stringify(keywords);
 
-		// Re-enable input if under the limit
-		if (keywords.length < 2) {
-			this._setKeywordInputDisabled(false);
-		}
-	},
-	_setKeywordInputDisabled(disabled) {
-		const keywordInput = document.getElementById("keywordInput");
-		const inputContainer = document.getElementById("keywords-input-container");
-
-		if (keywordInput) keywordInput.disabled = disabled;
-
-		if (!inputContainer) return;
-		let noticeEl = document.getElementById("keyword-limit-notice");
-		if (disabled) {
-			if (!noticeEl) {
-				noticeEl = document.createElement("p");
-				noticeEl.id = "keyword-limit-notice";
-				noticeEl.style.cssText = "margin-top:-10px;margin-bottom:10px;font-size:12px;color:#b91c1c;";
-				noticeEl.textContent = "Maximum of 2 keywords allowed. Remove one to add another.";
-				inputContainer.insertAdjacentElement("afterend", noticeEl);
-			}
-		} else if (noticeEl) {
-			noticeEl.remove();
-		}
+		// Update toggle state after removing keyword
+		this.updateKeywordMatchAllToggle();
 	},
 	bindMonitorUrlListener() {
-		const field =
+		const websiteField =
 			document.getElementById("url") ||
 			document.querySelector('input[name="url"]');
-		if (!field) return;
-		this.enforceHttpsHealthchecks();
+		const keywordField =
+			document.getElementById("keywordUrl") ||
+			document.querySelector('input[name="keywordUrl"]');
 
-		field.addEventListener("input", () => {
+		if (websiteField) {
 			this.enforceHttpsHealthchecks();
+			websiteField.addEventListener("input", () => {
+				this.enforceHttpsHealthchecks();
+			});
+			this.bindUrlPasteSanitizer(websiteField, {
+				onAfterPaste: () => this.enforceHttpsHealthchecks(),
+			});
+		}
+
+		if (keywordField) {
+			this.bindUrlPasteSanitizer(keywordField);
+		}
+	},
+	bindUrlPasteSanitizer(field, options = {}) {
+		if (!field) return;
+
+		field.addEventListener("paste", (event) => {
+			const pastedText = event.clipboardData?.getData("text") || "";
+			if (!pastedText) return;
+
+			if (!this.shouldSanitizeUrlPaste(field, pastedText)) {
+				return;
+			}
+
+			const hasPastedProtocol = /^\s*https?:\/\//i.test(pastedText);
+			const sanitized = this.sanitizeUrlPasteText(pastedText);
+			if (!hasPastedProtocol && sanitized === pastedText) return;
+
+			event.preventDefault();
+			if (hasPastedProtocol) {
+				field.value = pastedText.trim();
+				field.dispatchEvent(new Event("input", { bubbles: true }));
+				field.setSelectionRange(field.value.length, field.value.length);
+			} else {
+				this.insertTextAtCursor(field, sanitized);
+			}
+
+			if (typeof options.onAfterPaste === "function") {
+				options.onAfterPaste();
+			}
 		});
+	},
+	shouldSanitizeUrlPaste(field, pastedText) {
+		const start = field.selectionStart ?? field.value.length;
+		const end = field.selectionEnd ?? start;
+		const currentValue = field.value || "";
+
+		const nextRawValue =
+			currentValue.slice(0, start) +
+			pastedText +
+			currentValue.slice(end);
+
+		// Only sanitize when paste would create a duplicated protocol
+		// such as "https://https://example.com" or "http://https://example.com".
+		return /^\s*https?:\/\/\s*https?:\/\//i.test(nextRawValue);
+	},
+	sanitizeUrlPasteText(value) {
+		return String(value).replace(/^\s*https?:\/\//i, "");
+	},
+	insertTextAtCursor(input, text) {
+		const start = input.selectionStart ?? input.value.length;
+		const end = input.selectionEnd ?? start;
+		const currentValue = input.value;
+
+		input.value =
+			currentValue.slice(0, start) +
+			text +
+			currentValue.slice(end);
+
+		const nextPosition = start + text.length;
+		input.setSelectionRange(nextPosition, nextPosition);
+		input.dispatchEvent(new Event("input", { bubbles: true }));
 	},
 	getMonitorUrl() {
 		const field =
@@ -680,6 +794,10 @@ Craft.Upsnap.Monitor = {
 			spinner.classList.remove("hidden");
 
 			try {
+				if (!this.supportedChannelTypesByType) {
+					await this.loadSupportedChannelTypes();
+				}
+
 				const response = await Craft.sendActionRequest(
 					"POST",
 					"upsnap/monitor-notification-channels/list",
@@ -699,6 +817,54 @@ Craft.Upsnap.Monitor = {
 		const renderTable = (channels) => {
 			tbody.innerHTML = "";
 
+			const escapeHtml = (text) => {
+				if (text === null || text === undefined) return "";
+				return String(text)
+					.replace(/&/g, "&amp;")
+					.replace(/</g, "&lt;")
+					.replace(/>/g, "&gt;")
+					.replace(/\"/g, "&quot;")
+					.replace(/'/g, "&#039;");
+			};
+
+			const isChannelActive = (channel) => {
+				return (
+					channel?.is_enabled !== false &&
+					channel?.is_enabled !== 0 &&
+					channel?.is_enabled !== "0"
+				);
+			};
+
+			const getTypeIconName = (channelType) => {
+				const supported =
+					this.supportedChannelTypesByType?.[channelType] || null;
+				return supported?.icon || channelType;
+			};
+
+			const getIntegrationIcon = (iconName) => {
+				const fallbackSvg =
+					'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"></rect><path d="M3 7l9 6 9-6"></path></svg>';
+
+				const logoBaseUrl = window?.Upsnap?.settings?.logoBaseUrl || "";
+
+				if (!iconName || !logoBaseUrl) {
+					return `<span class="monitor-integration-icon-fallback">${fallbackSvg}</span>`;
+				}
+
+				const normalizedName = iconName.toLowerCase().replace(/_/g, "-");
+				const humanName = iconName
+					.replace(/[_-]+/g, " ")
+					.trim()
+					.replace(/\b\w/g, (c) => c.toUpperCase());
+
+				return `<img
+					src="${logoBaseUrl}/${normalizedName}.png"
+					alt="${escapeHtml(humanName)} integration"
+					class="monitor-integration-icon-img"
+					onerror="this.style.display='none';this.nextElementSibling.style.display='inline-flex'"
+				/><span class="monitor-integration-icon-fallback" aria-hidden="true" style="display:none">${fallbackSvg}</span>`;
+			};
+
 			if (!channels.length) {
 				table.style.display = "none";
 				noMsg.classList.remove("hidden");
@@ -706,7 +872,17 @@ Craft.Upsnap.Monitor = {
 			}
 
 			channels.forEach((c) => {
+				const active = isChannelActive(c);
+				const statusClass = active ? "active" : "inactive";
+				const statusText = active ? "Active" : "Inactive";
+				const iconMarkup = getIntegrationIcon(
+					getTypeIconName(c.channel_type),
+				);
+				const disabledAttr = active ? "" : 'disabled title="This channel is inactive. Enable it from the Notification Channels page to select it."';
+				const rowClass = active ? "" : " channel-row-inactive";
+
 				const row = document.createElement("tr");
+				row.className = rowClass.trim();
 				row.innerHTML = `
 					<td class="thin">
 						<input 
@@ -714,9 +890,17 @@ Craft.Upsnap.Monitor = {
 							class="channel-checkbox" 
 							value="${c.id}"
 							data-id="${c.id}"
+							${disabledAttr}
 						>
 					</td>
-					<td>${c.name}</td>
+					<td>
+						<div class="monitor-channel-name-wrap">
+							<span class="monitor-integration-icon" aria-hidden="true">${iconMarkup}</span>
+							<span class="monitor-channel-name">${escapeHtml(c.name)}</span>
+							<span class="channel-status ${statusClass}">${statusText}</span>
+							${!active ? '<span class="channel-inactive-hint">Enable from <a href="/admin/upsnap/notification-channels" target="_blank">Notification Channels</a> to select</span>' : ""}
+						</div>
+					</td>
 					<td>${formatChannelType(c.channel_type)}</td>
 				`;
 				tbody.appendChild(row);
@@ -725,7 +909,7 @@ Craft.Upsnap.Monitor = {
 			table.style.display = "table";
 
 			// Add event listeners to individual checkboxes
-			const checkboxes = tbody.querySelectorAll(".channel-checkbox");
+			const checkboxes = tbody.querySelectorAll(".channel-checkbox:not(:disabled)");
 
 			checkboxes.forEach((cb) => {
 				cb.addEventListener("change", () => {
@@ -745,7 +929,8 @@ Craft.Upsnap.Monitor = {
 		};
 
 		const formatChannelType = (type) => {
-			return type
+			if (!type) return "";
+			return String(type)
 				.replace("_", " ")
 				.replace(/\b\w/g, (l) => l.toUpperCase());
 		};
@@ -758,25 +943,90 @@ Craft.Upsnap.Monitor = {
 				const checkbox = tbody.querySelector(
 					`.channel-checkbox[data-id="${id}"]`,
 				);
-				if (checkbox) checkbox.checked = true;
+				if (!checkbox) return;
+
+				if (checkbox.disabled) {
+					// Channel is inactive but was previously selected.
+					// Re-enable so the user can uncheck it, but mark with a warning.
+					checkbox.disabled = false;
+					checkbox.removeAttribute("title");
+					const row = checkbox.closest("tr");
+					if (row) {
+						row.classList.add("channel-row-inactive-selected");
+						const hint = row.querySelector(".channel-inactive-hint");
+						if (hint) {
+							hint.textContent = "Inactive \u2014 won\u2019t send notifications until re-enabled. Uncheck to remove.";
+							hint.classList.remove("channel-inactive-hint");
+							hint.classList.add("channel-inactive-hint--warning");
+						}
+					}
+
+					// When unchecked, re-disable and restore to the standard inactive state
+					checkbox.addEventListener("change", function onInactiveUncheck() {
+						if (!checkbox.checked) {
+							checkbox.disabled = true;
+							checkbox.setAttribute("title", "This channel is inactive. Enable it from the Notification Channels page to select it.");
+							if (row) {
+								row.classList.remove("channel-row-inactive-selected");
+								row.classList.add("channel-row-inactive");
+								const hint = row.querySelector(".channel-inactive-hint--warning");
+								if (hint) {
+									hint.innerHTML = 'Enable from <a href="/admin/upsnap/notification-channels" target="_blank">Notification Channels</a> to select';
+									hint.classList.remove("channel-inactive-hint--warning");
+									hint.classList.add("channel-inactive-hint");
+								}
+							}
+							checkbox.removeEventListener("change", onInactiveUncheck);
+						}
+					});
+				}
+
+				checkbox.checked = true;
 			});
 
-			// After selecting saved ones, update "select all"
-			const checkboxes = tbody.querySelectorAll(".channel-checkbox");
+			// After selecting saved ones, update "select all" (only count enabled checkboxes)
+			const checkboxes = tbody.querySelectorAll(".channel-checkbox:not(:disabled)");
 			const all = checkboxes.length;
 			const checked = [...checkboxes].filter((cb) => cb.checked).length;
 
-			selectAll.checked = checked === all;
+			selectAll.checked = all > 0 && checked === all;
 		};
 
-		// SELECT ALL
+		// SELECT ALL (only toggles enabled checkboxes)
 		selectAll.addEventListener("change", (e) => {
 			const checked = e.target.checked;
-			tbody.querySelectorAll(".channel-checkbox").forEach((cb) => {
+			tbody.querySelectorAll(".channel-checkbox:not(:disabled)").forEach((cb) => {
 				cb.checked = checked;
 				cb.dispatchEvent(new Event("change"));
 			});
 		});
+	},
+	async loadSupportedChannelTypes() {
+		if (this.supportedChannelTypesByType) {
+			return this.supportedChannelTypesByType;
+		}
+
+		this.supportedChannelTypesByType = {};
+
+		try {
+			const response = await Craft.sendActionRequest(
+				"GET",
+				"upsnap/monitor-notification-channels/list-supported-types",
+			);
+			const channels = response?.data?.data?.channels;
+
+			if (Array.isArray(channels)) {
+				channels.forEach((channelType) => {
+					if (channelType?.type) {
+						this.supportedChannelTypesByType[channelType.type] = channelType;
+					}
+				});
+			}
+		} catch (error) {
+			console.error("Failed to load supported channel types:", error);
+		}
+
+		return this.supportedChannelTypesByType;
 	},
 	disableSavebtn() {
 		const saveBtn = document.getElementById("save-monitor");
@@ -848,7 +1098,7 @@ Craft.Upsnap.Monitor = {
 						});
 					}
 
-					window.location.href = Craft.getCpUrl(`upsnap/settings`);
+					window.location.href = Craft.getCpUrl(`upsnap/monitors`);
 				} else {
 					Craft.cp.displayError(data.message || "Failed.");
 				}
@@ -1056,7 +1306,9 @@ Craft.Upsnap.Monitor = {
 			config: {
 				meta: {
 					url: url,
-					timeout: 30,
+					timeout: this.getSeconds(
+						"websiteTimeoutMonitoringInterval",
+					),
 					follow_redirects: true,
 				},
 				services: {
@@ -1086,6 +1338,18 @@ Craft.Upsnap.Monitor = {
 							"mixedContentMonitoringInterval",
 						),
 					},
+					lighthouse : {
+						enabled: isEnabled("lighthouseEnabled"),
+						monitor_interval: this.getSeconds(
+							"lighthouseMonitoringInterval",
+						),
+					},
+					domain: {
+						enabled: isEnabled("domainEnabled"),
+						monitor_interval: this.getSeconds(
+							"domainMonitoringInterval",
+						),
+					}
 				},
 			},
 			regions: basePayload.regions,

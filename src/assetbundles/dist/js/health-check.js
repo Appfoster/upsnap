@@ -32,6 +32,11 @@ function showCraftMessage(type, message) {
     }
 }
 
+function getSelectedMonitorId() {
+    const urlMonitorId = new URLSearchParams(window.location.search).get('monitor_id');
+    return urlMonitorId || window.CraftPageData?.monitorId || window.CraftPageData?.monitorData?.id || null;
+}
+
 function registerBrokenLinksJs() {
     const refreshBtn = document.getElementById("refresh-btn");
     const statusContainerWrapper = document.getElementById("status-container-wrapper");
@@ -81,7 +86,8 @@ function registerBrokenLinksJs() {
     function loadBrokenLinks(forceFetch = false) {
         Craft.sendActionRequest('POST', 'upsnap/health-check/broken-links', {
             data: {
-				force_fetch: forceFetch
+				force_fetch: forceFetch,
+				monitor_id: getSelectedMonitorId()
 			}
         })
             .then(response => {
@@ -314,7 +320,8 @@ function registerDomainCheckJs() {
     function fetchDomainData(forceFetch = false) {
         return Craft.sendActionRequest('POST', 'upsnap/health-check/domain-check', {
             data: {
-				force_fetch: forceFetch
+				force_fetch: forceFetch,
+				monitor_id: getSelectedMonitorId()
 			}
         })
             .then(response => {
@@ -363,6 +370,22 @@ function registerDomainCheckJs() {
         });
     }
 
+    function getValidityPillClass(daysUntilExpiry) {
+        if (daysUntilExpiry === null || daysUntilExpiry === undefined || Number.isNaN(Number(daysUntilExpiry))) {
+            return 'validity-pill--neutral';
+        }
+
+        if (Number(daysUntilExpiry) > 30) return 'validity-pill--valid';
+        if (Number(daysUntilExpiry) > 7) return 'validity-pill--warning';
+        return 'validity-pill--expired';
+    }
+
+    function renderValidityPill(daysUntilExpiry) {
+        const hasValue = daysUntilExpiry !== null && daysUntilExpiry !== undefined && !Number.isNaN(Number(daysUntilExpiry));
+        const label = hasValue ? `${daysUntilExpiry} days` : 'N/A';
+        return `<span class="validity-pill ${getValidityPillClass(daysUntilExpiry)}">${label}</span>`;
+    }
+
     // Function to render the general info / more details section
     function renderDomainDetails(details) {
         if (!details || Object.keys(details).length === 0) {
@@ -393,7 +416,7 @@ function registerDomainCheckJs() {
                     <table class="details-table">
                         <tr><td class="details-label">Registered On</td><td class="details-value">${formatDate(details.domainRegistered)}</td></tr>
                         <tr><td class="details-label">Expiration Date</td><td class="details-value">${formatDate(details.domainExpirationDate)}</td></tr>
-                        <tr><td class="details-label">Days Until Expiration</td><td class="details-value">${details.domainDays ?? '–'}</td></tr>
+						<tr><td class="details-label">Days Until Expiration</td><td class="details-value">${renderValidityPill(details.domainDays)}</td></tr>
                         <tr><td class="details-label">Expired</td><td class="details-value">${details.domainExpired ? 'Yes' : 'No'}</td></tr>
                         <tr><td class="details-label">Expiring Soon</td><td class="details-value">${details.domainExpiring ? 'Yes' : 'No'}</td></tr>
                         <tr><td class="details-label">Last Changed</td><td class="details-value">${formatDate(details.lastChanged)}</td></tr>
@@ -466,7 +489,7 @@ function registerLighthouseJs() {
     // Function to fetch lighthouse data
     function fetchLighthouseData(device = 'desktop', forceFetch = false) {
         return Craft.sendActionRequest('POST', 'upsnap/health-check/lighthouse', {
-            data: { device: device, force_fetch: forceFetch }
+            data: { device: device, force_fetch: forceFetch, monitor_id: getSelectedMonitorId() }
         })
             .then(response => {
                 if (response?.data?.success === 'ok') {
@@ -707,7 +730,8 @@ function registerMixedContentJs() {
     function fetchMixedContentData(forceFetch = false) {
         return Craft.sendActionRequest('POST', 'upsnap/health-check/mixed-content', {
             data: {
-				force_fetch: forceFetch
+				force_fetch: forceFetch,
+				monitor_id: getSelectedMonitorId()
 			}
         })
             .then(response => {
@@ -877,7 +901,8 @@ function registerReachabilityJs() {
         return Craft.sendActionRequest('POST', 'upsnap/health-check/reachability', {			
             data: {
                 region: region,
-				force_fetch: forceFetch
+                force_fetch: forceFetch,
+                monitor_id: getSelectedMonitorId()
 			}})
                 .then(response => {
                     if (response?.data?.success === 'ok') {
@@ -948,7 +973,7 @@ function registerReachabilityJs() {
                         </tr>
                         <tr>
                             <td class="details-label">Redirect Paths</td>
-                            <td class="details-value">${details?.redirects?.length ? details.redirects.map((url, i) => i === 0 ? url : `<span style="color:#999;user-select:none;">→ </span>${url}`).join('<br>') : '–'}</td>
+                            <td class="details-value">${details?.redirects?.length ? details.redirects.map((url, i) => i === 0 ? url : `<span style="color:#999;user-select:none;">→ </span>${url}`).join('<br>') : 'No redirects'}</td>
                         </tr>
                         <tr>
                             <td class="details-label">Resolved IPs</td>
@@ -961,10 +986,6 @@ function registerReachabilityJs() {
                         <tr>
                             <td class="details-label">Content Type</td>
                             <td class="details-value">${details?.contentType ?? '–'}</td>
-                        </tr>
-                        <tr>
-                            <td class="details-label">Content Length</td>
-                            <td class="details-value">${details?.contentLength ? details.contentLength + ' bytes' : '–'}</td>
                         </tr>
                     </table>
 
@@ -1657,7 +1678,8 @@ function registerSecurityCertificatesJs() {
     function fetchSecurityCertificatesData(forceFetch = false) {
         return Craft.sendActionRequest('POST', 'upsnap/health-check/security-certificates', {
             data: {
-				force_fetch: forceFetch
+				force_fetch: forceFetch,
+				monitor_id: getSelectedMonitorId()
 			}
         })
             .then(response => {
@@ -1722,7 +1744,7 @@ function registerSecurityCertificatesJs() {
                     <tr>
                         <td class="details-label">Expiry in days</td>
                         <td class="details-value">
-                            ${details.leafCertificate?.daysUntilExpiry || 'Unknown'}
+							${renderValidityPill(details.leafCertificate?.daysUntilExpiry)}
                         </td>
                     </tr>
                     <tr>
@@ -1808,6 +1830,11 @@ function registerSecurityCertificatesJs() {
                                             <div class="cert-field-value">${cert.info?.notAfter ? formatDate(cert.info.notAfter) : 'Unknown'}</div>
                                         </div>
 
+										<div class="cert-field">
+											<div class="cert-field-label">Expiry in days</div>
+											<div class="cert-field-value cert-field-value--validity">${renderValidityPill(cert.info?.daysUntilExpiry)}</div>
+										</div>
+
                                         ${cert.info?.issuer?.organizationName ? `
                                         <div class="cert-field">
                                             <div class="cert-field-label">Organization</div>
@@ -1860,6 +1887,22 @@ function registerSecurityCertificatesJs() {
         }
     }
 
+    function getValidityPillClass(daysUntilExpiry) {
+        if (daysUntilExpiry === null || daysUntilExpiry === undefined || Number.isNaN(Number(daysUntilExpiry))) {
+            return 'validity-pill--neutral';
+        }
+
+        if (Number(daysUntilExpiry) > 30) return 'validity-pill--valid';
+        if (Number(daysUntilExpiry) > 7) return 'validity-pill--warning';
+        return 'validity-pill--expired';
+    }
+
+    function renderValidityPill(daysUntilExpiry) {
+        const hasValue = daysUntilExpiry !== null && daysUntilExpiry !== undefined && !Number.isNaN(Number(daysUntilExpiry));
+        const label = hasValue ? `${daysUntilExpiry} days` : 'N/A';
+        return `<span class="validity-pill ${getValidityPillClass(daysUntilExpiry)}">${label}</span>`;
+    }
+
     // Helper function to render certificate status
     function renderCertificateStatus(certInfo) {
         if (!certInfo) return '';
@@ -1905,8 +1948,12 @@ function renderStatusContainer(data) {
 
     let formattedDate = '';
     if (checkedAt) {
-        const date = new Date(checkedAt);
-        formattedDate = date.toLocaleString();
+        if (window.UpsnapUtils && typeof window.UpsnapUtils.formatDateDisplay === 'function') {
+            formattedDate = window.UpsnapUtils.formatDateDisplay(checkedAt);
+        } else {
+            const date = new Date(checkedAt);
+            formattedDate = date.toLocaleString();
+        }
     }
 
     let statusClass = 'warning';
@@ -1936,7 +1983,7 @@ function renderStatusContainer(data) {
 
                 ${formattedDate ? `
                     <div class="status-checked-at">
-                        Last checked: ${formattedDate}
+                        Last checked: <span title="DD/MM/YY">${formattedDate}</span>
                     </div>
                 ` : ''}
             </div>

@@ -2,7 +2,7 @@
 
 namespace appfoster\upsnap\assetbundles;
 
-class StatusPageAsset extends BaseAsset
+class NotificationChannelsAsset extends BaseAsset
 {
     public function init()
     {
@@ -10,12 +10,11 @@ class StatusPageAsset extends BaseAsset
         parent::init();
 
         $this->js = [
-            'js/status-pages.js',
-            'js/flatpickr.min.js',
+            'js/notificationChannels.js',
         ];
         $this->css = [
-            'css/status-page.css',
-            'css/flatpickr.min.css',
+            'css/notification-channels.css',
+            'css/addMonitorModal.css',
         ];
     }
 }

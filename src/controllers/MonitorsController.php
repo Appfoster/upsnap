@@ -5,19 +5,49 @@ namespace appfoster\upsnap\controllers;
 use appfoster\upsnap\assetbundles\MonitorsAsset;
 use appfoster\upsnap\Constants;
 use Craft;
-use craft\web\Controller;
 use yii\web\Response;
 use appfoster\upsnap\Upsnap;
 use yii\web\NotFoundHttpException;
 
-class MonitorsController extends Controller
+class MonitorsController extends BaseController
 {
-    protected array|bool|int $allowAnonymous = false;
 
     public function __construct($id, $module = null)
     {
         parent::__construct($id, $module);
         MonitorsAsset::register($this->view);
+    }
+
+    /**
+     * Render the monitors listing page.
+     * GET upsnap/monitors
+     */
+    public function actionIndex(): Response
+    {
+        $settingsService = Upsnap::$plugin->settingsService;
+        $settingsService->validateApiKey();
+
+        $userDetails = null;
+        if ($settingsService->getApiKey()) {
+            $userDetails = $settingsService->getUserDetails();
+        }
+
+        $variables = [
+            'title' => Constants::SUBNAV_ITEM_MONITORS['label'],
+            'selectedSubnavItem' => Constants::SUBNAV_ITEM_MONITORS['key'],
+            'apiKey' => $settingsService->getApiKey(),
+            'apiTokenStatus' => $settingsService->getApiTokenStatus(),
+            'apiTokenStatuses' => Constants::API_KEY_STATUS,
+            'upsnapDashboardUrl' => Constants::getWebAppUrl('webapp'),
+            'userDetails' => $userDetails,
+            'subscriptionTypes' => Constants::SUBSCRIPTION_TYPES,
+            'settings' => [
+                'monitoringUrl' => $settingsService->getMonitoringUrl(),
+                'monitorId' => $settingsService->getMonitorId()
+            ],
+        ];
+
+        return $this->renderTemplate('upsnap/monitors/_index', $variables);
     }
 
     public function actionCreate(): Response
@@ -461,7 +491,7 @@ class MonitorsController extends Controller
             case 'port':
                 $formatted['portHost'] = $meta['host'] ?? '';
                 $formatted['portNumber'] = $meta['port'] ?? '';
-                $formatted['portTimeout'] = $meta['timeout'] ?? 5;
+                $formatted['portTimeout'] = $meta['timeout'] ?? 30;
                 $formatted['portEnabled'] = $services['port_check']['enabled'] ?? false;
                 $formatted['portMonitorInterval'] = $services['port_check']['monitor_interval'] ?? 300;
                 break;
@@ -495,13 +525,14 @@ class MonitorsController extends Controller
             case 'website':
             default:
                 $formatted['url'] = $meta['url'] ?? '';
+                $formatted['websiteTimeout'] = $meta['timeout'] ?? 30;
 
                 // Health checks
                 $formatted['brokenLinksEnabled'] = $services['broken_links']['enabled'] ?? false;
-                $formatted['brokenLinksMonitoringInterval'] = $services['broken_links']['monitor_interval'] ?? "300";
+                $formatted['brokenLinksMonitoringInterval'] = $services['broken_links']['monitor_interval'] ?? "86400";
 
                 $formatted['mixedContentEnabled'] = $services['mixed_content']['enabled'] ?? false;
-                $formatted['mixedContentMonitoringInterval'] = $services['mixed_content']['monitor_interval'] ?? "300";
+                $formatted['mixedContentMonitoringInterval'] = $services['mixed_content']['monitor_interval'] ?? "86400";
 
                 $formatted['lighthouseEnabled'] = $services['lighthouse']['enabled'] ?? false;
                 $formatted['lighthouseMonitoringInterval'] = $services['lighthouse']['monitor_interval'] ?? "86400";
@@ -511,11 +542,11 @@ class MonitorsController extends Controller
                 $formatted['reachabilityMonitoringInterval'] = $services['uptime']['monitor_interval'] ?? "300";
 
                 $formatted['domainEnabled'] = $services['domain']['enabled'] ?? false;
-                $formatted['domainMonitoringInterval'] = $services['domain']['monitor_interval'] ?? "300";
+                $formatted['domainMonitoringInterval'] = $services['domain']['monitor_interval'] ?? "86400";
                 $formatted['domainDaysBeforeExpiryAlert'] = $services['domain']['notify_days_before_expiry'] ?? 7;
 
                 $formatted['securityCertificatesEnabled'] = $services['ssl']['enabled'] ?? false;
-                $formatted['securityCertificatesMonitoringInterval'] = $services['ssl']['monitor_interval'] ?? "300";
+                $formatted['securityCertificatesMonitoringInterval'] = $services['ssl']['monitor_interval'] ?? "86400";
                 $formatted['sslDaysBeforeExpiryAlert'] = $services['ssl']['notify_days_before_expiry'] ?? 7;
                 break;
         }
@@ -558,6 +589,9 @@ class MonitorsController extends Controller
 
     public function actionHistogramData(string $monitorId): Response
     {
+        // Release the PHP session write lock so concurrent dashboard AJAX calls
+        Craft::$app->getSession()->close();
+
         $request = Craft::$app->getRequest();
 
         $params = array_merge(
@@ -590,6 +624,8 @@ class MonitorsController extends Controller
 
     public function actionResponseTimeData(string $monitorId): Response
     {
+        Craft::$app->getSession()->close();
+
         $request = Craft::$app->getRequest();
 
         $params = array_merge(
@@ -622,6 +658,8 @@ class MonitorsController extends Controller
 
     public function actionUptimeStatsData(string $monitorId): Response
     {
+        Craft::$app->getSession()->close();
+
         $request = Craft::$app->getRequest();
 
         $params = array_merge(

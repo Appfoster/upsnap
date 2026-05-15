@@ -74,10 +74,22 @@
 		return Math.floor(abs / 86400000) + "d " + Craft.t("upsnap", "ago");
 	};
 
-	const formatDuration = (seconds) => {
-		if (seconds === null || seconds === undefined || isNaN(seconds))
-			return "—";
-		const s = parseInt(seconds, 10);
+	const formatDuration = (value, unit = "s") => {
+		if (value === null || value === undefined || isNaN(value)) return "-";
+
+		if (unit === "ms") {
+			const ms = Math.max(0, Math.round(Number(value)));
+			if (ms < 1000) return ms + "ms";
+
+			const s = Math.floor(ms / 1000);
+			if (s < 60) return s + "s";
+			if (s < 3600) return Math.floor(s / 60) + "m " + (s % 60) + "s";
+			const h = Math.floor(s / 3600);
+			const m = Math.floor((s % 3600) / 60);
+			return h + "h " + m + "m";
+		}
+
+		const s = Math.max(0, parseInt(value, 10));
 		if (s < 60) return s + "s";
 		if (s < 3600) return Math.floor(s / 60) + "m " + (s % 60) + "s";
 		const h = Math.floor(s / 3600);
@@ -362,7 +374,7 @@
                 <h1 class="incident-detail-title">${escapeHtml(errorMsg || "Incident #" + cfg.incidentId)}</h1>
                 <span class="incident-detail-status-label">
                     <span class="incident-detail-status-dot incident-detail-status-dot--${escapeHtml(status.toLowerCase())}"></span>
-                    ${escapeHtml(status.charAt(0).toUpperCase() + status.slice(1))}
+                    ${status === 'unresolved' ? 'Active' : 'Resolved'}
                 </span>
             </div>
         </div>
@@ -370,7 +382,7 @@
 
     <div class="incident-detail-header__meta">
         ${checkType ? `<span class="incident-detail-meta-item"><span class="incident-detail-meta-label">${Craft.t("upsnap", "Check Type")}:</span> ${escapeHtml(checkType.charAt(0).toUpperCase() + checkType.slice(1))}</span>` : ""}
-        ${occurred ? `<span class="incident-detail-meta-item"><span class="incident-detail-meta-label">${Craft.t("upsnap", "Occurred")}:</span> <time datetime="${escapeHtml(occurred)}">${escapeHtml(formatDateDisplay(occurred))}</time></span>` : ""}
+		${occurred ? `<span class="incident-detail-meta-item"><span class="incident-detail-meta-label">${Craft.t("upsnap", "Occurred")}:</span> <time datetime="${escapeHtml(occurred)}" title="DD/MM/YY">${escapeHtml(formatDateDisplay(occurred))}</time></span>` : ""}
         ${errorCode ? `<span class="status-code-badge status-${escapeHtml(codeColor)}">${escapeHtml(String(errorCode))}</span>` : ""}
         <button class="incident-detail-copy-icon-btn" type="button" title="${Craft.t("upsnap", "Copy incident details")}" aria-label="${Craft.t("upsnap", "Copy incident details")}">
             <svg viewBox="0 0 16 16" fill="currentColor" width="15" height="15" aria-hidden="true"><path d="M4 1.5H3a2 2 0 00-2 2V14a2 2 0 002 2h10a2 2 0 002-2V3.5a2 2 0 00-2-2h-1v1h1a1 1 0 011 1V14a1 1 0 01-1 1H3a1 1 0 01-1-1V3.5a1 1 0 011-1h1v-1z"/><path d="M9.5 1a.5.5 0 01.5.5v1a.5.5 0 01-.5.5h-3a.5.5 0 01-.5-.5v-1a.5.5 0 01.5-.5h3zm-3-1A1.5 1.5 0 005 1.5v1A1.5 1.5 0 006.5 4h3A1.5 1.5 0 0011 2.5v-1A1.5 1.5 0 009.5 0h-3z"/></svg>
@@ -428,10 +440,10 @@
 			incident.created_at ||
 			"";
 		const endTs = incident.resolved_at || "";
-		const duration =
-			incident.duration_seconds !== undefined
-				? incident.duration_seconds
-				: incident.duration;
+		const startDate = toDate(startTs);
+		const duration = startDate
+			? Math.max(0, Math.floor((Date.now() - startDate.getTime()) / 1000))
+			: "-";
 		const checksFailed =
 			incident.checks_failed_count ?? incident.checksFailed ?? "—";
 		const notifsSent =
@@ -474,11 +486,13 @@
 			// Section: Timing
 			{
 				label: Craft.t("upsnap", "Start Time"),
-				value: formatDateDisplay(startTs),
+				html: `<span title="DD/MM/YY">${escapeHtml(formatDateDisplay(startTs))}</span>`,
 			},
 			{
 				label: Craft.t("upsnap", "End Time"),
-				value: endTs ? formatDateDisplay(endTs) : "—",
+				html: endTs
+					? `<span title="DD/MM/YY">${escapeHtml(formatDateDisplay(endTs))}</span>`
+					: "-",
 			},
 			{
 				label: Craft.t("upsnap", "Duration"),

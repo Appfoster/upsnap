@@ -7,7 +7,7 @@
 
 {% set crumbs = [
     { html: "<a href='" ~ url('upsnap') ~ "' class='thumb cp-icon'><svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 576 512' focusable='false' aria-hidden='true'><path d='M575.8 255.5c0 18-15 32.1-32 32.1l-32 0 .7 160.2c0 2.7-.2 5.4-.5 8.1l0 16.2c0 22.1-17.9 40-40 40l-16 0c-1.1 0-2.2 0-3.3-.1c-1.4 .1-2.8 .1-4.2 .1L416 512l-24 0c-22.1 0-40-17.9-40-40l0-24 0-64c0-17.7-14.3-32-32-32l-64 0c-17.7 0-32 14.3-32 32l0 64 0 24c0 22.1-17.9 40-40 40l-24 0-31.9 0c-1.5 0-3-.1-4.5-.2c-1.2 .1-2.4 .2-3.6 .2l-16 0c-22.1 0-40-17.9-40-40l0-112c0-.9 0-1.9 .1-2.8l0-69.7-32 0c-18 0-32-14-32-32.1c0-9 3-17 10-24L266.4 8c7-7 15-8 22-8s15 2 21 7L564.8 231.5c8 7 12 15 11 24z'></path></svg></a>" },
-    { label: 'Settings', url: url('upsnap/settings')}
+    { label: 'Monitors', url: url('upsnap/monitors')}
 ] %}
 
 {% set defaultIntervals = [
@@ -20,13 +20,11 @@
 ] %}
 
 {% set timeoutIntervals = [
-    { label: '1s', value: 1, unit: 'second' },
     { label: '5s', value: 5, unit: 'second' },
-    { label: '10s', value: 10, unit: 'second' },
     { label: '15s', value: 15, unit: 'second' },
-    { label: '20s', value: 20, unit: 'second' },
-    { label: '25s', value: 25, unit: 'second' },
-    { label: '30s', value: 30, unit: 'second' }
+	{ label: '30s', value: 30, unit: 'second' },
+	{ label: '45s', value: 45, unit: 'second' },
+	{ label: '60s', value: 60, unit: 'second' }
 ] %}
 
 {% set lighthouseIntervals = [
@@ -34,7 +32,9 @@
     { label: '2d', value: 2, unit: 'day' },
     { label: '5d', value: 5, unit: 'day' },
     { label: '7d', value: 7, unit: 'day' },
-    { label: '10d', value: 10, unit: 'day' }
+	{ label: '10d', value: 10, unit: 'day' },
+	{ label: '15d', value: 15, unit: 'day' },
+	{ label: '30d', value: 30, unit: 'day' }
 ] %}
 
 {% set monitorTypeOptions = [
@@ -44,8 +44,8 @@
 ] %}
 
 {% set keywordMatchOptions = [
-    { label: 'Exists', value: 'must_contain' },
-    { label: 'Does not exist', value: 'must_not_contain' }
+    { label: 'Start incident when keyword exists', value: 'must_contain' },
+    { label: 'Start incident when keyword does not exist', value: 'must_not_contain' }
 ] %}
 
 
@@ -60,6 +60,7 @@
 
 {# 5 min for now #}
 {% set MAX_MONITOR_INTERVAL_SECONDS = 86400 %}
+{% set _logoBaseUrl = craft.app.assetManager.getPublishedUrl('@upsnapRoot/assets/images/logo', true) %}
 
 
 {% block content %}
@@ -164,6 +165,18 @@
 					}) }}
 
 					<div id="advanced-settings" style="{% if not (monitor ? (monitor.enabled ?? false) : false) %}display:none;{% endif %}">
+						<div class="timeout-slider-half">
+							{% include 'upsnap/_components/interval-slider.twig' with {
+							id: 'websiteTimeout',
+							name: 'websiteTimeout',
+							value: monitor ? (monitor.websiteTimeout ?? 30) : 30,
+							partitions: timeoutIntervals,
+							minMonitorIntervalSeconds: 1,
+							label: 'Request Timeout',
+							description: 'The request timeout is {exact time} seconds.'
+						} %}
+						</div>
+
 						<h3 id="healthcheck-settings-title" class="heading">Healthcheck Settings</h3>
 						<hr>
 
@@ -202,8 +215,8 @@
 									{% include 'upsnap/_components/interval-slider.twig' with {
 										id: 'brokenLinks',
 										name: 'brokenLinksMonitoringInterval',
-										value: monitor ? (monitor.brokenLinksMonitoringInterval ?? 300) : 300,
-										partitions: defaultIntervals,
+										value: monitor ? (monitor.brokenLinksMonitoringInterval ?? 86400 * 7) : 86400 * 7,
+										partitions: lighthouseIntervals,
 										minMonitorIntervalSeconds: MIN_MONITOR_INTERVAL_SECONDS
 									} %}
 								</div>
@@ -224,8 +237,8 @@
 									{% include 'upsnap/_components/interval-slider.twig' with {
 										id: 'mixedContent',
 										name: 'mixedContentMonitoringInterval',
-										value: monitor ? (monitor.mixedContentMonitoringInterval ?? 300) : 300,
-										partitions: defaultIntervals,
+										value: monitor ? (monitor.mixedContentMonitoringInterval ?? 86400 * 7) : 86400 * 7,
+										partitions: lighthouseIntervals,
 										minMonitorIntervalSeconds: MIN_MONITOR_INTERVAL_SECONDS
 									} %}
 								</div>
@@ -235,6 +248,7 @@
 							<div class="healthcheck-section">
 								{{ forms.lightswitchField({
 									label: "Domain Expiry Check"|t('upsnap'),
+									instructions: "Monitor your domain's expiry date and get alerts before it expires."|t('upsnap'),
 									id: 'domainEnabled',
 									name: 'domainEnabled',
 									on: monitor ? (monitor.domainEnabled ?? true) : true,
@@ -244,8 +258,8 @@
 									{% include 'upsnap/_components/interval-slider.twig' with {
 										id: 'domain',
 										name: 'domainMonitoringInterval',
-										value: monitor ? (monitor.domainMonitoringInterval ?? 300) : 300,
-										partitions: defaultIntervals,
+										value: monitor ? (monitor.domainMonitoringInterval ?? 86400 * 7) : 86400 * 7,
+										partitions: lighthouseIntervals,
 										minMonitorIntervalSeconds: MIN_MONITOR_INTERVAL_SECONDS
 									} %}
 									{{ forms.selectField({
@@ -265,6 +279,7 @@
 							<div class="healthcheck-section  http-disabled">
 								{{ forms.lightswitchField({
 									label: "SSL Certificate Check"|t('upsnap'),
+									instructions: "Monitor your SSL certificate's expiry date and get alerts before it expires."|t('upsnap'),
 									id: 'sslEnabled',
 									name: 'sslEnabled',
 									on: monitor ? (monitor.securityCertificatesEnabled ?? true) : true,
@@ -274,8 +289,8 @@
 									{% include 'upsnap/_components/interval-slider.twig' with {
 										id: 'securityCertificates',
 										name: 'securityCertificatesMonitoringInterval',
-										value: monitor ? (monitor.securityCertificatesMonitoringInterval ?? 300) : 300,
-										partitions: defaultIntervals,
+										value: monitor ? (monitor.securityCertificatesMonitoringInterval ?? 86400 * 7) : 86400 * 7,
+										partitions: lighthouseIntervals,
 										minMonitorIntervalSeconds: MIN_MONITOR_INTERVAL_SECONDS
 									} %}
 									{{ forms.selectField({
@@ -289,9 +304,7 @@
 								</div>
 							</div>
 
-							<div class="healthcheck-section http-disabled"
-								data-disabled-reason="{{ 'These checks are not available for non HTTPS URLs.'|t('upsnap') }}"
->
+							<div class="healthcheck-section http-disabled" data-disabled-reason="{{ 'These checks are not available for non HTTPS URLs.'|t('upsnap') }}">
 								{{ forms.lightswitchField({
 									label: "Lighthouse Performance Check"|t('upsnap'),
 									instructions: "Monitor site performance"|t('upsnap'),
@@ -305,7 +318,7 @@
 									{% include 'upsnap/_components/interval-slider.twig' with {
 										id: 'lighthouse',
 										name: 'lighthouseMonitoringInterval',
-										value: monitor ? (monitor.lighthouseMonitoringInterval ?? 86400) : 7 * 86400,
+										value: monitor ? (monitor.lighthouseMonitoringInterval ?? 86400 * 7) : 7 * 86400,
 										partitions: lighthouseIntervals,
 										minMonitorIntervalSeconds: 86400
 									} %}
@@ -417,25 +430,30 @@
 					}) }}
 
 					<div id="port-advanced-settings" style="{% if not (monitor ? (monitor.portEnabled ?? false) : false) %}display:none;{% endif %}">
-						{% include 'upsnap/_components/interval-slider.twig' with {
-							id: 'portTimeout',
-							name: 'portTimeout',
-							value: monitor ? (monitor.portTimeout ?? 5) : 5,
-							partitions: timeoutIntervals,
-							minMonitorIntervalSeconds: 1,
-							label: 'Request Timeout',
-							description: 'The request timeout is {exact time} seconds.'
-						} %}
-
-						{% include 'upsnap/_components/interval-slider.twig' with {
-							id: 'portMonitorInterval',
-							name: 'portMonitorInterval',
-							value: monitor ? (monitor.portMonitorInterval ?? 300) : 300,
-							partitions: defaultIntervals,
-							minMonitorIntervalSeconds: MIN_MONITOR_INTERVAL_SECONDS,
-							label: 'Check Interval',
-							description: 'Your monitor will be checked every {exact time}.'
-						} %}
+						<div class="timeout-row-grid">
+							<div>
+								{% include 'upsnap/_components/interval-slider.twig' with {
+								id: 'portTimeout',
+								name: 'portTimeout',
+								value: monitor ? (monitor.portTimeout ?? 30) : 30,
+								partitions: timeoutIntervals,
+								minMonitorIntervalSeconds: 1,
+								label: 'Request Timeout',
+								description: 'The request timeout is {exact time} seconds.'
+							} %}
+							</div>
+							<div>
+								{% include 'upsnap/_components/interval-slider.twig' with {
+								id: 'portMonitorInterval',
+								name: 'portMonitorInterval',
+								value: monitor ? (monitor.portMonitorInterval ?? 300) : 300,
+								partitions: defaultIntervals,
+								minMonitorIntervalSeconds: MIN_MONITOR_INTERVAL_SECONDS,
+								label: 'Check Interval',
+								description: 'Your monitor will be checked every {exact time}.'
+							} %}
+							</div>
+						</div>
 					</div>
 				</div>
 			</div>
@@ -475,48 +493,89 @@
 			</div>
 
 			<div class="field">
-				<div class="heading">
-					<label>Keywords / Text<span class="required" aria-hidden="true"></span></label>
-				</div>
-				<div id="keywords-input-container" style="display: flex; gap: 10px; margin-bottom: 15px;">
-					<input type="text" id="keywordInput" class="text" placeholder="Enter keyword" style="flex: 1; padding: 8px;">
-					<button type="button" id="add-keyword-btn" class="btn" style="padding: 8px 16px;">+</button>
-				</div>
-				<div id="keywords-list" style="display: flex; flex-direction: column; gap: 15px;">
-					{# Keywords will be populated here as cards #}
-				{% if monitor and monitor.keywords is defined and monitor.keywords %}
-					{% for keyword in monitor.keywords %}
-						<div class="keyword-card" data-keyword="{{ keyword.text }}" style="border: 1px solid #e0e0e0; padding: 15px; border-radius: 5px; background: #fafafa;">
-							<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-								<strong>{{ keyword.text }}</strong>
-								<button type="button" class="remove-keyword" data-keyword="{{ keyword.text }}" style="background: none; border: none; cursor: pointer; padding: 0; font-size: 16px; color: #d32f2f;">✕</button>
-							</div>
-							<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-								<select class="keyword-match-condition" data-keyword="{{ keyword.text }}" style="padding: 8px; border: 1px solid #ddd; border-radius: 3px;">
-									<option value="must_contain" {% if keyword.matchCondition == 'must_contain' %}selected{% endif %}>Exists</option>
-									<option value="must_not_contain" {% if keyword.matchCondition == 'must_not_contain' %}selected{% endif %}>Does not exist</option>
-								</select>
-								<label style="display: flex; align-items: center; gap: 8px;">
-									<input type="checkbox" class="keyword-is-regex" data-keyword="{{ keyword.text }}" {% if keyword.isRegex %}checked{% endif %} style="cursor: pointer;">
-									<span>Regex</span>
+				<div style="display: flex; gap: 20px; align-items: flex-start;">
+					<div style="flex: 0 0 70%; max-width: 70%;">
+						<div class="field">
+							<div class="heading">
+								<label>Keywords / Text<span class="required" aria-hidden="true"></span>
 								</label>
 							</div>
-							<label style="display: flex; align-items: center; gap: 8px; margin-top: 8px;">
-								<input type="checkbox" class="keyword-case-sensitive" data-keyword="{{ keyword.text }}" {% if keyword.caseSensitive %}checked{% endif %} style="cursor: pointer;">
-								<span>Case Sensitive</span>
-							</label>
+							<div id="keywords-input-container" style="display: flex; gap: 10px; margin-bottom: 0;">
+								<input type="text" id="keywordInput" class="text" placeholder="Enter keyword" style="flex: 1; padding: 8px;">
+								<button type="button" id="add-keyword-btn" class="btn" style="padding: 8px 16px;">+</button>
+							</div>
 						</div>
-					{% endfor %}
+					</div>
+					<div style="flex: 0 0 30%; max-width: 30%; --field-margin: 0;">
+						<div style="margin-top: 0 !important;">
+							{{ forms.lightswitchField({
+							label: "Match All Keywords"|t('upsnap'),
+							instructions: "All keywords must match for the check to pass."|t('upsnap'),
+							id: "keywordMatchAll",
+							name: "keywordMatchAll",
+							on: monitor ? (monitor.keywordMatchAll ?? false) : false
+						}) }}
+						</div>
+					</div>
+				</div>
+				<div
+					id="keywords-list" style="display: flex; flex-direction: column; gap: 15px; margin-top: 15px;">
+					{# Keywords will be populated here as cards #}
+					{% if monitor and monitor.keywords is defined and monitor.keywords %}
+						{% for keyword in monitor.keywords %}
+							<div class="keyword-card" data-keyword="{{ keyword.text }}">
+								<div class="keyword-card__header">
+									<span class="keyword-chip-wrap">
+										<span class="keyword-chip-label">Keyword:</span>
+										<span class="keyword-chip">{{ keyword.text }}</span>
+									</span>
+									<button type="button" class="remove-keyword keyword-card__remove" data-keyword="{{ keyword.text }}" aria-label="Remove keyword">
+										<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+									</button>
+								</div>
+								<div class="keyword-card__controls">
+									<div class="keyword-card__match-wrap">
+										<span class="keyword-card__match-label">Match type</span>
+										<select class="keyword-match-condition keyword-card__select" data-keyword="{{ keyword.text }}">
+											<option value="must_contain" {% if keyword.matchCondition == 'must_contain' %} selected {% endif %}>Start incident when keyword exists</option>
+											<option value="must_not_contain" {% if keyword.matchCondition == 'must_not_contain' %} selected {% endif %}>Start incident when keyword does not exist</option>
+										</select>
+									</div>
+									<div class="keyword-card__toggles">
+										<div class="keyword-toggle">
+											<label class="keyword-toggle__switch">
+												<input type="checkbox" class="keyword-is-regex" data-keyword="{{ keyword.text }}" {% if keyword.isRegex %} checked {% endif %}>
+												<span class="keyword-toggle__slider"></span>
+											</label>
+											<div class="keyword-toggle__text">
+												<span class="keyword-toggle__label">Regex</span>
+												<span class="keyword-toggle__desc">Use regular expression matching</span>
+											</div>
+										</div>
+										<div class="keyword-toggle">
+											<label class="keyword-toggle__switch">
+												<input type="checkbox" class="keyword-case-sensitive" data-keyword="{{ keyword.text }}" {% if keyword.caseSensitive %} checked {% endif %}>
+												<span class="keyword-toggle__slider"></span>
+											</label>
+											<div class="keyword-toggle__text">
+												<span class="keyword-toggle__label">Case Sensitive</span>
+												<span class="keyword-toggle__desc">Match exact letter case</span>
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+						{% endfor %}
+					{% endif %}
+				</div>
+				{% set keywordTexts = [] %}
+				{% if monitor and monitor.keywords is defined and monitor.keywords %}
+					{% set keywordTexts = monitor.keywords|map(k => k.text) %}
 				{% endif %}
+				<input type="hidden" id="keywordsHidden" name="keywords" value='{{ keywordTexts|json_encode }}'>
 			</div>
-			{% set keywordTexts = [] %}
-			{% if monitor and monitor.keywords is defined and monitor.keywords %}
-				{% set keywordTexts = monitor.keywords|map(k => k.text) %}
-			{% endif %}
-			<input type="hidden" id="keywordsHidden" name="keywords" value='{{ keywordTexts|json_encode }}'>
-		</div>
 
-		<div id="keyword-notification-channels-accordion" class="field accordion-container">
+			<div id="keyword-notification-channels-accordion" class="field accordion-container">
 				<div class="heading">
 					<button type="button" id="keyword-integrations-trigger" class="accordion-trigger" aria-expanded="false" aria-controls="keyword-notification-channels-content">
 						<span class="accordion-arrow"></span>
@@ -560,25 +619,30 @@
 					}) }}
 
 					<div id="keyword-advanced-settings" style="{% if not (monitor ? (monitor.keywordEnabled ?? false) : false) %}display:none;{% endif %}">
-						{% include 'upsnap/_components/interval-slider.twig' with {
-							id: 'keywordTimeout',
-							name: 'keywordTimeout',
-							value: monitor ? (monitor.keywordTimeout ?? 30) : 30,
-							partitions: timeoutIntervals,
-							minMonitorIntervalSeconds: 1,
-							label: 'Request Timeout',
-							description: 'The request timeout is {exact time} seconds.'
-						} %}
-
-						{% include 'upsnap/_components/interval-slider.twig' with {
-							id: 'keywordMonitorInterval',
-							name: 'keywordMonitorInterval',
-							value: monitor ? (monitor.keywordMonitorInterval ?? 300) : 300,
-							partitions: defaultIntervals,
-							minMonitorIntervalSeconds: MIN_MONITOR_INTERVAL_SECONDS,
-							label: 'Check Interval',
-							description: 'Your monitor will be checked every {exact time}.'
-						} %}
+						<div class="timeout-row-grid">
+							<div>
+								{% include 'upsnap/_components/interval-slider.twig' with {
+								id: 'keywordTimeout',
+								name: 'keywordTimeout',
+								value: monitor ? (monitor.keywordTimeout ?? 30) : 30,
+								partitions: timeoutIntervals,
+								minMonitorIntervalSeconds: 1,
+								label: 'Request Timeout',
+								description: 'The request timeout is {exact time} seconds.'
+							} %}
+							</div>
+							<div>
+								{% include 'upsnap/_components/interval-slider.twig' with {
+								id: 'keywordMonitorInterval',
+								name: 'keywordMonitorInterval',
+								value: monitor ? (monitor.keywordMonitorInterval ?? 300) : 300,
+								partitions: defaultIntervals,
+								minMonitorIntervalSeconds: MIN_MONITOR_INTERVAL_SECONDS,
+								label: 'Check Interval',
+								description: 'Your monitor will be checked every {exact time}.'
+							} %}
+							</div>
+						</div>
 
 						{{ forms.lightswitchField({
 							label: "Follow Redirects",
@@ -588,13 +652,7 @@
 							on: monitor ? (monitor.keywordFollowRedirects ?? false) : false
 						}) }}
 
-						{{ forms.lightswitchField({
-							label: "Match All Keywords",
-							instructions: "All keywords must match for the check to pass. If disabled, matching any keyword is sufficient.",
-							id: "keywordMatchAll",
-							name: "keywordMatchAll",
-							on: monitor ? (monitor.keywordMatchAll ?? false) : false
-						}) }}
+
 					</div>
 				</div>
 			</div>
@@ -608,8 +666,14 @@
 	</div>
 
 	<script>
-		window.preSelectedChannelIds = {{ monitor ? monitor.channelIds|json_encode|raw : '[]' }};
-		window.CraftPageData = {
+		window.Upsnap = window.Upsnap || {};
+		window.Upsnap.settings = {
+			...(window.Upsnap.settings || {}),
+			logoBaseUrl: {{ (_logoBaseUrl ?? '')|json_encode|raw }}
+			};
+
+			window.preSelectedChannelIds = {{ monitor ? monitor.channelIds|json_encode|raw : '[]' }};
+			window.CraftPageData = {
 			title: {{ title|json_encode|raw }},
 			monitorForm: true,
 			monitorData: {{ monitor ? monitor|json_encode|raw : 'null' }},
