@@ -148,7 +148,37 @@ Craft.Upsnap.Monitor = {
 			});
 		});
 
+		// Initialize the toggle state on form load
+		this.updateKeywordMatchAllToggle();
 	},
+
+	updateKeywordMatchAllToggle() {
+		const keywordsList = document.getElementById("keywords-list");
+		const keywordMatchAllWrapper = document.getElementById("keywordMatchAll");
+
+		if (!keywordsList || !keywordMatchAllWrapper) return;
+
+		// Count keyword cards
+		const keywordCount = keywordsList.querySelectorAll(".keyword-card").length;
+
+		// Disable toggle if less than 2 keywords, enable if 2 or more
+		const shouldDisable = keywordCount < 2;
+
+		// Mark as disabled using data attribute
+		keywordMatchAllWrapper.dataset.isDisabled = shouldDisable ? "true" : "false";
+
+		// Apply/remove visual styling
+		if (shouldDisable) {
+			keywordMatchAllWrapper.classList.add("disabled");
+			keywordMatchAllWrapper.style.pointerEvents = "none";
+			keywordMatchAllWrapper.style.opacity = "0.5";
+		} else {
+			keywordMatchAllWrapper.classList.remove("disabled");
+			keywordMatchAllWrapper.style.pointerEvents = "auto";
+			keywordMatchAllWrapper.style.opacity = "1";
+		}
+	},
+
 	addKeyword(keyword) {
 		keyword = keyword.trim();
 		if (!keyword) {
@@ -315,6 +345,9 @@ Craft.Upsnap.Monitor = {
 		card.appendChild(headerDiv);
 		card.appendChild(controlsDiv);
 		keywordsList.appendChild(card);
+
+		// Update toggle state after adding keyword
+		this.updateKeywordMatchAllToggle();
 	},
 	removeKeyword(keyword) {
 		const keywordsList = document.getElementById("keywords-list");
@@ -336,6 +369,9 @@ Craft.Upsnap.Monitor = {
 
 		keywords = keywords.filter((k) => k !== keyword);
 		hiddenInput.value = JSON.stringify(keywords);
+
+		// Update toggle state after removing keyword
+		this.updateKeywordMatchAllToggle();
 	},
 	bindMonitorUrlListener() {
 		const websiteField =

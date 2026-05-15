@@ -6,6 +6,8 @@ Craft.UpsnapDashboard = {
 	monitorDropdown: null,
 	selectedRegionId: null, // Store selected region ID for API calls
 	isMonitorSwitching: false,
+	monitorSwitchAbortController: null,
+	monitorSwitchRequestId: 0,
 
 	init() {
 		this.refreshBtn = document.getElementById("refresh-btn");
@@ -61,15 +63,26 @@ Craft.UpsnapDashboard = {
 	},
 
 	async onMonitorChange(selectedMonitorId) {
-		if (!selectedMonitorId || selectedMonitorId === this.monitorId || this.isMonitorSwitching) {
+		if (!selectedMonitorId || selectedMonitorId === this.monitorId) {
 			return;
 		}
 
+		this.abortMonitorSwitchRequests();
+		const requestId = ++this.monitorSwitchRequestId;
+		const abortController = new AbortController();
+		this.monitorSwitchAbortController = abortController;
 		this.isMonitorSwitching = true;
-		if (this.monitorDropdown) this.monitorDropdown.disabled = true;
 
 		try {
-			const context = await this.fetchMonitorContext(selectedMonitorId);
+			const context = await this.fetchMonitorContext(
+				selectedMonitorId,
+				abortController.signal
+			);
+
+			if (!this.isActiveMonitorSwitchRequest(requestId)) {
+				return;
+			}
+
 			if (!context?.monitorData) {
 				throw new Error("No monitor context returned");
 			}
@@ -87,13 +100,19 @@ Craft.UpsnapDashboard = {
 			this.showMonitorSwitchLoaders();
 
 			await Promise.all([
-				this.initializeDashboard(),
-				Promise.resolve(this.renderMonitorCards()),
-				this.loadIncidentStatsCard(),
-				this.loadConnectedChannelsCard(),
+				this.initializeDashboard({ requestId, signal: abortController.signal }),
+				Promise.resolve(
+					this.renderMonitorCards({ requestId, signal: abortController.signal })
+				),
+				this.loadIncidentStatsCard({ requestId, signal: abortController.signal }),
+				this.loadConnectedChannelsCard({ requestId, signal: abortController.signal }),
 				this.loadAndApplyRegionNames(),
 			]);
 		} catch (err) {
+			if (this.isAbortError(err) || !this.isActiveMonitorSwitchRequest(requestId)) {
+				return;
+			}
+
 			const msg = err?.message || "Failed to switch monitor";
 			if (Craft?.cp?.displayError) {
 				Craft.cp.displayError(msg);
@@ -104,9 +123,30 @@ Craft.UpsnapDashboard = {
 				this.monitorDropdown.value = this.monitorId;
 			}
 		} finally {
-			this.isMonitorSwitching = false;
-			if (this.monitorDropdown) this.monitorDropdown.disabled = false;
+			if (this.isActiveMonitorSwitchRequest(requestId)) {
+				this.isMonitorSwitching = false;
+				this.monitorSwitchAbortController = null;
+			}
 		}
+	},
+
+	isAbortError(error) {
+		return (
+			error?.name === "AbortError" ||
+			error?.code === "ERR_CANCELED" ||
+			error?.message === "canceled"
+		);
+	},
+
+	abortMonitorSwitchRequests() {
+		if (this.monitorSwitchAbortController) {
+			this.monitorSwitchAbortController.abort();
+			this.monitorSwitchAbortController = null;
+		}
+	},
+
+	isActiveMonitorSwitchRequest(requestId) {
+		return requestId === this.monitorSwitchRequestId;
 	},
 
 	showMonitorSwitchLoaders() {
@@ -163,7 +203,7 @@ Craft.UpsnapDashboard = {
 		if (content) content.hidden = true;
 	},
 
-	async fetchMonitorContext(monitorId) {
+	async fetchMonitorContext(monitorId, signal = null) {
 		const response = await Craft.sendActionRequest(
 			"POST",
 			"upsnap/dashboard/monitor-context",
@@ -171,6 +211,7 @@ Craft.UpsnapDashboard = {
 				data: {
 					monitor_id: monitorId,
 				},
+				signal,
 			}
 		);
 
@@ -259,9 +300,18 @@ Craft.UpsnapDashboard = {
 
 		// Re-fetch data with new region
 		const calls = [
-			this.render24hChartCard(window.CraftPageData?.monitorData),
-			this.renderResponseTimeCard(window.CraftPageData?.monitorData),
-			this.renderUptimeStatCards(),
+			this.render24hChartCard(window.CraftPageData?.monitorData, {
+				requestId: this.monitorSwitchRequestId,
+				signal: this.monitorSwitchAbortController?.signal || null,
+			}),
+			this.renderResponseTimeCard(window.CraftPageData?.monitorData, {
+				requestId: this.monitorSwitchRequestId,
+				signal: this.monitorSwitchAbortController?.signal || null,
+			}),
+			this.renderUptimeStatCards({
+				requestId: this.monitorSwitchRequestId,
+				signal: this.monitorSwitchAbortController?.signal || null,
+			}),
 		];
 
 		// Only fetch healthcheck data for website monitors
@@ -467,6 +517,8 @@ Craft.UpsnapDashboard = {
 		cardTitle,
 		getMessage,
 		getStatus,
+		requestId = null,
+		signal = null,
 		forceFetch = false,
 	}) {
 		return Craft.sendActionRequest("POST", action, {
@@ -475,8 +527,13 @@ Craft.UpsnapDashboard = {
 				region: this.selectedRegionId,
 				monitor_id: this.monitorId,
 			},
+			signal,
 		})
 			.then((response) => {
+				if (requestId !== null && !this.isActiveMonitorSwitchRequest(requestId)) {
+					return;
+				}
+
 				response = response?.data;
 				const data = response?.data;
 
@@ -510,6 +567,14 @@ Craft.UpsnapDashboard = {
 				});
 			})
 			.catch((error) => {
+				if (this.isAbortError(error)) {
+					return;
+				}
+
+				if (requestId !== null && !this.isActiveMonitorSwitchRequest(requestId)) {
+					return;
+				}
+
 				const msg = error.response?.data
 					? error.response.data.error || "Unknown error"
 					: error.message;
@@ -522,7 +587,7 @@ Craft.UpsnapDashboard = {
 			});
 	},
 
-	initializeDashboard() {
+	initializeDashboard({ requestId = null, signal = null } = {}) {
 		this.syncWebsiteCardsVisibility();
 
 		// Only fetch healthcheck data for website monitors
@@ -536,6 +601,8 @@ Craft.UpsnapDashboard = {
 				action: "upsnap/health-check/reachability",
 				cardTitle: "Reachability",
 				cardId: "reachability-card",
+				requestId,
+				signal,
 			}),
 			// SSL
 			isHttps
@@ -543,6 +610,8 @@ Craft.UpsnapDashboard = {
 						action: "upsnap/health-check/security-certificates",
 						cardTitle: "Security Certificates",
 						cardId: "ssl-card",
+						requestId,
+						signal,
 				  })
 				: this.renderHttpsOnlyCard({
 						cardId: "ssl-card",
@@ -552,11 +621,15 @@ Craft.UpsnapDashboard = {
 				action: "upsnap/health-check/broken-links",
 				cardTitle: "Broken Links",
 				cardId: "broken-links-card",
+				requestId,
+				signal,
 			}),
 			this.fetchAndRenderCard({
 				action: "upsnap/health-check/domain-check",
 				cardTitle: "Domain Check",
 				cardId: "domain-check-card",
+				requestId,
+				signal,
 			}),
 			// Mixed Content
 			isHttps
@@ -564,6 +637,8 @@ Craft.UpsnapDashboard = {
 						action: "upsnap/health-check/mixed-content",
 						cardTitle: "Mixed Content",
 						cardId: "mixed-content-card",
+						requestId,
+						signal,
 				  })
 				: this.renderHttpsOnlyCard({
 						cardId: "mixed-content-card",
@@ -575,6 +650,8 @@ Craft.UpsnapDashboard = {
 						action: "upsnap/health-check/lighthouse",
 						cardTitle: "Lighthouse",
 						cardId: "lighthouse-card",
+						requestId,
+						signal,
 				  })
 				: this.renderHttpsOnlyCard({
 						cardId: "lighthouse-card",
@@ -585,7 +662,7 @@ Craft.UpsnapDashboard = {
 		return Promise.allSettled(calls);
 	},
 
-	async fetchAndRenderReachability() {
+	async fetchAndRenderReachability({ requestId = null, signal = null } = {}) {
 		// Only fetch for website monitors
 		if (!this.isWebsiteMonitor()) {
 			return Promise.resolve();
@@ -600,9 +677,13 @@ Craft.UpsnapDashboard = {
 				action: "upsnap/health-check/reachability",
 				cardTitle: "Reachability",
 				cardId: cardId,
+				requestId,
+				signal,
 			});
 		} catch (err) {
-			console.error("Failed to fetch reachability:", err);
+			if (!this.isAbortError(err)) {
+				console.error("Failed to fetch reachability:", err);
+			}
 		}
 	},
 
@@ -664,8 +745,12 @@ Craft.UpsnapDashboard = {
 	// ===========================================================
 	// API Fetch Helper
 	// ===========================================================
-	async fetchMonitorData(endpoint) {
+	async fetchMonitorData(endpoint, { requestId = null, signal = null } = {}) {
 		try {
+			if (requestId !== null && !this.isActiveMonitorSwitchRequest(requestId)) {
+				throw new Error("stale-monitor-switch-request");
+			}
+
 			// Add region parameter if selected
 			const separator = endpoint.includes('?') ? '&' : '?';
 			const regionParam = this.selectedRegionId ? `${separator}region=${encodeURIComponent(this.selectedRegionId)}` : '';
@@ -675,6 +760,7 @@ Craft.UpsnapDashboard = {
 				headers: {
 					"X-Requested-With": "XMLHttpRequest",
 				},
+				signal,
 			});
 
 			if (!res.ok) {
@@ -687,8 +773,16 @@ Craft.UpsnapDashboard = {
 				throw new Error(json.message || "Unknown error");
 			}
 
+			if (requestId !== null && !this.isActiveMonitorSwitchRequest(requestId)) {
+				throw new Error("stale-monitor-switch-request");
+			}
+
 			return json.data;
 		} catch (err) {
+			if (this.isAbortError(err) || err?.message === "stale-monitor-switch-request") {
+				throw err;
+			}
+
 			console.error(`Failed to fetch from ${endpoint}:`, err);
 			throw err;
 		}
@@ -818,7 +912,7 @@ Craft.UpsnapDashboard = {
 	// ===========================================================
 	// 3. 24h Summary Card - NOW FETCHES FROM API
 	// ===========================================================
-	async render24hChartCard(monitorData) {
+	async render24hChartCard(monitorData, { requestId = null, signal = null } = {}) {
 		const card = document.getElementById("monitor-24h-card");
 		if (!card) return;
 		// Show skeleton while loading
@@ -847,8 +941,13 @@ Craft.UpsnapDashboard = {
 
 		try {
 			const data = await this.fetchMonitorData(
-				`/admin/upsnap/monitors/histogram/${this.monitorId}`
+				`/admin/upsnap/monitors/histogram/${this.monitorId}`,
+				{ requestId, signal }
 			);
+
+			if (requestId !== null && !this.isActiveMonitorSwitchRequest(requestId)) {
+				return;
+			}
 
 			const histogram = data?.histogram?.data ?? [];
 			const lastStatus = monitorData?.last_status;
@@ -935,6 +1034,10 @@ Craft.UpsnapDashboard = {
 
 			this.initHistogramTooltips();
 		} catch (err) {
+			if (this.isAbortError(err) || err?.message === "stale-monitor-switch-request") {
+				return;
+			}
+
 			card.classList.remove("skeleton");
 			card.innerHTML = `
 				<div class="card-header">Last 24 hours</div>
@@ -972,7 +1075,7 @@ Craft.UpsnapDashboard = {
 	// ===========================================================
 	// Response Time Area Chart - NOW FETCHES FROM API
 	// ===========================================================
-	async renderResponseTimeCard(monitorData) {
+	async renderResponseTimeCard(monitorData, { requestId = null, signal = null } = {}) {
 		this.showResponseChartLoader();
 		// Register no data plugin (safe-guard against double register)
 		if (!Chart.registry.plugins.get("noDataMessage")) {
@@ -1026,8 +1129,13 @@ Craft.UpsnapDashboard = {
 				const queryParams = new URLSearchParams(range).toString();
 
 				const data = await this.fetchMonitorData(
-					`/admin/upsnap/monitors/response-time/${this.monitorId}?${queryParams}`
+					`/admin/upsnap/monitors/response-time/${this.monitorId}?${queryParams}`,
+					{ requestId, signal }
 				);
+
+				if (requestId !== null && !this.isActiveMonitorSwitchRequest(requestId)) {
+					return;
+				}
 
 				responseTime = data?.response_time_data;
 				points = responseTime?.chart_data || [];
@@ -1120,7 +1228,7 @@ Craft.UpsnapDashboard = {
 					this.currentResponseTimeFilter = e.target.value;
 					this.showResponseChartLoader();
 					try {
-						await this.renderResponseTimeCard(monitorData);
+						await this.renderResponseTimeCard(monitorData, { requestId, signal });
 					} finally {
 						this.hideResponseChartLoader();
 					}
@@ -1183,6 +1291,10 @@ Craft.UpsnapDashboard = {
 				},
 			});
 		} catch (err) {
+			if (this.isAbortError(err) || err?.message === "stale-monitor-switch-request") {
+				return;
+			}
+
 			card.classList.remove("skeleton");
 			console.error("Failed to render response time card:", err);
 		}
@@ -1192,7 +1304,7 @@ Craft.UpsnapDashboard = {
 	// ===========================================================
 	// 4. Reusable Uptime Stats Card - NOW FETCHES FROM API
 	// ===========================================================
-	async renderUptimeStatCards() {
+	async renderUptimeStatCards({ requestId = null, signal = null } = {}) {
 		if (!this.monitorId) {
 			// Show error state for all cards
 			this.renderSingleUptimeStatCard(
@@ -1227,8 +1339,13 @@ Craft.UpsnapDashboard = {
 
 		try {
 			const data = await this.fetchMonitorData(
-				`/admin/upsnap/monitors/uptime-stats/${this.monitorId}`
+				`/admin/upsnap/monitors/uptime-stats/${this.monitorId}`,
+				{ requestId, signal }
 			);
+
+			if (requestId !== null && !this.isActiveMonitorSwitchRequest(requestId)) {
+				return;
+			}
 
 			const stats = data?.uptime_stats ?? {};
 
@@ -1251,6 +1368,10 @@ Craft.UpsnapDashboard = {
 				"1M"
 			);
 		} catch (err) {
+			if (this.isAbortError(err) || err?.message === "stale-monitor-switch-request") {
+				return;
+			}
+
 			console.error("Failed to fetch uptime stats:", err);
 
 			// Show error state for all cards
@@ -1369,7 +1490,7 @@ Craft.UpsnapDashboard = {
 	// ===========================================================
 	//  MAIN FUNCTION: Updated to use API calls
 	// ===========================================================
-	renderMonitorCards() {
+	renderMonitorCards({ requestId = null, signal = null } = {}) {
 		let data = window.CraftPageData?.monitorData;
 		data = this.appendPrimaryRegionStatus(data)
 
@@ -1379,9 +1500,9 @@ Craft.UpsnapDashboard = {
 		this.renderLastCheckCard(data);
 
 		// Render cards that fetch from API
-		this.render24hChartCard(data);
-		this.renderResponseTimeCard(data);
-		this.renderUptimeStatCards();
+		this.render24hChartCard(data, { requestId, signal });
+		this.renderResponseTimeCard(data, { requestId, signal });
+		this.renderUptimeStatCards({ requestId, signal });
 	},
 
 	getResponseTimeRange(filter) {
@@ -1415,7 +1536,7 @@ Craft.UpsnapDashboard = {
 	 * Fetches region-wise incident stats for the current monitor and renders the
 	 * incident stats card in the right sidebar.
 	 */
-	async loadIncidentStatsCard() {
+	async loadIncidentStatsCard({ requestId = null, signal = null } = {}) {
 		const monitorId = this.monitorId;
 		const card = document.getElementById('incident-stats-card');
 		if (!card) return;
@@ -1427,12 +1548,17 @@ Craft.UpsnapDashboard = {
 			const [regionMap, json] = await Promise.all([
 				this._fetchRegionMap(),
 				fetch(url, {
+					signal,
 					headers: {
 						'X-CSRF-Token': Craft.csrfTokenValue,
 						'Accept': 'application/json',
 					},
 				}).then((res) => res.json()),
 			]);
+
+			if (requestId !== null && !this.isActiveMonitorSwitchRequest(requestId)) {
+				return;
+			}
 
 			if (!json.success) throw new Error(json.message || 'Failed to fetch incident stats');
 
@@ -1442,6 +1568,14 @@ Craft.UpsnapDashboard = {
 
 			this._renderIncidentStatsCard(card, regions, monitorId, regionMap);
 		} catch (err) {
+			if (this.isAbortError(err)) {
+				return;
+			}
+
+			if (requestId !== null && !this.isActiveMonitorSwitchRequest(requestId)) {
+				return;
+			}
+
 			console.warn('Failed to load incident stats:', err);
 			this._renderIncidentStatsCardEmpty(card);
 		}
@@ -1681,7 +1815,7 @@ Craft.UpsnapDashboard = {
 		`;
 	},
 
-	async loadConnectedChannelsCard() {
+	async loadConnectedChannelsCard({ requestId = null, signal = null } = {}) {
 		const card = document.getElementById('connected-channels-card');
 		if (!card) return;
 
@@ -1696,8 +1830,13 @@ Craft.UpsnapDashboard = {
 
 			const response = await Craft.sendActionRequest(
 				'POST',
-				'upsnap/monitor-notification-channels/list'
+				'upsnap/monitor-notification-channels/list',
+				{ signal }
 			);
+
+			if (requestId !== null && !this.isActiveMonitorSwitchRequest(requestId)) {
+				return;
+			}
 
 			const channels = Array.isArray(response?.data?.data?.channels)
 				? response.data.data.channels
@@ -1709,6 +1848,14 @@ Craft.UpsnapDashboard = {
 
 			this.renderConnectedChannelsCard(card, filtered);
 		} catch (err) {
+			if (this.isAbortError(err)) {
+				return;
+			}
+
+			if (requestId !== null && !this.isActiveMonitorSwitchRequest(requestId)) {
+				return;
+			}
+
 			console.warn('Failed to load connected channels:', err);
 			this.renderConnectedChannelsCardEmpty(card);
 		}

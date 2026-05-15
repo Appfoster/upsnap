@@ -215,7 +215,7 @@
 									{% include 'upsnap/_components/interval-slider.twig' with {
 										id: 'brokenLinks',
 										name: 'brokenLinksMonitoringInterval',
-										value: monitor ? (monitor.brokenLinksMonitoringInterval ?? 86400) : 86400,
+										value: monitor ? (monitor.brokenLinksMonitoringInterval ?? 86400 * 7) : 86400 * 7,
 										partitions: lighthouseIntervals,
 										minMonitorIntervalSeconds: MIN_MONITOR_INTERVAL_SECONDS
 									} %}
@@ -237,7 +237,7 @@
 									{% include 'upsnap/_components/interval-slider.twig' with {
 										id: 'mixedContent',
 										name: 'mixedContentMonitoringInterval',
-										value: monitor ? (monitor.mixedContentMonitoringInterval ?? 86400) : 86400,
+										value: monitor ? (monitor.mixedContentMonitoringInterval ?? 86400 * 7) : 86400 * 7,
 										partitions: lighthouseIntervals,
 										minMonitorIntervalSeconds: MIN_MONITOR_INTERVAL_SECONDS
 									} %}
@@ -258,7 +258,7 @@
 									{% include 'upsnap/_components/interval-slider.twig' with {
 										id: 'domain',
 										name: 'domainMonitoringInterval',
-										value: monitor ? (monitor.domainMonitoringInterval ?? 86400) : 86400,
+										value: monitor ? (monitor.domainMonitoringInterval ?? 86400 * 7) : 86400 * 7,
 										partitions: lighthouseIntervals,
 										minMonitorIntervalSeconds: MIN_MONITOR_INTERVAL_SECONDS
 									} %}
@@ -289,7 +289,7 @@
 									{% include 'upsnap/_components/interval-slider.twig' with {
 										id: 'securityCertificates',
 										name: 'securityCertificatesMonitoringInterval',
-										value: monitor ? (monitor.securityCertificatesMonitoringInterval ?? 86400) : 86400,
+										value: monitor ? (monitor.securityCertificatesMonitoringInterval ?? 86400 * 7) : 86400 * 7,
 										partitions: lighthouseIntervals,
 										minMonitorIntervalSeconds: MIN_MONITOR_INTERVAL_SECONDS
 									} %}
@@ -318,7 +318,7 @@
 									{% include 'upsnap/_components/interval-slider.twig' with {
 										id: 'lighthouse',
 										name: 'lighthouseMonitoringInterval',
-										value: monitor ? (monitor.lighthouseMonitoringInterval ?? 86400) : 7 * 86400,
+										value: monitor ? (monitor.lighthouseMonitoringInterval ?? 86400 * 7) : 7 * 86400,
 										partitions: lighthouseIntervals,
 										minMonitorIntervalSeconds: 86400
 									} %}
