@@ -547,6 +547,21 @@ body.upsnap-modal-open {
     margin-top: 0;
 }
 
+.announcement-inline-field {
+	display: grid;
+	grid-template-columns: auto minmax(180px, 1fr);
+	align-items: center;
+	column-gap: 12px;
+}
+
+.announcement-inline-field .heading {
+	margin-bottom: 0;
+}
+
+.announcement-inline-field .input {
+	margin-left: auto;
+}
+
 @media (max-width: 768px) {
 	.upsnap-announcement-title-row,
 	.upsnap-modal-field-row,
