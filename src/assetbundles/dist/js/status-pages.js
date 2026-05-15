@@ -257,12 +257,23 @@ Craft.Upsnap.StatusPages = {
 		this.announcementDeleteConfirmBtn?.addEventListener("click", () => {
 			this.deleteAnnouncement();
 		});
+
+		const revalidate = () => this.syncAnnouncementSaveBtn();
+
+		this.announcementTitleInput?.addEventListener("input",    revalidate);
+		this.announcementMessageInput?.addEventListener("input",  revalidate);
+		this.announcementTypeInput?.addEventListener("change",    revalidate);
+		this.announcementStartAtInput?.addEventListener("change", revalidate);
+		this.announcementStartAtInput?.addEventListener("input",  revalidate);
 	},
 
 	initAnnouncementDateTimePickers() {
 		if (typeof window.flatpickr !== "function") {
 			return;
 		}
+
+		const now = new Date();
+		now.setSeconds(0, 0);
 
 		const pickerConfig = {
 			enableTime: true,
@@ -273,6 +284,25 @@ Craft.Upsnap.StatusPages = {
 			altInput: true,
 			altFormat: "d/m/Y H:i",
 			disableMobile: true,
+			minDate: now,
+			onChange: () => {
+				this.syncAnnouncementSaveBtn();
+			},
+
+			onClose: () => {
+				this.syncAnnouncementSaveBtn();
+			},
+
+			onReady(_dates, _str, instance) {
+				const input = instance.altInput || instance.input;
+				input.addEventListener("blur", () => {
+					const selected = instance.selectedDates[0];
+					if (selected && selected < new Date()) {
+						instance.clear();
+						Craft.cp.displayError("Past dates are not allowed.");
+					}
+				});
+			},
 		};
 
 		if (this.announcementStartAtPicker) {
@@ -295,6 +325,29 @@ Craft.Upsnap.StatusPages = {
 				pickerConfig
 			);
 		}
+	},
+
+	syncAnnouncementSaveBtn() {
+		if (!this.announcementSaveBtn) return;
+
+		const title   = (this.announcementTitleInput?.value   || "").trim();
+		const message = (this.announcementMessageInput?.value || "").trim();
+		const type    = this.announcementTypeInput?.value     || "";
+		const startAt = this.announcementStartAtInput?.value  || "";
+
+		const titleOk   = title.length > 0 && title.length <= 100;
+		const messageOk = message.length > 0 && message.length <= 500;
+		const typeOk    = ["info", "warning", "critical"].includes(type);
+
+		const startDate = new Date(startAt);
+		const startOk =
+			!!startAt &&
+			!Number.isNaN(startDate.getTime()) &&
+			startDate >= new Date();
+
+		const valid = titleOk && messageOk && typeOk && startOk;
+		this.announcementSaveBtn.disabled = !valid;
+		this.announcementSaveBtn.classList.toggle("disabled", !valid);
 	},
 
 	syncAnnouncementCharCounters() {
@@ -526,6 +579,7 @@ Craft.Upsnap.StatusPages = {
 		if (dismissibleSwitch) dismissibleSwitch.value = "1";
 
 		this.syncAnnouncementCharCounters();
+		this.syncAnnouncementSaveBtn();
 		this.openAnnouncementModal();
 	},
 
@@ -591,6 +645,7 @@ Craft.Upsnap.StatusPages = {
 				}
 
 				this.syncAnnouncementCharCounters();
+				this.syncAnnouncementSaveBtn();
 				this.openAnnouncementModal();
 			}
 		);
@@ -680,8 +735,18 @@ Craft.Upsnap.StatusPages = {
 			return false;
 		}
 
-		if (data.start_at && Number.isNaN(new Date(data.start_at).getTime())) {
+		if (!data.start_at) {
+			Craft.cp.displayError("Start Date & Time is required.");
+			return false;
+		}
+
+		if (Number.isNaN(new Date(data.start_at).getTime())) {
 			Craft.cp.displayError("Start Date & Time must be a valid date.");
+			return false;
+		}
+
+		if (new Date(data.start_at) < new Date()) {
+			Craft.cp.displayError("Start Date & Time cannot be in the past.");
 			return false;
 		}
 
