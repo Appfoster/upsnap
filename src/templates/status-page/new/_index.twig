@@ -15,6 +15,12 @@
 {% endif %}
 
 
+{% block actionButton %}
+    <button type="submit" form="status-page-form" id="status-page-btn" class="btn submit{% if mode == 'edit' %} hidden{% endif %}">
+        Save
+    </button>
+{% endblock %}
+
 {% block content %}
 	<script>
         window.Upsnap = window.Upsnap || {};
@@ -277,15 +283,25 @@
                     <h2 id="announcement-modal-title" class="upsnap-modal__title">Add Announcement</h2>
                     <button type="button" class="upsnap-modal__close" id="announcement-modal-close" aria-label="Close">&times;</button>
                 </div>
-                <div class="upsnap-modal__body">
+                <div class="upsnap-modal__body upsnap-announcement-modal-fields">
                     <input type="hidden" id="announcement_id" value="">
 
-                    <div class="field">
-                        <div class="heading">
-                            <label for="announcement_title">Title <span class="required" aria-hidden="true"></span></label>
+                    <div class="upsnap-announcement-title-row field">
+                        <div class="field upsnap-announcement-title-field">
+                            <div class="heading">
+                                <label for="announcement_title">Title <span class="required" aria-hidden="true"></span></label>
+                            </div>
+                            <div class="input ltr">
+                                <input type="text" class="text fullwidth" id="announcement_title" maxlength="100" required>
+                            </div>
                         </div>
-                        <div class="input ltr">
-                            <input type="text" class="text fullwidth" id="announcement_title" maxlength="100" required>
+                        <div class="upsnap-announcement-dismissible-field">
+                            {{ forms.lightswitchField({
+                                label: "Dismissible",
+                                id: "announcement_is_dismissible",
+                                name: "announcement_is_dismissible",
+                                on: true
+                            }) }}
                         </div>
                     </div>
 
@@ -298,19 +314,19 @@
                         </div>
                     </div>
 
-                    <div class="upsnap-two-col-grid flex">
-                        <div class="field flex-grow">
+                    <div class="upsnap-two-col-grid upsnap-modal-field-row">
+                        <div class="field">
                             <div class="heading">
-                                <label for="announcement_start_at">Start Date &amp; Time</label>
+                                <label for="announcement_start_at">Start Date &amp; Time <span class="required" aria-hidden="true"></span></label>
                             </div>
                             <div class="input ltr">
                                 <input type="text" class="text fullwidth" id="announcement_start_at" autocomplete="off" placeholder="Select start date and time">
                             </div>
                         </div>
 
-                        <div class="field flex-grow">
+                        <div class="field">
                             <div class="heading">
-                                <label for="announcement_end_at">End Date &amp; Time</label>
+                                <label for="announcement_end_at">End Date &amp; Time <span class="required" aria-hidden="true"></span></label>
                             </div>
                             <div class="input ltr">
                                 <input type="text" class="text fullwidth" id="announcement_end_at" autocomplete="off" placeholder="Select end date and time">
@@ -318,8 +334,8 @@
                         </div>
                     </div>
 
-                    <div class="upsnap-three-col-grid flex">
-                        <div class="field flex-grow">
+                    <div class="upsnap-three-col-grid upsnap-announcement-modal-fields">
+                        <div class="field">
                             <div class="heading">
                                 <label for="announcement_type">Type <span class="required" aria-hidden="true"></span></label>
                             </div>
@@ -334,7 +350,7 @@
                             </div>
                         </div>
 
-                        <div class="field flex-grow">
+                        <div class="field">
                             <div class="heading">
                                 <label for="announcement_status">Status</label>
                             </div>
@@ -346,15 +362,6 @@
                                     </select>
                                 </div>
                             </div>
-                        </div>
-
-                        <div class="field flex-grow">
-                            {{ forms.lightswitchField({
-                                label: "Dismissible",
-                                id: "announcement_is_dismissible",
-                                name: "announcement_is_dismissible",
-                                on: true
-                            }) }}
                         </div>
                     </div>
                 </div>
@@ -382,11 +389,5 @@
             </div>
         </div>
         {% endif %}
-
-		<div class="buttons">
-            <button type="submit" id='status-page-btn' class="btn submit{% if mode == 'edit' %} hidden{% endif %}">
-				Save
-			</button>
-		</div>
 	</form>
 {% endblock %}
