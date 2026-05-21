@@ -140,13 +140,16 @@ class ApiService extends Component
     /**
      * Record installation data
      */
-    public function recordInstallationData(string $siteUrl): ?array
+    public function recordInstallationData(string $siteUrl, ?string $email = null, ?string $name = null, ?string $installUid = null): ?array
     {
         $body = [
             'platform' => 'craft',
-            'details' => [
-                'site_url' => $siteUrl
-            ]
+            'details'  => [
+                'site_url'    => $siteUrl,
+                'email'       => $email,
+                'name'        => $name,
+                'install_uid' => $installUid,
+            ],
         ];
 
         try {

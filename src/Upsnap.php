@@ -80,7 +80,12 @@ class Upsnap extends Plugin
                     try {
                         $siteUrl = self::getMonitoringUrl();
                         if ($siteUrl) {
-                            $this->apiService->recordInstallationData($siteUrl);
+                            $currentUser = Craft::$app->getUser()->getIdentity();
+                            $email = $currentUser?->email ?? null;
+                            $name  = ($currentUser?->fullName ?: $currentUser?->username) ?? null;
+                            $installUid = Craft::$app->getInfo()->uid;
+
+                            $this->apiService->recordInstallationData($siteUrl, $email, $name, $installUid);
                         }
                     } catch (\Exception $e) {
                         Craft::error('Failed to record installation data: ' . $e->getMessage(), __METHOD__);
