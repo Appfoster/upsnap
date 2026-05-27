@@ -294,6 +294,15 @@
 	align-items: start;
 }
 
+.upsnap-display-row > .field {
+	margin-top: 0 !important;
+}
+
+.upsnap-display-row > .field > .heading {
+	padding-top: 0 !important;
+	margin-top: 0 !important;
+}
+
 .upsnap-color-field > label {
 	display: inline-block;
 	margin-bottom: 6px;
@@ -504,8 +513,9 @@ body.upsnap-modal-open {
 }
 
 
-.btn.icon:not(:empty, .btn-empty)::before, .btn.menubtn:not(.action-btn).icon.btn-empty::before, .btn.menubtn:not(.action-btn).icon:empty::before, .btn.menubtn:not(.action-btn)[data-icon].btn-empty::before, .btn.menubtn:not(.action-btn)[data-icon]:empty::before, .btn[data-icon]:not(:empty, .btn-empty)::before {
-  margin-inline-end: 0px;
+#status-pages-table .upsnap-status-page-actions .btn::before,
+#status-pages-table .upsnap-status-page-actions .menu-btn::before {
+	margin-inline-end: 0;
 }
 
 .upsnap-announcement-modal-fields.upsnap-modal__body {
