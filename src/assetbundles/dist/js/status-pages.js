@@ -893,9 +893,12 @@ Craft.Upsnap.StatusPages = {
 
 	showLoader(show = true) {
 		this.loader?.classList.toggle("hidden", !show);
-		this.table?.classList.toggle("hidden", show);
+		if (show) {
+			this.table?.classList.add("hidden");
+		}
 		this.emptyState?.classList.add("hidden");
 	},
+
 
 	statusBadge(isPublished) {
 		return isPublished
@@ -1054,7 +1057,13 @@ Craft.Upsnap.StatusPages = {
 	fetchStatusPages() {
 		this.showLoader(true);
 
+		const timeoutId = setTimeout(() => {
+			this.loader?.classList.add("hidden");
+			Craft.cp.displayError("Status pages took too long to load. Please refresh the page.");
+		}, 15000);
+
 		Craft.postActionRequest("upsnap/status-page/list", {}, (response) => {
+			clearTimeout(timeoutId);
 			this.showLoader(false);
 
 			if (!response || !response.success) {

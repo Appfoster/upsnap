@@ -575,10 +575,6 @@
     text-decoration: underline;
 }
 
-.incidents-table-container {
-    overflow-x: auto;
-}
-
 .no-incidents-message {
     text-align: center;
     padding: 40px 20px;
@@ -594,7 +590,15 @@
 .incidents-table-wrapper table.data {
     width: 100%;
     border-collapse: collapse;
+    table-layout: fixed;
 }
+
+.col-inc-status    { width: 28px; }
+.col-inc-monitor   { width: 15%; }
+.col-inc-region    { width: 82px; }
+.col-inc-checktype { width: 82px; }
+.col-inc-statuscode{ width: 64px; }
+.col-inc-time      { width: 128px; }
 
 .incidents-table-wrapper table.data thead th {
     background-color: #f9fafb;
@@ -602,9 +606,11 @@
     font-weight: 600;
     font-size: 13px;
     text-align: left;
-    padding: 12px 16px;
+    padding: 8px 10px;
     border-bottom: 2px solid #e5e7eb;
     white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .incidents-table-wrapper table.data tbody tr {
@@ -625,10 +631,11 @@
 }
 
 .incidents-table-wrapper table.data tbody td {
-    padding: 12px 16px;
+    padding: 8px 10px;
     font-size: 13px;
     color: #374151;
     vertical-align: middle;
+    overflow-wrap: break-word;
 }
 
 .incidents-table-wrapper table.data tbody td strong {
@@ -651,11 +658,10 @@
 /* Check Type Badge */
 .check-type-badge {
     display: inline-block;
-    padding: 4px 10px;
+    padding: 4px 8px;
     border-radius: 6px;
     font-size: 12px;
     font-weight: 500;
-    white-space: nowrap;
 }
 
 .check-type-uptime {
@@ -741,7 +747,7 @@
     
     .incidents-table-wrapper table.data thead th,
     .incidents-table-wrapper table.data tbody td {
-        padding: 10px 12px;
+        padding: 6px 8px;
     }
 }
 
@@ -749,10 +755,26 @@
     .incidents-table-wrapper {
         padding: 12px;
     }
-    
+}
+
+@media (max-width: 768px) {
     .incidents-table-container {
         overflow-x: auto;
         -webkit-overflow-scrolling: touch;
+    }
+
+    .incidents-table-wrapper table.data {
+        table-layout: auto;
+        min-width: 560px;
+    }
+
+    .col-inc-status,
+    .col-inc-monitor,
+    .col-inc-region,
+    .col-inc-checktype,
+    .col-inc-statuscode,
+    .col-inc-time {
+        width: auto;
     }
 }
 

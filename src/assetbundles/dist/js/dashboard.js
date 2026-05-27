@@ -1774,7 +1774,7 @@ Craft.UpsnapDashboard = {
 
 		const groups = Object.entries(grouped);
 		const count = channels.length;
-		const settingsUrl = `${Craft.getCpUrl('upsnap/settings')}#notification-channels-tab`;
+		const settingsUrl = Craft.getCpUrl('upsnap/notification-channels');
 
 		const groupsHtml = groups
 			.map(([type, list]) => {
