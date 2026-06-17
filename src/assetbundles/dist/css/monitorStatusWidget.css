@@ -1,0 +1,124 @@
+.upsnap-monitor-widget {
+	min-height: 96px;
+}
+
+.upsnap-monitor-widget__state {
+	color: #596673;
+}
+
+.upsnap-monitor-widget__rows {
+	display: flex;
+	flex-direction: column;
+	gap: 1px;
+}
+
+.upsnap-monitor-widget__row {
+	align-items: center;
+	color: inherit;
+	display: grid;
+	gap: 10px;
+	grid-template-columns: 10px minmax(0, 1fr) auto;
+	padding: 9px 0;
+	text-decoration: none;
+}
+
+.upsnap-monitor-widget__row + .upsnap-monitor-widget__row {
+	border-top: 1px solid #e3e5e8;
+}
+
+.upsnap-monitor-widget__row:hover .upsnap-monitor-widget__name {
+	text-decoration: underline;
+}
+
+.upsnap-monitor-widget__dot {
+	border-radius: 50%;
+	height: 9px;
+	width: 9px;
+}
+
+.upsnap-monitor-widget__dot.is-up {
+	background: #2f9e44;
+}
+
+.upsnap-monitor-widget__dot.is-down {
+	background: #d92d20;
+}
+
+.upsnap-monitor-widget__dot.is-degraded {
+	background: #d89b00;
+}
+
+.upsnap-monitor-widget__dot.is-unknown {
+	background: #9aa5b1;
+}
+
+.upsnap-monitor-widget__main {
+	display: flex;
+	flex-direction: column;
+	min-width: 0;
+}
+
+.upsnap-monitor-widget__name {
+	color: #1f2933;
+	font-weight: 600;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.upsnap-monitor-widget__checked {
+	color: #7b8794;
+	font-size: 12px;
+	margin-top: 2px;
+}
+
+.upsnap-monitor-widget__status {
+	border-radius: 999px;
+	font-size: 11px;
+	font-weight: 700;
+	padding: 2px 7px;
+}
+
+.upsnap-monitor-widget__status.is-up {
+	background: #e3fcef;
+	color: #137333;
+}
+
+.upsnap-monitor-widget__status.is-down {
+	background: #fde8e7;
+	color: #b42318;
+}
+
+.upsnap-monitor-widget__status.is-degraded {
+	background: #fff4cc;
+	color: #946200;
+}
+
+.upsnap-monitor-widget__status.is-unknown {
+	background: #edf0f2;
+	color: #596673;
+}
+
+.upsnap-monitor-widget__empty {
+	align-items: flex-start;
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+	padding: 8px 0;
+}
+
+.upsnap-monitor-widget__empty-actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+}
+
+.upsnap-monitor-widget__upgrade {
+	align-items: center;
+	border-top: 1px solid #e3e5e8;
+	display: flex;
+	gap: 8px;
+	justify-content: space-between;
+	margin-top: 6px;
+	padding-top: 10px;
+}
