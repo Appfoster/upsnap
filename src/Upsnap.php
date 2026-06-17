@@ -80,7 +80,12 @@ class Upsnap extends Plugin
                     try {
                         $siteUrl = self::getMonitoringUrl();
                         if ($siteUrl) {
-                            $this->apiService->recordInstallationData($siteUrl);
+                            $currentUser = Craft::$app instanceof \craft\web\Application ? Craft::$app->getUser()->getIdentity() : null;
+                            $email = $currentUser?->email ?? null;
+                            $name = ($currentUser?->fullName ?: $currentUser?->username) ?? null;
+                            $craftInstallId = Craft::$app->getInfo()->id;
+
+                            $this->apiService->recordInstallationData($siteUrl, $email, $name, $craftInstallId);
                         }
                     } catch (\Exception $e) {
                         Craft::error('Failed to record installation data: ' . $e->getMessage(), __METHOD__);
@@ -93,6 +98,21 @@ class Upsnap extends Plugin
                 }
             }
         );
+    }
+
+    public function afterUninstall(): void
+    {
+        parent::afterUninstall();
+
+        try {
+            $craftInstallId = Craft::$app->getInfo()->id;
+
+            if ($craftInstallId) {
+                $this->apiService->recordUninstallationData($craftInstallId);
+            }
+        } catch (\Throwable $e) {
+            Craft::error('Failed to record uninstall data: ' . $e->getMessage(), __METHOD__);
+        }
     }
 
     private function registerAfterLoadEvents()

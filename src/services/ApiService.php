@@ -140,12 +140,17 @@ class ApiService extends Component
     /**
      * Record installation data
      */
-    public function recordInstallationData(string $siteUrl): ?array
+    public function recordInstallationData(string $siteUrl, ?string $email = null, ?string $name = null, ?string $craftInstallId = null): ?array
     {
         $body = [
             'platform' => 'craft',
             'details' => [
-                'site_url' => $siteUrl
+                'site_url' => $siteUrl,
+                'email' => $email,
+                'name' => $name,
+                'craft_install_id' => $craftInstallId,
+                'plugin_version' => Upsnap::getInstance()->getVersion(),
+                'craft_version' => Craft::$app->getVersion(),
             ]
         ];
 
@@ -153,6 +158,21 @@ class ApiService extends Component
             return $this->post('installation-data', $body);
         } catch (RequestException $e) {
             Craft::error("Failed to record installation data: " . $e->getMessage(), __METHOD__);
+            return null;
+        }
+    }
+
+    public function recordUninstallationData(string $craftInstallId): ?array
+    {
+        $body = [
+            'status' => 'uninstalled',
+            'uninstalled_at' => gmdate('c'),
+        ];
+
+        try {
+            return $this->patch('plugin-installs/' . rawurlencode($craftInstallId), $body);
+        } catch (RequestException $e) {
+            Craft::error("Failed to record uninstall data: " . $e->getMessage(), __METHOD__);
             return null;
         }
     }
