@@ -10,10 +10,12 @@ use craft\services\Plugins;
 use craft\helpers\UrlHelper;
 use craft\events\PluginEvent;
 use craft\events\RegisterUrlRulesEvent;
+use craft\web\twig\variables\CraftVariable;
 
 use appfoster\upsnap\services\ApiService;
 use appfoster\upsnap\services\HistoryService;
 use appfoster\upsnap\services\SettingsService;
+use appfoster\upsnap\variables\UpsnapVariable;
 
 /**
  * @property ApiService $apiService
@@ -60,6 +62,14 @@ class Upsnap extends Plugin
             'historyService' => HistoryService::class,
             'settingsService' => SettingsService::class
         ]);
+
+        Event::on(
+            CraftVariable::class,
+            CraftVariable::EVENT_INIT,
+            function (\yii\base\Event $event) {
+                $event->sender->set('upsnap', UpsnapVariable::class);
+            }
+        );
 
         Event::on(
             Plugins::class,
