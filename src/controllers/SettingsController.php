@@ -8,6 +8,8 @@ use appfoster\upsnap\Upsnap;
 use appfoster\upsnap\assetbundles\SettingsAsset;
 use appfoster\upsnap\Constants;
 use appfoster\upsnap\services\HealthCheckService;
+use appfoster\upsnap\assetbundles\MultisiteSetupAsset;
+use yii\web\Response;
 
 class SettingsController extends BaseController
 {
@@ -244,6 +246,27 @@ class SettingsController extends BaseController
             $result = $settingsService->login($email, $password);
 
             if (($result['status'] ?? '') === 'success') {
+                $shouldShowMultisite = false;
+                if ($settingsService->getMonitorId() === null) {
+                    try {
+                        $sites = $settingsService->getAllCraftSites();
+                        $sitesWithUrl = array_filter($sites, fn($s) => $s['hasUrl']);
+                        $shouldShowMultisite = count($sitesWithUrl) > 1;
+                    } catch (\Throwable $e) {
+                        Craft::warning('Could not check sites for multisite redirect on login: ' . $e->getMessage(), __METHOD__);
+                    }
+                }
+
+                if ($shouldShowMultisite) {
+                    return $this->asJson([
+                        'success'                => true,
+                        'message'                => Craft::t('upsnap', 'Login successful!'),
+                        'requiresMultisiteSetup' => true,
+                        'redirectUrl'            => UrlHelper::cpUrl(Constants::SUBNAV_ITEM_MULTISITE_SETUP['url']),
+                        'primaryMonitorRequirement' => null,
+                    ]);
+                }
+
                 $primaryMonitorRequirement = $settingsService->getPrimaryMonitorRequirement();
 
                 return $this->asJson([
@@ -353,14 +376,30 @@ class SettingsController extends BaseController
 
     /**
      * Signup Step 3: Create first monitor.
-     * Called after Step 2 completes.
+     * If multiple Craft sites are detected, skips auto-creation and returns a multisite redirect instead.
      */
     public function actionCreateFirstMonitor(): \yii\web\Response
     {
         $this->requirePostRequest();
 
         try {
-            $result = Upsnap::getInstance()->settingsService->createFirstMonitorStep();
+            $settingsService = Upsnap::getInstance()->settingsService;
+            $sites = $settingsService->getAllCraftSites();
+            $sitesWithUrl = array_values(array_filter($sites, fn($s) => $s['hasUrl']));
+
+            if (count($sitesWithUrl) > 1) {
+                return $this->asJson([
+                    'status' => 'success',
+                    'data' => [
+                        'multisite'   => true,
+                        'siteCount'   => count($sitesWithUrl),
+                        'redirectUrl' => UrlHelper::cpUrl(Constants::SUBNAV_ITEM_MULTISITE_SETUP['url']),
+                        'message'     => Craft::t('upsnap', 'Multiple Craft sites detected. Redirecting to multi-site setup.'),
+                    ],
+                ]);
+            }
+
+            $result = $settingsService->createFirstMonitorStep();
             return $this->asJson($result);
         } catch (\Throwable $e) {
             Craft::error('Signup Step 3 failed: ' . $e->getMessage(), __METHOD__);
@@ -369,5 +408,176 @@ class SettingsController extends BaseController
                 'message' => Craft::t('upsnap', 'An error occurred. Please try again.'),
             ]);
         }
+    }
+
+    /**
+     * Render the multi-site monitor setup screen.
+     * GET upsnap/settings/multisite-setup
+     */
+    public function actionMultiSiteSetup(): \yii\web\Response
+    {
+        MultisiteSetupAsset::register($this->view);
+
+        $service = Upsnap::getInstance()->settingsService;
+
+        if (!$service->getApiKey()) {
+            return Craft::$app->getResponse()->redirect(
+                UrlHelper::cpUrl(Constants::SUBNAV_ITEM_SETTINGS['url']) . '#register-signin-tab'
+            );
+        }
+
+        $service->validateApiKey();
+
+        if ($service->getApiTokenStatus() !== Constants::API_KEY_STATUS['active']) {
+            Craft::$app->getSession()->setError(
+                Craft::t('upsnap', 'Please configure a valid API key before setting up monitors.')
+            );
+            return Craft::$app->getResponse()->redirect(UrlHelper::cpUrl(Constants::SUBNAV_ITEM_SETTINGS['url']));
+        }
+
+        $sites = $service->getAllCraftSites();
+
+        // Attempt duplicate check - if it fails we still show the page but warn the user
+        $monitoredUrls          = [];
+        $monitorCheckFailed     = false;
+        $monitorCheckFailReason = '';
+        try {
+            $monitoredUrls = $service->getMonitoredUrls();
+        } catch (\Throwable $e) {
+            $monitorCheckFailed     = true;
+            $monitorCheckFailReason = $e->getMessage();
+            Craft::warning("getMonitoredUrls failed on multisite setup: {$e->getMessage()}", __METHOD__);
+        }
+
+        foreach ($sites as &$site) {
+            if ($site['resolvedUrl'] !== null) {
+                $normalized = strtolower(rtrim($site['resolvedUrl'], '/'));
+                $site['alreadyMonitored'] = in_array($normalized, $monitoredUrls, true);
+            } else {
+                $site['alreadyMonitored'] = false;
+            }
+        }
+        unset($site);
+
+        $activeSites   = array_values(array_filter($sites, fn($s) => $s['hasUrl']));
+        $excludedSites = array_values(array_filter($sites, fn($s) => !$s['hasUrl']));
+        $userDetails   = $service->getUserDetails();
+
+        return $this->renderTemplate(Constants::SUBNAV_ITEM_MULTISITE_SETUP['template'], [
+            'title'                  => Craft::t('upsnap', 'Multi-Site Monitor Setup'),
+            'selectedSubnavItem'     => Constants::SUBNAV_ITEM_SETTINGS['key'],
+            'sites'                  => $sites,
+            'activeSites'            => $activeSites,
+            'excludedSites'          => $excludedSites,
+            'monitorsUrl'            => UrlHelper::cpUrl(Constants::SUBNAV_ITEM_MONITORS['url']),
+            'settingsUrl'            => UrlHelper::cpUrl(Constants::SUBNAV_ITEM_SETTINGS['url']),
+            'monitorCheckFailed'     => $monitorCheckFailed,
+            'monitorCheckFailReason' => $monitorCheckFailReason,
+            'userDetails'            => $userDetails,
+        ]);
+    }
+
+    /**
+     * Create UpSnap monitors for the selected Craft sites.
+     * POST upsnap/settings/bulk-create-monitors
+     */
+    public function actionBulkCreateMonitors(): \yii\web\Response
+    {
+        $this->requirePostRequest();
+
+        $request = Craft::$app->getRequest();
+        $service = Upsnap::getInstance()->settingsService;
+
+        // Re-validate token - it may have expired between page load and submit
+        $service->validateApiKey();
+        if ($service->getApiTokenStatus() !== Constants::API_KEY_STATUS['active']) {
+            return $this->asJson([
+                'success' => false,
+                'message' => Craft::t('upsnap', 'Your API token is no longer active. Please update it in Settings.'),
+            ]);
+        }
+
+        $sites = $request->getBodyParam('sites', []);
+
+        if (empty($sites) || !is_array($sites)) {
+            return $this->asJson([
+                'success' => false,
+                'message' => Craft::t('upsnap', 'No sites selected.'),
+            ]);
+        }
+
+        // Fetch existing monitored URLs (normalized lowercase) for duplicate check
+        $monitoredUrls = [];
+        try {
+            $monitoredUrls = $service->getMonitoredUrls();
+        } catch (\Throwable $e) {
+            Craft::warning("Could not fetch monitored URLs during bulk create: {$e->getMessage()}", __METHOD__);
+            // Continue - the API will reject true duplicates anyway
+        }
+
+        $results             = [];
+        $firstCreatedId      = null;
+        $firstCreatedUrl     = null;
+        $hasExistingPrimary  = $service->getMonitorId() !== null;
+        $endpoint            = Constants::MICROSERVICE_ENDPOINTS['monitors']['create'];
+
+        foreach ($sites as $site) {
+            $name = trim($site['name'] ?? '');
+            $url  = trim($site['url']  ?? '');
+
+            if ($url === '') {
+                $results[] = ['name' => $name, 'url' => '', 'status' => 'skipped', 'message' => Craft::t('upsnap', 'No URL configured.')];
+                continue;
+            }
+
+            $normalizedUrl = strtolower(rtrim($url, '/'));
+
+            if (in_array($normalizedUrl, $monitoredUrls, true)) {
+                $results[] = ['name' => $name, 'url' => $url, 'status' => 'skipped', 'message' => Craft::t('upsnap', 'Monitor already exists for this URL.')];
+                continue;
+            }
+
+            try {
+                $response = Upsnap::$plugin->apiService->post($endpoint, [
+                    'name'         => $name !== '' ? $name : 'Monitor',
+                    'service_type' => Constants::SERVICE_TYPES['website'],
+                    'config'       => ['meta' => ['url' => $url]],
+                    'is_enabled'   => true,
+                ]);
+
+                if (($response['status'] ?? '') === 'success') {
+                    $monitorData = $response['data']['monitor'] ?? $response['data'] ?? [];
+                    $monitorId   = $monitorData['id'] ?? null;
+
+                    if ($firstCreatedId === null && $monitorId !== null) {
+                        $firstCreatedId  = $monitorId;
+                        $firstCreatedUrl = $url;
+                    }
+
+                    $results[] = ['name' => $name, 'url' => $url, 'status' => 'created', 'message' => Craft::t('upsnap', 'Monitor created.')];
+                } else {
+                    $results[] = ['name' => $name, 'url' => $url, 'status' => 'failed', 'message' => $response['message'] ?? Craft::t('upsnap', 'Failed to create monitor.')];
+                }
+            } catch (\Throwable $e) {
+                Craft::error("Bulk monitor creation failed for {$url}: {$e->getMessage()}", __METHOD__);
+                $results[] = ['name' => $name, 'url' => $url, 'status' => 'failed', 'message' => Craft::t('upsnap', 'An error occurred.')];
+            }
+        }
+
+        if (!$hasExistingPrimary && $firstCreatedId !== null) {
+            $service->setMonitorId($firstCreatedId);
+            $service->setMonitoringUrl($firstCreatedUrl);
+        }
+
+        $created = count(array_filter($results, fn($r) => $r['status'] === 'created'));
+        $skipped = count(array_filter($results, fn($r) => $r['status'] === 'skipped'));
+        $failed  = count(array_filter($results, fn($r) => $r['status'] === 'failed'));
+
+        return $this->asJson([
+            'success'     => true,
+            'summary'     => compact('created', 'skipped', 'failed'),
+            'results'     => $results,
+            'redirectUrl' => UrlHelper::cpUrl(Constants::SUBNAV_ITEM_MONITORS['url']),
+        ]);
     }
 }
