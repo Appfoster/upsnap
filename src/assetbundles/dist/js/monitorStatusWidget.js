@@ -37,29 +37,14 @@
 
 	const uptimeBadgeHtml = (monitor, period) => {
 		const s = monitor.status;
-		if (s === "paused")      return `<span class="usw-status-pill is-paused">Paused</span>`;
-		if (s === "maintenance") return `<span class="usw-status-pill is-maintenance">Maintenance</span>`;
+		if (s === "paused")      return `<span class="usw-status-pill is-paused"><span class="usw-badge__label">Paused</span></span>`;
+		if (s === "maintenance") return `<span class="usw-status-pill is-maintenance"><span class="usw-badge__label">Maintenance</span></span>`;
 		const pct = monitor.statsByPeriod?.[period]?.uptime;
 		if (pct === null || pct === undefined) return "";
 		const grade = pct >= 99 ? "is-green" : pct >= 90 ? "is-amber" : "is-red";
-		return `<span class="usw-uptime-badge ${grade}">${pct}% uptime</span>`;
+		return `<span class="usw-uptime-badge ${grade}">${pct}%<span class="usw-badge__label"> uptime</span></span>`;
 	};
 
-	const buildStrip = (monitor, period) => {
-		const s = monitor.status;
-		const off = `<span class="usw-strip__bar"></span>`;
-		if (s === "paused")      return Array(7).fill(off).join("");
-		if (s === "maintenance") return Array(7).fill(`<span class="usw-strip__bar is-maint"></span>`).join("");
-		const pct = monitor.statsByPeriod?.[period]?.uptime;
-		if (pct === null || pct === undefined) return Array(7).fill(off).join("");
-		const incidents = monitor.statsByPeriod?.[period]?.incidents ?? 0;
-		const upCount = Math.round(7 * pct / 100);
-		return Array.from({ length: 7 }, (_, i) => {
-			let c = i < upCount ? "is-up" : "is-down";
-			if (i === 6 && s === "up" && incidents > 0) c = "is-amber";
-			return `<span class="usw-strip__bar ${c}"></span>`;
-		}).join("");
-	};
 
 	const periodOpts = (current) =>
 		[["day", "24 h"], ["week", "7 days"], ["month", "30 days"]]
@@ -95,29 +80,24 @@
 		const href = `${dashboardUrl}?monitor_id=${encodeURIComponent(monitor.id ?? "")}`;
 		const incCount = monitor.statsByPeriod?.[incidentsPeriod]?.incidents;
 		const incPill = incCount
-			? `<span class="usw-incident-pill">${incCount} incident${incCount === 1 ? "" : "s"}</span>`
+			? `<span class="usw-incident-pill">${incCount}<span class="usw-badge__label"> incident${incCount === 1 ? "" : "s"}</span></span>`
 			: "";
-		const regionTime = [monitor.regionName, formatDate(monitor.lastCheckedAt)].filter(Boolean).join(" · ");
-		const hasLine2 = monitor.url || incCount;
+		const dateFmt = formatDate(monitor.lastCheckedAt);
 
 		return `<a class="usw-row ${cls}" href="${esc(href)}">
 			<span class="usw-row__dot-wrap"><span class="usw-row__dot ${cls}"></span></span>
 			<span class="usw-row__body">
 				<span class="usw-row__line1">
 					<span class="usw-row__name">${esc(monitor.name)}</span>
+					${dateFmt ? `<span class="usw-row__time">${esc(dateFmt)}</span>` : ""}
+					${incPill}
 					${uptimeBadgeHtml(monitor, uptimePeriod)}
 				</span>
-				${hasLine2 ? `<span class="usw-row__line2">
-					${monitor.url ? `<span class="usw-row__url">${esc(monitor.url)}</span>` : `<span></span>`}
-					${incPill}
+				${monitor.url ? `<span class="usw-row__line2">
+					<span class="usw-tag">${esc(serviceLabel(monitor.serviceType))}</span>
+					<span class="usw-row__url">${esc(monitor.url)}</span>
+					${monitor.regionName ? `<span class="usw-row__region">${esc(monitor.regionName)}</span>` : ""}
 				</span>` : ""}
-				<span class="usw-row__line3">
-					<span class="usw-row__meta-left">
-						<span class="usw-tag">${esc(serviceLabel(monitor.serviceType))}</span>
-						${regionTime ? `<span class="usw-row__region-time">${esc(regionTime)}</span>` : ""}
-					</span>
-					<span class="usw-strip">${buildStrip(monitor, uptimePeriod)}</span>
-				</span>
 			</span>
 		</a>`;
 	};
@@ -176,13 +156,6 @@
 		const search = widget._search;
 
 		const counts = countStatuses(monitors);
-		const now = new Date().toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
-		const summaryParts = [`${monitors.length} monitor${monitors.length !== 1 ? "s" : ""}`];
-		if (counts.up)          summaryParts.push(`${counts.up} up`);
-		if (counts.down)        summaryParts.push(`${counts.down} down`);
-		if (counts.maintenance) summaryParts.push(`${counts.maintenance} maintenance`);
-		if (counts.paused)      summaryParts.push(`${counts.paused} paused`);
-		summaryParts.push(`updated ${now}`);
 
 		const chips = [
 			{ key: "all",         label: "All",    dotCls: "",           count: counts.all },
@@ -199,9 +172,8 @@
 			: "";
 
 		state.innerHTML = `
-			<div class="usw-summary">${esc(summaryParts.join(" · "))}</div>
 			<div class="usw-chips">
-				${chips.map((c) => `<button class="usw-chip${filter === c.key ? " is-active" : ""}" data-usw-filter="${c.key}"><span class="usw-chip__dot${c.dotCls ? " " + c.dotCls : ""}"></span>${esc(c.label)}<span class="usw-chip__count">${c.count}</span></button>`).join("")}
+				${chips.map((c) => `<button class="usw-chip${filter === c.key ? " is-active" : ""}" data-usw-filter="${c.key}"><span class="usw-chip__dot${c.dotCls ? " " + c.dotCls : ""}"></span><span class="usw-chip__label">${esc(c.label)}</span><span class="usw-chip__count">${c.count}</span></button>`).join("")}
 			</div>
 			<div class="usw-controls">
 				<div class="usw-search">

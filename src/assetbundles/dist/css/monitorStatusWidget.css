@@ -25,19 +25,12 @@
 	--tag-bg:      #ecedef;
 	--bar-off:     #d0d5d9;
 
+	container-type: inline-size;
 	min-height: 260px;
 }
 
 .upsnap-monitor-widget__state {
 	padding: 2px 0;
-}
-
-/* ── Summary line ── */
-.usw-summary {
-	font-size: 12px;
-	color: var(--faint);
-	margin-bottom: 13px;
-	line-height: 1.4;
 }
 
 /* ── Filter chips ── */
@@ -332,12 +325,11 @@
 .usw-status-pill.is-paused      { background: rgba(144, 154, 163, 0.14); color: #596673; }
 .usw-status-pill.is-maintenance { background: rgba(28, 126, 214, 0.10);  color: #1c6aad; }
 
-/* Line 2: url + incident pill */
+/* Line 2: type badge + url + region */
 .usw-row__line2 {
 	display: flex;
 	align-items: center;
-	gap: 8px;
-	justify-content: space-between;
+	gap: 6px;
 	min-width: 0;
 }
 
@@ -351,6 +343,21 @@
 	min-width: 0;
 }
 
+.usw-row__region {
+	flex-shrink: 0;
+	font-size: 11px;
+	color: var(--faint);
+	white-space: nowrap;
+}
+
+.usw-row__time {
+	flex-shrink: 0;
+	font-size: 11px;
+	color: var(--faint);
+	white-space: nowrap;
+	margin-left: auto;
+}
+
 .usw-incident-pill {
 	flex-shrink: 0;
 	font-size: 11px;
@@ -359,23 +366,6 @@
 	background: rgba(217, 119, 6, 0.10);
 	color: #b45309;
 	white-space: nowrap;
-}
-
-/* Line 3: meta + uptime strip */
-.usw-row__line3 {
-	display: flex;
-	align-items: center;
-	justify-content: space-between;
-	gap: 8px;
-	padding-left: 18px;
-}
-
-.usw-row__meta-left {
-	display: flex;
-	align-items: center;
-	gap: 6px;
-	min-width: 0;
-	overflow: hidden;
 }
 
 .usw-tag {
@@ -390,33 +380,6 @@
 	flex-shrink: 0;
 	line-height: 1.6;
 }
-
-.usw-row__region-time {
-	font-size: 11px;
-	color: var(--faint);
-	overflow: hidden;
-	text-overflow: ellipsis;
-	white-space: nowrap;
-}
-
-/* Uptime strip */
-.usw-strip {
-	display: flex;
-	gap: 3px;
-	align-items: center;
-	flex-shrink: 0;
-}
-
-.usw-strip__bar {
-	width: 5px;
-	height: 15px;
-	border-radius: 2px;
-	background: var(--bar-off);
-}
-.usw-strip__bar.is-up    { background: #2f9e44; }
-.usw-strip__bar.is-down  { background: #d92d20; }
-.usw-strip__bar.is-amber { background: #d97706; }
-.usw-strip__bar.is-maint { background: #1c7ed6; }
 
 /* ── Empty / error states ── */
 .usw-empty {
@@ -439,6 +402,14 @@
 	color: var(--faint);
 	font-size: 13px;
 	text-align: center;
+}
+
+@container (max-width: 300px) {
+	.usw-chip__label  { display: none; }
+	.usw-badge__label { display: none; }
+	.usw-status-pill  { display: none; }
+	.usw-row__time    { display: none; }
+	.usw-row__region  { display: none; }
 }
 
 /* ── Upgrade banner ── */
