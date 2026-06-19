@@ -205,6 +205,7 @@ class Constants
                 'update' => 'user/integrations',
             ],
             'histogram' => 'user/monitors/{monitorId}/histogram',
+            'histogram_bulk' => 'user/monitors/histogram',
             'response_time' => 'user/monitors/{monitorId}/response-time',
             'uptime_stats' => 'user/monitors/{monitorId}/uptime-stats',
             'incidents'        => 'user/monitors/incidents',
