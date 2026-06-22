@@ -4,6 +4,7 @@ namespace appfoster\upsnap\variables;
 
 use Craft;
 use yii\base\Behavior;
+use appfoster\upsnap\Constants;
 use appfoster\upsnap\Upsnap;
 
 class UpsnapVariable extends Behavior
@@ -17,16 +18,25 @@ class UpsnapVariable extends Behavior
             return $this->unknownStatus();
         }
 
-        $cacheKey = 'upsnap_twig_status_' . md5($identifier);
+        if (!$this->isProOrAbove()) {
+            return $this->unknownStatus();
+        }
 
-        return Craft::$app->getCache()->getOrSet($cacheKey, function () use ($identifier) {
-            return $this->resolveStatus($identifier);
+        $normalized = strtolower(trim($identifier));
+        $cacheKey = 'upsnap_twig_status_' . md5($normalized);
+
+        return Craft::$app->getCache()->getOrSet($cacheKey, function () use ($normalized) {
+            return $this->resolveStatus($normalized);
         }, self::CACHE_TTL);
     }
 
     public function allStatuses(): array
     {
         if (!Upsnap::getInstance()->settingsService->getApiKey()) {
+            return [];
+        }
+
+        if (!$this->isProOrAbove()) {
             return [];
         }
 
@@ -170,11 +180,28 @@ class UpsnapVariable extends Behavior
 
     private function matchesIdentifier(array $monitor, string $identifier): bool
     {
-        if (($monitor['id'] ?? '') === $identifier) {
+        if ((string)($monitor['id'] ?? '') === trim($identifier)) {
             return true;
         }
 
         return $this->slugify($monitor['name'] ?? '') === strtolower(trim($identifier));
+    }
+
+    private function isProOrAbove(): bool
+    {
+        return (bool) Craft::$app->getCache()->getOrSet('upsnap_twig_plan_check', function () {
+            try {
+                $response = Upsnap::$plugin->apiService->get(Constants::MICROSERVICE_ENDPOINTS['billing']['status']);
+                if (!is_array($response) || ($response['status'] ?? '') !== 'success') {
+                    return false;
+                }
+                $planName = strtolower((string)($response['data']['plan_name'] ?? 'free'));
+                return !in_array($planName, ['free', 'trial'], true);
+            } catch (\Throwable $e) {
+                Craft::warning('UpsnapVariable: billing check failed: ' . $e->getMessage(), __METHOD__);
+                return false;
+            }
+        }, self::CACHE_TTL);
     }
 
     private function slugify(string $name): string
