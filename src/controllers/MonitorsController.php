@@ -272,7 +272,10 @@ class MonitorsController extends BaseController
             $response = Upsnap::$plugin->apiService->get($endpoint);
 
             if (!is_array($response) || ($response['status'] ?? null) !== 'success') {
-                throw new \Exception($response['message'] ?? Craft::t('upsnap', 'Failed to fetch monitors.'));
+                $errorMsg = is_array($response)
+                    ? ($response['message'] ?? Craft::t('upsnap', 'Failed to fetch monitors.'))
+                    : Craft::t('upsnap', 'Failed to fetch monitors.');
+                throw new \Exception($errorMsg);
             }
 
             $data = $response['data'] ?? [];
@@ -281,10 +284,18 @@ class MonitorsController extends BaseController
                 $monitors = [];
             }
 
-            $userDetails = $settingsService->getUserDetails();
-            $subscriptionType = strtolower((string)($userDetails['user']['subscription_type'] ?? 'trial'));
-            $isFreePlan = in_array($subscriptionType, ['free', 'trial'], true);
-            $visibleMonitors = $isFreePlan ? array_slice($monitors, 0, 3) : $monitors;
+            $billingResponse = Upsnap::$plugin->apiService->get(Constants::MICROSERVICE_ENDPOINTS['billing']['status']);
+            $planName = (is_array($billingResponse) && ($billingResponse['status'] ?? null) === 'success')
+                ? strtolower((string)($billingResponse['data']['plan_name'] ?? 'free'))
+                : 'free';
+            $isFreePlan = in_array($planName, ['free', 'trial'], true);
+
+            if ($isFreePlan) {
+                return $this->asJson([
+                    'success' => true,
+                    'data' => ['isFreePlan' => true],
+                ]);
+            }
 
             $uptimeMap = [];
             try {
@@ -324,7 +335,7 @@ class MonitorsController extends BaseController
                     ),
                     'total' => count($monitors),
                     'isFreePlan' => $isFreePlan,
-                    'subscriptionType' => $subscriptionType,
+                    'subscriptionType' => $planName,
                 ],
             ]);
         } catch (\Throwable $e) {

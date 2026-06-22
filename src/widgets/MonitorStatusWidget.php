@@ -29,7 +29,7 @@ class MonitorStatusWidget extends Widget
             'dashboardUrl' => UrlHelper::cpUrl('upsnap'),
             'monitorsUrl' => UrlHelper::cpUrl('upsnap/monitors'),
             'settingsUrl' => UrlHelper::cpUrl('upsnap/settings'),
-            'upgradeUrl' => Constants::getWebAppUrl('webapp'),
+            'upgradeUrl' => Constants::getWebAppUrl('webapp') . '/billing',
         ]);
     }
 }

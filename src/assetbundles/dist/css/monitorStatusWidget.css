@@ -412,15 +412,43 @@
 	.usw-row__region  { display: none; }
 }
 
-/* ── Upgrade banner ── */
-.usw-upgrade {
+/* ── Upgrade gate (free plan) ── */
+.usw-upgrade-gate {
 	display: flex;
+	flex-direction: column;
 	align-items: center;
-	justify-content: space-between;
-	gap: 8px;
-	border-top: 1px solid var(--border-soft);
-	padding-top: 10px;
-	margin-top: 6px;
-	font-size: 12.5px;
+	justify-content: center;
+	text-align: center;
+	gap: 12px;
+	padding: 36px 20px;
+	min-height: 220px;
+}
+
+.usw-upgrade-gate__icon {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 44px;
+	height: 44px;
+	background: #7c3aed;
+	color: #fff;
+	border-radius: 50%;
+	font-size: 20px;
+	line-height: 1;
+	flex-shrink: 0;
+}
+
+.usw-upgrade-gate__title {
+	font-size: 15px;
+	font-weight: 600;
+	color: var(--ink);
+	margin: 0;
+}
+
+.usw-upgrade-gate__desc {
+	font-size: 13px;
 	color: var(--muted);
+	margin: 0;
+	max-width: 260px;
+	line-height: 1.5;
 }

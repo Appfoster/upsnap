@@ -234,6 +234,9 @@ class Constants
             'register' => 'user/register',
             'login' => 'user/login'
         ],
+        'billing' => [
+            'status' => 'billing/status',
+        ],
         'regions' => [
             'list' => 'regions'
         ],

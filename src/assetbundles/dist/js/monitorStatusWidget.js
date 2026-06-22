@@ -137,10 +137,18 @@
 			return;
 		}
 
+		if (data.isFreePlan) {
+			state.innerHTML = `<div class="usw-upgrade-gate">
+				<span class="usw-upgrade-gate__icon">★</span>
+				<p class="usw-upgrade-gate__title">Live Monitor Status</p>
+				<p class="usw-upgrade-gate__desc">See all your monitor statuses at a glance, right from the Craft dashboard. Available on Pro and above.</p>
+				<a class="btn submit small" href="${esc(upgradeUrl)}" target="_blank" rel="noopener">Upgrade to Pro</a>
+			</div>`;
+			return;
+		}
+
 		if (!monitors.length) {
-			const upgradeBtn = data.isFreePlan
-				? `<a class="btn small" href="${esc(upgradeUrl)}" target="_blank" rel="noopener">Upgrade</a>` : "";
-			state.innerHTML = `<div class="usw-empty"><p>No monitors configured yet.</p><div class="usw-empty__actions"><a class="btn small submit" href="${esc(monitorsUrl)}">Add Monitor</a>${upgradeBtn}</div></div>`;
+			state.innerHTML = `<div class="usw-empty"><p>No monitors configured yet.</p><div class="usw-empty__actions"><a class="btn small submit" href="${esc(monitorsUrl)}">Add Monitor</a></div></div>`;
 			return;
 		}
 
@@ -166,10 +174,6 @@
 		].filter((c) => c.key === "all" || c.count > 0);
 
 		const visible = applySort(applyFilter(monitors, filter, search), sort, uptimePeriod);
-
-		const upgradeBanner = data.isFreePlan
-			? `<div class="usw-upgrade"><span>Showing ${monitors.length}${(data.total ?? 0) > monitors.length ? " of " + data.total : ""} monitors.</span><a href="${esc(upgradeUrl)}" target="_blank" rel="noopener">Upgrade</a></div>`
-			: "";
 
 		state.innerHTML = `
 			<div class="usw-chips">
@@ -199,8 +203,7 @@
 			<div class="usw-list">${visible.length
 				? visible.map((m) => renderRow(m, dashboardUrl, uptimePeriod, incidentsPeriod)).join("")
 				: `<div class="usw-empty-filter"><p>No monitors match the current filter.</p></div>`
-			}</div>
-			${upgradeBanner}`;
+			}</div>`;
 	};
 
 	const load = async (widget) => {
