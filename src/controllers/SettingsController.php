@@ -9,7 +9,6 @@ use appfoster\upsnap\assetbundles\SettingsAsset;
 use appfoster\upsnap\Constants;
 use appfoster\upsnap\services\HealthCheckService;
 use appfoster\upsnap\assetbundles\MultisiteSetupAsset;
-use yii\web\Response;
 
 class SettingsController extends BaseController
 {
@@ -530,6 +529,11 @@ class SettingsController extends BaseController
                 continue;
             }
 
+            if (!filter_var($url, FILTER_VALIDATE_URL) || !in_array(parse_url($url, PHP_URL_SCHEME), ['http', 'https'], true)) {
+                $results[] = ['name' => $name, 'url' => $url, 'status' => 'skipped', 'message' => Craft::t('upsnap', 'Invalid or unsupported URL.')];
+                continue;
+            }
+
             $normalizedUrl = strtolower(rtrim($url, '/'));
 
             if (in_array($normalizedUrl, $monitoredUrls, true)) {
@@ -554,6 +558,7 @@ class SettingsController extends BaseController
                         $firstCreatedUrl = $url;
                     }
 
+                    $monitoredUrls[] = $normalizedUrl;
                     $results[] = ['name' => $name, 'url' => $url, 'status' => 'created', 'message' => Craft::t('upsnap', 'Monitor created.')];
                 } else {
                     $results[] = ['name' => $name, 'url' => $url, 'status' => 'failed', 'message' => $response['message'] ?? Craft::t('upsnap', 'Failed to create monitor.')];
