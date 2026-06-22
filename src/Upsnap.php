@@ -6,11 +6,13 @@ use Craft;
 use craft\base\Event;
 use craft\base\Plugin;
 use craft\web\UrlManager;
+use craft\web\View;
 use craft\services\Plugins;
 use craft\helpers\UrlHelper;
 use craft\events\PluginEvent;
 use craft\events\RegisterUrlRulesEvent;
 
+use appfoster\upsnap\assetbundles\NavBadgeAsset;
 use appfoster\upsnap\services\ApiService;
 use appfoster\upsnap\services\HistoryService;
 use appfoster\upsnap\services\SettingsService;
@@ -100,6 +102,7 @@ class Upsnap extends Plugin
         self::$plugin = $this;
 
         $this->_registerCpRoutes();
+        $this->_registerNavBadgeAsset();
     }
 
     private function _registerCpRoutes()
@@ -149,6 +152,25 @@ class Upsnap extends Plugin
                 ]);
             }
         );
+    }
+
+    private function _registerNavBadgeAsset(): void
+    {
+        if (Craft::$app->getRequest()->getIsConsoleRequest()) {
+            return;
+        }
+
+        if (!Craft::$app->getRequest()->getIsCpRequest()) {
+            return;
+        }
+
+        Craft::$app->getView()->hook('cp.layouts.base', function() {
+            $view = Craft::$app->getView();
+            $interval = max(30, (int)(self::$plugin->settingsService->getSetting('navBadgePollInterval', 60)));
+            $view->registerJs('window.UpsnapNavBadge={interval:' . $interval . '};', View::POS_HEAD);
+            NavBadgeAsset::register($view);
+            return '';
+        });
     }
 
     /**
