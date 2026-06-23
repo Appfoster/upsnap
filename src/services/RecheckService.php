@@ -22,7 +22,6 @@ class RecheckService extends Component
         }
 
         if (!$this->isPlanSupported()) {
-            Craft::info('RecheckService: skipped - no API key or plan is not Pro or above', __METHOD__);
             return;
         }
 
