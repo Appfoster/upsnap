@@ -243,7 +243,10 @@ class Constants
         'tokens' => [
             'list' => 'tokens',
             'generate' => 'tokens/generate',
-        ]
+        ],
+        'billing' => [
+            'status' => 'billing/status',
+        ],
     ];
 
     public const LIGHTHOUSE_STRATEGY = [

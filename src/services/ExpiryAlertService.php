@@ -19,7 +19,8 @@ class ExpiryAlertService extends Component
     {
         $settingsService = Upsnap::getInstance()->settingsService;
 
-        if (!$settingsService->getApiKey()) {
+        $apiKey = $settingsService->getApiKey();
+        if (!$apiKey) {
             return null;
         }
 
@@ -28,7 +29,8 @@ class ExpiryAlertService extends Component
             return null;
         }
 
-        $cached = Craft::$app->getCache()->get(self::CACHE_KEY);
+        $cacheKey = $this->getCacheKey($apiKey);
+        $cached = Craft::$app->getCache()->get($cacheKey);
         if ($cached !== false) {
             return $cached === '__null__' ? null : $cached;
         }
@@ -36,7 +38,7 @@ class ExpiryAlertService extends Component
         $payload = $this->fetchAndBuildPayload();
 
         Craft::$app->getCache()->set(
-            self::CACHE_KEY,
+            $cacheKey,
             $payload ?? '__null__',
             self::CACHE_DURATION
         );
@@ -46,15 +48,30 @@ class ExpiryAlertService extends Component
 
     public function invalidateCache(): void
     {
-        Craft::$app->getCache()->delete(self::CACHE_KEY);
+        $apiKey = Upsnap::getInstance()->settingsService->getApiKey();
+        if ($apiKey) {
+            Craft::$app->getCache()->delete($this->getCacheKey($apiKey));
+        }
+    }
+
+    private function getCacheKey(string $apiKey): string
+    {
+        return self::CACHE_KEY . '_' . md5($apiKey);
     }
 
     private function fetchAndBuildPayload(): ?array
     {
         try {
-            $userDetails = Upsnap::getInstance()->settingsService->getUserDetails();
-            $planType = strtolower((string)((is_array($userDetails) ? $userDetails : [])['subscription_type'] ?? 'trial'));
-            $isFreePlan = in_array($planType, self::FREE_PLAN_TYPES, true);
+            $billingResponse = Upsnap::getInstance()->apiService->get(
+                Constants::MICROSERVICE_ENDPOINTS['billing']['status']
+            );
+
+            if (!is_array($billingResponse) || ($billingResponse['status'] ?? '') !== 'success') {
+                return null;
+            }
+
+            $planName = strtolower((string)($billingResponse['data']['plan_name'] ?? 'free'));
+            $isFreePlan = in_array($planName, self::FREE_PLAN_TYPES, true);
 
             if ($isFreePlan) {
                 return [
@@ -104,17 +121,17 @@ class ExpiryAlertService extends Component
         $dashboardBase = Constants::getWebAppUrl('webapp');
 
         foreach ($monitors as $monitor) {
-            $id          = (string)($monitor['id']   ?? '');
-            $name        = (string)($monitor['name'] ?? '');
-            $monitorUrl  = ($monitor['dashboard_url'] ?? null)
-                ?? ($id !== '' ? "{$dashboardBase}/monitors/{$id}" : $dashboardBase);
-            $expiryStatus = $monitor['expiry_status'] ?? [];
+            $id         = (string)($monitor['id']   ?? '');
+            $name       = (string)($monitor['name'] ?? '');
+            $monitorUrl = $id !== '' ? "{$dashboardBase}/monitors/{$id}" : $dashboardBase;
+            $services   = $monitor['config']['services'] ?? [];
 
-            $ssl = $expiryStatus['ssl'] ?? [];
+            $ssl         = $services['ssl'] ?? [];
+            $sslThreshold = (int)($ssl['notify_days_before_expiry'] ?? self::SSL_THRESHOLD_DAYS);
             if (
                 !empty($ssl['enabled']) &&
                 isset($ssl['days_remaining']) &&
-                (int)$ssl['days_remaining'] <= self::SSL_THRESHOLD_DAYS
+                (int)$ssl['days_remaining'] <= $sslThreshold
             ) {
                 $alerts[] = [
                     'monitor_id'     => $id,
@@ -126,11 +143,12 @@ class ExpiryAlertService extends Component
                 ];
             }
 
-            $domain = $expiryStatus['domain'] ?? [];
+            $domain          = $services['domain'] ?? [];
+            $domainThreshold = (int)($domain['notify_days_before_expiry'] ?? self::DOMAIN_THRESHOLD_DAYS);
             if (
                 !empty($domain['enabled']) &&
                 isset($domain['days_remaining']) &&
-                (int)$domain['days_remaining'] <= self::DOMAIN_THRESHOLD_DAYS
+                (int)$domain['days_remaining'] <= $domainThreshold
             ) {
                 $alerts[] = [
                     'monitor_id'     => $id,

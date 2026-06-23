@@ -16,8 +16,20 @@
 					? this.buildFreeHTML()
 					: this.buildAlertsHTML();
 
-			const target = document.getElementById('main-content') ?? document.body;
-			target.prepend(banner);
+			const anchor =
+				document.getElementById('header-container') ??
+				document.getElementById('main-content');
+			if (anchor) {
+				anchor.insertAdjacentElement('beforebegin', banner);
+			} else {
+				const container = document.getElementById('content-container');
+				if (container) {
+					container.insertAdjacentElement('afterbegin', banner);
+				} else {
+					document.body.prepend(banner);
+				}
+			}
+
 			this.wireClose(banner);
 		},
 
@@ -43,7 +55,7 @@
 			return `<div class="upsnap-expiry-banner__inner">
 				<span class="upsnap-expiry-banner__icon" aria-hidden="true">⚠️</span>
 				<span class="upsnap-expiry-banner__msg">
-					<strong>UpSnap Alert:</strong> ${count} site${count === 1 ? '' : 's'} need attention — ${items}.
+					<strong>UpSnap Alert:</strong> ${count} site${count === 1 ? '' : 's'} need${count === 1 ? 's' : ''} attention - ${items}.
 					<a href="${this.esc(this.payload.dashboardUrl)}" target="_blank" rel="noopener noreferrer" class="upsnap-expiry-banner__link">View in UpSnap →</a>
 				</span>
 				<button type="button" class="upsnap-expiry-banner__dismiss" aria-label="Dismiss">×</button>

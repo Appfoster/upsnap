@@ -115,6 +115,8 @@ class Upsnap extends Plugin
             return;
         }
 
+        $this->expiryAlertBannerRegistered = true;
+
         try {
             $request = Craft::$app->getRequest();
 
@@ -137,9 +139,8 @@ class Upsnap extends Plugin
                 return;
             }
 
-            $this->expiryAlertBannerRegistered = true;
             \appfoster\upsnap\assetbundles\ExpiryAlertAsset::register(Craft::$app->getView());
-            Craft::$app->getView()->registerJs('window.UpsnapExpiryAlert = ' . json_encode($payload) . ';', View::POS_HEAD);
+            Craft::$app->getView()->registerJs('window.UpsnapExpiryAlert = ' . json_encode($payload, JSON_HEX_TAG | JSON_HEX_AMP) . ';', View::POS_HEAD);
         } catch (\Throwable $e) {
             Craft::error('Failed to register expiry alert banner: ' . $e->getMessage(), __METHOD__);
         }
