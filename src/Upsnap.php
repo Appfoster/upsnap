@@ -10,15 +10,19 @@ use craft\services\Plugins;
 use craft\helpers\UrlHelper;
 use craft\events\PluginEvent;
 use craft\events\RegisterUrlRulesEvent;
+use craft\elements\Entry;
+use craft\services\Elements;
 
 use appfoster\upsnap\services\ApiService;
 use appfoster\upsnap\services\HistoryService;
 use appfoster\upsnap\services\SettingsService;
+use appfoster\upsnap\services\RecheckService;
 
 /**
  * @property ApiService $apiService
  * @property HistoryService $historyService
  * @property SettingsService $settingsService
+ * @property RecheckService $recheckService
  */
 class Upsnap extends Plugin
 {
@@ -58,7 +62,8 @@ class Upsnap extends Plugin
         $this->setComponents([
             'apiService' => ApiService::class,
             'historyService' => HistoryService::class,
-            'settingsService' => SettingsService::class
+            'settingsService' => SettingsService::class,
+            'recheckService' => RecheckService::class
         ]);
 
         Event::on(
@@ -90,6 +95,16 @@ class Upsnap extends Plugin
                     if ($request->isCpRequest) {
                         return $this->redirectToSettings()->send();
                     }
+                }
+            }
+        );
+
+        Event::on(
+            Elements::class,
+            Elements::EVENT_AFTER_SAVE_ELEMENT,
+            function ($event) {
+                if ($event->element instanceof Entry) {
+                    $this->recheckService->triggerRecheckForEntry($event->element);
                 }
             }
         );

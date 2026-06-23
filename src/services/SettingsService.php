@@ -916,4 +916,26 @@ class SettingsService extends Component
 
         return parse_url(UrlHelper::siteUrl(), PHP_URL_HOST);
     }
+
+    public function isProPlanOrAbove(): bool
+    {
+        try {
+            $userDetails = $this->getUserDetails();
+            if (!$userDetails) {
+                return false;
+            }
+
+            $subscription = $userDetails['subscription'] ?? null;
+
+            if (!$subscription) {
+                return false;
+            }
+
+            $proTiers = ['pro', 'agency'];
+            return in_array(strtolower($subscription), $proTiers, true);
+        } catch (\Throwable $e) {
+            Craft::error("Failed to check user subscription: {$e->getMessage()}", __METHOD__);
+            return false;
+        }
+    }
 }
