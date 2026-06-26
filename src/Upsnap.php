@@ -10,6 +10,7 @@ use craft\services\Plugins;
 use craft\helpers\UrlHelper;
 use craft\events\PluginEvent;
 use craft\events\RegisterUrlRulesEvent;
+use GuzzleHttp\Client;
 
 use appfoster\upsnap\services\ApiService;
 use appfoster\upsnap\services\HistoryService;
@@ -27,6 +28,8 @@ class Upsnap extends Plugin
     public bool $hasCpSection;
     public bool $hasCpSettings;
     public string $schemaVersion;
+
+    private ?string $_apiKeyBeforeUninstall = null;
 
     public function __construct($id, $parent = null, array $config = [])
     {
@@ -73,15 +76,15 @@ class Upsnap extends Plugin
             Plugins::class,
             Plugins::EVENT_AFTER_INSTALL_PLUGIN,
             function (PluginEvent $event) {
-                Craft::info('Upsnap plugin installed', __METHOD__);
-
                 if ($event->plugin === $this) {
-                    // Record installation data
                     try {
-                        $siteUrl = self::getMonitoringUrl();
-                        if ($siteUrl) {
-                            $this->apiService->recordInstallationData($siteUrl);
-                        }
+                        $siteUrl = self::getMonitoringUrl() ?? Craft::$app->getSites()->getPrimarySite()->getBaseUrl();
+                        $currentUser = Craft::$app instanceof \craft\web\Application ? Craft::$app->getUser()->getIdentity() : null;
+                        $email = $currentUser?->email ?? null;
+                        $name = ($currentUser?->fullName ?: $currentUser?->username) ?? null;
+                        $craftInstallId = Craft::$app->getInfo()->id;
+
+                        $this->apiService->recordInstallationData($siteUrl, $email, $name, $craftInstallId);
                     } catch (\Exception $e) {
                         Craft::error('Failed to record installation data: ' . $e->getMessage(), __METHOD__);
                     }
@@ -93,6 +96,37 @@ class Upsnap extends Plugin
                 }
             }
         );
+    }
+
+    public function beforeUninstall(): void
+    {
+        parent::beforeUninstall();
+        $this->_apiKeyBeforeUninstall = $this->settingsService->getApiKey();
+    }
+
+    public function afterUninstall(): void
+    {
+        parent::afterUninstall();
+
+        try {
+            $craftInstallId = Craft::$app->getInfo()->id;
+            if (!$craftInstallId) {
+                return;
+            }
+            $headers = ['Accept' => 'application/json', 'X-Requested-From' => 'craft'];
+            if ($this->_apiKeyBeforeUninstall) {
+                $headers['Authorization'] = 'Bearer ' . $this->_apiKeyBeforeUninstall;
+            }
+
+            $url = Constants::getAPIBaseUrl() . '/admin/v1/installation-data/' . rawurlencode((string) $craftInstallId);
+            $client = new Client(['http_errors' => false, 'timeout' => Constants::API_TIMEOUT]);
+            $client->patch($url, [
+                'headers' => $headers,
+                'json' => ['status' => 'uninstalled', 'uninstalled_at' => gmdate('c')],
+            ]);
+        } catch (\Throwable $e) {
+            Craft::error('Failed to record uninstall data: ' . $e->getMessage(), __METHOD__);
+        }
     }
 
     private function registerAfterLoadEvents()
