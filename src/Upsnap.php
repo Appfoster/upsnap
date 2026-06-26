@@ -5,7 +5,9 @@ namespace appfoster\upsnap;
 use Craft;
 use craft\base\Event;
 use craft\base\Plugin;
+use craft\events\TemplateEvent;
 use craft\web\UrlManager;
+use craft\web\View;
 use craft\services\Dashboard;
 use craft\services\Plugins;
 use craft\helpers\UrlHelper;
@@ -15,18 +17,21 @@ use craft\events\RegisterUrlRulesEvent;
 use GuzzleHttp\Client;
 
 use appfoster\upsnap\services\ApiService;
+use appfoster\upsnap\services\ExpiryAlertService;
 use appfoster\upsnap\services\HistoryService;
 use appfoster\upsnap\services\SettingsService;
 use appfoster\upsnap\widgets\MonitorStatusWidget;
 
 /**
  * @property ApiService $apiService
+ * @property ExpiryAlertService $expiryAlertService
  * @property HistoryService $historyService
  * @property SettingsService $settingsService
  */
 class Upsnap extends Plugin
 {
     public static $plugin;
+    private bool $expiryAlertBannerRegistered = false;
 
     public bool $hasCpSection;
     public bool $hasCpSettings;
@@ -63,6 +68,7 @@ class Upsnap extends Plugin
 
         $this->setComponents([
             'apiService' => ApiService::class,
+            'expiryAlertService' => ExpiryAlertService::class,
             'historyService' => HistoryService::class,
             'settingsService' => SettingsService::class
         ]);
@@ -72,6 +78,14 @@ class Upsnap extends Plugin
             Plugins::EVENT_AFTER_LOAD_PLUGINS,
             function () {
                 self::registerAfterLoadEvents();
+            }
+        );
+
+        Event::on(
+            View::class,
+            View::EVENT_BEFORE_RENDER_TEMPLATE,
+            function (TemplateEvent $event) {
+                $this->registerExpiryAlertBanner();
             }
         );
 
@@ -107,6 +121,43 @@ class Upsnap extends Plugin
                 }
             }
         );
+    }
+
+    private function registerExpiryAlertBanner(): void
+    {
+        if ($this->expiryAlertBannerRegistered) {
+            return;
+        }
+
+        $this->expiryAlertBannerRegistered = true;
+
+        try {
+            $request = Craft::$app->getRequest();
+
+            if (!$request->getIsCpRequest() || $request->getIsAjax()) {
+                return;
+            }
+
+            $user = Craft::$app->getUser()->getIdentity();
+            if (!$user || !$user->admin) {
+                return;
+            }
+
+            $payload = $this->expiryAlertService->getBannerPayload();
+            if (!$payload) {
+                return;
+            }
+
+            $dismissedHash = Craft::$app->getSession()->get('upsnapExpiryAlertDismissedHash');
+            if ($dismissedHash === ($payload['hash'] ?? null)) {
+                return;
+            }
+
+            \appfoster\upsnap\assetbundles\ExpiryAlertAsset::register(Craft::$app->getView());
+            Craft::$app->getView()->registerJs('window.UpsnapExpiryAlert = ' . json_encode($payload, JSON_HEX_TAG | JSON_HEX_AMP) . ';', View::POS_HEAD);
+        } catch (\Throwable $e) {
+            Craft::error('Failed to register expiry alert banner: ' . $e->getMessage(), __METHOD__);
+        }
     }
 
     public function beforeUninstall(): void
@@ -183,6 +234,9 @@ class Upsnap extends Plugin
                     'upsnap/status-page/edit/<statusPageId:[0-9a-fA-F\-]+>' => 'upsnap/status-page/new',
                     'upsnap/status-page/new' => 'upsnap/status-page/new',
                     'upsnap/regions/list' => 'upsnap/regions/list',
+
+                    // Alert Routes
+                    'upsnap/alerts/dismiss' => 'upsnap/alerts/dismiss',
 
                     // Incidents Routes
                     Constants::SUBNAV_ITEM_INCIDENTS['url'] => 'upsnap/incidents/index',
