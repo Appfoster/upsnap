@@ -1,0 +1,84 @@
+/* UpSnap CP Expiry Alert Banner */
+
+.upsnap-expiry-banner {
+    display: block;
+    width: 100%;
+    flex-shrink: 0;
+    box-sizing: border-box;
+    margin-bottom: 16px;
+}
+
+.upsnap-expiry-banner__inner {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 24px;
+    background: #fff7ed;
+    border-bottom: 1px solid #fdba74;
+    color: #c2410c;
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+.upsnap-expiry-banner__inner--upgrade {
+    background: #f5f3ff;
+    border-bottom-color: #ddd6fe;
+    color: #4c1d95;
+}
+
+.upsnap-expiry-banner__icon {
+    flex-shrink: 0;
+    font-size: 14px;
+    line-height: 1;
+}
+
+.upsnap-expiry-banner__msg {
+    flex: 1;
+    min-width: 0;
+}
+
+.upsnap-expiry-banner__link,
+.upsnap-expiry-banner__alert-link {
+    color: inherit;
+    font-weight: 600;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
+
+.upsnap-expiry-banner__link:hover,
+.upsnap-expiry-banner__alert-link:hover {
+    opacity: 0.75;
+}
+
+.upsnap-expiry-banner__dismiss {
+    flex-shrink: 0;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 20px;
+    line-height: 1;
+    color: inherit;
+    opacity: 0.45;
+    padding: 0 4px;
+    transition: opacity 0.15s ease;
+    border-radius: 3px;
+}
+
+.upsnap-expiry-banner__dismiss:hover {
+    opacity: 1;
+}
+
+/* Dark mode */
+@media (prefers-color-scheme: dark) {
+    .upsnap-expiry-banner__inner {
+        background: #431407;
+        border-bottom-color: #9a3412;
+        color: #fed7aa;
+    }
+
+    .upsnap-expiry-banner__inner--upgrade {
+        background: #2e1065;
+        border-bottom-color: #4c1d95;
+        color: #e9d5ff;
+    }
+}
