@@ -5,6 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.8] - 2026-06-26
+### Added
+- **CP Dashboard Widget - Live Monitor Status Summary**
+  New Craft CP dashboard widget displaying a live summary of all monitor statuses.
+- **CP Expiry Warning Banner - SSL + Domain**
+  Admin banner warning when SSL certificates or domains are nearing expiry, shown across the Craft CP.
+- **CP Nav Badge - Down Monitor Indicator**
+  Sidebar nav badge showing the count of currently down monitors at a glance.
+- **Entry Save Hook - Trigger On-Demand Monitor Recheck**
+  Triggers an immediate monitor recheck when a Craft entry is saved.
+- **Auto-detect Craft Multi-Site and Pre-populate Monitors on Install**
+  Detects all Craft sites on install and pre-populates monitors for each site URL with a guided multi-site setup flow.
+
+### Fixed
+- **Craft Twig Extension - Live Monitor Status Variable**
+  Resolved undefined variable error in the live monitor status action.
+- **Track Uninstall Event and Update Existing Install Row**
+  Plugin uninstall now records the event and updates the installation record on the UpSnap platform.
+
+### Chore
+- Minor bug fixes and stability improvements.
+
+
 ## [1.1.7] - 2026-05-15
 ### Added
 - **Separate Sidebar Menus for Monitors and Notification Channels**  
