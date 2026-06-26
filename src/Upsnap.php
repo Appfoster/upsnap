@@ -14,6 +14,8 @@ use craft\helpers\UrlHelper;
 use craft\events\PluginEvent;
 use craft\events\RegisterComponentTypesEvent;
 use craft\events\RegisterUrlRulesEvent;
+use craft\elements\Entry;
+use craft\services\Elements;
 use craft\web\twig\variables\CraftVariable;
 use GuzzleHttp\Client;
 
@@ -22,6 +24,7 @@ use appfoster\upsnap\services\ApiService;
 use appfoster\upsnap\services\ExpiryAlertService;
 use appfoster\upsnap\services\HistoryService;
 use appfoster\upsnap\services\SettingsService;
+use appfoster\upsnap\services\RecheckService;
 use appfoster\upsnap\variables\UpsnapVariable;
 use appfoster\upsnap\widgets\MonitorStatusWidget;
 
@@ -30,6 +33,7 @@ use appfoster\upsnap\widgets\MonitorStatusWidget;
  * @property ExpiryAlertService $expiryAlertService
  * @property HistoryService $historyService
  * @property SettingsService $settingsService
+ * @property RecheckService $recheckService
  */
 class Upsnap extends Plugin
 {
@@ -73,7 +77,8 @@ class Upsnap extends Plugin
             'apiService' => ApiService::class,
             'expiryAlertService' => ExpiryAlertService::class,
             'historyService' => HistoryService::class,
-            'settingsService' => SettingsService::class
+            'settingsService' => SettingsService::class,
+            'recheckService' => RecheckService::class
         ]);
 
         Event::on(
@@ -142,6 +147,16 @@ class Upsnap extends Plugin
                         }
                         return $this->redirectToSettings()->send();
                     }
+                }
+            }
+        );
+
+        Event::on(
+            Elements::class,
+            Elements::EVENT_AFTER_SAVE_ELEMENT,
+            function ($event) {
+                if ($event->element instanceof Entry) {
+                    $this->recheckService->triggerRecheckForEntry($event->element);
                 }
             }
         );

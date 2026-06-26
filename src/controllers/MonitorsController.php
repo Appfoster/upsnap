@@ -283,6 +283,7 @@ class MonitorsController extends BaseController
             if (!is_array($monitors)) {
                 $monitors = [];
             }
+            $visibleMonitors = $monitors;
 
             $billingResponse = Upsnap::$plugin->apiService->get(Constants::MICROSERVICE_ENDPOINTS['billing']['status']);
             $planName = (is_array($billingResponse) && ($billingResponse['status'] ?? null) === 'success')
