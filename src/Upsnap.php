@@ -116,6 +116,19 @@ class Upsnap extends Plugin
 
                     $request = Craft::$app->getRequest();
                     if ($request->isCpRequest) {
+                        if ($this->settingsService->getApiKey() && $this->settingsService->getMonitorId() === null) {
+                            try {
+                                $sites = $this->settingsService->getAllCraftSites();
+                                $sitesWithUrl = array_filter($sites, fn($s) => $s['hasUrl']);
+                                if (count($sitesWithUrl) > 1) {
+                                    return Craft::$app->getResponse()->redirect(
+                                        UrlHelper::cpUrl(Constants::SUBNAV_ITEM_MULTISITE_SETUP['url'])
+                                    )->send();
+                                }
+                            } catch (\Throwable $e) {
+                                Craft::warning('Could not check sites for multisite redirect on install: ' . $e->getMessage(), __METHOD__);
+                            }
+                        }
                         return $this->redirectToSettings()->send();
                     }
                 }
@@ -223,6 +236,8 @@ class Upsnap extends Plugin
 
                     // Setting Route
                     Constants::SUBNAV_ITEM_SETTINGS['url'] => 'upsnap/settings/index',
+                    Constants::SUBNAV_ITEM_MULTISITE_SETUP['url'] => 'upsnap/settings/multi-site-setup',
+                    'upsnap/settings/bulk-create-monitors' => 'upsnap/settings/bulk-create-monitors',
                     'upsnap/monitors/new' => 'upsnap/monitors/new',
                     'upsnap/monitors/edit/<monitorId:[0-9a-fA-F\-]+>' => 'upsnap/monitors/edit',
                     'upsnap/monitors/detail/<monitorId:[0-9a-fA-F\-]+>' => 'upsnap/monitors/detail',

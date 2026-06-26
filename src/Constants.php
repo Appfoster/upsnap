@@ -136,6 +136,13 @@ class Constants
         'template' => 'upsnap/_index'
     ];
 
+    const SUBNAV_ITEM_MULTISITE_SETUP = [
+        'label' => 'Multi-Site Setup',
+        'key' => 'multisite-setup',
+        'url' => 'upsnap/settings/multisite-setup',
+        'template' => 'upsnap/settings/multisite-setup/_index',
+    ];
+
 
     const SUBNAV_ITEM_LIST = [
         self::SUBNAV_ITEM_DASHBOARD['key'] => [

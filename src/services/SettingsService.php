@@ -916,4 +916,87 @@ class SettingsService extends Component
 
         return parse_url(UrlHelper::siteUrl(), PHP_URL_HOST);
     }
+
+    /**
+     * Returns all Craft sites with resolved URLs and metadata for multi-site monitor setup.
+     *
+     * Each entry includes a `skipReason` field: null (usable), 'no_url', 'unresolvable_env', 'invalid_url'.
+     */
+    public function getAllCraftSites(): array
+    {
+        $sites = Craft::$app->getSites()->getAllSites();
+        $result = [];
+
+        foreach ($sites as $site) {
+            $rawBaseUrl = trim($site->baseUrl ?? '');
+            $isEnvVar   = str_starts_with($rawBaseUrl, '$') || str_starts_with($rawBaseUrl, '@');
+
+            $resolvedUrl = null;
+            $skipReason  = null;
+
+            if ($rawBaseUrl === '') {
+                $skipReason = 'no_url';
+            } else {
+                try {
+                    $resolved = $site->getBaseUrl();
+
+                    if (empty($resolved)) {
+                        $skipReason = $isEnvVar ? 'unresolvable_env' : 'no_url';
+                    } elseif (!str_starts_with($resolved, 'http://') && !str_starts_with($resolved, 'https://')) {
+                        // Path-only URL or alias that resolved to a relative path
+                        $skipReason = $isEnvVar ? 'unresolvable_env' : 'invalid_url';
+                    } else {
+                        $parsed = parse_url($resolved);
+                        if (empty($parsed['host'] ?? '')) {
+                            $skipReason = 'invalid_url';
+                        } else {
+                            $resolvedUrl = rtrim($resolved, '/');
+                        }
+                    }
+                } catch (\Throwable $e) {
+                    $skipReason = $isEnvVar ? 'unresolvable_env' : 'invalid_url';
+                }
+            }
+
+            $result[] = [
+                'id'          => $site->id,
+                'name'        => $site->getName(),
+                'handle'      => $site->handle,
+                'baseUrl'     => $rawBaseUrl,
+                'resolvedUrl' => $resolvedUrl,
+                'isEnvVar'    => $isEnvVar,
+                'hasUrl'      => $resolvedUrl !== null,
+                'skipReason'  => $skipReason,
+            ];
+        }
+
+        return $result;
+    }
+
+    /**
+     * Returns normalized (lowercase, no trailing slash) URLs already monitored in UpSnap.
+     * Throws on API failure so the caller can detect and surface the error.
+     */
+    public function getMonitoredUrls(): array
+    {
+        $endpoint = Constants::MICROSERVICE_ENDPOINTS['monitors']['list'];
+
+        $response = Upsnap::$plugin->apiService->get($endpoint);
+
+        if (!is_array($response) || ($response['status'] ?? null) !== 'success') {
+            throw new \RuntimeException($response['message'] ?? 'Failed to fetch existing monitors.');
+        }
+
+        $monitors = $response['data']['monitors'] ?? [];
+        $urls = [];
+
+        foreach ($monitors as $monitor) {
+            $url = trim($monitor['url'] ?? '');
+            if ($url !== '') {
+                $urls[] = strtolower(rtrim($url, '/'));
+            }
+        }
+
+        return $urls;
+    }
 }
