@@ -14,12 +14,14 @@ use craft\helpers\UrlHelper;
 use craft\events\PluginEvent;
 use craft\events\RegisterComponentTypesEvent;
 use craft\events\RegisterUrlRulesEvent;
+use craft\web\twig\variables\CraftVariable;
 use GuzzleHttp\Client;
 
 use appfoster\upsnap\services\ApiService;
 use appfoster\upsnap\services\ExpiryAlertService;
 use appfoster\upsnap\services\HistoryService;
 use appfoster\upsnap\services\SettingsService;
+use appfoster\upsnap\variables\UpsnapVariable;
 use appfoster\upsnap\widgets\MonitorStatusWidget;
 
 /**
@@ -72,6 +74,14 @@ class Upsnap extends Plugin
             'historyService' => HistoryService::class,
             'settingsService' => SettingsService::class
         ]);
+
+        Event::on(
+            CraftVariable::class,
+            CraftVariable::EVENT_INIT,
+            function (\yii\base\Event $event) {
+                $event->sender->set('upsnap', UpsnapVariable::class);
+            }
+        );
 
         Event::on(
             Plugins::class,
