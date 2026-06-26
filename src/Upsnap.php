@@ -5,30 +5,41 @@ namespace appfoster\upsnap;
 use Craft;
 use craft\base\Event;
 use craft\base\Plugin;
+use craft\events\TemplateEvent;
 use craft\web\UrlManager;
+use craft\web\View;
+use craft\services\Dashboard;
 use craft\services\Plugins;
 use craft\helpers\UrlHelper;
 use craft\events\PluginEvent;
+use craft\events\RegisterComponentTypesEvent;
 use craft\events\RegisterUrlRulesEvent;
 use craft\web\twig\variables\CraftVariable;
+use GuzzleHttp\Client;
 
 use appfoster\upsnap\services\ApiService;
+use appfoster\upsnap\services\ExpiryAlertService;
 use appfoster\upsnap\services\HistoryService;
 use appfoster\upsnap\services\SettingsService;
 use appfoster\upsnap\variables\UpsnapVariable;
+use appfoster\upsnap\widgets\MonitorStatusWidget;
 
 /**
  * @property ApiService $apiService
+ * @property ExpiryAlertService $expiryAlertService
  * @property HistoryService $historyService
  * @property SettingsService $settingsService
  */
 class Upsnap extends Plugin
 {
     public static $plugin;
+    private bool $expiryAlertBannerRegistered = false;
 
     public bool $hasCpSection;
     public bool $hasCpSettings;
     public string $schemaVersion;
+
+    private ?string $_apiKeyBeforeUninstall = null;
 
     public function __construct($id, $parent = null, array $config = [])
     {
@@ -59,6 +70,7 @@ class Upsnap extends Plugin
 
         $this->setComponents([
             'apiService' => ApiService::class,
+            'expiryAlertService' => ExpiryAlertService::class,
             'historyService' => HistoryService::class,
             'settingsService' => SettingsService::class
         ]);
@@ -80,29 +92,126 @@ class Upsnap extends Plugin
         );
 
         Event::on(
+            View::class,
+            View::EVENT_BEFORE_RENDER_TEMPLATE,
+            function (TemplateEvent $event) {
+                $this->registerExpiryAlertBanner();
+            }
+        );
+
+        Event::on(
+            Dashboard::class,
+            Dashboard::EVENT_REGISTER_WIDGET_TYPES,
+            function (RegisterComponentTypesEvent $event) {
+                $event->types[] = MonitorStatusWidget::class;
+            }
+        );
+
+        Event::on(
             Plugins::class,
             Plugins::EVENT_AFTER_INSTALL_PLUGIN,
             function (PluginEvent $event) {
-                Craft::info('Upsnap plugin installed', __METHOD__);
-
                 if ($event->plugin === $this) {
-                    // Record installation data
                     try {
-                        $siteUrl = self::getMonitoringUrl();
-                        if ($siteUrl) {
-                            $this->apiService->recordInstallationData($siteUrl);
-                        }
+                        $siteUrl = self::getMonitoringUrl() ?? Craft::$app->getSites()->getPrimarySite()->getBaseUrl();
+                        $currentUser = Craft::$app instanceof \craft\web\Application ? Craft::$app->getUser()->getIdentity() : null;
+                        $email = $currentUser?->email ?? null;
+                        $name = ($currentUser?->fullName ?: $currentUser?->username) ?? null;
+                        $craftInstallId = Craft::$app->getInfo()->id;
+
+                        $this->apiService->recordInstallationData($siteUrl, $email, $name, $craftInstallId);
                     } catch (\Exception $e) {
                         Craft::error('Failed to record installation data: ' . $e->getMessage(), __METHOD__);
                     }
 
                     $request = Craft::$app->getRequest();
                     if ($request->isCpRequest) {
+                        if ($this->settingsService->getApiKey() && $this->settingsService->getMonitorId() === null) {
+                            try {
+                                $sites = $this->settingsService->getAllCraftSites();
+                                $sitesWithUrl = array_filter($sites, fn($s) => $s['hasUrl']);
+                                if (count($sitesWithUrl) > 1) {
+                                    return Craft::$app->getResponse()->redirect(
+                                        UrlHelper::cpUrl(Constants::SUBNAV_ITEM_MULTISITE_SETUP['url'])
+                                    )->send();
+                                }
+                            } catch (\Throwable $e) {
+                                Craft::warning('Could not check sites for multisite redirect on install: ' . $e->getMessage(), __METHOD__);
+                            }
+                        }
                         return $this->redirectToSettings()->send();
                     }
                 }
             }
         );
+    }
+
+    private function registerExpiryAlertBanner(): void
+    {
+        if ($this->expiryAlertBannerRegistered) {
+            return;
+        }
+
+        $this->expiryAlertBannerRegistered = true;
+
+        try {
+            $request = Craft::$app->getRequest();
+
+            if (!$request->getIsCpRequest() || $request->getIsAjax()) {
+                return;
+            }
+
+            $user = Craft::$app->getUser()->getIdentity();
+            if (!$user || !$user->admin) {
+                return;
+            }
+
+            $payload = $this->expiryAlertService->getBannerPayload();
+            if (!$payload) {
+                return;
+            }
+
+            $dismissedHash = Craft::$app->getSession()->get('upsnapExpiryAlertDismissedHash');
+            if ($dismissedHash === ($payload['hash'] ?? null)) {
+                return;
+            }
+
+            \appfoster\upsnap\assetbundles\ExpiryAlertAsset::register(Craft::$app->getView());
+            Craft::$app->getView()->registerJs('window.UpsnapExpiryAlert = ' . json_encode($payload, JSON_HEX_TAG | JSON_HEX_AMP) . ';', View::POS_HEAD);
+        } catch (\Throwable $e) {
+            Craft::error('Failed to register expiry alert banner: ' . $e->getMessage(), __METHOD__);
+        }
+    }
+
+    public function beforeUninstall(): void
+    {
+        parent::beforeUninstall();
+        $this->_apiKeyBeforeUninstall = $this->settingsService->getApiKey();
+    }
+
+    public function afterUninstall(): void
+    {
+        parent::afterUninstall();
+
+        try {
+            $craftInstallId = Craft::$app->getInfo()->id;
+            if (!$craftInstallId) {
+                return;
+            }
+            $headers = ['Accept' => 'application/json', 'X-Requested-From' => 'craft'];
+            if ($this->_apiKeyBeforeUninstall) {
+                $headers['Authorization'] = 'Bearer ' . $this->_apiKeyBeforeUninstall;
+            }
+
+            $url = Constants::getAPIBaseUrl() . '/admin/v1/installation-data/' . rawurlencode((string) $craftInstallId);
+            $client = new Client(['http_errors' => false, 'timeout' => Constants::API_TIMEOUT]);
+            $client->patch($url, [
+                'headers' => $headers,
+                'json' => ['status' => 'uninstalled', 'uninstalled_at' => gmdate('c')],
+            ]);
+        } catch (\Throwable $e) {
+            Craft::error('Failed to record uninstall data: ' . $e->getMessage(), __METHOD__);
+        }
     }
 
     private function registerAfterLoadEvents()
@@ -137,6 +246,8 @@ class Upsnap extends Plugin
 
                     // Setting Route
                     Constants::SUBNAV_ITEM_SETTINGS['url'] => 'upsnap/settings/index',
+                    Constants::SUBNAV_ITEM_MULTISITE_SETUP['url'] => 'upsnap/settings/multi-site-setup',
+                    'upsnap/settings/bulk-create-monitors' => 'upsnap/settings/bulk-create-monitors',
                     'upsnap/monitors/new' => 'upsnap/monitors/new',
                     'upsnap/monitors/edit/<monitorId:[0-9a-fA-F\-]+>' => 'upsnap/monitors/edit',
                     'upsnap/monitors/detail/<monitorId:[0-9a-fA-F\-]+>' => 'upsnap/monitors/detail',
@@ -148,6 +259,9 @@ class Upsnap extends Plugin
                     'upsnap/status-page/edit/<statusPageId:[0-9a-fA-F\-]+>' => 'upsnap/status-page/new',
                     'upsnap/status-page/new' => 'upsnap/status-page/new',
                     'upsnap/regions/list' => 'upsnap/regions/list',
+
+                    // Alert Routes
+                    'upsnap/alerts/dismiss' => 'upsnap/alerts/dismiss',
 
                     // Incidents Routes
                     Constants::SUBNAV_ITEM_INCIDENTS['url'] => 'upsnap/incidents/index',
