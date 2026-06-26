@@ -6,15 +6,18 @@ use Craft;
 use craft\base\Event;
 use craft\base\Plugin;
 use craft\web\UrlManager;
+use craft\services\Dashboard;
 use craft\services\Plugins;
 use craft\helpers\UrlHelper;
 use craft\events\PluginEvent;
+use craft\events\RegisterComponentTypesEvent;
 use craft\events\RegisterUrlRulesEvent;
 use GuzzleHttp\Client;
 
 use appfoster\upsnap\services\ApiService;
 use appfoster\upsnap\services\HistoryService;
 use appfoster\upsnap\services\SettingsService;
+use appfoster\upsnap\widgets\MonitorStatusWidget;
 
 /**
  * @property ApiService $apiService
@@ -69,6 +72,14 @@ class Upsnap extends Plugin
             Plugins::EVENT_AFTER_LOAD_PLUGINS,
             function () {
                 self::registerAfterLoadEvents();
+            }
+        );
+
+        Event::on(
+            Dashboard::class,
+            Dashboard::EVENT_REGISTER_WIDGET_TYPES,
+            function (RegisterComponentTypesEvent $event) {
+                $event->types[] = MonitorStatusWidget::class;
             }
         );
 
