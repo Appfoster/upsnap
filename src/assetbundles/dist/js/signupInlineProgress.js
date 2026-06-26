@@ -17,6 +17,7 @@
 		],
 		sessionToken: null,
 		formData: {},
+		multisiteRedirectUrl: null,
 
 		/**
 		 * Initialize the progress component
@@ -226,6 +227,7 @@
 
 		/**
 		 * Execute Step 3: Create First Monitor
+		 * If multiple Craft sites are detected, the server returns multisite:true and a redirectUrl.
 		 */
 		async executeStep3() {
 			this.updateStepStatus('monitor_created', 'in-progress');
@@ -246,10 +248,16 @@
 				const json = await response.json();
 
 				if (json.status === 'success') {
-					this.updateStepStatus('monitor_created', 'completed');
-					this.updateMessage('✓ First monitor created successfully!');
+					if (json.data && json.data.multisite) {
+						this.multisiteRedirectUrl = json.data.redirectUrl;
+						this.updateStepStatus('monitor_created', 'completed');
+						this.updateMessage('✓ Multiple sites detected! Redirecting to multi-site setup...');
+					} else {
+						this.updateStepStatus('monitor_created', 'completed');
+						this.updateMessage('✓ First monitor created successfully!');
+					}
 				} else {
-					// Monitor creation is optional, don't fail complete flow
+					// Monitor creation is optional, don't fail the complete flow
 					this.updateStepStatus('monitor_created', 'completed');
 					this.updateMessage('✓ Setup complete! Monitor creation is optional.');
 				}
@@ -324,19 +332,22 @@
 				spinner.style.display = 'none';
 			}
 
-			this.updateMessage('🎉 Your account is ready! Redirecting to monitors listing...');
 			const textEl = document.getElementById('upsnap-progress-text');
-			if (textEl) {
-				textEl.style.color = '#4caf50';
-			}
 
-			// Auto-redirect after 2 seconds
-			setTimeout(() => {
-				const redirectedUrl = Craft.getCpUrl('upsnap/settings', {
-					signup: 'completed'
-				});
-				window.location.href = redirectedUrl
-			}, 2000);
+			if (this.multisiteRedirectUrl) {
+				this.updateMessage('🎉 Your account is ready! Redirecting to multi-site setup...');
+				if (textEl) textEl.style.color = '#4caf50';
+				setTimeout(() => {
+					window.location.href = this.multisiteRedirectUrl;
+				}, 2000);
+			} else {
+				this.updateMessage('🎉 Your account is ready! Redirecting to monitors listing...');
+				if (textEl) textEl.style.color = '#4caf50';
+				setTimeout(() => {
+					const redirectedUrl = Craft.getCpUrl('upsnap/settings', { signup: 'completed' });
+					window.location.href = redirectedUrl;
+				}, 2000);
+			}
 		},
 
 		/**

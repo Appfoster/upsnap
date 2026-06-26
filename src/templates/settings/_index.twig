@@ -15,6 +15,11 @@
 
 {% block actionButton %}
 	<div class="flex smallgap">
+		{% if showHealthchecks and isActiveApiToken %}
+			<a href="{{ cpUrl('upsnap/settings/multisite-setup') }}" class="btn">
+				{{ "Re-scan Sites"|t('upsnap') }}
+			</a>
+		{% endif %}
 		<button id="save-button" type="submit" form="settings-form" class="btn submit">
 			{{ "Save"|t('upsnap') }}
 		</button>

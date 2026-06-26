@@ -255,6 +255,99 @@ class MonitorsController extends BaseController
         }
     }
 
+    public function actionWidgetStatus(): Response
+    {
+        $settingsService = Upsnap::$plugin->settingsService;
+
+        if (!$settingsService->getApiKey()) {
+            return $this->asJson([
+                'success' => false,
+                'message' => Craft::t('upsnap', 'Connect UpSnap to view monitor statuses.'),
+            ]);
+        }
+
+        $endpoint = Constants::MICROSERVICE_ENDPOINTS['monitors']['list'];
+
+        try {
+            $response = Upsnap::$plugin->apiService->get($endpoint);
+
+            if (!is_array($response) || ($response['status'] ?? null) !== 'success') {
+                $errorMsg = is_array($response)
+                    ? ($response['message'] ?? Craft::t('upsnap', 'Failed to fetch monitors.'))
+                    : Craft::t('upsnap', 'Failed to fetch monitors.');
+                throw new \Exception($errorMsg);
+            }
+
+            $data = $response['data'] ?? [];
+            $monitors = $data['monitors'] ?? [];
+            if (!is_array($monitors)) {
+                $monitors = [];
+            }
+
+            $billingResponse = Upsnap::$plugin->apiService->get(Constants::MICROSERVICE_ENDPOINTS['billing']['status']);
+            $planName = (is_array($billingResponse) && ($billingResponse['status'] ?? null) === 'success')
+                ? strtolower((string)($billingResponse['data']['plan_name'] ?? 'free'))
+                : 'free';
+            $isFreePlan = in_array($planName, ['free', 'trial'], true);
+
+            if ($isFreePlan) {
+                return $this->asJson([
+                    'success' => true,
+                    'data' => ['isFreePlan' => true],
+                ]);
+            }
+
+            $uptimeMap = [];
+            try {
+                $statsRes = Upsnap::$plugin->apiService->get(
+                    Constants::MICROSERVICE_ENDPOINTS['monitors']['monitors_stats'],
+                    ['uptime_stats_time_frames' => 'day,week,month']
+                );
+                if (is_array($statsRes) && ($statsRes['status'] ?? null) === 'success') {
+                    foreach ($statsRes['data']['uptime_stats'] ?? [] as $entry) {
+                        $id = (string)($entry['monitor_id'] ?? '');
+                        if ($id === '') continue;
+                        $periods = [];
+                        foreach (['day', 'week', 'month'] as $period) {
+                            $stats = $entry['stats'][$period] ?? null;
+                            if (!is_array($stats)) continue;
+                            $periods[$period] = [
+                                'uptime'    => isset($stats['uptime_percentage']) ? round((float)$stats['uptime_percentage'], 1) : null,
+                                'incidents' => isset($stats['incident_count']) ? (int)$stats['incident_count'] : null,
+                            ];
+                        }
+                        if (!empty($periods)) {
+                            $uptimeMap[$id] = $periods;
+                        }
+                    }
+                }
+            } catch (\Throwable $e) {
+                Craft::warning("Widget uptime stats fetch failed: {$e->getMessage()}", __METHOD__);
+            }
+
+            return $this->asJson([
+                'success' => true,
+                'message' => Craft::t('upsnap', 'Monitor statuses fetched successfully.'),
+                'data' => [
+                    'monitors' => array_map(
+                        fn($m) => $this->formatMonitorForWidget($m, $uptimeMap),
+                        $visibleMonitors
+                    ),
+                    'total' => count($monitors),
+                    'isFreePlan' => $isFreePlan,
+                    'subscriptionType' => $planName,
+                ],
+            ]);
+        } catch (\Throwable $e) {
+            Craft::error("Widget monitor status fetch failed: {$e->getMessage()}", __METHOD__);
+
+            return $this->asJson([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ]);
+        }
+    }
+
     /**
      * Delete a monitor.
      *
@@ -552,6 +645,85 @@ class MonitorsController extends BaseController
         }
 
         return $formatted;
+    }
+
+    private function formatMonitorForWidget(array $monitor, array $uptimeMap = []): array
+    {
+        $statusData = $this->resolveWidgetStatusData($monitor);
+        $name = trim((string)($monitor['name'] ?? ''));
+        $url = trim((string)($monitor['url'] ?? $monitor['config']['meta']['url'] ?? ''));
+        $isEnabled = (bool)($monitor['is_enabled'] ?? true);
+
+        if (!$isEnabled) {
+            $status = 'paused';
+        } elseif ($monitor['is_under_maintenance'] ?? false) {
+            $status = 'maintenance';
+        } else {
+            $status = $statusData['status'];
+        }
+
+        $regionName = null;
+        foreach (($monitor['regions'] ?? []) as $region) {
+            if (is_array($region) && ($region['is_primary'] ?? false)) {
+                $regionName = (string)($region['name'] ?? '');
+                break;
+            }
+        }
+
+        $monitorId = (string)($monitor['id'] ?? '');
+        $statsByPeriod = $uptimeMap[$monitorId] ?? [];
+
+        return [
+            'id' => $monitorId,
+            'name' => $name !== '' ? $name : ($url !== '' ? $url : Craft::t('upsnap', 'Unnamed monitor')),
+            'url' => $url,
+            'serviceType' => (string)($monitor['service_type'] ?? 'website'),
+            'status' => $status,
+            'lastCheckedAt' => $statusData['lastCheckedAt'],
+            'regionName' => $regionName,
+            'statsByPeriod' => $statsByPeriod,
+        ];
+    }
+
+    private function resolveWidgetStatusData(array $monitor): array
+    {
+        $status = $monitor['last_status'] ?? $monitor['status'] ?? null;
+        $lastCheckedAt = $monitor['last_checked_at'] ?? $monitor['last_check_at'] ?? $monitor['lastCheckedAt'] ?? null;
+
+        if (!$status && isset($monitor['service_last_checks']) && is_array($monitor['service_last_checks'])) {
+            $primaryRegionId = null;
+            foreach (($monitor['regions'] ?? []) as $region) {
+                if (is_array($region) && ($region['is_primary'] ?? false)) {
+                    $primaryRegionId = (string)($region['id'] ?? '');
+                    break;
+                }
+            }
+
+            $regionChecks = $primaryRegionId && isset($monitor['service_last_checks'][$primaryRegionId])
+                ? $monitor['service_last_checks'][$primaryRegionId]
+                : reset($monitor['service_last_checks']);
+
+            if (is_array($regionChecks)) {
+                $serviceType = $monitor['service_type'] ?? 'website';
+                $serviceKey = $serviceType === 'port' ? 'port_check' : ($serviceType === 'keyword' ? 'keyword' : 'uptime');
+                $serviceCheck = $regionChecks[$serviceKey] ?? reset($regionChecks);
+
+                if (is_array($serviceCheck)) {
+                    $status = $serviceCheck['last_status'] ?? $status;
+                    $lastCheckedAt = $serviceCheck['last_checked_at'] ?? $serviceCheck['last_check_at'] ?? $lastCheckedAt;
+                }
+            }
+        }
+
+        $status = strtolower((string)$status);
+        if (!in_array($status, ['up', 'down', 'degraded'], true)) {
+            $status = 'unknown';
+        }
+
+        return [
+            'status' => $status,
+            'lastCheckedAt' => $lastCheckedAt,
+        ];
     }
 
 
