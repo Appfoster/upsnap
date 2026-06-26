@@ -136,6 +136,13 @@ class Constants
         'template' => 'upsnap/_index'
     ];
 
+    const SUBNAV_ITEM_MULTISITE_SETUP = [
+        'label' => 'Multi-Site Setup',
+        'key' => 'multisite-setup',
+        'url' => 'upsnap/settings/multisite-setup',
+        'template' => 'upsnap/settings/multisite-setup/_index',
+    ];
+
 
     const SUBNAV_ITEM_LIST = [
         self::SUBNAV_ITEM_DASHBOARD['key'] => [
@@ -205,6 +212,7 @@ class Constants
                 'update' => 'user/integrations',
             ],
             'histogram' => 'user/monitors/{monitorId}/histogram',
+            'histogram_bulk' => 'user/monitors/histogram',
             'response_time' => 'user/monitors/{monitorId}/response-time',
             'uptime_stats' => 'user/monitors/{monitorId}/uptime-stats',
             'incidents'        => 'user/monitors/incidents',
@@ -233,6 +241,9 @@ class Constants
             'register' => 'user/register',
             'login' => 'user/login'
         ],
+        'billing' => [
+            'status' => 'billing/status',
+        ],
         'regions' => [
             'list' => 'regions'
         ],
@@ -243,7 +254,10 @@ class Constants
         'tokens' => [
             'list' => 'tokens',
             'generate' => 'tokens/generate',
-        ]
+        ],
+        'billing' => [
+            'status' => 'billing/status',
+        ],
     ];
 
     public const LIGHTHOUSE_STRATEGY = [

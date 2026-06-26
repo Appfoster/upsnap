@@ -534,6 +534,12 @@ Craft.Upsnap.Signup = {
 		function handleLoginSuccess(data) {
 			Craft.cp.displayNotice(data.message || i18n.loginSuccess || "Login successful!");
 
+			// Multiple Craft sites detected and no primary monitor set - go straight to multisite setup
+			if (data.requiresMultisiteSetup && data.redirectUrl) {
+				window.location.href = data.redirectUrl;
+				return;
+			}
+
 			var requirement = data && data.primaryMonitorRequirement ? data.primaryMonitorRequirement : null;
 			var monitorOptions = requirement && Array.isArray(requirement.monitorOptions)
 				? requirement.monitorOptions

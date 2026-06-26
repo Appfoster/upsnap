@@ -140,21 +140,39 @@ class ApiService extends Component
     /**
      * Record installation data
      */
-    public function recordInstallationData(string $siteUrl): ?array
+    public function recordInstallationData(string $siteUrl, ?string $email = null, ?string $name = null, ?string $craftInstallId = null): ?array
     {
         $body = [
             'platform' => 'craft',
             'details' => [
-                'site_url' => $siteUrl
+                'site_url' => $siteUrl,
+                'email' => $email,
+                'name' => $name,
+                'install_id' => $craftInstallId,
+                'plugin_version' => Upsnap::getInstance()->getVersion(),
+                'craft_version' => Craft::$app->getVersion(),
             ]
         ];
 
         try {
-            return $this->post('installation-data', $body);
-        } catch (RequestException $e) {
+            return $this->adminPost('installation-data', $body);
+        } catch (\Throwable $e) {
             Craft::error("Failed to record installation data: " . $e->getMessage(), __METHOD__);
             return null;
         }
+    }
+
+    private function adminPost(string $path, array $body): ?array
+    {
+        $url = Constants::getAPIBaseUrl() . '/admin/v1/' . $path;
+        $response = $this->client->post($url, [
+            'headers' => [
+                'Accept' => 'application/json',
+                'X-Requested-From' => 'craft',
+            ],
+            'json' => $body,
+        ]);
+        return json_decode((string) $response->getBody(), true);
     }
 
     /**
