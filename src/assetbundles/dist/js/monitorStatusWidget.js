@@ -15,10 +15,17 @@
 		const abs = d.toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
 		const diff = Date.now() - d.getTime();
 		let rel;
-		if (diff < 60000)         rel = "just now";
-		else if (diff < 3600000)  rel = `${Math.floor(diff / 60000)} min ago`;
-		else if (diff < 86400000) rel = `${Math.floor(diff / 3600000)} hr ago`;
-		else                      rel = `${Math.floor(diff / 86400000)} d ago`;
+		if (diff < 60000)           rel = "just now";
+		else if (diff < 3600000)    rel = `${Math.floor(diff / 60000)} min ago`;
+		else if (diff < 86400000)   rel = `${Math.floor(diff / 3600000)} hr ago`;
+		else if (diff < 7 * 86400000) rel = `${Math.floor(diff / 86400000)} d ago`;
+		else {
+			const now = new Date();
+			const opts = d.getFullYear() === now.getFullYear()
+				? { month: "short", day: "numeric" }
+				: { month: "short", day: "numeric", year: "2-digit" };
+			rel = d.toLocaleDateString(undefined, opts);
+		}
 		return { rel, abs };
 	};
 
@@ -58,7 +65,7 @@
 			.map(([v, l]) => `<option value="${v}"${current === v ? " selected" : ""}>${l}</option>`)
 			.join("");
 
-	const STATUS_SORT_PRIORITY = { down: 0, degraded: 0, up: 1, maintenance: 2, paused: 3 };
+	const STATUS_SORT_PRIORITY = { down: 0, degraded: 0, up: 1, paused: 2, maintenance: 3 };
 
 	const applySort = (monitors, sort, period) => {
 		const arr = [...monitors];
@@ -185,8 +192,8 @@
 			{ key: "all",         label: "All",    dotCls: "",           count: counts.all },
 			{ key: "up",          label: "Up",     dotCls: "is-up",      count: counts.up },
 			{ key: "down",        label: "Down",   dotCls: "is-down",    count: counts.down },
-			{ key: "maintenance", label: "Maint.", dotCls: "is-maint",   count: counts.maintenance },
 			{ key: "paused",      label: "Paused", dotCls: "is-paused",  count: counts.paused },
+			{ key: "maintenance", label: "Maint.", dotCls: "is-maint",   count: counts.maintenance },
 		].filter((c) => c.key === "all" || c.key === "down" || c.count > 0);
 
 		const visible = applySort(applyFilter(monitors, filter, search), sort, uptimePeriod);
