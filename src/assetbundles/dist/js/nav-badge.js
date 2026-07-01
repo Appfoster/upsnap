@@ -34,7 +34,9 @@
 			}
 			badge.className = 'upsnap-nav-badge';
 			badge.textContent = down;
-			badge.setAttribute('aria-label', down + ' monitor' + (down === 1 ? '' : 's') + ' down');
+			var badgeLabel = down + ' monitor' + (down === 1 ? '' : 's') + ' down';
+			badge.setAttribute('aria-label', badgeLabel);
+			badge.title = badgeLabel + '\nclick to view';
 		} else {
 			if (badge) badge.remove();
 		}

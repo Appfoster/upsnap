@@ -1013,7 +1013,7 @@ class SettingsService extends Component
         $urls = [];
 
         foreach ($monitors as $monitor) {
-            $url = trim($monitor['url'] ?? '');
+            $url = trim($monitor['url'] ?? $monitor['config']['meta']['url'] ?? '');
             if ($url !== '') {
                 $urls[] = strtolower(rtrim($url, '/'));
             }

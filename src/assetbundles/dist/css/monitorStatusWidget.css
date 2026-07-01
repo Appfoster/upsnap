@@ -85,6 +85,12 @@
 	font-size: 11px;
 }
 
+.usw-chip.is-zero {
+	opacity: 0.4;
+	cursor: default;
+	pointer-events: none;
+}
+
 /* ── Controls row ── */
 .usw-controls {
 	display: flex;

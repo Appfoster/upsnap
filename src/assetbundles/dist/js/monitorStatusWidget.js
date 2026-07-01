@@ -9,10 +9,24 @@
 			({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
 
 	const formatDate = (v) => {
-		if (!v) return "";
+		if (!v) return { rel: "", abs: "" };
 		const d = new Date(v);
-		return Number.isNaN(d.getTime()) ? ""
-			: d.toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+		if (Number.isNaN(d.getTime())) return { rel: "", abs: "" };
+		const abs = d.toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+		const diff = Date.now() - d.getTime();
+		let rel;
+		if (diff < 60000)           rel = "just now";
+		else if (diff < 3600000)    rel = `${Math.floor(diff / 60000)} min ago`;
+		else if (diff < 86400000)   rel = `${Math.floor(diff / 3600000)} hr ago`;
+		else if (diff < 7 * 86400000) rel = `${Math.floor(diff / 86400000)} d ago`;
+		else {
+			const now = new Date();
+			const opts = d.getFullYear() === now.getFullYear()
+				? { month: "short", day: "numeric" }
+				: { month: "short", day: "numeric", year: "2-digit" };
+			rel = d.toLocaleDateString(undefined, opts);
+		}
+		return { rel, abs };
 	};
 
 	const STATUS_FILTER = {
@@ -51,8 +65,17 @@
 			.map(([v, l]) => `<option value="${v}"${current === v ? " selected" : ""}>${l}</option>`)
 			.join("");
 
+	const STATUS_SORT_PRIORITY = { down: 0, degraded: 0, up: 1, paused: 2, maintenance: 3 };
+
 	const applySort = (monitors, sort, period) => {
 		const arr = [...monitors];
+		if (sort === "status") {
+			return arr.sort((a, b) => {
+				const pa = STATUS_SORT_PRIORITY[a.status] ?? 4;
+				const pb = STATUS_SORT_PRIORITY[b.status] ?? 4;
+				return pa !== pb ? pa - pb : a.name.localeCompare(b.name);
+			});
+		}
 		if (sort === "uptime") {
 			return arr.sort((a, b) =>
 				(b.statsByPeriod?.[period]?.uptime ?? -1) - (a.statsByPeriod?.[period]?.uptime ?? -1));
@@ -82,14 +105,14 @@
 		const incPill = incCount
 			? `<span class="usw-incident-pill">${incCount}<span class="usw-badge__label"> incident${incCount === 1 ? "" : "s"}</span></span>`
 			: "";
-		const dateFmt = formatDate(monitor.lastCheckedAt);
+		const { rel: dateFmt, abs: dateAbs } = formatDate(monitor.lastCheckedAt);
 
 		return `<a class="usw-row ${cls}" href="${esc(href)}">
 			<span class="usw-row__dot-wrap"><span class="usw-row__dot ${cls}"></span></span>
 			<span class="usw-row__body">
 				<span class="usw-row__line1">
 					<span class="usw-row__name">${esc(monitor.name)}</span>
-					${dateFmt ? `<span class="usw-row__time">${esc(dateFmt)}</span>` : ""}
+					${dateFmt ? `<span class="usw-row__time" title="${esc(dateAbs)}">${esc(dateFmt)}</span>` : ""}
 					${incPill}
 					${uptimeBadgeHtml(monitor, uptimePeriod)}
 				</span>
@@ -133,7 +156,7 @@
 		const { dashboardUrl, monitorsUrl, settingsUrl, upgradeUrl } = widget.dataset;
 
 		if (!payload?.success) {
-			state.innerHTML = `<div class="usw-empty"><p>${esc(payload?.message ?? "Unable to load monitor statuses.")}</p><a class="btn small" href="${esc(settingsUrl)}">Open Settings</a></div>`;
+			state.innerHTML = `<div class="usw-empty"><p>Add your API key in Settings to start monitoring your sites.</p><a class="btn small submit" href="${esc(settingsUrl)}">Open Settings</a></div>`;
 			return;
 		}
 
@@ -155,7 +178,7 @@
 		widget._monitorsData  = { monitors, data, dashboardUrl };
 		widget._filter        ??= "all";
 		widget._search        ??= "";
-		widget._sort          ??= "name";
+		widget._sort          ??= "status";
 
 		const uptimePeriod    = widget.querySelector("[data-upsnap-period]")?.value ?? "day";
 		const incidentsPeriod = widget.querySelector("[data-upsnap-incidents-period]")?.value ?? "day";
@@ -169,15 +192,15 @@
 			{ key: "all",         label: "All",    dotCls: "",           count: counts.all },
 			{ key: "up",          label: "Up",     dotCls: "is-up",      count: counts.up },
 			{ key: "down",        label: "Down",   dotCls: "is-down",    count: counts.down },
-			{ key: "maintenance", label: "Maint.", dotCls: "is-maint",   count: counts.maintenance },
 			{ key: "paused",      label: "Paused", dotCls: "is-paused",  count: counts.paused },
-		].filter((c) => c.key === "all" || c.count > 0);
+			{ key: "maintenance", label: "Maint.", dotCls: "is-maint",   count: counts.maintenance },
+		].filter((c) => c.key === "all" || c.key === "down" || c.count > 0);
 
 		const visible = applySort(applyFilter(monitors, filter, search), sort, uptimePeriod);
 
 		state.innerHTML = `
 			<div class="usw-chips">
-				${chips.map((c) => `<button class="usw-chip${filter === c.key ? " is-active" : ""}" data-usw-filter="${c.key}"><span class="usw-chip__dot${c.dotCls ? " " + c.dotCls : ""}"></span><span class="usw-chip__label">${esc(c.label)}</span><span class="usw-chip__count">${c.count}</span></button>`).join("")}
+				${chips.map((c) => `<button class="usw-chip${filter === c.key ? " is-active" : ""}${c.count === 0 ? " is-zero" : ""}" data-usw-filter="${c.key}"${c.count === 0 ? ' tabindex="-1"' : ""}><span class="usw-chip__dot${c.dotCls ? " " + c.dotCls : ""}"></span><span class="usw-chip__label">${esc(c.label)}</span><span class="usw-chip__count">${c.count}</span></button>`).join("")}
 			</div>
 			<div class="usw-controls">
 				<div class="usw-search">
@@ -185,6 +208,7 @@
 					<input class="usw-search__input" type="search" placeholder="Search monitors…" value="${esc(search)}" aria-label="Search monitors">
 				</div>
 				<div class="usw-sort">
+					<button class="usw-sort__btn${sort === "status" ? " is-active" : ""}" data-usw-sort="status">Status</button>
 					<button class="usw-sort__btn${sort === "name" ? " is-active" : ""}" data-usw-sort="name">Name</button>
 					<button class="usw-sort__btn${sort === "uptime" ? " is-active" : ""}" data-usw-sort="uptime">Uptime</button>
 					<button class="usw-sort__btn${sort === "incidents" ? " is-active" : ""}" data-usw-sort="incidents">Incidents</button>
