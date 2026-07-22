@@ -1,15 +1,15 @@
 <?php
 namespace appfoster\upsnap\assetbundles;
 
+use CraftCms\Cms\View\HtmlStack;
+
 class DashboardAsset extends BaseAsset
 {
-    public function init()
+    public function register(HtmlStack $htmlStack): void
     {
-        // Include global assets from parent
-        parent::init();
+        parent::register($htmlStack);
 
-        // Add dashboard-specific assets
-        $this->css[] = 'css/dashboard.css';
-        $this->js[] = 'js/dashboard.js';
+        $htmlStack->cssFile(asset('vendor/appfoster/upsnap/dist/css/dashboard.css'));
+        $htmlStack->jsFile(asset('vendor/appfoster/upsnap/dist/js/dashboard.js'));
     }
 }

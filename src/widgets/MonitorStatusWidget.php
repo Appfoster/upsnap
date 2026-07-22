@@ -1,35 +1,42 @@
 <?php
-
+ 
 namespace appfoster\upsnap\widgets;
-
-use Craft;
-use craft\base\Widget;
-use craft\helpers\UrlHelper;
+ 
+use CraftCms\Cms\Dashboard\Widgets\Widget;
+use CraftCms\Cms\Support\Url;
+use CraftCms\Cms\View\LegacyAssets\InternalAssetRegistry;
+use CraftCms\Cms\View\TemplateMode;
 use appfoster\upsnap\Constants;
 use appfoster\upsnap\assetbundles\MonitorStatusWidgetAsset;
-
+use Override;
+use function CraftCms\Cms\t;
+use function CraftCms\Cms\template;
+ 
 class MonitorStatusWidget extends Widget
 {
+    #[Override]
     public static function displayName(): string
     {
-        return Craft::t('upsnap', 'UpSnap Monitor Status');
+        return t('upsnap', 'UpSnap Monitor Status');
     }
-
+ 
+    #[Override]
     public static function icon(): ?string
     {
-        return Craft::getAlias('@upsnap/icon.svg');
+        return dirname(__DIR__) . '/icon.svg';
     }
-
+ 
+    #[Override]
     public function getBodyHtml(): ?string
     {
-        MonitorStatusWidgetAsset::register(Craft::$app->getView());
-
-        return Craft::$app->getView()->renderTemplate('upsnap/_widgets/monitor-status', [
-            'endpoint' => UrlHelper::actionUrl('upsnap/monitors/widget-status'),
-            'dashboardUrl' => UrlHelper::cpUrl('upsnap'),
-            'monitorsUrl' => UrlHelper::cpUrl('upsnap/monitors'),
-            'settingsUrl' => UrlHelper::cpUrl('upsnap/settings'),
+        app(InternalAssetRegistry::class)->register(MonitorStatusWidgetAsset::class);
+ 
+        return template('upsnap/_widgets/monitor-status', [
+            'endpoint' => Url::actionUrl('upsnap/monitors/widget-status'),
+            'dashboardUrl' => Url::cpUrl('upsnap'),
+            'monitorsUrl' => Url::cpUrl('upsnap/monitors'),
+            'settingsUrl' => Url::cpUrl('upsnap/settings'),
             'upgradeUrl' => Constants::getWebAppUrl('webapp') . '/billing',
-        ]);
+        ], templateMode: TemplateMode::Cp);
     }
 }

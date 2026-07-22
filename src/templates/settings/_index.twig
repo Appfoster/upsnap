@@ -38,7 +38,7 @@
 {% set statusColorClass = statusColorMap[apiTokenStatus]|default('pill--grey') %}
 
 
-{% set _logoBaseUrl = craft.app.assetManager.getPublishedUrl('@upsnapRoot/assets/images/logo', true) %}
+{% set _logoBaseUrl = asset('vendor/appfoster/upsnap/assets/images/logo') %}
 
 {% block content %}
 	{# inject server values for JS to consume - put this before monitor.js is loaded #}
@@ -253,7 +253,7 @@
 						type: 'text',
 						value: settings.apiKey ?? '',
 						placeholder: 'XXXX-XXXX-XXXX-XXXX',
-						errors: settings.getErrors('apiKey') ?? false
+						errors: settings.errors().get('apiKey') ?? false
 					}) }}
 					{% if showHealthchecks %}
 						<span class="api-pill {{ statusColorClass }}">

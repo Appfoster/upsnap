@@ -2,12 +2,12 @@
 
 namespace appfoster\upsnap\services;
 
-use Craft;
-use craft\base\Component;
 use appfoster\upsnap\Constants;
 use appfoster\upsnap\Upsnap;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 
-class ExpiryAlertService extends Component
+class ExpiryAlertService
 {
     private const CACHE_KEY = 'upsnap_expiry_alerts';
     private const CACHE_DURATION = 3600;
@@ -30,14 +30,14 @@ class ExpiryAlertService extends Component
         }
 
         $cacheKey = $this->getCacheKey($apiKey);
-        $cached = Craft::$app->getCache()->get($cacheKey);
+        $cached = Cache::get($cacheKey, false);
         if ($cached !== false) {
             return $cached === '__null__' ? null : $cached;
         }
 
         $payload = $this->fetchAndBuildPayload();
 
-        Craft::$app->getCache()->set(
+        Cache::put(
             $cacheKey,
             $payload ?? '__null__',
             self::CACHE_DURATION
@@ -50,7 +50,7 @@ class ExpiryAlertService extends Component
     {
         $apiKey = Upsnap::getInstance()->settingsService->getApiKey();
         if ($apiKey) {
-            Craft::$app->getCache()->delete($this->getCacheKey($apiKey));
+            Cache::forget($this->getCacheKey($apiKey));
         }
     }
 
@@ -110,7 +110,7 @@ class ExpiryAlertService extends Component
                 'dashboardUrl' => Constants::getWebAppUrl('webapp'),
             ];
         } catch (\Throwable $e) {
-            Craft::error('ExpiryAlertService fetch failed: ' . $e->getMessage(), __METHOD__);
+            Log::error('ExpiryAlertService fetch failed: ' . $e->getMessage());
             return null;
         }
     }

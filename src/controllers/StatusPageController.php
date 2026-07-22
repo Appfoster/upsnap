@@ -1,32 +1,33 @@
 <?php
-
+ 
 namespace appfoster\upsnap\controllers;
-
+ 
 use appfoster\upsnap\assetbundles\StatusPageAsset;
 use appfoster\upsnap\Constants;
 use appfoster\upsnap\services\HealthCheckService;
 use appfoster\upsnap\Upsnap;
 use GuzzleHttp\Psr7\Utils;
-use yii\web\NotFoundHttpException;
-use yii\web\UploadedFile;
-
-use yii\web\Response;
-use Craft;
-
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
+use Symfony\Component\HttpFoundation\Response;
+use CraftCms\Cms\View\LegacyAssets\InternalAssetRegistry;
+use Illuminate\Support\Facades\Log;
+use function CraftCms\Cms\t;
+ 
 class StatusPageController extends BaseController
 {
     public $service;
-    public function __construct($id, $module = null)
+ 
+    public function __construct()
     {
-        parent::__construct($id, $module);
-        StatusPageAsset::register($this->view);
+        parent::__construct();
+        app(InternalAssetRegistry::class)->register(StatusPageAsset::class);
         $this->service = new HealthCheckService($this);
     }
-
+ 
     /**
      * Dashboard index
      */
-    public function actionIndex(): \yii\web\Response
+    public function index(): Response
     {
         $settingsService = Upsnap::$plugin->settingsService;
         $settingsService->validateApiKey();
@@ -34,7 +35,7 @@ class StatusPageController extends BaseController
         if($settingsService->getApiKey()) {
             $userDetails = $settingsService->getUserDetails();
         }
-
+ 
         $variables = [
             'success' => true,
             'title' => Constants::SUBNAV_ITEM_STATUS_PAGE['label'],
@@ -47,46 +48,44 @@ class StatusPageController extends BaseController
             'userDetails' => $userDetails,
             'defaultCustomization' => Constants::getDefaultCustomization(),
         ];
-
+ 
         return $this->renderTemplate('upsnap/status-page/_index', $variables);
     }
-
-    public function actionList(): Response
+ 
+    public function list(): Response
     {
         $endpoint = Constants::MICROSERVICE_ENDPOINTS['monitors']['status-page']['list'];
-
+ 
         try {
-            $response = [];
             $response = Upsnap::$plugin->apiService->get($endpoint);
-
+ 
             // Ensure $response is an array before accessing its keys
             if (!is_array($response) || !isset($response['status'])) {
-                throw new \Exception(Craft::t('upsnap', 'Something went wrong while fetching status page. Please try again.'));
+                throw new \Exception(t('Something went wrong while fetching status page. Please try again.', [], 'upsnap'));
             }
-
+ 
             if (!isset($response['status']) || $response['status'] !== 'success') {
-                $errorMsg = $response['message'] ?? Craft::t('upsnap', 'Failed to fetch status page.');
-
+                $errorMsg = $response['message'] ?? t('Failed to fetch status page.', [], 'upsnap');
+ 
                 throw new \Exception($errorMsg);
             }
-
+ 
             return $this->asJson([
                 'success' => true,
-                'message' => Craft::t('upsnap', 'Status page fetched successfully.'),
+                'message' => t('Status page fetched successfully.', [], 'upsnap'),
                 'data' => $response['data'] ?? [],
             ]);
         } catch (\Throwable $e) {
-            Craft::error("Status page fetch failed: {$e->getMessage()}", __METHOD__);
+            Log::error("Status page fetch failed: {$e->getMessage()}");
             return $this->asJson([
                 'success' => false,
                 'message' => $e->getMessage(),
             ]);
         }
     }
-
-    public function actionNew(?string $statusPageId = null): Response
+ 
+    public function new(?string $statusPageId = null): Response
     {
-        $this->requireCpRequest();
         $service = Upsnap::getInstance()->settingsService;
         $userDetails = null;
         if ($service->getApiKey()) {
@@ -98,23 +97,23 @@ class StatusPageController extends BaseController
             'userDetails' => $userDetails,
             'defaultCustomization' => Constants::getDefaultCustomization(),
         ];
-
+ 
         if ($statusPageId) {
             // EDIT MODE
             $endpoint = Constants::MICROSERVICE_ENDPOINTS['monitors']['status-page']['detail'] . '/' . $statusPageId;
-
+ 
             $response = Upsnap::$plugin->apiService->get($endpoint);
-
+ 
             if (!isset($response['status']) || $response['status'] !== 'success') {
                 throw new \Exception("Unable to fetch status page details.");
             }
-
+ 
             $statusPage = $response['data']['status_page'];
-
+ 
             if (!$statusPage) {
                 throw new NotFoundHttpException("Status page not found");
             }
-
+ 
             $variables['mode'] = 'edit';
             $variables['statusPage'] = $statusPage;
             $variables['title'] = "Edit Status Page";
@@ -124,38 +123,36 @@ class StatusPageController extends BaseController
             $variables['statusPage'] = null;
             $variables['title'] = "Add Status Page";
         }
-
+ 
         return $this->renderTemplate('upsnap/status-page/new/_index', $variables);
     }
-
-    public function actionSave(): Response
+ 
+    public function save(): Response
     {
-        $this->requirePostRequest();
-        $request = Craft::$app->getRequest();
-
         try {
-            $payload = $request->getRequiredBodyParam('payload');
-
+            $payload = request()->input('payload');
+            abort_unless($payload, 400, 'Missing payload');
+ 
             $payloadArray = json_decode($payload, true);
             if (!is_array($payloadArray)) {
                 throw new \Exception('Invalid JSON payload.');
             }
-
+ 
             $statusPageId = $payloadArray['statusPageId'] ?? null;
             unset($payloadArray['statusPageId']);
-
+ 
             $endpoint = $statusPageId
                 ? Constants::MICROSERVICE_ENDPOINTS['monitors']['status-page']['update'] . '/' . $statusPageId
                 : Constants::MICROSERVICE_ENDPOINTS['monitors']['status-page']['create'];
-
+ 
             $response = $statusPageId
                 ? Upsnap::$plugin->apiService->put($endpoint, $payloadArray)
                 : Upsnap::$plugin->apiService->post($endpoint, $payloadArray);
-
+ 
             if (($response['status'] ?? null) !== 'success') {
                 throw new \Exception($response['message'] ?? 'Failed to save status page.');
             }
-
+ 
             return $this->asJson([
                 'success' => true,
                 'message' => $statusPageId
@@ -164,49 +161,47 @@ class StatusPageController extends BaseController
                 'data' => $response['data']['status_page'] ?? [],
             ]);
         } catch (\Throwable $e) {
-            Craft::error("Status page save failed: {$e->getMessage()}", __METHOD__);
-
+            Log::error("Status page save failed: {$e->getMessage()}");
+ 
             return $this->asJson([
                 'success' => false,
                 'message' => $e->getMessage(),
             ]);
         }
     }
-
-    public function actionUpload(): Response
+ 
+    public function upload(): Response
     {
-        $this->requirePostRequest();
-        $request = Craft::$app->getRequest();
-
         try {
-            $statusPageId = $request->getRequiredBodyParam('statusPageId');
-            $type = $request->getRequiredBodyParam('type');
-
+            $statusPageId = request()->input('statusPageId');
+            $type = request()->input('type');
+            abort_unless($statusPageId && $type, 400, 'Missing statusPageId or type');
+ 
             if (!in_array($type, ['logo', 'favicon'], true)) {
-                throw new \Exception(Craft::t('upsnap', 'Invalid upload type.'));
+                throw new \Exception(t('Invalid upload type.', [], 'upsnap'));
             }
-
-            $file = UploadedFile::getInstanceByName('file');
+ 
+            $file = request()->file('file');
             if (!$file) {
-                throw new \Exception(Craft::t('upsnap', 'File is required.'));
+                throw new \Exception(t('File is required.', [], 'upsnap'));
             }
-
+ 
             $allowedExtensions = $type === 'logo'
                 ? ['jpg', 'jpeg', 'png']
                 : ['png', 'gif', 'ico'];
-
-            $fileExtension = strtolower((string) $file->extension);
+ 
+            $fileExtension = strtolower((string) $file->getClientOriginalExtension());
             if (!in_array($fileExtension, $allowedExtensions, true)) {
-                throw new \Exception(Craft::t('upsnap', 'Invalid file format.'));
+                throw new \Exception(t('Invalid file format.', [], 'upsnap'));
             }
-
-            if ((int) $file->size > 150 * 1024) {
-                throw new \Exception(Craft::t('upsnap', 'File must be 150 KB or smaller.'));
+ 
+            if ($file->getSize() > 150 * 1024) {
+                throw new \Exception(t('File must be 150 KB or smaller.', [], 'upsnap'));
             }
-
+ 
             $endpointTemplate = Constants::MICROSERVICE_ENDPOINTS['monitors']['status-page']['upload'];
             $endpoint = str_replace('{id}', (string) $statusPageId, $endpointTemplate);
-
+ 
             $multipart = [
                 [
                     'name' => 'type',
@@ -214,137 +209,129 @@ class StatusPageController extends BaseController
                 ],
                 [
                     'name' => 'file',
-                    'contents' => Utils::tryFopen($file->tempName, 'r'),
-                    'filename' => $file->name,
+                    'contents' => Utils::tryFopen($file->getRealPath(), 'r'),
+                    'filename' => $file->getClientOriginalName(),
                     'headers' => [
-                        'Content-Type' => $file->type ?: 'application/octet-stream',
+                        'Content-Type' => $file->getClientMimeType() ?: 'application/octet-stream',
                     ],
                 ],
             ];
-
+ 
             $response = Upsnap::$plugin->apiService->postMultipart($endpoint, $multipart);
-
+ 
             if (($response['status'] ?? null) !== 'success') {
-                throw new \Exception($response['message'] ?? Craft::t('upsnap', 'Failed to upload file.'));
+                throw new \Exception($response['message'] ?? t('Failed to upload file.', [], 'upsnap'));
             }
-
+ 
             return $this->asJson([
                 'success' => true,
-                'message' => Craft::t('upsnap', 'File uploaded successfully.'),
+                'message' => t('File uploaded successfully.', [], 'upsnap'),
                 'data' => $response['data'] ?? [],
             ]);
         } catch (\Throwable $e) {
-            Craft::error("Status page upload failed: {$e->getMessage()}", __METHOD__);
-
+            Log::error("Status page upload failed: {$e->getMessage()}");
+ 
             return $this->asJson([
                 'success' => false,
                 'message' => $e->getMessage(),
             ]);
         }
     }
-
-    public function actionAnnouncementsList(): Response
+ 
+    public function announcementsList(): Response
     {
-        $this->requirePostRequest();
-        $request = Craft::$app->getRequest();
-
-        $statusPageId = (string) $request->getBodyParam('statusPageId', '');
+        $statusPageId = (string) request()->input('statusPageId', '');
         if ($statusPageId === '') {
             return $this->asJson([
                 'success' => false,
-                'message' => Craft::t('upsnap', 'Status Page ID is required.'),
+                'message' => t('Status Page ID is required.', [], 'upsnap'),
             ]);
         }
-
+ 
         try {
             $endpoint = Constants::buildStatusPageAnnouncementEndpoint('list', $statusPageId);
             $response = Upsnap::$plugin->apiService->get($endpoint);
-
+ 
             if (($response['status'] ?? null) !== 'success') {
                 throw new \Exception($response['message'] ?? 'Failed to fetch announcements.');
             }
-
+ 
             return $this->asJson([
                 'success' => true,
-                'message' => Craft::t('upsnap', 'Announcements fetched successfully.'),
+                'message' => t('Announcements fetched successfully.', [], 'upsnap'),
                 'data' => [
                     'announcements' => $response['data']['announcements'] ?? [],
                 ],
             ]);
         } catch (\Throwable $e) {
-            Craft::error("Announcements fetch failed: {$e->getMessage()}", __METHOD__);
-
+            Log::error("Announcements fetch failed: {$e->getMessage()}");
+ 
             return $this->asJson([
                 'success' => false,
                 'message' => $e->getMessage(),
             ]);
         }
     }
-
-    public function actionAnnouncementDetail(): Response
+ 
+    public function announcementDetail(): Response
     {
-        $this->requirePostRequest();
-        $request = Craft::$app->getRequest();
-
-        $statusPageId = (string) $request->getBodyParam('statusPageId', '');
-        $announcementId = (string) $request->getBodyParam('announcementId', '');
-
+        $statusPageId = (string) request()->input('statusPageId', '');
+        $announcementId = (string) request()->input('announcementId', '');
+ 
         if ($statusPageId === '' || $announcementId === '') {
             return $this->asJson([
                 'success' => false,
-                'message' => Craft::t('upsnap', 'Status Page ID and Announcement ID are required.'),
+                'message' => t('Status Page ID and Announcement ID are required.', [], 'upsnap'),
             ]);
         }
-
+ 
         try {
             $endpoint = Constants::buildStatusPageAnnouncementEndpoint('detail', $statusPageId, $announcementId);
             $response = Upsnap::$plugin->apiService->get($endpoint);
-
+ 
             if (($response['status'] ?? null) !== 'success') {
                 throw new \Exception($response['message'] ?? 'Failed to fetch announcement details.');
             }
-
+ 
             return $this->asJson([
                 'success' => true,
-                'message' => Craft::t('upsnap', 'Announcement fetched successfully.'),
+                'message' => t('Announcement fetched successfully.', [], 'upsnap'),
                 'data' => [
                     'announcement' => $response['data']['announcement'] ?? null,
                 ],
             ]);
         } catch (\Throwable $e) {
-            Craft::error("Announcement detail fetch failed: {$e->getMessage()}", __METHOD__);
-
+            Log::error("Announcement detail fetch failed: {$e->getMessage()}");
+ 
             return $this->asJson([
                 'success' => false,
                 'message' => $e->getMessage(),
             ]);
         }
     }
-
-    public function actionAnnouncementSave(): Response
+ 
+    public function announcementSave(): Response
     {
-        $this->requirePostRequest();
-        $request = Craft::$app->getRequest();
-
         try {
-            $payload = $request->getRequiredBodyParam('payload');
+            $payload = request()->input('payload');
+            abort_unless($payload, 400, 'Missing payload');
             $payloadArray = json_decode($payload, true);
-
+ 
             if (!is_array($payloadArray)) {
                 throw new \Exception('Invalid JSON payload.');
             }
-
+ 
             $statusPageId = (string) ($payloadArray['statusPageId'] ?? '');
             $announcementId = isset($payloadArray['announcementId'])
                 ? (string) $payloadArray['announcementId']
                 : null;
-
+ 
             if ($statusPageId === '') {
                 throw new \Exception('Status Page ID is required.');
             }
-
+ 
             unset($payloadArray['statusPageId'], $payloadArray['announcementId']);
-
+ 
             if ($announcementId) {
                 $endpoint = Constants::buildStatusPageAnnouncementEndpoint('update', $statusPageId, $announcementId);
                 $response = Upsnap::$plugin->apiService->put($endpoint, $payloadArray);
@@ -352,134 +339,125 @@ class StatusPageController extends BaseController
                 $endpoint = Constants::buildStatusPageAnnouncementEndpoint('create', $statusPageId);
                 $response = Upsnap::$plugin->apiService->post($endpoint, $payloadArray);
             }
-
+ 
             if (($response['status'] ?? null) !== 'success') {
                 throw new \Exception($response['message'] ?? 'Failed to save announcement.');
             }
-
+ 
             return $this->asJson([
                 'success' => true,
                 'message' => $announcementId
-                    ? Craft::t('upsnap', 'Announcement updated successfully.')
-                    : Craft::t('upsnap', 'Announcement created successfully.'),
+                    ? t('Announcement updated successfully.', [], 'upsnap')
+                    : t('Announcement created successfully.', [], 'upsnap'),
                 'data' => [
                     'announcement' => $response['data']['announcement'] ?? null,
                 ],
             ]);
         } catch (\Throwable $e) {
-            Craft::error("Announcement save failed: {$e->getMessage()}", __METHOD__);
-
+            Log::error("Announcement save failed: {$e->getMessage()}");
+ 
             return $this->asJson([
                 'success' => false,
                 'message' => $e->getMessage(),
             ]);
         }
     }
-
-    public function actionAnnouncementDelete(): Response
+ 
+    public function announcementDelete(): Response
     {
-        $this->requirePostRequest();
-        $request = Craft::$app->getRequest();
-
-        $statusPageId = (string) $request->getBodyParam('statusPageId', '');
-        $announcementId = (string) $request->getBodyParam('announcementId', '');
-
+        $statusPageId = (string) request()->input('statusPageId', '');
+        $announcementId = (string) request()->input('announcementId', '');
+ 
         if ($statusPageId === '' || $announcementId === '') {
             return $this->asJson([
                 'success' => false,
-                'message' => Craft::t('upsnap', 'Status Page ID and Announcement ID are required.'),
+                'message' => t('Status Page ID and Announcement ID are required.', [], 'upsnap'),
             ]);
         }
-
+ 
         try {
             $endpoint = Constants::buildStatusPageAnnouncementEndpoint('delete', $statusPageId, $announcementId);
             $response = Upsnap::$plugin->apiService->delete($endpoint);
-
+ 
             if (($response['status'] ?? null) !== 'success') {
                 throw new \Exception($response['message'] ?? 'Failed to delete announcement.');
             }
-
+ 
             return $this->asJson([
                 'success' => true,
-                'message' => Craft::t('upsnap', 'Announcement deleted successfully.'),
+                'message' => t('Announcement deleted successfully.', [], 'upsnap'),
             ]);
         } catch (\Throwable $e) {
-            Craft::error("Announcement delete failed: {$e->getMessage()}", __METHOD__);
-
+            Log::error("Announcement delete failed: {$e->getMessage()}");
+ 
             return $this->asJson([
                 'success' => false,
                 'message' => $e->getMessage(),
             ]);
         }
     }
-
-    public function actionDelete(): Response
+ 
+    public function delete(): Response
     {
-        $this->requirePostRequest();
-        $request = Craft::$app->getRequest();
-
-        $id = $request->getBodyParam('statusPageId');
+        $id = request()->input('statusPageId');
         if (!$id) {
             return $this->asJson([
                 'success' => false,
-                'message' => Craft::t('upsnap', 'Status Page ID is required.'),
+                'message' => t('Status Page ID is required.', [], 'upsnap'),
             ]);
         }
-
+ 
         $endpoint = Constants::MICROSERVICE_ENDPOINTS['monitors']['status-page']['delete'];
-
+ 
         try {
             $response = Upsnap::$plugin->apiService->delete("{$endpoint}/{$id}");
-
+ 
             if (!isset($response['status']) || $response['status'] !== 'success') {
-                $errorMsg = $response['message'] ?? Craft::t('upsnap', 'Failed to delete status page.');
+                $errorMsg = $response['message'] ?? t('Failed to delete status page.', [], 'upsnap');
                 throw new \Exception($errorMsg);
             }
-
+ 
             return $this->asJson([
                 'success' => true,
-                'message' => Craft::t('upsnap', 'Status page deleted successfully.'),
+                'message' => t('Status page deleted successfully.', [], 'upsnap'),
             ]);
         } catch (\Throwable $e) {
-            Craft::error("Status page delete failed: {$e->getMessage()}", __METHOD__);
-
+            Log::error("Status page delete failed: {$e->getMessage()}");
+ 
             return $this->asJson([
                 'success' => false,
                 'message' => $e->getMessage(),
             ]);
         }
     }
-
-    public function actionResetShareableId(): Response
+ 
+    public function resetShareableId(): Response
     {
-        $this->requirePostRequest();
-        $request = Craft::$app->getRequest();
-
-        $id = $request->getBodyParam('statusPageId');
+        $id = request()->input('statusPageId');
         if (!$id) {
             return $this->asJson([
                 'success' => false,
-                'message' => Craft::t('upsnap', 'Status Page ID is required.'),
+                'message' => t('Status Page ID is required.', [], 'upsnap'),
             ]);
         }
-
+ 
         $endpoint = Constants::MICROSERVICE_ENDPOINTS['monitors']['status-page']['list'];
-
+ 
         try {
             $response = Upsnap::$plugin->apiService->post("{$endpoint}/{$id}/reset");
-
+ 
             if (!isset($response['status']) || $response['status'] !== 'success') {
-                $errorMsg = $response['message'] ?? Craft::t('upsnap', 'Failed to reset status page shareable id.');
+                $errorMsg = $response['message'] ?? t('Failed to reset status page shareable id.', [], 'upsnap');
                 throw new \Exception($errorMsg);
             }
-
+ 
             return $this->asJson([
                 'success' => true,
-                'message' => Craft::t('upsnap', 'Status page shareable id reset successfully.'),
+                'message' => t('Status page shareable id reset successfully.', [], 'upsnap'),
             ]);
         } catch (\Throwable $e) {
-            Craft::error("Status page shareable id reset failed: {$e->getMessage()}", __METHOD__);
-
+            Log::error("Status page shareable id reset failed: {$e->getMessage()}");
+ 
             return $this->asJson([
                 'success' => false,
                 'message' => $e->getMessage(),

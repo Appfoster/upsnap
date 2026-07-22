@@ -1,8 +1,8 @@
 {
-	"name": "appfoster/upsnap",
-	"description": "Monitoring & analytics plugin for Craft CMS sites.",
-	"type": "craft-plugin",
-	"keywords": [
+    "name": "appfoster/upsnap",
+    "description": "Monitoring & analytics plugin for Craft CMS sites.",
+    "type": "craft-plugin",
+    "keywords": [
         "craft",
         "cms",
         "craftcms",
@@ -27,25 +27,24 @@
             "homepage": "https://www.appfoster.com/"
         }
     ],
-	"require": {
-		"craftcms/cms": "^5.0"
-	},
-	"autoload": {
-		"psr-4": {
-			"appfoster\\upsnap\\": "src/"
-		}
-	},
-	"extra": {
-		"name": "Upsnap",
+    "require": {
+        "craftcms/cms": "^6.0.0-alpha.1"
+    },
+    "autoload": {
+        "psr-4": {
+            "appfoster\\upsnap\\": "src/"
+        }
+    },
+    "extra": {
+        "name": "Upsnap",
         "handle": "upsnap",
         "hasCpSection": true,
-		"changelogUrl": "https://github.com/Appfoster/upsnap/blob/master/CHANGELOG.md",
+        "changelogUrl": "https://github.com/Appfoster/upsnap/blob/master/CHANGELOG.md",
         "documentationUrl": "https://github.com/Appfoster/upsnap/wiki",
-		"class": "appfoster\\upsnap\\Upsnap"
-	},
-	"config": {
+        "class": "appfoster\\upsnap\\Upsnap"
+    },
+    "config": {
         "allow-plugins": {
-            "yiisoft/yii2-composer": true,
             "craftcms/plugin-installer": true
         }
     }

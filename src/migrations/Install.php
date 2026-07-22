@@ -2,71 +2,34 @@
 
 namespace appfoster\upsnap\migrations;
 
-use Craft;
-use craft\db\Migration;
-use appfoster\upsnap\Constants;
+use CraftCms\Cms\Database\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
 
 class Install extends Migration
 {
     /**
-     * @inheritdoc
+     * Run the migrations.
      */
-    public function safeUp(): bool
+    public function up(): void
     {
-        // Create the upsnap_settings table
-        $this->createTables();
-
-        // Create unique index on key
-        $this->createIndexes();
-
-        return true;
-    }
-
-    /**
-     * @inheritdoc
-     */
-    public function safeDown(): bool
-    {
-        $this->dropTableIfExists(Constants::TABLE_SETTINGS);
-        return true;
-    }
-
-    /**
-     * Create custom tables needed by the plugin
-     */
-    private function createTables()
-    {
-        $tableSchema = $this->getTableSchema(Constants::TABLE_SETTINGS);
-        if ($tableSchema === null) {
-            $this->createTable(Constants::TABLE_SETTINGS, [
-                'id' => $this->primaryKey(),
-                'key' => $this->string(255)->notNull(),
-                'value' => $this->text(),
-                'dateCreated' => $this->dateTime()->notNull(),
-                'dateUpdated' => $this->dateTime()->notNull(),
-                'uid' => $this->uid(),
-            ]);
+        if (!Schema::hasTable('upsnap_settings')) {
+            Schema::create('upsnap_settings', function (Blueprint $table) {
+                $table->integer('id', true);
+                $table->string('key', 255)->unique('upsnap_settings_key');
+                $table->text('value')->nullable();
+                $table->dateTime('dateCreated');
+                $table->dateTime('dateUpdated');
+                $table->char('uid', 36)->nullable();
+            });
         }
     }
 
     /**
-     * Create indexes for the custom tables
+     * Reverse the migrations.
      */
-    private function createIndexes()
+    public function down(): void
     {
-        $this->createIndex(
-            '{{%upsnap_settings_key}}',
-            Constants::TABLE_SETTINGS,
-            'key',
-            true
-        );
-    }
-
-    /**
-     * Get the schema of a table
-     */
-    private function getTableSchema($tableName)
-    {
-        return Craft::$app->db->getSchema()->getTableSchema($tableName);
+        Schema::dropIfExists('upsnap_settings');
     }
 }

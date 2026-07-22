@@ -3,7 +3,7 @@ namespace appfoster\upsnap\assetbundles;
 
 class HealthCheckAsset extends BaseAsset
 {
-    public function init()
+    public function init(): void
     {
         // Include global assets from parent
         parent::init();

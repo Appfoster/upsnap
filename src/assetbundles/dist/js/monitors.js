@@ -1070,7 +1070,7 @@ Craft.Upsnap.Monitor = {
 				this.disableSavebtn();
 				const payload = this.buildPayload();
 
-				const response = await fetch("/actions/upsnap/monitors/save", {
+				const response = await fetch(Craft.getActionUrl("upsnap/monitors/save"), {
 					method: "POST",
 					headers: {
 						"Content-Type": "application/json",

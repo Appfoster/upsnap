@@ -1,98 +1,93 @@
 <?php
-
+ 
 namespace appfoster\upsnap\controllers;
-
+ 
 use appfoster\upsnap\Constants;
-use Craft;
-use craft\web\Controller;
-use yii\web\Response;
+use Illuminate\Support\Facades\Log;
+use Symfony\Component\HttpFoundation\Response;
 use appfoster\upsnap\Upsnap;
-
-class TagsController extends Controller
+use function CraftCms\Cms\t;
+ 
+class TagsController extends BaseController
 {
-    protected array|bool|int $allowAnonymous = false;
-
     /**
      * List all tags for the current user.
      * GET /actions/upsnap/tags/list
      */
-    public function actionList(): Response
+    public function list(): Response
     {
         $endpoint = Constants::MICROSERVICE_ENDPOINTS['tags']['list'];
-
+ 
         try {
             $response = Upsnap::$plugin->apiService->get($endpoint);
-
+ 
             if (!is_array($response) || !isset($response['status'])) {
-                throw new \Exception(Craft::t('upsnap', 'Something went wrong while fetching tags. Please try again.'));
+                throw new \Exception(t('Something went wrong while fetching tags. Please try again.', [], 'upsnap'));
             }
-
+ 
             if ($response['status'] !== 'success') {
-                $errorMsg = $response['message'] ?? Craft::t('upsnap', 'Failed to fetch tags.');
+                $errorMsg = $response['message'] ?? t('Failed to fetch tags.', [], 'upsnap');
                 throw new \Exception($errorMsg);
             }
-
+ 
             return $this->asJson([
                 'success' => true,
-                'message' => Craft::t('upsnap', 'Tags fetched successfully.'),
+                'message' => t('Tags fetched successfully.', [], 'upsnap'),
                 'data' => $response['data'] ?? [],
             ]);
         } catch (\Throwable $e) {
-            Craft::error("Tags fetch failed: {$e->getMessage()}", __METHOD__);
+            Log::error("Tags fetch failed: {$e->getMessage()}");
             return $this->asJson([
                 'success' => false,
                 'message' => $e->getMessage(),
             ]);
         }
     }
-
+ 
     /**
      * Create a new tag.
      * POST /actions/upsnap/tags/create
      */
-    public function actionCreate(): Response
+    public function create(): Response
     {
-        $this->requirePostRequest();
-        $request = Craft::$app->getRequest();
-
-        $name = $request->getBodyParam('name');
-        $color = $request->getBodyParam('color');
-
+        $name = request()->input('name');
+        $color = request()->input('color');
+ 
         if (!$name) {
             return $this->asJson([
                 'success' => false,
-                'message' => Craft::t('upsnap', 'Tag name is required.'),
+                'message' => t('Tag name is required.', [], 'upsnap'),
             ]);
         }
-
+ 
         // Generate random color if not provided
         if (!$color) {
             $color = sprintf('#%06X', mt_rand(0, 0xFFFFFF));
         }
-
+ 
         $endpoint = Constants::MICROSERVICE_ENDPOINTS['tags']['create'];
-
+ 
         try {
             $payload = [
                 'name' => $name,
                 'color' => $color,
             ];
-
+ 
             $response = Upsnap::$plugin->apiService->post($endpoint, $payload);
-
+ 
             if (!isset($response['status']) || $response['status'] !== 'success') {
-                $errorMsg = $response['message'] ?? Craft::t('upsnap', 'Failed to create tag.');
+                $errorMsg = $response['message'] ?? t('Failed to create tag.', [], 'upsnap');
                 throw new \Exception($errorMsg);
             }
-
+ 
             return $this->asJson([
                 'success' => true,
-                'message' => Craft::t('upsnap', 'Tag created successfully.'),
+                'message' => t('Tag created successfully.', [], 'upsnap'),
                 'data' => $response['data'] ?? [],
             ]);
         } catch (\Throwable $e) {
-            Craft::error("Tag creation failed: {$e->getMessage()}", __METHOD__);
-
+            Log::error("Tag creation failed: {$e->getMessage()}");
+ 
             return $this->asJson([
                 'success' => false,
                 'message' => $e->getMessage(),

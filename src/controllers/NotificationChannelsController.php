@@ -1,35 +1,36 @@
 <?php
-
+ 
 namespace appfoster\upsnap\controllers;
-
+ 
 use appfoster\upsnap\assetbundles\NotificationChannelsAsset;
 use appfoster\upsnap\Constants;
-use yii\web\Response;
+use CraftCms\Cms\View\LegacyAssets\InternalAssetRegistry;
+use Symfony\Component\HttpFoundation\Response;
 use appfoster\upsnap\Upsnap;
-
+ 
 class NotificationChannelsController extends BaseController
 {
-
-    public function __construct($id, $module = null)
+ 
+    public function __construct()
     {
-        parent::__construct($id, $module);
-        NotificationChannelsAsset::register($this->view);
+        parent::__construct();
+        app(InternalAssetRegistry::class)->register(NotificationChannelsAsset::class);
     }
-
+ 
     /**
      * Render the notification channels listing page.
      * GET upsnap/notification-channels
      */
-    public function actionIndex(): Response
+    public function index(): Response
     {
         $settingsService = Upsnap::$plugin->settingsService;
         $settingsService->validateApiKey();
-
+ 
         $userDetails = null;
         if ($settingsService->getApiKey()) {
             $userDetails = $settingsService->getUserDetails();
         }
-
+ 
         $variables = [
             'title' => Constants::SUBNAV_ITEM_NOTIFICATION_CHANNELS['label'],
             'selectedSubnavItem' => Constants::SUBNAV_ITEM_NOTIFICATION_CHANNELS['key'],
@@ -43,7 +44,7 @@ class NotificationChannelsController extends BaseController
                 'monitoringUrl' => $settingsService->getMonitoringUrl(),
             ],
         ];
-
+ 
         return $this->renderTemplate('upsnap/notification-channels/_index', $variables);
     }
 }

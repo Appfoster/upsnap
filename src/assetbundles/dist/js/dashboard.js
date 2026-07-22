@@ -941,7 +941,7 @@ Craft.UpsnapDashboard = {
 
 		try {
 			const data = await this.fetchMonitorData(
-				`/admin/upsnap/monitors/histogram/${this.monitorId}`,
+				Craft.getActionUrl("upsnap/monitors/histogram/" + this.monitorId),
 				{ requestId, signal }
 			);
 
@@ -1129,7 +1129,7 @@ Craft.UpsnapDashboard = {
 				const queryParams = new URLSearchParams(range).toString();
 
 				const data = await this.fetchMonitorData(
-					`/admin/upsnap/monitors/response-time/${this.monitorId}?${queryParams}`,
+					Craft.getActionUrl("upsnap/monitors/response-time/" + this.monitorId) + "?" + queryParams,
 					{ requestId, signal }
 				);
 
@@ -1339,7 +1339,7 @@ Craft.UpsnapDashboard = {
 
 		try {
 			const data = await this.fetchMonitorData(
-				`/admin/upsnap/monitors/uptime-stats/${this.monitorId}`,
+				Craft.getActionUrl("upsnap/monitors/uptime-stats/" + this.monitorId),
 				{ requestId, signal }
 			);
 

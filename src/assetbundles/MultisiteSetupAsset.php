@@ -2,12 +2,14 @@
 
 namespace appfoster\upsnap\assetbundles;
 
+use CraftCms\Cms\View\HtmlStack;
+
 class MultisiteSetupAsset extends BaseAsset
 {
-    public function init()
+    public function register(HtmlStack $htmlStack): void
     {
-        parent::init();
+        parent::register($htmlStack);
 
-        $this->js[] = 'js/multisiteSetup.js';
+        $htmlStack->jsFile(asset('vendor/appfoster/upsnap/dist/js/multisiteSetup.js'));
     }
 }

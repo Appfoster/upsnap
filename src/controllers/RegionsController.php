@@ -4,45 +4,44 @@ namespace appfoster\upsnap\controllers;
 
 use appfoster\upsnap\assetbundles\MonitorsAsset;
 use appfoster\upsnap\Constants;
-use Craft;
-use craft\web\Controller;
-use yii\web\Response;
 use appfoster\upsnap\Upsnap;
+use CraftCms\Cms\View\LegacyAssets\InternalAssetRegistry;
+use Illuminate\Support\Facades\Log;
+use Symfony\Component\HttpFoundation\Response;
+use function CraftCms\Cms\t;
 
-class RegionsController extends Controller
+class RegionsController extends BaseController
 {
-    protected array|bool|int $allowAnonymous = false;
-
-    public function __construct($id, $module = null)
+    public function __construct()
     {
-        parent::__construct($id, $module);
-        MonitorsAsset::register($this->view);
+        parent::__construct();
+        app(InternalAssetRegistry::class)->register(MonitorsAsset::class);
     }
-    public function actionList(): Response
+
+    public function list(): Response
     {
         $endpoint = Constants::MICROSERVICE_ENDPOINTS['regions']['list'];
 
         try {
-            $response = [];
             $response = Upsnap::$plugin->apiService->get($endpoint, ['last_day_uptimes' => true]);
 
             // Ensure $response is an array before accessing its keys
             if (!is_array($response) || !isset($response['status'])) {
-                throw new \Exception(Craft::t('upsnap', 'Something went wrong while fetching regions. Please try again.'));
+                throw new \Exception(t('Something went wrong while fetching regions. Please try again.', [], 'upsnap'));
             }
 
-            if (!isset($response['status']) || $response['status'] !== 'success') {
-                $errorMsg = $response['message'] ?? Craft::t('upsnap', 'Failed to fetch regions.');
+            if ($response['status'] !== 'success') {
+                $errorMsg = $response['message'] ?? t('Failed to fetch regions.', [], 'upsnap');
                 throw new \Exception($errorMsg);
             }
 
             return $this->asJson([
                 'success' => true,
-                'message' => Craft::t('upsnap', 'Regions fetched successfully.'),
+                'message' => t('Regions fetched successfully.', [], 'upsnap'),
                 'data' => $response['data'] ?? [],
             ]);
         } catch (\Throwable $e) {
-            Craft::error("Regions fetch failed: {$e->getMessage()}", __METHOD__);
+            Log::error("Regions fetch failed: {$e->getMessage()}");
             return $this->asJson([
                 'success' => false,
                 'message' => $e->getMessage(),

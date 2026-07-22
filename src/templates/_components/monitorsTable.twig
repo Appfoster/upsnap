@@ -1,5 +1,5 @@
 {# upsnap/_components/monitorsTable.twig #}
-<div id="upsnap-monitors-wrap" data-endpoint="/actions/upsnap/monitors/list" data-selected="{{ settings.monitoringUrl ?? '' }}">
+<div id="upsnap-monitors-wrap" data-endpoint="{{ actionUrl('upsnap/monitors/list') }}" data-selected="{{ settings.monitoringUrl ?? '' }}">
 	<table class="data" id="upsnap-monitors-table" cellspacing="0" cellpadding="0" role="grid" style="width: 100%;">
 		<thead>
 			<tr>

@@ -4,7 +4,7 @@ namespace appfoster\upsnap\assetbundles;
 
 class IncidentDetailAsset extends BaseAsset
 {
-    public function init()
+    public function init(): void
     {
         parent::init();
 

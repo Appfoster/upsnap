@@ -1,44 +1,38 @@
 <?php
-
+ 
 namespace appfoster\upsnap\controllers;
-
-use Craft;
-use appfoster\upsnap\Upsnap;
+ 
+use CraftCms\Cms\Http\RespondsWithFlash;
+use CraftCms\Cms\View\LegacyAssets\InternalAssetRegistry;
 use appfoster\upsnap\assetbundles\BaseAsset;
-
-class BaseController extends \craft\web\Controller
+use Symfony\Component\HttpFoundation\Response;
+use Illuminate\Http\JsonResponse;
+use function CraftCms\Cms\currentUser;
+use function CraftCms\Cms\pageTemplate;
+ 
+class BaseController
 {
-    /**
-     * @inheritdoc
-     */
-    public function init(): void
+    use RespondsWithFlash;
+ 
+    public function __construct()
     {
-        parent::init();
-        BaseAsset::register($this->view);
-
-        // All actions require admin access
-        $this->requireAdmin();
+        // Register the BaseAsset bundle
+        app(InternalAssetRegistry::class)->register(BaseAsset::class);
     }
-
+ 
     /**
-     * @inheritdoc
-     *
-     * For AJAX requests, release the PHP session write lock as soon as authentication
-     * is confirmed (in init()). PHP file-based sessions serialize concurrent requests
-     * from the same browser — without this, the 10+ parallel dashboard AJAX calls queue
-     * up behind each other instead of running in parallel, which causes the 1–1.5 min
-     * load times when a slow health-check (Lighthouse, Broken Links) holds the lock.
-     * Session data is already loaded into memory at this point; closing the lock does
-     * not affect auth or CSRF for the remainder of this request.
+     * Renders a Control Panel template.
      */
-    public function beforeAction($action): bool
+    public function renderTemplate(string $template, array $variables = []): Response
     {
-        $result = parent::beforeAction($action);
-
-        if ($result && Craft::$app->getRequest()->getIsAjax()) {
-            Craft::$app->getSession()->close();
-        }
-
-        return $result;
+        return response(pageTemplate($template, $variables));
+    }
+ 
+    /**
+     * Returns a JSON response.
+     */
+    public function asJson(mixed $data): JsonResponse
+    {
+        return response()->json($data);
     }
 }

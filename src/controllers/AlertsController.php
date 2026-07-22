@@ -1,9 +1,9 @@
 <?php
-
+ 
 namespace appfoster\upsnap\controllers;
-
-use Craft;
-
+ 
+use Symfony\Component\HttpFoundation\Response;
+ 
 class AlertsController extends BaseController
 {
     /**
@@ -13,14 +13,13 @@ class AlertsController extends BaseController
      * suppressed for the rest of this browser session. If new unresolved alerts
      * arrive (different hash), the banner reappears automatically.
      */
-    public function actionDismiss(): \yii\web\Response
+    public function dismiss(): Response
     {
-        $this->requirePostRequest();
-
-        $hash = Craft::$app->getRequest()->getRequiredBodyParam('hash');
-
-        Craft::$app->getSession()->set('upsnapExpiryAlertDismissedHash', $hash);
-
+        $hash = request()->input('hash');
+        abort_unless($hash, 400, 'Missing hash');
+ 
+        session()->put('upsnapExpiryAlertDismissedHash', $hash);
+ 
         return $this->asJson(['success' => true]);
     }
 }

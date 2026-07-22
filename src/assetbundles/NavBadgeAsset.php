@@ -1,29 +1,17 @@
 <?php
-
+ 
 namespace appfoster\upsnap\assetbundles;
-
-use craft\web\AssetBundle;
-use appfoster\upsnap\Constants;
-use craft\web\assets\cp\CpAsset;
-
-class NavBadgeAsset extends AssetBundle
+ 
+class NavBadgeAsset extends BaseAsset
 {
-    public function init()
+    public function init(): void
     {
-        $this->sourcePath = Constants::ASSET_SOURCE_PATH;
-
-        $this->depends = [
-            CpAsset::class,
-        ];
-
         $this->css = [
             'css/global.css',
         ];
-
+ 
         $this->js = [
             'js/nav-badge.js',
         ];
-
-        parent::init();
     }
 }

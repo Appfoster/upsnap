@@ -2,29 +2,33 @@
 
 namespace appfoster\upsnap\controllers;
 
-use Craft;
-use craft\helpers\UrlHelper;
 use appfoster\upsnap\Upsnap;
 use appfoster\upsnap\assetbundles\SettingsAsset;
 use appfoster\upsnap\Constants;
 use appfoster\upsnap\services\HealthCheckService;
 use appfoster\upsnap\assetbundles\MultisiteSetupAsset;
+use CraftCms\Cms\View\LegacyAssets\InternalAssetRegistry;
+use CraftCms\Cms\Support\Url;
+use Illuminate\Support\Facades\Log;
+use Symfony\Component\HttpFoundation\Response;
+use function CraftCms\Cms\t;
+use function CraftCms\Cms\currentUser;
 
 class SettingsController extends BaseController
 {
     private HealthCheckService $healthCheckService;
 
-    public function __construct($id, $module = null)
+    public function __construct()
     {
-        parent::__construct($id, $module);
-        SettingsAsset::register($this->view);
+        parent::__construct();
+        app(InternalAssetRegistry::class)->register(SettingsAsset::class);
         $this->healthCheckService = new HealthCheckService($this);
     }
 
     /**
      * Show settings page
      */
-    public function actionIndex(): \yii\web\Response
+    public function index(): Response
     {
         $plugin = Upsnap::getInstance();
         $service = $plugin->settingsService;
@@ -55,15 +59,11 @@ class SettingsController extends BaseController
     /**
      * Save settings
      */
-    public function actionSave(): \yii\web\Response
+    public function save(): Response
     {
-        $this->requirePostRequest();
-
-        $request = Craft::$app->getRequest();
+        $body = request()->all();
         $plugin = Upsnap::getInstance();
         $service = $plugin->settingsService;
-
-        $body = $request->getBodyParams();
 
         $settings = $service->getNewModel();
 
@@ -77,8 +77,8 @@ class SettingsController extends BaseController
 
         // Validate only updated fields
         if (!$settings->validate()) {
-            $allErrors = collect($settings->getErrors())->flatten()->join("\n");
-            Craft::$app->getSession()->setError($allErrors);
+            $allErrors = collect($settings->errors()->getMessages())->flatten()->join("\n");
+            session()->flash('error', $allErrors);
             return $this->renderSettings($settings);
         }
 
@@ -86,25 +86,25 @@ class SettingsController extends BaseController
         if (array_key_exists('apiKey', $body) && $service->isApiKeyUpdated($settings->apiKey)) {
             try {
                 if (!$service->verifyApiKey($settings->apiKey)) {
-                    Craft::$app->getSession()->setError(Craft::t('upsnap', 'Invalid API Key.'));
+                    session()->flash('error', t('Invalid API Key.', [], 'upsnap'));
                     return $this->renderSettings($settings);
                 }
                 $service->setApiKey($settings->apiKey);
             } catch (\Throwable $e) {
-                Craft::$app->getSession()->setError('Error verifying API key: ' . $e->getMessage());
+                session()->flash('error', 'Error verifying API key: ' . $e->getMessage());
                 return $this->renderSettings($settings);
             }
         }
 
 
-        Craft::$app->getSession()->setNotice(Craft::t('upsnap', 'Settings saved.'));
+        session()->flash('notice', t('Settings saved.', [], 'upsnap'));
         return $this->redirectToPostedUrl();
     }
 
     /**
      * Render the settings page with validation errors.
      */
-    private function renderSettings($settings): \yii\web\Response
+    private function renderSettings($settings): Response
     {
         $service = Upsnap::getInstance()->settingsService;
         $service->validateApiKey();
@@ -133,9 +133,6 @@ class SettingsController extends BaseController
 
     /**
      * Updates a setting value if the key exists in the body.
-     *
-     * This function is used to update a setting value if it exists in the body.
-     * It will also cast the value to the specified type
      */
     private function updateIfExists($settings, array $body, string $key, ?string $type = null): void
     {
@@ -169,16 +166,10 @@ class SettingsController extends BaseController
     }
 
 
-    public function actionSetPrimaryMonitor(): \yii\web\Response
+    public function setPrimaryMonitor(): Response
     {
-        $this->requirePostRequest();
-
-        $request = Craft::$app->getRequest();
-        $plugin = Upsnap::getInstance();
-        $service = $plugin->settingsService;
-
-        $monitorId = $request->getBodyParam('monitorId');
-        $monitoringUrl = $request->getBodyParam('monitoringUrl');
+        $monitorId = request()->input('monitorId');
+        $monitoringUrl = request()->input('monitoringUrl');
 
         if (!$monitorId) {
             return $this->asJson([
@@ -188,6 +179,7 @@ class SettingsController extends BaseController
         }
 
         try {
+            $service = Upsnap::getInstance()->settingsService;
             // Always save the monitor ID
             $service->setMonitorId($monitorId);
 
@@ -216,24 +208,21 @@ class SettingsController extends BaseController
      * Handle in-plugin user login
      * Returns JSON with success/error details.
      */
-    public function actionLogin(): \yii\web\Response
+    public function login(): Response
     {
-        $this->requirePostRequest();
-
-        $request  = Craft::$app->getRequest();
-        $email    = trim($request->getBodyParam('email', ''));
-        $password = $request->getBodyParam('password', '');
+        $email    = trim(request()->input('email', ''));
+        $password = request()->input('password', '');
 
         $errors = [];
 
         if ($email === '') {
-            $errors['email'] = [Craft::t('upsnap', 'Email is required.')];
+            $errors['email'] = [t('Email is required.', [], 'upsnap')];
         } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-            $errors['email'] = [Craft::t('upsnap', 'Please enter a valid email address.')];
+            $errors['email'] = [t('Please enter a valid email address.', [], 'upsnap')];
         }
 
         if ($password === '') {
-            $errors['password'] = [Craft::t('upsnap', 'Password is required.')];
+            $errors['password'] = [t('Password is required.', [], 'upsnap')];
         }
 
         if (!empty($errors)) {
@@ -252,16 +241,16 @@ class SettingsController extends BaseController
                         $sitesWithUrl = array_filter($sites, fn($s) => $s['hasUrl']);
                         $shouldShowMultisite = count($sitesWithUrl) > 1;
                     } catch (\Throwable $e) {
-                        Craft::warning('Could not check sites for multisite redirect on login: ' . $e->getMessage(), __METHOD__);
+                        Log::warning('Could not check sites for multisite redirect on login: ' . $e->getMessage());
                     }
                 }
 
                 if ($shouldShowMultisite) {
                     return $this->asJson([
                         'success'                => true,
-                        'message'                => Craft::t('upsnap', 'Login successful!'),
+                        'message'                => t('Login successful!', [], 'upsnap'),
                         'requiresMultisiteSetup' => true,
-                        'redirectUrl'            => UrlHelper::cpUrl(Constants::SUBNAV_ITEM_MULTISITE_SETUP['url']),
+                        'redirectUrl'            => Url::cpUrl(Constants::SUBNAV_ITEM_MULTISITE_SETUP['url']),
                         'primaryMonitorRequirement' => null,
                     ]);
                 }
@@ -270,21 +259,21 @@ class SettingsController extends BaseController
 
                 return $this->asJson([
                     'success' => true,
-                    'message' => Craft::t('upsnap', 'Login successful!'),
-                    'redirectUrl' => UrlHelper::cpUrl(Constants::SUBNAV_ITEM_SETTINGS['url']) . '#monitors-tab',
+                    'message' => t('Login successful!', [], 'upsnap'),
+                    'redirectUrl' => Url::cpUrl(Constants::SUBNAV_ITEM_SETTINGS['url']) . '#monitors-tab',
                     'primaryMonitorRequirement' => $primaryMonitorRequirement,
                 ]);
             }
 
             return $this->asJson([
                 'success' => false,
-                'errors'  => ['general' => [$result['message'] ?? Craft::t('upsnap', 'Login failed. Please check your credentials and try again.')]],
+                'errors'  => ['general' => [$result['message'] ?? t('Login failed. Please check your credentials and try again.', [], 'upsnap')]],
             ]);
         } catch (\Throwable $e) {
-            Craft::error('Login failed: ' . $e->getMessage(), __METHOD__);
+            Log::error('Login failed: ' . $e->getMessage());
             return $this->asJson([
                 'success' => false,
-                'errors'  => ['general' => [Craft::t('upsnap', 'An error occurred. Please try again.')]],
+                'errors'  => ['general' => [t('An error occurred. Please try again.', [], 'upsnap')]],
             ]);
         }
     }
@@ -293,38 +282,35 @@ class SettingsController extends BaseController
      * Signup Step 1: Create account and return session token.
      * Used by progress modal to start the 3-step signup flow.
      */
-    public function actionRegister(): \yii\web\Response
+    public function register(): Response
     {
-        $this->requirePostRequest();
-
-        $request   = Craft::$app->getRequest();
-        $fullname  = trim($request->getBodyParam('fullname', ''));
-        $email     = trim($request->getBodyParam('email', ''));
-        $password  = $request->getBodyParam('password', '');
-        $confirm   = $request->getBodyParam('confirm_password', '');
+        $fullname  = trim(request()->input('fullname', ''));
+        $email     = trim(request()->input('email', ''));
+        $password  = request()->input('password', '');
+        $confirm   = request()->input('confirm_password', '');
 
         $errors = [];
 
         if ($fullname === '') {
-            $errors['fullname'] = [Craft::t('upsnap', 'Full name is required.')];
+            $errors['fullname'] = [t('Full name is required.', [], 'upsnap')];
         }
 
         if ($email === '') {
-            $errors['email'] = [Craft::t('upsnap', 'Email is required.')];
+            $errors['email'] = [t('Email is required.', [], 'upsnap')];
         } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-            $errors['email'] = [Craft::t('upsnap', 'Please enter a valid email address.')];
+            $errors['email'] = [t('Please enter a valid email address.', [], 'upsnap')];
         }
 
         if ($password === '') {
-            $errors['password'] = [Craft::t('upsnap', 'Password is required.')];
+            $errors['password'] = [t('Password is required.', [], 'upsnap')];
         } elseif (!preg_match('/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/', $password)) {
-            $errors['password'] = [Craft::t('upsnap', 'Password must be at least 8 characters and contain uppercase, lowercase, a number, and a special character.')];
+            $errors['password'] = [t('Password must be at least 8 characters and contain uppercase, lowercase, a number, and a special character.', [], 'upsnap')];
         }
 
         if ($confirm === '') {
-            $errors['confirm_password'] = [Craft::t('upsnap', 'Confirm password is required.')];
+            $errors['confirm_password'] = [t('Confirm password is required.', [], 'upsnap')];
         } elseif ($confirm !== $password) {
-            $errors['confirm_password'] = [Craft::t('upsnap', 'Passwords do not match.')];
+            $errors['confirm_password'] = [t('Passwords do not match.', [], 'upsnap')];
         }
 
         if (!empty($errors)) {
@@ -335,10 +321,10 @@ class SettingsController extends BaseController
             $result = Upsnap::getInstance()->settingsService->createUserAccountStep($email, $password, $fullname);
             return $this->asJson($result);
         } catch (\Throwable $e) {
-            Craft::error('Signup Step 1 failed: ' . $e->getMessage(), __METHOD__);
+            Log::error('Signup Step 1 failed: ' . $e->getMessage());
             return $this->asJson([
                 'status'  => 'error',
-                'message' => Craft::t('upsnap', 'An error occurred. Please try again.'),
+                'message' => t('An error occurred. Please try again.', [], 'upsnap'),
             ]);
         }
     }
@@ -347,12 +333,9 @@ class SettingsController extends BaseController
      * Signup Step 2: Fetch or create API token using session token.
      * Called after Step 1 completes.
      */
-    public function actionCreateApiToken(): \yii\web\Response
+    public function createApiToken(): Response
     {
-        $this->requirePostRequest();
-
-        $request       = Craft::$app->getRequest();
-        $sessionToken  = trim($request->getBodyParam('session_token', ''));
+        $sessionToken  = trim(request()->input('session_token', ''));
 
         if (!$sessionToken) {
             return $this->asJson([
@@ -365,10 +348,10 @@ class SettingsController extends BaseController
             $result = Upsnap::getInstance()->settingsService->getApiTokenStep($sessionToken);
             return $this->asJson($result);
         } catch (\Throwable $e) {
-            Craft::error('Signup Step 2 failed: ' . $e->getMessage(), __METHOD__);
+            Log::error('Signup Step 2 failed: ' . $e->getMessage());
             return $this->asJson([
                 'status'  => 'error',
-                'message' => Craft::t('upsnap', 'An error occurred. Please try again.'),
+                'message' => t('An error occurred. Please try again.', [], 'upsnap'),
             ]);
         }
     }
@@ -377,10 +360,8 @@ class SettingsController extends BaseController
      * Signup Step 3: Create first monitor.
      * If multiple Craft sites are detected, skips auto-creation and returns a multisite redirect instead.
      */
-    public function actionCreateFirstMonitor(): \yii\web\Response
+    public function createFirstMonitor(): Response
     {
-        $this->requirePostRequest();
-
         try {
             $settingsService = Upsnap::getInstance()->settingsService;
             $sites = $settingsService->getAllCraftSites();
@@ -392,8 +373,8 @@ class SettingsController extends BaseController
                     'data' => [
                         'multisite'   => true,
                         'siteCount'   => count($sitesWithUrl),
-                        'redirectUrl' => UrlHelper::cpUrl(Constants::SUBNAV_ITEM_MULTISITE_SETUP['url']),
-                        'message'     => Craft::t('upsnap', 'Multiple Craft sites detected. Redirecting to multi-site setup.'),
+                        'redirectUrl' => Url::cpUrl(Constants::SUBNAV_ITEM_MULTISITE_SETUP['url']),
+                        'message'     => t('Multiple Craft sites detected. Redirecting to multi-site setup.', [], 'upsnap'),
                     ],
                 ]);
             }
@@ -401,10 +382,10 @@ class SettingsController extends BaseController
             $result = $settingsService->createFirstMonitorStep();
             return $this->asJson($result);
         } catch (\Throwable $e) {
-            Craft::error('Signup Step 3 failed: ' . $e->getMessage(), __METHOD__);
+            Log::error('Signup Step 3 failed: ' . $e->getMessage());
             return $this->asJson([
                 'status'  => 'error',
-                'message' => Craft::t('upsnap', 'An error occurred. Please try again.'),
+                'message' => t('An error occurred. Please try again.', [], 'upsnap'),
             ]);
         }
     }
@@ -413,26 +394,24 @@ class SettingsController extends BaseController
      * Render the multi-site monitor setup screen.
      * GET upsnap/settings/multisite-setup
      */
-    public function actionMultiSiteSetup(): \yii\web\Response
+    public function multiSiteSetup(): Response
     {
-        MultisiteSetupAsset::register($this->view);
-
         $service = Upsnap::getInstance()->settingsService;
 
         if (!$service->getApiKey()) {
-            return Craft::$app->getResponse()->redirect(
-                UrlHelper::cpUrl(Constants::SUBNAV_ITEM_SETTINGS['url']) . '#register-signin-tab'
+            return redirect()->to(
+                Url::cpUrl(Constants::SUBNAV_ITEM_SETTINGS['url']) . '#register-signin-tab'
             );
         }
 
         $service->validateApiKey();
 
         if ($service->getApiTokenStatus() !== Constants::API_KEY_STATUS['active']) {
-            Craft::$app->getSession()->setError(
-                Craft::t('upsnap', 'Please configure a valid API key before setting up monitors.')
-            );
-            return Craft::$app->getResponse()->redirect(UrlHelper::cpUrl(Constants::SUBNAV_ITEM_SETTINGS['url']));
+            session()->flash('error', t('Please configure a valid API key before setting up monitors.', [], 'upsnap'));
+            return redirect()->to(Url::cpUrl(Constants::SUBNAV_ITEM_SETTINGS['url']));
         }
+
+        app(InternalAssetRegistry::class)->register(MultisiteSetupAsset::class);
 
         $sites = $service->getAllCraftSites();
 
@@ -445,7 +424,7 @@ class SettingsController extends BaseController
         } catch (\Throwable $e) {
             $monitorCheckFailed     = true;
             $monitorCheckFailReason = $e->getMessage();
-            Craft::warning("getMonitoredUrls failed on multisite setup: {$e->getMessage()}", __METHOD__);
+            Log::warning("getMonitoredUrls failed on multisite setup: {$e->getMessage()}");
         }
 
         foreach ($sites as &$site) {
@@ -463,13 +442,13 @@ class SettingsController extends BaseController
         $userDetails   = $service->getUserDetails();
 
         return $this->renderTemplate(Constants::SUBNAV_ITEM_MULTISITE_SETUP['template'], [
-            'title'                  => Craft::t('upsnap', 'Multi-Site Monitor Setup'),
+            'title'                  => t('Multi-Site Monitor Setup', [], 'upsnap'),
             'selectedSubnavItem'     => Constants::SUBNAV_ITEM_SETTINGS['key'],
             'sites'                  => $sites,
             'activeSites'            => $activeSites,
             'excludedSites'          => $excludedSites,
-            'monitorsUrl'            => UrlHelper::cpUrl(Constants::SUBNAV_ITEM_MONITORS['url']),
-            'settingsUrl'            => UrlHelper::cpUrl(Constants::SUBNAV_ITEM_SETTINGS['url']),
+            'monitorsUrl'            => Url::cpUrl(Constants::SUBNAV_ITEM_MONITORS['url']),
+            'settingsUrl'            => Url::cpUrl(Constants::SUBNAV_ITEM_SETTINGS['url']),
             'monitorCheckFailed'     => $monitorCheckFailed,
             'monitorCheckFailReason' => $monitorCheckFailReason,
             'userDetails'            => $userDetails,
@@ -480,11 +459,8 @@ class SettingsController extends BaseController
      * Create UpSnap monitors for the selected Craft sites.
      * POST upsnap/settings/bulk-create-monitors
      */
-    public function actionBulkCreateMonitors(): \yii\web\Response
+    public function bulkCreateMonitors(): Response
     {
-        $this->requirePostRequest();
-
-        $request = Craft::$app->getRequest();
         $service = Upsnap::getInstance()->settingsService;
 
         // Re-validate token - it may have expired between page load and submit
@@ -492,16 +468,16 @@ class SettingsController extends BaseController
         if ($service->getApiTokenStatus() !== Constants::API_KEY_STATUS['active']) {
             return $this->asJson([
                 'success' => false,
-                'message' => Craft::t('upsnap', 'Your API token is no longer active. Please update it in Settings.'),
+                'message' => t('Your API token is no longer active. Please update it in Settings.', [], 'upsnap'),
             ]);
         }
 
-        $sites = $request->getBodyParam('sites', []);
+        $sites = request()->input('sites', []);
 
         if (empty($sites) || !is_array($sites)) {
             return $this->asJson([
                 'success' => false,
-                'message' => Craft::t('upsnap', 'No sites selected.'),
+                'message' => t('No sites selected.', [], 'upsnap'),
             ]);
         }
 
@@ -510,7 +486,7 @@ class SettingsController extends BaseController
         try {
             $monitoredUrls = $service->getMonitoredUrls();
         } catch (\Throwable $e) {
-            Craft::warning("Could not fetch monitored URLs during bulk create: {$e->getMessage()}", __METHOD__);
+            Log::warning("Could not fetch monitored URLs during bulk create: {$e->getMessage()}");
             // Continue - the API will reject true duplicates anyway
         }
 
@@ -525,19 +501,19 @@ class SettingsController extends BaseController
             $url  = trim($site['url']  ?? '');
 
             if ($url === '') {
-                $results[] = ['name' => $name, 'url' => '', 'status' => 'skipped', 'message' => Craft::t('upsnap', 'No URL configured.')];
+                $results[] = ['name' => $name, 'url' => '', 'status' => 'skipped', 'message' => t('No URL configured.', [], 'upsnap')];
                 continue;
             }
 
             if (!filter_var($url, FILTER_VALIDATE_URL) || !in_array(parse_url($url, PHP_URL_SCHEME), ['http', 'https'], true)) {
-                $results[] = ['name' => $name, 'url' => $url, 'status' => 'skipped', 'message' => Craft::t('upsnap', 'Invalid or unsupported URL.')];
+                $results[] = ['name' => $name, 'url' => $url, 'status' => 'skipped', 'message' => t('Invalid or unsupported URL.', [], 'upsnap')];
                 continue;
             }
 
             $normalizedUrl = strtolower(rtrim($url, '/'));
 
             if (in_array($normalizedUrl, $monitoredUrls, true)) {
-                $results[] = ['name' => $name, 'url' => $url, 'status' => 'skipped', 'message' => Craft::t('upsnap', 'Monitor already exists for this URL.')];
+                $results[] = ['name' => $name, 'url' => $url, 'status' => 'skipped', 'message' => t('Monitor already exists for this URL.', [], 'upsnap')];
                 continue;
             }
 
@@ -559,13 +535,13 @@ class SettingsController extends BaseController
                     }
 
                     $monitoredUrls[] = $normalizedUrl;
-                    $results[] = ['name' => $name, 'url' => $url, 'status' => 'created', 'message' => Craft::t('upsnap', 'Monitor created.')];
+                    $results[] = ['name' => $name, 'url' => $url, 'status' => 'created', 'message' => t('Monitor created.', [], 'upsnap')];
                 } else {
-                    $results[] = ['name' => $name, 'url' => $url, 'status' => 'failed', 'message' => $response['message'] ?? Craft::t('upsnap', 'Failed to create monitor.')];
+                    $results[] = ['name' => $name, 'url' => $url, 'status' => 'failed', 'message' => $response['message'] ?? t('Failed to create monitor.', [], 'upsnap')];
                 }
             } catch (\Throwable $e) {
-                Craft::error("Bulk monitor creation failed for {$url}: {$e->getMessage()}", __METHOD__);
-                $results[] = ['name' => $name, 'url' => $url, 'status' => 'failed', 'message' => Craft::t('upsnap', 'An error occurred.')];
+                Log::error("Bulk monitor creation failed for {$url}: {$e->getMessage()}");
+                $results[] = ['name' => $name, 'url' => $url, 'status' => 'failed', 'message' => t('An error occurred.', [], 'upsnap')];
             }
         }
 
@@ -582,7 +558,7 @@ class SettingsController extends BaseController
             'success'     => true,
             'summary'     => compact('created', 'skipped', 'failed'),
             'results'     => $results,
-            'redirectUrl' => UrlHelper::cpUrl(Constants::SUBNAV_ITEM_MONITORS['url']),
+            'redirectUrl' => Url::cpUrl(Constants::SUBNAV_ITEM_MONITORS['url']),
         ]);
     }
 }

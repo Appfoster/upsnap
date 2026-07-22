@@ -6,28 +6,26 @@ use appfoster\upsnap\assetbundles\DashboardAsset;
 use appfoster\upsnap\Constants;
 use appfoster\upsnap\services\HealthCheckService;
 use appfoster\upsnap\Upsnap;
-use Craft;
-use yii\web\Response;
+use CraftCms\Cms\View\LegacyAssets\InternalAssetRegistry;
+use Illuminate\Support\Facades\Log;
+use Symfony\Component\HttpFoundation\Response;
 
 class DashboardController extends BaseController
 {
     public $service;
-    public function __construct($id, $module = null)
+
+    public function __construct()
     {
-        parent::__construct($id, $module);
-        DashboardAsset::register($this->view);
+        parent::__construct();
+        app(InternalAssetRegistry::class)->register(DashboardAsset::class);
         $this->service = new HealthCheckService($this);
     }
-
-    // Action Methods
-    // =========================================================================
 
     /**
      * Dashboard index
      */
-    public function actionIndex(): \yii\web\Response
+    public function index(): Response
     {
-        $request = Craft::$app->getRequest();
         $url = Upsnap::getMonitoringUrl();
         $settingsService = Upsnap::$plugin->settingsService;
         $settingsService->validateApiKey();
@@ -37,7 +35,7 @@ class DashboardController extends BaseController
             && ($primaryMonitorRequirement['requiresSelection'] ?? false) === true;
 
         $primaryMonitorId = $settingsService->getMonitorId();
-        $requestedMonitorId = (string)$request->getQueryParam('monitor_id', '');
+        $requestedMonitorId = (string)request()->query('monitor_id', '');
 
         $monitorOptionsResult = $settingsService->getPrimaryMonitorOptions();
         $monitorOptions = $monitorOptionsResult['monitorOptions'] ?? [];
@@ -63,7 +61,7 @@ class DashboardController extends BaseController
                 $incidents = $incidentsResponse['data']['incidents'] ?? [];
             }
         } catch (\Throwable $e) {
-            Craft::error("Incidents fetch failed: {$e->getMessage()}", __METHOD__);
+            Log::error("Incidents fetch failed: {$e->getMessage()}");
         }
 
         $variables = [
@@ -95,14 +93,12 @@ class DashboardController extends BaseController
     /**
      * Fetch selected monitor context for dashboard monitor switching.
      */
-    public function actionMonitorContext(): Response
+    public function monitorContext(): Response
     {
-        $request = Craft::$app->getRequest();
         $settingsService = Upsnap::$plugin->settingsService;
-
         $settingsService->validateApiKey();
 
-        $monitorId = (string)($request->getBodyParam('monitor_id') ?? $request->getQueryParam('monitor_id', ''));
+        $monitorId = (string)(request()->input('monitor_id') ?? request()->query('monitor_id', ''));
         if ($monitorId === '') {
             return $this->asJson([
                 'success' => false,
@@ -179,7 +175,7 @@ class DashboardController extends BaseController
                 }
             }
         } catch (\Throwable $e) {
-            Craft::error("Monitor context fetch failed: {$e->getMessage()}", __METHOD__);
+            Log::error("Monitor context fetch failed: {$e->getMessage()}");
         }
 
         return [

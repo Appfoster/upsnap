@@ -1,10 +1,9 @@
 <?php
 namespace appfoster\upsnap\services;
 
-use yii\base\Component;
 use appfoster\upsnap\Upsnap;
 
-class HistoryService extends Component
+class HistoryService
 {
     /**
      * Get monitoring history for a specific service/module.
