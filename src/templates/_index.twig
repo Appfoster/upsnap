@@ -1,6 +1,6 @@
 {% extends '_layouts/cp' %}
 {% import '_includes/forms' as forms %}
-{% set _logoBaseUrl = craft.app.assetManager.getPublishedUrl('@upsnapRoot/assets/images/logo', true) %}
+{% set _logoBaseUrl = asset('vendor/appfoster/upsnap/assets/images/logo') %}
 
 {% block actionButton %}
 	<div class="buttons dashboard-action-buttons">
@@ -88,7 +88,7 @@ regionsEndpoint: {{ actionUrl('upsnap/regions/list')|json_encode|raw }}
 			</p>
 		</div>
 		<div class="register-message">
-			<img class="placeholder-image" src="{{ view.getAssetManager().getPublishedUrl( '@appfoster/upsnap/../resources/images/dashboard-page-placeholder.png', true ) }}" alt="{{ 'Dashboard placeholder'|t('upsnap') }}"/>
+			<img class="placeholder-image" src="{{ asset('vendor/appfoster/upsnap/resources/images/dashboard-page-placeholder.png') }}" alt="{{ 'Dashboard placeholder'|t('upsnap') }}"/>
 		</div>
 	{% elseif hasApiKey and not isActiveApiToken %}
 		{# ── Case 2 & 4: API key exists but expired / suspended / deleted ── #}
@@ -107,7 +107,7 @@ regionsEndpoint: {{ actionUrl('upsnap/regions/list')|json_encode|raw }}
 				<a href="{{ cpUrl('upsnap/settings') }}" class="btn submit sp-preview-gate-btn">{{ 'Go to Settings'|t('upsnap') }}</a>
 			</div>
 			<div class="register-message" style="filter:blur(3px); opacity:0.5; pointer-events:none; user-select:none;">
-				<img class="placeholder-image" src="{{ view.getAssetManager().getPublishedUrl( '@appfoster/upsnap/../resources/images/dashboard-page-placeholder.png', true ) }}" alt="{{ 'Dashboard placeholder'|t('upsnap') }}"/>
+				<img class="placeholder-image" src="{{ asset('vendor/appfoster/upsnap/resources/images/dashboard-page-placeholder.png') }}" alt="{{ 'Dashboard placeholder'|t('upsnap') }}"/>
 			</div>
 		</div>
 	{% elseif success == false %}

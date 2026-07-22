@@ -82,7 +82,7 @@
 			body.set('hash', this.payload.hash);
 			body.set(window.Craft?.csrfTokenName ?? 'CRAFT_CSRF_TOKEN', csrfToken);
 
-			fetch(Craft.getCpUrl('upsnap/alerts/dismiss'), {
+			fetch(Craft.getActionUrl('upsnap/alerts/dismiss'), {
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/x-www-form-urlencoded',

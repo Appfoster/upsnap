@@ -3,18 +3,19 @@
 namespace appfoster\upsnap\services;
 
 use appfoster\upsnap\Constants;
-use craft\base\Component;
 use appfoster\upsnap\records\SettingRecord;
 use appfoster\upsnap\Upsnap;
-use Craft;
 use Exception;
 use GuzzleHttp\Client;
-use craft\helpers\UrlHelper;
+use CraftCms\Cms\Support\Url;
+use CraftCms\Cms\Support\Facades\Sites;
+use Illuminate\Support\Facades\Log;
+use function CraftCms\Cms\t;
 
 /**
  * Settings service for managing plugin settings using Record models
  */
-class SettingsService extends Component
+class SettingsService
 {
     public ?string $apiKeyStatus;
     /**
@@ -65,7 +66,7 @@ class SettingsService extends Component
      */
     public function getAllSettings(): array
     {
-        $records = SettingRecord::find()->all();
+        $records = SettingRecord::all();
         $settings = [];
 
         foreach ($records as $record) {
@@ -168,9 +169,13 @@ class SettingsService extends Component
     public function setApiKey(?string $apiKey): bool
     {
         if ($apiKey === null || $apiKey === '') {
-            return $this->deleteSetting('apiKey');
+            $deleted = $this->deleteSetting('apiKey');
+            Upsnap::getInstance()->apiService->setApiToken(null);
+            return $deleted;
         }
-        return $this->setSetting('apiKey', $apiKey);
+        $saved = $this->setSetting('apiKey', $apiKey);
+        Upsnap::getInstance()->apiService->setApiToken($apiKey);
+        return $saved;
     }
 
     public function verifyApiKey(string $apiKey): bool
@@ -188,7 +193,7 @@ class SettingsService extends Component
             }
             return false;
         } catch (\Exception $e) {
-            Craft::error('Error verifying API key: ' . $e->getMessage(), __METHOD__);
+            Log::error('Error verifying API key: ' . $e->getMessage());
             throw $e;
         }
     }
@@ -335,7 +340,7 @@ class SettingsService extends Component
             $tokenStatus = $isValid ? Constants::API_KEY_STATUS['active'] : Constants::API_KEY_STATUS['deleted'];
             $this->setApiTokenStatus($tokenStatus);
         } catch (\Throwable $e) {
-            Craft::error("Error validating stored API key: {$e->getMessage()}", __METHOD__);
+            Log::error("Error validating stored API key: {$e->getMessage()}");
         }
     }
 
@@ -369,7 +374,7 @@ class SettingsService extends Component
 
             return ['status' => 'error', 'valid' => false, 'message' => 'Something went wrong.'];
         } catch (\Exception $e) {
-            Craft::error('Error verifying API key: ' . $e->getMessage(), __METHOD__);
+            Log::error('Error verifying API key: ' . $e->getMessage());
             throw $e;
         }
     }
@@ -446,13 +451,13 @@ class SettingsService extends Component
             $response = Upsnap::$plugin->apiService->get($endpoint);
 
             if (!isset($response['status']) || $response['status'] !== 'success') {
-                $errorMsg = $response['message'] ?? Craft::t('upsnap', 'Failed to fetch user details.');
+                $errorMsg = $response['message'] ?? t('Failed to fetch user details.', [], 'upsnap');
                 throw new \Exception($errorMsg);
             }
 
             return $response['data'];
         } catch (\Throwable $e) {
-            Craft::error("User details fetch failed: {$e->getMessage()}", __METHOD__);
+            Log::error("User details fetch failed: {$e->getMessage()}");
             return null;
         }
     }
@@ -465,14 +470,14 @@ class SettingsService extends Component
             $response = Upsnap::$plugin->apiService->get($endpoint);
 
             if (!isset($response['status']) || $response['status'] !== 'success') {
-                $errorMsg = $response['message'] ?? Craft::t('upsnap', 'Failed to fetch monitor details.');
+                $errorMsg = $response['message'] ?? t('Failed to fetch monitor details.', [], 'upsnap');
                 throw new \Exception($errorMsg);
             }
 
             $data = $response['data'] ?? [];
 
             if (empty($data)) {
-                throw new \Exception(Craft::t('upsnap', 'Empty monitor details received.'));
+                throw new \Exception(t('Empty monitor details received.', [], 'upsnap'));
             }
 
             // Extract monitor details safely
@@ -509,7 +514,7 @@ class SettingsService extends Component
                 'uptime_interval' => $services['uptime']['monitor_interval'] ?? 0,
             ];
         } catch (\Throwable $e) {
-            Craft::error("Monitor details fetch failed: {$e->getMessage()}", __METHOD__);
+            Log::error("Monitor details fetch failed: {$e->getMessage()}");
             return null;
         }
     }
@@ -526,8 +531,8 @@ class SettingsService extends Component
 
             if (!is_array($response) || ($response['status'] ?? null) !== 'success') {
                 $errorMsg = is_array($response)
-                    ? ($response['message'] ?? Craft::t('upsnap', 'Failed to fetch monitors.'))
-                    : Craft::t('upsnap', 'Failed to fetch monitors.');
+                    ? ($response['message'] ?? t('Failed to fetch monitors.', [], 'upsnap'))
+                    : t('Failed to fetch monitors.', [], 'upsnap');
 
                 return [
                     'success' => false,
@@ -577,11 +582,11 @@ class SettingsService extends Component
                 'monitorOptions' => $options,
             ];
         } catch (\Throwable $e) {
-            Craft::error("Failed to fetch monitor options: {$e->getMessage()}", __METHOD__);
+            Log::error("Failed to fetch monitor options: {$e->getMessage()}");
 
             return [
                 'success' => false,
-                'message' => Craft::t('upsnap', 'Failed to fetch monitors.'),
+                'message' => t('Failed to fetch monitors.', [], 'upsnap'),
                 'monitorOptions' => [],
             ];
         }
@@ -602,7 +607,7 @@ class SettingsService extends Component
                 'requiresSelection' => false,
                 'currentMonitorId' => $currentMonitorId,
                 'monitorOptions' => [],
-                'message' => $monitorResult['message'] ?? Craft::t('upsnap', 'Failed to validate primary monitor.'),
+                'message' => $monitorResult['message'] ?? t('Failed to validate primary monitor.', [], 'upsnap'),
             ];
         }
 
@@ -641,7 +646,7 @@ class SettingsService extends Component
             }
 
             // Store session token temporarily in cache for use in step 2
-            Craft::$app->getCache()->set('upsnap_signup_session_' . $sessionToken, $email, 3600);
+            cache()->put('upsnap_signup_session_' . $sessionToken, $email, 3600);
 
             return [
                 'status' => 'success',
@@ -688,7 +693,7 @@ class SettingsService extends Component
                 ],
             ];
         } catch (\Throwable $e) {
-            Craft::error("Step 2 failed: {$e->getMessage()}", __METHOD__);
+            Log::error("Step 2 failed: {$e->getMessage()}");
             return [
                 'status' => 'error',
                 'message' => 'Error fetching API token: ' . $e->getMessage(),
@@ -738,7 +743,7 @@ class SettingsService extends Component
                 'success' => true,
             ];
         } catch (\Throwable $e) {
-            Craft::error("Step 3 failed: {$e->getMessage()}", __METHOD__);
+            Log::error("Step 3 failed: {$e->getMessage()}");
             return [
                 'status' => 'error',
                 'message' => 'Error creating first monitor: ' . $e->getMessage(),
@@ -865,7 +870,7 @@ class SettingsService extends Component
                 'message' => $result['message'] ?? 'Failed to create monitor.',
             ];
         } catch (\Throwable $e) {
-            Craft::error("Monitor creation failed: {$e->getMessage()}", __METHOD__);
+            Log::error("Monitor creation failed: {$e->getMessage()}");
             return [
                 'success' => false,
                 'message' => 'An error occurred while creating the monitor.',
@@ -891,7 +896,7 @@ class SettingsService extends Component
             }
 
             $options[] = [
-                'label' => Craft::t('upsnap', $label),
+                'label' => t($label, [], 'upsnap'),
                 'value' => (string) $value,
                 'disabled' => $disabled, // always boolean
             ];
@@ -907,14 +912,14 @@ class SettingsService extends Component
      */
     public function getSiteUrl(): ?string
     {
-        $request = Craft::$app->getRequest();
+        $request = request();
         //  Web request fallback
-        if (!$request->getIsConsoleRequest()) {
-            return $request->getHostInfo();
+        if (!app()->runningInConsole()) {
+            return $request->getSchemeAndHttpHost();
         }
 
 
-        return parse_url(UrlHelper::siteUrl(), PHP_URL_HOST);
+        return parse_url(Url::siteUrl(), PHP_URL_HOST);
     }
 
     public function isProPlanOrAbove(): bool
@@ -934,7 +939,7 @@ class SettingsService extends Component
             $proTiers = ['pro', 'agency'];
             return in_array(strtolower($subscription), $proTiers, true);
         } catch (\Throwable $e) {
-            Craft::error("Failed to check user subscription: {$e->getMessage()}", __METHOD__);
+            Log::error("Failed to check user subscription: {$e->getMessage()}");
             return false;
         }
     }
@@ -946,7 +951,7 @@ class SettingsService extends Component
      */
     public function getAllCraftSites(): array
     {
-        $sites = Craft::$app->getSites()->getAllSites();
+        $sites = Sites::getAllSites()->all();
         $result = [];
 
         foreach ($sites as $site) {

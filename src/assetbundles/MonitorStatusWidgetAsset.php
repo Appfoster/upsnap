@@ -4,7 +4,7 @@ namespace appfoster\upsnap\assetbundles;
 
 class MonitorStatusWidgetAsset extends BaseAsset
 {
-    public function init()
+    public function init(): void
     {
         parent::init();
 

@@ -3,24 +3,23 @@
 namespace appfoster\upsnap\services;
 
 use Craft;
-use yii\base\Component;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\RequestException;
 
 use appfoster\upsnap\Constants;
 use appfoster\upsnap\Upsnap;
+use Illuminate\Support\Facades\Log;
+use CraftCms\Cms\Cms;
 
-class ApiService extends Component
+class ApiService
 {
     protected string $baseUrl;
     protected string $apiVersion;
     protected ?string $apiToken = null;
     protected Client $client;
 
-    public function __construct($config = [])
+    public function __construct()
     {
-        parent::__construct($config);
-
         // Load from constants or environment
         $this->baseUrl = Constants::getAPIBaseUrl();
         $this->apiVersion = Constants::API_VERSION;
@@ -45,7 +44,7 @@ class ApiService extends Component
             ]);
             return json_decode((string) $response->getBody(), true);
         } catch (RequestException $e) {
-            Craft::error("API GET failed: " . $e->getMessage(), __METHOD__);
+            Log::error("API GET failed: " . $e->getMessage());
             throw $e;
         }
     }
@@ -62,7 +61,7 @@ class ApiService extends Component
             ]);
             return json_decode((string) $response->getBody(), true);
         } catch (RequestException $e) {
-            Craft::error("API POST failed: " . $e->getMessage(), __METHOD__);
+            Log::error("API POST failed: " . $e->getMessage());
             throw $e;
         }
     }
@@ -80,7 +79,7 @@ class ApiService extends Component
 
             return json_decode((string) $response->getBody(), true);
         } catch (RequestException $e) {
-            Craft::error("API multipart POST failed: " . $e->getMessage(), __METHOD__);
+            Log::error("API multipart POST failed: " . $e->getMessage());
             throw $e;
         }
     }
@@ -98,7 +97,7 @@ class ApiService extends Component
 
             return json_decode((string) $response->getBody(), true);
         } catch (RequestException $e) {
-            Craft::error("API PUT failed: " . $e->getMessage(), __METHOD__);
+            Log::error("API PUT failed: " . $e->getMessage());
             throw $e;
         }
     }
@@ -116,7 +115,7 @@ class ApiService extends Component
 
             return json_decode((string) $response->getBody(), true);
         } catch (RequestException $e) {
-            Craft::error("API PUT failed: " . $e->getMessage(), __METHOD__);
+            Log::error("API PUT failed: " . $e->getMessage());
             throw $e;
         }
     }
@@ -132,7 +131,7 @@ class ApiService extends Component
             ]);
             return json_decode((string) $response->getBody(), true);
         } catch (RequestException $e) {
-            Craft::error("API DELETE failed: " . $e->getMessage(), __METHOD__);
+            Log::error("API DELETE failed: " . $e->getMessage());
             throw $e;
         }
     }
@@ -150,14 +149,14 @@ class ApiService extends Component
                 'name' => $name,
                 'install_id' => $craftInstallId,
                 'plugin_version' => Upsnap::getInstance()->getVersion(),
-                'craft_version' => Craft::$app->getVersion(),
+                'craft_version' => Cms::version(),
             ]
         ];
 
         try {
             return $this->adminPost('installation-data', $body);
         } catch (\Throwable $e) {
-            Craft::error("Failed to record installation data: " . $e->getMessage(), __METHOD__);
+            Log::error("Failed to record installation data: " . $e->getMessage());
             return null;
         }
     }
@@ -194,7 +193,7 @@ class ApiService extends Component
         try {
             return $this->get('user/monitors/incidents', $query);
         } catch (RequestException $e) {
-            Craft::error("Failed to fetch monitor incidents: " . $e->getMessage(), __METHOD__);
+            Log::error("Failed to fetch monitor incidents: " . $e->getMessage());
             return null;
         }
     }
@@ -219,7 +218,7 @@ class ApiService extends Component
                 'contentDisposition' => $response->getHeaderLine('Content-Disposition') ?: 'attachment; filename=export',
             ];
         } catch (RequestException $e) {
-            Craft::error('API getRaw failed: ' . $e->getMessage(), __METHOD__);
+            Log::error('API getRaw failed: ' . $e->getMessage());
             throw $e;
         }
     }
@@ -240,7 +239,7 @@ class ApiService extends Component
             ]);
             return $result;
         } catch (RequestException $e) {
-            Craft::error("Signup API failed: " . $e->getMessage(), __METHOD__);
+            Log::error("Signup API failed: " . $e->getMessage());
             return [
                 'status' => 'error',
                 'message' => 'Signup failed. Please try again.',
@@ -265,7 +264,7 @@ class ApiService extends Component
             ]);
             return $result;
         } catch (RequestException $e) {
-            Craft::error("Login API failed: " . $e->getMessage(), __METHOD__);
+            Log::error("Login API failed: " . $e->getMessage());
             return [
                 'status' => 'error',
                 'message' => 'Login failed. Please try again.',
@@ -288,7 +287,7 @@ class ApiService extends Component
             $result = $this->get(Constants::MICROSERVICE_ENDPOINTS['tokens']['list']);
             return $result;
         } catch (RequestException $e) {
-            Craft::error("Get tokens API failed: " . $e->getMessage(), __METHOD__);
+            Log::error("Get tokens API failed: " . $e->getMessage());
             return [
                 'status' => 'error',
                 'message' => 'Failed to retrieve tokens.',
@@ -317,7 +316,7 @@ class ApiService extends Component
             ]);
             return $result;
         } catch (RequestException $e) {
-            Craft::error("Generate token API failed: " . $e->getMessage(), __METHOD__);
+            Log::error("Generate token API failed: " . $e->getMessage());
             return [
                 'status' => 'error',
                 'message' => 'Failed to generate token.',

@@ -33,8 +33,8 @@
     <script>
         window.UpsnapMultisite = {
             bulkCreateUrl:  {{ actionUrl('upsnap/settings/bulk-create-monitors')|json_encode|raw }},
-            csrfTokenName:  {{ craft.app.config.general.csrfTokenName|json_encode|raw }},
-            csrfTokenValue: {{ craft.app.request.csrfToken|json_encode|raw }},
+            csrfTokenName:  {{ '_token'|json_encode|raw }},
+            csrfTokenValue: {{ csrf_token()|json_encode|raw }},
             monitorsUrl:    {{ monitorsUrl|json_encode|raw }},
             settingsUrl:    {{ settingsUrl|json_encode|raw }},
             i18n: {

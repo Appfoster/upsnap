@@ -60,7 +60,7 @@
 
 {# 5 min for now #}
 {% set MAX_MONITOR_INTERVAL_SECONDS = 86400 %}
-{% set _logoBaseUrl = craft.app.assetManager.getPublishedUrl('@upsnapRoot/assets/images/logo', true) %}
+{% set _logoBaseUrl = asset('vendor/appfoster/upsnap/assets/images/logo') %}
 
 
 {% block content %}

@@ -2,22 +2,23 @@
 
 namespace appfoster\upsnap\services;
 
-use Craft;
-use yii\base\Component;
-use craft\elements\Entry;
 use appfoster\upsnap\Upsnap;
+use CraftCms\Cms\Entry\Elements\Entry;
+use CraftCms\Cms\Support\Facades\Sites;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 
-class RecheckService extends Component
+class RecheckService
 {
     const CACHE_PREFIX = 'upsnap_recheck_last_';
     const RATE_LIMIT_SECONDS = 60;
 
     public function triggerRecheckForEntry(Entry $entry): void
     {
-        Craft::info('RecheckService: hook fired for entry ' . $entry->id, __METHOD__);
+        Log::info('RecheckService: hook fired for entry ' . $entry->id);
 
         if (!$this->isEnabled()) {
-            Craft::info('RecheckService: skipped - onDemandRecheckEnabled is off', __METHOD__);
+            Log::info('RecheckService: skipped - onDemandRecheckEnabled is off');
             return;
         }
 
@@ -26,15 +27,26 @@ class RecheckService extends Component
         }
 
         if (!$entry->enabled) {
-            Craft::info('RecheckService: skipped - entry ' . $entry->id . ' is not enabled (draft)', __METHOD__);
+            Log::info('RecheckService: skipped - entry ' . $entry->id . ' is not enabled (draft)');
             return;
         }
 
         $sites = $entry->getSiteIds();
-        Craft::info('RecheckService: entry ' . $entry->id . ' is enabled, checking ' . count($sites) . ' site(s)', __METHOD__);
+        Log::info('RecheckService: entry ' . $entry->id . ' is enabled, checking ' . count($sites) . ' site(s)');
+
+        $monitors = [];
+        try {
+            $monitorsResult = Upsnap::getInstance()->settingsService->getPrimaryMonitorOptions();
+            if ($monitorsResult['success'] ?? false) {
+                $monitors = $monitorsResult['monitorOptions'] ?? [];
+            }
+        } catch (\Throwable $e) {
+            Log::error("RecheckService: failed to fetch monitor options: " . $e->getMessage());
+        }
+
         foreach ($sites as $siteId) {
             if ($entry->enabledForSite($siteId)) {
-                $this->triggerRecheckForSite($siteId);
+                $this->triggerRecheckForSite($siteId, $monitors);
             }
         }
     }
@@ -48,44 +60,44 @@ class RecheckService extends Component
     {
         $apiKey = Upsnap::getInstance()->settingsService->getApiKey();
         if (!$apiKey) {
-            Craft::info('RecheckService: skipped - no API key configured in plugin settings', __METHOD__);
+            Log::info('RecheckService: skipped - no API key configured in plugin settings');
             return false;
         }
 
         $supported = Upsnap::getInstance()->settingsService->isProPlanOrAbove();
         if (!$supported) {
-            Craft::info('RecheckService: skipped - account plan is not Pro or Agency', __METHOD__);
+            Log::info('RecheckService: skipped - account plan is not Pro or Agency');
         }
         return $supported;
     }
 
-    private function triggerRecheckForSite(int $siteId): void
+    private function triggerRecheckForSite(int $siteId, array $monitors): void
     {
         $cacheKey = self::CACHE_PREFIX . $siteId;
 
-        if (Craft::$app->getCache()->get($cacheKey)) {
+        if (Cache::get($cacheKey, false)) {
             return;
         }
 
-        $monitor = $this->getMonitorForSite($siteId);
+        $monitor = $this->getMonitorForSite($siteId, $monitors);
         if (!$monitor) {
-            Craft::info('RecheckService: skipped - no UpSnap monitor found for site ' . $siteId, __METHOD__);
+            Log::info('RecheckService: skipped - no UpSnap monitor found for site ' . $siteId);
             return;
         }
 
         try {
             $this->callRecheckApi($monitor['id']);
 
-            Craft::$app->getCache()->set($cacheKey, true, self::RATE_LIMIT_SECONDS);
-            Craft::info("On-demand recheck triggered for monitor {$monitor['id']} (site: {$siteId})", __METHOD__);
+            Cache::put($cacheKey, true, self::RATE_LIMIT_SECONDS);
+            Log::info("On-demand recheck triggered for monitor {$monitor['id']} (site: {$siteId})");
         } catch (\Throwable $e) {
-            Craft::error("Failed to trigger recheck for site {$siteId}: {$e->getMessage()}", __METHOD__);
+            Log::error("Failed to trigger recheck for site {$siteId}: {$e->getMessage()}");
         }
     }
 
-    private function getMonitorForSite(int $siteId): ?array
+    private function getMonitorForSite(int $siteId, array $monitors): ?array
     {
-        $site = Craft::$app->getSites()->getSiteById($siteId);
+        $site = Sites::getSiteById($siteId);
         if (!$site) {
             return null;
         }
@@ -95,21 +107,10 @@ class RecheckService extends Component
             return null;
         }
 
-        try {
-            $monitors = Upsnap::getInstance()->settingsService->getPrimaryMonitorOptions();
-
-            if (!($monitors['success'] ?? false)) {
-                return null;
+        foreach ($monitors as $monitor) {
+            if (($monitor['monitoringUrl'] ?? '') === $siteUrl) {
+                return $monitor;
             }
-
-            $options = $monitors['monitorOptions'] ?? [];
-            foreach ($options as $monitor) {
-                if (($monitor['monitoringUrl'] ?? '') === $siteUrl) {
-                    return $monitor;
-                }
-            }
-        } catch (\Throwable $e) {
-            Craft::error("Failed to fetch monitors for site {$siteId}: {$e->getMessage()}", __METHOD__);
         }
 
         return null;

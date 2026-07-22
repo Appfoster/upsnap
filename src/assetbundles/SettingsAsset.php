@@ -1,23 +1,23 @@
 <?php
 namespace appfoster\upsnap\assetbundles;
 
+use CraftCms\Cms\View\HtmlStack;
+
 class SettingsAsset extends BaseAsset
 {
-    public function init()
+    public function register(HtmlStack $htmlStack): void
     {
-        // Include global assets from parent
-        parent::init();
+        parent::register($htmlStack);
 
-        // Add settings-specific assets
-        $this->js[] = 'js/settings.js';
-        $this->js[] = 'js/monitors.js';
-        $this->js[] = 'js/monitorsTable.js';
-        $this->js[] = 'js/notificationChannels.js';
-        $this->js[] = 'js/signupInlineProgress.js';
-        $this->js[] = 'js/verificationBanner.js';
-        $this->css[] = 'css/addMonitorModal.css';
-        $this->css[] = 'css/notification-channels.css';
-        $this->css[] = 'css/signupInlineProgress.css';
-        $this->css[] = 'css/verificationBanner.css';
+        $htmlStack->jsFile(asset('vendor/appfoster/upsnap/dist/js/settings.js'));
+        $htmlStack->jsFile(asset('vendor/appfoster/upsnap/dist/js/monitors.js'));
+        $htmlStack->jsFile(asset('vendor/appfoster/upsnap/dist/js/monitorsTable.js'));
+        $htmlStack->jsFile(asset('vendor/appfoster/upsnap/dist/js/notificationChannels.js'));
+        $htmlStack->jsFile(asset('vendor/appfoster/upsnap/dist/js/signupInlineProgress.js'));
+        $htmlStack->jsFile(asset('vendor/appfoster/upsnap/dist/js/verificationBanner.js'));
+        $htmlStack->cssFile(asset('vendor/appfoster/upsnap/dist/css/addMonitorModal.css'));
+        $htmlStack->cssFile(asset('vendor/appfoster/upsnap/dist/css/notification-channels.css'));
+        $htmlStack->cssFile(asset('vendor/appfoster/upsnap/dist/css/signupInlineProgress.css'));
+        $htmlStack->cssFile(asset('vendor/appfoster/upsnap/dist/css/verificationBanner.css'));
     }
 }

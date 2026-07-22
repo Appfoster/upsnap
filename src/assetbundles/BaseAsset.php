@@ -1,29 +1,50 @@
 <?php
 namespace appfoster\upsnap\assetbundles;
 
-use craft\web\AssetBundle;
-use appfoster\upsnap\Constants;
-use craft\web\assets\cp\CpAsset;
+use CraftCms\Cms\View\LegacyAssets\LegacyAssetInterface;
+use CraftCms\Cms\View\HtmlStack;
+use CraftCms\Cms\View\LegacyAssets\CpAsset;
 
-class BaseAsset extends AssetBundle
+class BaseAsset implements LegacyAssetInterface
 {
-    public function init()
+    public array $depends = [
+        CpAsset::class,
+    ];
+
+    public array $js = [];
+    public array $css = [];
+
+    public function init(): void
     {
-        $this->sourcePath = Constants::ASSET_SOURCE_PATH;
+        // No-op — child classes can safely call parent::init()
+    }
 
-        $this->depends = [
-            CpAsset::class,
-        ];
+    public function register(HtmlStack $htmlStack): void
+    {
+        // 1. Call init if it exists to populate js/css arrays
+        if (method_exists($this, 'init')) {
+            $this->init();
+        }
 
-        $this->css = [
-            'css/global.css',
-        ];
+        // 2. Register base assets if this is not the base class itself
+        if (static::class !== self::class) {
+            $base = new self();
+            $base->register($htmlStack);
+        } else {
+            // Register base assets
+            $htmlStack->jsFile(asset('vendor/appfoster/upsnap/dist/js/global.js'));
+            $htmlStack->jsFile(asset('vendor/appfoster/upsnap/dist/js/chart.umd.min.js'));
+            $htmlStack->cssFile(asset('vendor/appfoster/upsnap/dist/css/global.css'));
+            return;
+        }
 
-        $this->js = [
-            'js/global.js',
-            'js/chart.umd.min.js'
-        ];
+        // 3. Register child-specific assets
+        foreach ($this->js as $file) {
+            $htmlStack->jsFile(asset('vendor/appfoster/upsnap/dist/' . $file));
+        }
 
-        parent::init();
+        foreach ($this->css as $file) {
+            $htmlStack->cssFile(asset('vendor/appfoster/upsnap/dist/' . $file));
+        }
     }
 }

@@ -1,7 +1,7 @@
 <?php
 
 namespace appfoster\upsnap;
-use craft\helpers\App;
+use CraftCms\Cms\Support\Env;
 
 /**
  * Upsnap Constants
@@ -300,7 +300,7 @@ class Constants
 
     public static function getAPIBaseUrl(): string
     {
-        return App::env('UPSNAP_API_BASE_URL') ?? self::API_BASE_URL_DEFAULT;
+        return Env::get('UPSNAP_API_BASE_URL') ?? self::API_BASE_URL_DEFAULT;
     }
 
     // Status Page Global Assets
@@ -367,7 +367,7 @@ class Constants
 
     public static function getWebAppUrl(string $key): ?string
     {
-        $isDevEnvironment = App::env('CRAFT_ENVIRONMENT') === self::APP_ENV_DEV_VALUE;
+        $isDevEnvironment = Env::get('CRAFT_ENVIRONMENT') === self::APP_ENV_DEV_VALUE;
         $urlMap = $isDevEnvironment
             ? [
                 'website' => self::API_BASE_URL_DEFAULT_DEV,

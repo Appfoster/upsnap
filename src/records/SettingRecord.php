@@ -2,7 +2,8 @@
 
 namespace appfoster\upsnap\records;
 
-use craft\db\ActiveRecord;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Str;
 use appfoster\upsnap\Constants;
 
 /**
@@ -15,14 +16,20 @@ use appfoster\upsnap\Constants;
  * @property string $dateUpdated
  * @property string $uid
  */
-class SettingRecord extends ActiveRecord
+class SettingRecord extends Model
 {
-    /**
-     * @inheritdoc
-     */
-    public static function tableName(): string
+    protected $table = 'upsnap_settings';
+
+    const CREATED_AT = 'dateCreated';
+    const UPDATED_AT = 'dateUpdated';
+
+    protected static function booted()
     {
-        return Constants::TABLE_SETTINGS;
+        static::creating(function ($model) {
+            if (empty($model->uid)) {
+                $model->uid = Str::uuid()->toString();
+            }
+        });
     }
 
     /**
@@ -60,7 +67,7 @@ class SettingRecord extends ActiveRecord
      */
     public static function findByKey(string $key): ?self
     {
-        return self::findOne(['key' => $key]);
+        return self::where('key', $key)->first();
     }
 
     /**

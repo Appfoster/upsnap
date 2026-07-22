@@ -378,7 +378,7 @@
 			}
 
 			const response = await fetch(
-				"/actions/upsnap/settings/set-primary-monitor",
+				Craft.getActionUrl("upsnap/settings/set-primary-monitor"),
 				{
 					method: "POST",
 					headers: {
@@ -463,7 +463,7 @@
 		btn.classList.add("loading");
 
 		try {
-			const res = await fetch("/actions/upsnap/monitors/delete", {
+			const res = await fetch(Craft.getActionUrl("upsnap/monitors/delete"), {
 				method: "POST",
 				headers: {
 					"Content-Type": "application/json",
@@ -559,19 +559,19 @@
 					fetch(endpoint, {
 						headers: { "X-CSRF-Token": Craft.csrfTokenValue },
 					}),
-					fetch("/actions/upsnap/monitors/get-settings", {
+					fetch(Craft.getActionUrl("upsnap/monitors/get-settings"), {
 						headers: {
 							"X-CSRF-Token": Craft.csrfTokenValue,
 							Accept: "application/json",
 						},
 					}),
-					fetch("/actions/upsnap/tags/list", {
+					fetch(Craft.getActionUrl("upsnap/tags/list"), {
 						headers: {
 							"X-CSRF-Token": Craft.csrfTokenValue,
 							Accept: "application/json",
 						},
 					}),
-					fetch("/actions/upsnap/regions/list", {
+					fetch(Craft.getActionUrl("upsnap/regions/list"), {
 						headers: {
 							"X-CSRF-Token": Craft.csrfTokenValue,
 							Accept: "application/json",
@@ -742,7 +742,7 @@
 	 */
 	async function fetchIncidentStats() {
 		const res = await fetch(
-			'/actions/upsnap/incidents/incident-stats',
+			Craft.getActionUrl('upsnap/incidents/incident-stats'),
 			{
 				headers: {
 					'X-CSRF-Token': Craft.csrfTokenValue,
@@ -865,7 +865,7 @@
 
 	async function fetchUptimeStats() {
 		const res = await fetch(
-			Craft.getCpUrl('upsnap/monitors/uptime-stats'),
+			Craft.getActionUrl('upsnap/monitors/uptime-stats'),
 			{
 				headers: {
 					'X-CSRF-Token': Craft.csrfTokenValue,
@@ -1090,7 +1090,7 @@
 
 			try {
 				const res = await fetch(
-					"/actions/upsnap/monitors/bulk-actions",
+					Craft.getActionUrl("upsnap/monitors/bulk-actions"),
 					{
 						method: "POST",
 						headers: {

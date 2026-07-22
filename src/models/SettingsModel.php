@@ -3,12 +3,12 @@
 namespace appfoster\upsnap\models;
 
 use appfoster\upsnap\Constants;
-use craft\base\Model;
+use CraftCms\Cms\Component\Component;
 
 /**
  * Upsnap Settings Model
  */
-class SettingsModel extends Model
+class SettingsModel extends Component
 {
     /**
      * @var bool Whether the monitoring is enabled
@@ -52,16 +52,13 @@ class SettingsModel extends Model
     /**
      * @inheritdoc
      */
-    public function rules(): array
+    public function getRules(): array
     {
         return [
-            ['enabled', 'boolean'],
-            ['monitoringInterval', 'integer', 'min' => 1],
-            ['monitoringUrl', 'required'],
-            ['monitoringInterval', 'required', 'when' => function($model) {
-                return $model->enabled === true;
-            }],
-            ['apiKey', 'string']
+            'enabled' => ['boolean'],
+            'monitoringInterval' => ['required', 'integer', 'min:1'],
+            'monitoringUrl' => ['required'],
+            'apiKey' => ['nullable', 'string'],
         ];
     }
 }

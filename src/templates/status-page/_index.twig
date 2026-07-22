@@ -45,8 +45,8 @@ userDetails: {{ userDetails|json_encode|raw }}
 		</div>
 		<p>{{ 'Example Status Page'|t('upsnap') }}</p>
 		<div class="zilch register-message">
-			<img class="placeholder-image" src="{{ view.getAssetManager().getPublishedUrl( '@appfoster/upsnap/../resources/images/status-page-placeholder.png', true ) }}" alt="{{ 'Status page placeholder'|t('upsnap') }}"/>
-			<img class="placeholder-image" src="{{ view.getAssetManager().getPublishedUrl( '@appfoster/upsnap/../resources/images/status-detail-page-placeholder.png', true ) }}" alt="{{ 'Status page placeholder'|t('upsnap') }}"/>
+			<img class="placeholder-image" src="{{ asset('vendor/appfoster/upsnap/resources/images/status-page-placeholder.png') }}" alt="{{ 'Status page placeholder'|t('upsnap') }}"/>
+			<img class="placeholder-image" src="{{ asset('vendor/appfoster/upsnap/resources/images/status-detail-page-placeholder.png') }}" alt="{{ 'Status page placeholder'|t('upsnap') }}"/>
 		</div>
 	{% elseif hasApiKey and not isActiveApiToken %}
 		{# ── Case 2 & 4: API key exists but expired / suspended / deleted ── #}
@@ -65,8 +65,8 @@ userDetails: {{ userDetails|json_encode|raw }}
 				<a href="{{ cpUrl('upsnap/settings') }}" class="btn submit sp-preview-gate-btn">{{ 'Go to Settings'|t('upsnap') }}</a>
 			</div>
 			<div class="zilch register-message" style="filter:blur(3px); opacity:0.5; pointer-events:none; user-select:none;">
-				<img class="placeholder-image" src="{{ view.getAssetManager().getPublishedUrl( '@appfoster/upsnap/../resources/images/status-page-placeholder.png', true ) }}" alt="{{ 'Status page placeholder'|t('upsnap') }}"/>
-				<img class="placeholder-image" src="{{ view.getAssetManager().getPublishedUrl( '@appfoster/upsnap/../resources/images/status-detail-page-placeholder.png', true ) }}" alt="{{ 'Status page placeholder'|t('upsnap') }}"/>
+				<img class="placeholder-image" src="{{ asset('vendor/appfoster/upsnap/resources/images/status-page-placeholder.png') }}" alt="{{ 'Status page placeholder'|t('upsnap') }}"/>
+				<img class="placeholder-image" src="{{ asset('vendor/appfoster/upsnap/resources/images/status-detail-page-placeholder.png') }}" alt="{{ 'Status page placeholder'|t('upsnap') }}"/>
 			</div>
 		</div>
 	{% else %}

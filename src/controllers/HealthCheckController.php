@@ -1,65 +1,64 @@
 <?php
-
+ 
 namespace appfoster\upsnap\controllers;
-
-use Craft;
-use yii\web\Response;
-
+ 
+use Symfony\Component\HttpFoundation\Response;
+use CraftCms\Cms\View\LegacyAssets\InternalAssetRegistry;
 use appfoster\upsnap\Upsnap;
 use appfoster\upsnap\Constants;
 use appfoster\upsnap\assetbundles\HealthCheckAsset;
 use appfoster\upsnap\services\HealthCheckService;
-
+use Illuminate\Support\Facades\Log;
+use function CraftCms\Cms\t;
+ 
 class HealthCheckController extends BaseController
 {
     public $service;
-
-    public function __construct($id, $module = null)
+ 
+    public function __construct()
     {
-        parent::__construct($id, $module);
-        HealthCheckAsset::register($this->view);
+        parent::__construct();
+        app(InternalAssetRegistry::class)->register(HealthCheckAsset::class);
         $this->service = new HealthCheckService($this);
     }
-
-    public function actionBrokenLinks(): Response
+ 
+    public function brokenLinks(): Response
     {
-        $request = Craft::$app->getRequest();
-        $isAjax = $request->getIsAjax();
+        $isAjax = request()->ajax();
         $url = $this->resolveRequestMonitoringUrl();
-        $forceFetch = $request->getBodyParam('force_fetch', false);
-
-
+        $forceFetch = request()->input('force_fetch', false);
+ 
         if (!$url) {
             return $this->service->handleMissingMonitoringUrl(Constants::SUBNAV_ITEM_REACHABILITY);
         }
-
+ 
         $data = [
             'data' => [
                 'url' => $url
             ]
         ];
-
+ 
         if ($isAjax) {
             try {
                 $paramName = Constants::SUBNAV_ITEM_BROKEN_LINKS['apiLabel'];
                 $response = $this->service->getHealthcheck($url, [$paramName], $forceFetch);
-
+ 
                 if (isset($response['result']['details'][$paramName]['error'])) {
                     $errorMsg = $response['result']['details'][$paramName]['error'];
                     throw new \Exception($errorMsg);
                 }
-
+ 
                 $brokenLinksMeta = $response['result']['details'][$paramName]['meta'] ?? [];
                 $isOk = $response['result']['details'][$paramName]['ok'] ?? true;
                 $errorsCount = $brokenLinksMeta['broken'] ?? 0;
-
+ 
                 // If there are broken links, consider it an error even if API says ok
                 if ($errorsCount > 0) {
                     $isOk = false;
                 }
-
+ 
                 $brokenLinks = [];
-
+ 
                 // Extract broken links if present
                 if (!empty($brokenLinksMeta['brokenLinks'])) {
                     foreach ($brokenLinksMeta['brokenLinks'] as $page) {
@@ -83,7 +82,7 @@ class HealthCheckController extends BaseController
                         }
                     }
                 }
-
+ 
                 $data = [
                     'data' => [
                         'status' => $isOk ? 'ok' : 'error',
@@ -108,34 +107,32 @@ class HealthCheckController extends BaseController
                 ];
             }
         }
-
+ 
         $data = $this->service->prepareData($data, Constants::SUBNAV_ITEM_BROKEN_LINKS, $isAjax);
-
+ 
         if ($isAjax) {
             return $this->asJson($data);
         }
-
+ 
         return $this->service->sendResponse($data, Constants::SUBNAV_ITEM_BROKEN_LINKS['template']);
     }
-
-    public function actionDomainCheck(): Response
+ 
+    public function domainCheck(): Response
     {
-
-        $request = Craft::$app->getRequest();
-        $isAjax = $request->getIsAjax();
+        $isAjax = request()->ajax();
         $url = $this->resolveRequestMonitoringUrl();
-        $forceFetch = $request->getBodyParam('force_fetch', false);
-
+        $forceFetch = request()->input('force_fetch', false);
+ 
         if (!$url) {
             return $this->service->handleMissingMonitoringUrl(Constants::SUBNAV_ITEM_DOMAIN_CHECK);
         }
-
+ 
         $data = [
             'data' => [
                 'url' => $url
             ]
         ];
-
+ 
         if ($isAjax) {
             try {
                 $paramName = Constants::SUBNAV_ITEM_DOMAIN_CHECK['apiLabel'];
@@ -144,14 +141,14 @@ class HealthCheckController extends BaseController
                     $errors = $response['result']['details'][$paramName]['error'];
                     throw new \Exception($errors);
                 }
-
+ 
                 // Transform API response to our expected format
                 if (isset($response['result'])) {
                     $result = $response['result'];
                     $domain = $result['details'][$paramName] ?? null;
                     $meta = $domain['meta'] ?? [];
                     $isOk = $response['result']['details'][$paramName]['ok'] ?? true;
-
+ 
                     $data = [
                         'data' => [
                             'status' => $isOk ? 'ok' : 'error',
@@ -191,61 +188,57 @@ class HealthCheckController extends BaseController
                 ];
             }
         }
-
+ 
         $data = $this->service->prepareData($data, Constants::SUBNAV_ITEM_DOMAIN_CHECK, $isAjax);
-
+ 
         if ($isAjax) {
             return $this->asJson($data);
         }
-
+ 
         return $this->service->sendResponse($data, Constants::SUBNAV_ITEM_DOMAIN_CHECK['template']);
     }
-
-    public function actionLighthouse(): Response
+ 
+    public function lighthouse(): Response
     {
-        $request = Craft::$app->getRequest();
-        $isAjax = $request->getIsAjax();
+        $isAjax = request()->ajax();
         $url = $this->resolveRequestMonitoringUrl();
-        $forceFetch = $request->getBodyParam('force_fetch', false);
-
+        $forceFetch = request()->input('force_fetch', false);
+ 
         if (!$url) {
             return $this->service->handleMissingMonitoringUrl(Constants::SUBNAV_ITEM_LIGHTHOUSE);
         }
-
+ 
         $data = [
             'data' => [
                 'url' => $url
             ]
         ];
-
+ 
         if ($isAjax) {
             if (!$this->isHttpsUrl($url)) {
                 $data = [
                     'data' => [
                         'status' => 'warning',
-                        'error' => Craft::t(
-                            'upsnap',
-                            'This check is only allowed for HTTPS URLs.'
-                        ),
+                        'error' => t('This check is only allowed for HTTPS URLs.', [], 'upsnap'),
                         'url' => $url,
                     ]
                 ];
             } else {
                 try {
                     $paramName = Constants::SUBNAV_ITEM_LIGHTHOUSE['apiLabel'];
-
-                    $response = $this->service->getHealthcheck($url, [$paramName], $forceFetch, Craft::$app->getRequest()->getParam('device', 'desktop'));
-
+ 
+                    $response = $this->service->getHealthcheck($url, [$paramName], $forceFetch, request()->input('device', 'desktop'));
+ 
                     if (isset($response['result']['details'][$paramName]['error'])) {
                         throw new \Exception($response['result']['details'][$paramName]['error']);
                     }
-
+ 
                     $isOk = $response['result']['details'][$paramName]['ok'] ?? true;
-
+ 
                     if (isset($response['result'])) {
                         $result = $response['result'];
                         $lh = $result['details']['lighthouse'] ?? [];
-
+ 
                         $data = [
                             'data' => [
                                 'status' => $isOk ? 'ok' : 'error',
@@ -278,60 +271,56 @@ class HealthCheckController extends BaseController
                 }
             }
         }
-
+ 
         $data = $this->service->prepareData($data, Constants::SUBNAV_ITEM_LIGHTHOUSE, $isAjax);
         if ($isAjax) {
             return $this->asJson($data);
         }
-
+ 
         return $this->service->sendResponse($data, Constants::SUBNAV_ITEM_LIGHTHOUSE['template']);
     }
-
-    public function actionMixedContent(): Response
+ 
+    public function mixedContent(): Response
     {
-        $request = Craft::$app->getRequest();
-        $isAjax = $request->getIsAjax();
+        $isAjax = request()->ajax();
         $url = $this->resolveRequestMonitoringUrl();
-        $forceFetch = $request->getBodyParam('force_fetch', false);
-
+        $forceFetch = request()->input('force_fetch', false);
+ 
         if (!$url) {
             return $this->service->handleMissingMonitoringUrl(Constants::SUBNAV_ITEM_MIXED_CONTENT);
         }
-
+ 
         $data = [
             'data' => [
                 'url' => $url
             ]
         ];
-
+ 
         if ($isAjax) {
             if (!$this->isHttpsUrl($url)) {
                 $data = [
                     'data' => [
                         'status' => 'warning',
-                        'error' => Craft::t(
-                            'upsnap',
-                            'This check is only allowed for HTTPS URLs.'
-                        ),
+                        'error' => t('This check is only allowed for HTTPS URLs.', [], 'upsnap'),
                     ]
                 ];
             } else {
                 try {
                     $paramName = Constants::SUBNAV_ITEM_MIXED_CONTENT['apiLabel'];
                     $response = $this->service->getHealthcheck($url, [$paramName], $forceFetch);
-
+ 
                     if (isset($response['result']['details'][$paramName]['error'])) {
                         $errorMsg = $response['result']['details'][$paramName]['error'];
                         throw new \Exception($errorMsg);
                     }
-
+ 
                     // Transform API response to our expected format
                     if (isset($response['result'])) {
                         $result = $response['result'];
                         $mixedContent = $result['details'][$paramName] ?? null;
                         $meta = $mixedContent['meta'] ?? [];
                         $isOk = $response['result']['details'][$paramName]['ok'] ?? true;
-
+ 
                         $data = [
                             'data' => [
                                 'status' => $isOk ? 'ok' : 'error',
@@ -357,33 +346,32 @@ class HealthCheckController extends BaseController
                 }
             }
         }
-
+ 
         $data = $this->service->prepareData($data, Constants::SUBNAV_ITEM_MIXED_CONTENT, $isAjax);
         if ($isAjax) {
             return $this->asJson($data);
         }
-
+ 
         return $this->service->sendResponse($data, Constants::SUBNAV_ITEM_MIXED_CONTENT['template']);
     }
-
-    public function actionReachability(): Response
+ 
+    public function reachability(): Response
     {
         $data = [];
-        $request = Craft::$app->getRequest();
-        $isAjax = $request->getIsAjax();
+        $isAjax = request()->ajax();
         $url = $this->resolveRequestMonitoringUrl();
-        $forceFetch = $request->getBodyParam('force_fetch', false);
+        $forceFetch = request()->input('force_fetch', false);
         $monitorData = null;
-
+ 
         if (!$url) {
             return $this->service->handleMissingMonitoringUrl(Constants::SUBNAV_ITEM_REACHABILITY);
         }
-
+ 
         // Fetch monitor data to get regions only for non-AJAX (full page) requests
         if (!$isAjax) {
             try {
                 $settingsService = Upsnap::$plugin->settingsService;
-                $requestedMonitorId = (string)($request->getBodyParam('monitor_id') ?? $request->getQueryParam('monitor_id', ''));
+                $requestedMonitorId = (string)(request()->input('monitor_id') ?? request()->query('monitor_id', ''));
                 $monitorId = $requestedMonitorId !== '' ? $requestedMonitorId : $settingsService->getMonitorId();
                 if ($monitorId) {
                     $endpoint = Constants::MICROSERVICE_ENDPOINTS['monitors']['view'] . '/' . $monitorId;
@@ -393,25 +381,25 @@ class HealthCheckController extends BaseController
                     }
                 }
             } catch (\Throwable $e) {
-                Craft::error("Monitor fetch failed: {$e->getMessage()}", __METHOD__);
+                Log::error("Monitor fetch failed: {$e->getMessage()}");
             }
         }
-
+ 
         try {
             $paramName = Constants::SUBNAV_ITEM_REACHABILITY['apiLabel'];
-            $response = $this->service->getHealthcheck($url, [$paramName], $forceFetch, null, $request->getParam('region', null));
-
+            $response = $this->service->getHealthcheck($url, [$paramName], $forceFetch, null, request()->input('region', null));
+ 
             if (isset($response['result']['details'][$paramName]['error'])) {
                 throw new \Exception($response['result']['details'][$paramName]['error']);
             }
-
+ 
             // Transform API response to our expected format
             if (isset($response['result'])) {
                 $result = $response['result'];
                 $uptime = $result['details'][$paramName] ?? null;
                 $meta = $uptime['meta'] ?? [];
                 $isOk = $response['result']['details'][$paramName]['ok'] ?? true;
-
+ 
                 $data = [
                     'data' => [
                         'status' => $isOk ? 'ok' : 'error',
@@ -444,58 +432,53 @@ class HealthCheckController extends BaseController
                 ]
             ];
         }
-
+ 
         $data = $this->service->prepareData($data, Constants::SUBNAV_ITEM_REACHABILITY, $isAjax);
-
+ 
         // Add monitor data to context
         $data['monitorData'] = $monitorData;
-
+ 
         if ($isAjax) {
             return $this->asJson($data);
         }
         return $this->service->sendResponse($data, Constants::SUBNAV_ITEM_REACHABILITY['template']);
     }
-
-    public function actionSecurityCertificates(): Response
+ 
+    public function securityCertificates(): Response
     {
         $data = [];
-        $request = Craft::$app->getRequest();
-        $isAjax = $request->getIsAjax();
+        $isAjax = request()->ajax();
         $url = $this->resolveRequestMonitoringUrl();
-        $forceFetch = $request->getBodyParam('force_fetch', false);
-
+        $forceFetch = request()->input('force_fetch', false);
+ 
         if (!$url) {
             return $this->service->handleMissingMonitoringUrl(Constants::SUBNAV_ITEM_REACHABILITY);
         }
-
+ 
         if (!$this->isHttpsUrl($url)) {
             $data = [
                 'data' => [
                     'status' => 'warning',
-                    'error' => Craft::t(
-                        'upsnap',
-                        'This check is only allowed for HTTPS URLs.'
-                    ),
+                    'error' => t('This check is only allowed for HTTPS URLs.', [], 'upsnap'),
                     'url' => $url,
                 ]
             ];
         } else {
-
             try {
                 $paramName = Constants::SUBNAV_ITEM_SECURITY_CERTIFICATES['apiLabel'];
                 $response = $this->service->getHealthcheck($url, [$paramName], $forceFetch);
-
+ 
                 if (isset($response['result']['details'][$paramName]['error'])) {
                     throw new \Exception($response['result']['details'][$paramName]['error']);
                 }
-
+ 
                 // Transform API response to our expected format for SSL certificate
                 if (isset($response['result'])) {
                     $result = $response['result'];
                     $ssl = $result['details'][$paramName] ?? null;
                     $meta = $ssl['meta'] ?? [];
                     $isOk = $response['result']['details'][$paramName]['ok'] ?? true;
-
+ 
                     $leafCertificate = null;
                     if (isset($meta['chain']) && is_array($meta['chain'])) {
                         foreach ($meta['chain'] as $cert) {
@@ -505,7 +488,7 @@ class HealthCheckController extends BaseController
                             }
                         }
                     }
-
+ 
                     $data = [
                         'data' => [
                             'status' => $isOk ? 'ok' : 'error',
@@ -531,26 +514,24 @@ class HealthCheckController extends BaseController
                 ];
             }
         }
-
+ 
         $data = $this->service->prepareData($data, Constants::SUBNAV_ITEM_SECURITY_CERTIFICATES, $isAjax);
-
+ 
         if ($isAjax) {
             return $this->asJson($data);
         }
-
+ 
         return $this->service->sendResponse($data, Constants::SUBNAV_ITEM_SECURITY_CERTIFICATES['template']);
     }
-
-    public function actionHistory(): Response
+ 
+    public function history(): Response
     {
-        $request = Craft::$app->getRequest();
-
         // Get filter parameters from request
-        $startDate = $request->getParam('startDate', (new \DateTime('-15 days'))->format('Y-m-d'));
-        $endDate = $request->getParam('endDate', (new \DateTime('now'))->format('Y-m-d'));
-        $status = $request->getParam('status', 'all');
-        $type = $request->getParam('type', 'all');
-
+        $startDate = request()->input('startDate', (new \DateTime('-15 days'))->format('Y-m-d'));
+        $endDate = request()->input('endDate', (new \DateTime('now'))->format('Y-m-d'));
+        $status = request()->input('status', 'all');
+        $type = request()->input('type', 'all');
+ 
         // Convert dates for internal use
         $startDateTime = (new \DateTime($startDate))->format('Y-m-d H:i:s');
         $endDateTime = (new \DateTime($endDate . ' 23:59:59'))->format('Y-m-d H:i:s');
@@ -562,38 +543,36 @@ class HealthCheckController extends BaseController
                 $endDate
             );
         } catch (\Throwable $e) {
-            \Craft::error('Error fetching uptime history: ' . $e->getMessage(), __METHOD__);
+            Log::error('Error fetching uptime history: ' . $e->getMessage());
         }
-
+ 
         // Filter by status if specified
         if ($status !== 'all') {
             $history = array_filter($history, function ($record) use ($status) {
                 return $record['status'] === $status;
             });
         }
-
+ 
         // Filter by type if specified
         if ($type !== 'all') {
             $history = array_filter($history, function ($record) use ($type) {
                 return strtolower($record['type']) === strtolower($type);
             });
         }
-
+ 
         // Filter by date range
         $history = array_filter($history, function ($record) use ($startDateTime, $endDateTime) {
             return $record['timestamp'] >= $startDateTime && $record['timestamp'] <= $endDateTime;
         });
-
+ 
         // Calculate summary stats
         $totalChecks = count($history);
         $succeededChecks = count(array_filter($history, fn($r) => $r['status'] === 'succeeded'));
         $failedChecks = count(array_filter($history, fn($r) => $r['status'] === 'failed'));
         $warningChecks = count(array_filter($history, fn($r) => $r['status'] === 'warning'));
-
+ 
         $uptimePercentage = $totalChecks > 0 ? round(($succeededChecks / $totalChecks) * 100, 1) : 0;
-
-
-
+ 
         $variables = [
             'history' => array_values($history), // Re-index array after filtering
             'filters' => [
@@ -609,42 +588,41 @@ class HealthCheckController extends BaseController
                 'warning' => $warningChecks,
                 'uptimePercentage' => $uptimePercentage
             ],
-            'title' => Craft::t('upsnap', 'Reachability History'),
+            'title' => t('Reachability History', [], 'upsnap'),
             'selectedSubnavItem' => 'reachability',
         ];
-
+ 
         return $this->renderTemplate('upsnap/healthcheck/reachability-history', $variables);
     }
-
+ 
     private function isHttpsUrl(?string $url): bool
     {
         if (!$url) {
             return false;
         }
-
+ 
         return str_starts_with(strtolower(trim($url)), 'https://');
     }
-
+ 
     /**
      * Resolve monitoring URL for health-check requests.
      * If monitor_id is provided, resolve URL from selected monitor settings; otherwise fallback to primary monitor URL.
      */
     private function resolveRequestMonitoringUrl(): ?string
     {
-        $request = Craft::$app->getRequest();
-        $monitorId = (string)($request->getBodyParam('monitor_id') ?? $request->getQueryParam('monitor_id', ''));
-
+        $monitorId = (string)(request()->input('monitor_id') ?? request()->query('monitor_id', ''));
+ 
         if ($monitorId === '') {
             return Upsnap::getMonitoringUrl();
         }
-
+ 
         try {
             $endpoint = Constants::MICROSERVICE_ENDPOINTS['monitors']['view'] . '/' . $monitorId;
             $response = Upsnap::$plugin->apiService->get($endpoint);
             if (!isset($response['status']) || $response['status'] !== 'success') {
                 return Upsnap::getMonitoringUrl();
             }
-
+ 
             $monitor = $response['data']['monitor'] ?? null;
             if (!is_array($monitor)) {
                 return Upsnap::getMonitoringUrl();
@@ -654,18 +632,18 @@ class HealthCheckController extends BaseController
             $config = (isset($settingsResponse['status']) && $settingsResponse['status'] === 'success')
                 ? ($settingsResponse['data']['settings'] ?? [])
                 : [];
-
+ 
             $meta = $config['meta'] ?? [];
             if (($monitor['service_type'] ?? null) === 'port') {
                 $host = $meta['host'] ?? '';
                 $port = $meta['port'] ?? '';
                 return $host && $port ? "$host:$port" : ($host ?: $port);
             }
-
+ 
             $url = trim((string)($meta['url'] ?? ''));
             return $url !== '' ? $url : Upsnap::getMonitoringUrl();
         } catch (\Throwable $e) {
-            Craft::error("Failed to resolve monitor URL from monitor_id {$monitorId}: {$e->getMessage()}", __METHOD__);
+            Log::error("Failed to resolve monitor URL from monitor_id {$monitorId}: " . $e->getMessage());
             return Upsnap::getMonitoringUrl();
         }
     }
